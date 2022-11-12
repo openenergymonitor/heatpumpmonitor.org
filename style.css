@@ -1,8 +1,14 @@
 body {
   font-family: sans-serif 
 }
+h1 {
+  margin: -8px;
+  padding: 8px;
+  background: #44b3e2;
+  color: white;
+  width: 100%;
+}
 a.addhp {
-  font-size: larger;
   font-weight: bold;
   text-decoration: none;
   padding: 6px 12px;
@@ -14,15 +20,23 @@ table {
   border-collapse: collapse;
 }
 table th {
+  font-size: 90%;
   text-align: left;
   background: silver;
   padding: 2px 8px;
-  cursor:pointer 
+  cursor: ns-resize;
+}
+table th.nosort {
+  cursor: default;
 }
 table td {
+  font-size: 90%;
   border-top: silver solid 1px;
   border-bottom: silver solid 1px;
   padding: 2px 8px;
+}
+table td.nowrap {
+  white-space: nowrap;
 }
 table tr:nth-child(odd) td {
   background: #efe;
@@ -30,4 +44,11 @@ table tr:nth-child(odd) td {
 table tr:nth-child(even) td {
   background: #eef;
 }
- 
+div.footer {
+  padding: 4px;
+  margin-top: 32px;
+  border-top: solid 1px silver;
+  text-align: center;
+  color: gray;
+}
+
