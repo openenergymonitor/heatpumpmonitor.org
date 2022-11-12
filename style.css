@@ -22,7 +22,8 @@ table {
 table th {
   font-size: 90%;
   text-align: left;
-  background: silver;
+  background: #44b3e2;
+  color: white;
   padding: 2px 8px;
   cursor: ns-resize;
 }
