@@ -1,0 +1,33 @@
+body {
+  font-family: sans-serif 
+}
+a.addhp {
+  font-size: larger;
+  font-weight: bold;
+  text-decoration: none;
+  padding: 6px 12px;
+  background: #909;
+  color: white;
+  float: right;
+}
+table {
+  border-collapse: collapse;
+}
+table th {
+  text-align: left;
+  background: silver;
+  padding: 2px 8px;
+  cursor:pointer 
+}
+table td {
+  border-top: silver solid 1px;
+  border-bottom: silver solid 1px;
+  padding: 2px 8px;
+}
+table tr:nth-child(odd) td {
+  background: #efe;
+}
+table tr:nth-child(even) td {
+  background: #eef;
+}
+ 
