@@ -40,19 +40,19 @@
     </thead>
     <tbody>
       <tr v-for="n in sortedNodes">
-        <td v-bind:title="n.hp_model">{{n.hp_model.replace(/ \(.*\)/, ' …')}}</td>     
+        <td v-bind:title="n.hp_model">{{n.hp_model.replace(/ \(.*\)/, ' &mldr;')}}</td>
         <td class="nowrap">{{n.hp_type}}</td>
         <td class="nowrap">{{n.hp_output}} kW</td>
         <td class="nowrap">{{n.heat_loss}} kW</td>
         <td v-bind:title="n.emitters">{{n.emitters.split(' ').slice(0, 2).join(' ')}}
-            {{n.emitters.split(' ').length > 2 ? '…' : ''}}</td>
+            {{n.emitters.split(' ').length > 2 ? '&mldr;' : ''}}</td>
         <td>{{n.property}}</td>
         <td class="nowrap">{{n.age.replace(' to ', '-')}}</td>
-        <td class="nowrap">{{n.floor_area}} m&#xB2;</td>
+        <td class="nowrap">{{n.floor_area}} m&sup2;</td>
         <td class="nowrap">{{n.annual_kwh}} kWh</td>
         <td>{{n.location}}</td>   
         <td v-bind:title="n.insulation">{{n.insulation.split(' ').slice(0, 2).join(' ')}}
-           {{n.insulation.split(' ').length > 2 ? '…' : ''}}</td>
+           {{n.insulation.split(' ').length > 2 ? '&mldr;' : ''}}</td>
         <td><a v-bind:href="n.url" target="_blank">Link &raquo;</a></td>
         <!--td v-bind:title="n.notes">{{n.notes != '' ? '&#x1F5D2;' : ''}}</td-->
       </tr>
