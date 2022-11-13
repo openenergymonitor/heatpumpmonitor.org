@@ -77,5 +77,10 @@ function Node(row) {
   this.url = cols[10];
   this.age = cols[12];
   this.insulation = cols[13];
+  
+  if (this.age == 'Pre-1900') {
+    // Fix for sorting ages
+    this.age = ' Pre-1900';
+  }
 }
 
