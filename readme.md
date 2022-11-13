@@ -1,6 +1,8 @@
 # HeatpumpMonitor.org
 
-Source code for table of heat pumps with public dashboards
+An open source initiative to share and compare heat pump performance data.
+
+### See: [https://heatpumpmonitor.org](https://heatpumpmonitor.org)
 
 Install public site content in /var/www
 
