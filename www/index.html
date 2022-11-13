@@ -47,7 +47,7 @@
         <td v-bind:title="n.emitters">{{n.emitters.split(' ').slice(0, 2).join(' ')}}
             {{n.emitters.split(' ').length > 2 ? '&mldr;' : ''}}</td>
         <td>{{n.property}}</td>
-        <td class="nowrap">{{n.age.replace(' to ', '-')}}</td>
+        <td class="nowrap">{{n.age.replace(' to ', '-').trim()}}</td>
         <td class="nowrap">{{n.floor_area}} m&sup2;</td>
         <td class="nowrap">{{n.annual_kwh}} kWh</td>
         <td>{{n.location}}</td>   
