@@ -1,2 +1,5 @@
 data.tsv
 www/data.tsv
+webhook.log
+hpmon.log
+www/webhook.php
