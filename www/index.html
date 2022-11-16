@@ -30,9 +30,14 @@
         <th @click="sort('property')">Property</th>
         <th @click="sort('age')">Built</th>
         <th @click="sort('floor_area')">Floor Area</th>
-        <th @click="sort('annual_kwh')">Annual Heat</th>
+        <th @click="sort('annual_kwh')">Heat Demand</th>
         <th @click="sort('location')">Location</th>
         <th @click="sort('insulation')">Insulation</th>
+        
+        <th @click="sort('year_elec')">Annual Electric</th>
+        <th @click="sort('year_heat')">Annual Heat</th>
+        <th @click="sort('year_cop')">SCOP</th>
+        
         <th class="nosort">Details</th>
       </tr>
     </thead>
@@ -51,6 +56,9 @@
         <td>{{n.location}}</td>   
         <td v-bind:title="n.insulation">{{n.insulation.split(' ').slice(0, 2).join(' ')}}
            {{n.insulation.split(' ').length > 2 ? '&mldr;' : ''}}</td>
+        <td class="nowrap">{{n.year_elec}} {{n.year_elec > 0 ? 'kWh' : ''}}</td>
+        <td class="nowrap">{{n.year_heat}} {{n.year_heat > 0 ? 'kWh' : ''}}</td>
+        <td class="nowrap">{{n.year_cop}}</td>
         <td><a v-bind:href="n.url" target="_blank">Link &raquo;</a></td>
         <!--td v-bind:title="n.notes">{{n.notes != '' ? '&#x1F5D2;' : ''}}</td-->
       </tr>

@@ -22,7 +22,7 @@ var app = new Vue({
     
     readData(text) {
       let nodes = [];
-      let rows = text.split("\r\n");
+      let rows = text.split("\n");
       rows.shift(); // skip header
       for (let row of rows) {
         if (row.includes("\t")) {
@@ -77,6 +77,24 @@ function Node(row) {
   this.url = cols[10];
   this.age = cols[12];
   this.insulation = cols[13];
+
+  // 14 flow_temp
+  // 15 buffer
+  // 16	freeze
+  // 17	zone
+  // 18	controls
+  // 19	refrigerant
+  // 20	dhw
+  // 21	legionella
+
+  this.year_elec = cols[22];
+  this.year_heat = cols[23];
+  if (this.year_heat > 0) {
+    this.year_cop = (cols[23] / cols[22]).toFixed(1);
+  }
+  else {
+    this.year_cop = "-";
+  }
   
   if (this.age == 'Pre-1900') {
     // Fix for sorting ages
