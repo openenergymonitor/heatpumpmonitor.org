@@ -20,6 +20,7 @@ else
   # new content
   echo "new content"
   mv $TEMP $FILE
-  cp $FILE www/$FILE
+  # get kWh values and copy to www
+  php scrape_kwh.php
 fi
 

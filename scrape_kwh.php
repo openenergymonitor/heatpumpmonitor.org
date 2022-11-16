@@ -1,7 +1,10 @@
 <?php
+  # TODO: pass filenames as args
+
   $input = fopen("sheet.tsv", "r");
-  $output = fopen("data.tsv", "w");
+  $output = fopen("www/data.tsv", "w");
   
+  # append new columns to header
   $header = trim(fgets($input));
   fputs($output, $header . "\tyear_elec\tyear_heat\n");
   
@@ -16,20 +19,19 @@
 
   function scrapeEnergyValues($url)
   {
-    print "$url\n";
+    $site = dirname($url);
     
     $fd = fopen($url, "r");
     if (!$fd) {
-      print " - failed :(\n";
-      exit();
+      # failed to connect to site
+      return [ '-', '-' ];
     }
     
-    $site = dirname($url);
-    
+    # scrape the config info from the HTML
     while (($line = fgets($fd)) !== false) {
-      if (preg_match('/^var apikey = "(.*)";/', $line, $matches)) {
-        $apikey = $matches[1];
-      }
+      #if (preg_match('/^var apikey = "(.*)";/', $line, $matches)) {
+      #  $apikey = $matches[1];
+      #}
       if (preg_match('/^config.db = ({.*});/', $line, $matches)) {
         $config = json_decode($matches[1]);
       }
@@ -37,6 +39,7 @@
     fclose($fd);
     
     if (!isset($config->heatpump_elec_kwh) || !isset($config->heatpump_heat_kwh)) {
+      # failed to read config
       return [ '-', '-' ];
     }
     
@@ -54,7 +57,7 @@
     $year_elec = fetchValue($site, $config->heatpump_elec_kwh, $yearago);
     $year_heat = fetchValue($site, $config->heatpump_heat_kwh, $yearago);
 
-    # compute and return COP
+    # return kWh values
     return [ "elec" => round($elec_data->value - $year_elec),
              "heat" => round($heat_data->value - $year_heat) ];
   }
@@ -65,7 +68,6 @@
     #if ($apikey != '') { $url .= "&apikey=$apikey"; }
     $url = sprintf($url, $feed, $time);
     $data = file_get_contents($url);
-    #print "$feed->$data\n";
     return floatval($data);
   }
 
@@ -75,7 +77,6 @@
     #if ($apikey != '') { $url .= "&apikey=$apikey"; }
     $url = sprintf($url, $feed);
     $data = file_get_contents($url);
-    #print "$feed->$data\n";
     return json_decode($data);
   }
 
