@@ -89,6 +89,7 @@ function Node(row) {
 
   this.year_elec = cols[22];
   this.year_heat = cols[23];
+  this.since = cols[24];
   if (this.year_heat > 0) {
     this.year_cop = (cols[23] / cols[22]).toFixed(1);
   }
@@ -99,6 +100,18 @@ function Node(row) {
   if (this.age == 'Pre-1900') {
     // Fix for sorting ages
     this.age = ' Pre-1900';
+  }
+  
+  this.sinceClass = function () {
+    return this.since > 0 ? 'partial nowrap' : 'nowrap';
+  }
+  
+  this.sinceDate = function() {
+    if (this.since == 0) {
+      return "";
+    }
+    var date = new Date(this.since*1000);
+    return "Since " + date.toDateString();
   }
 }
 

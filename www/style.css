@@ -19,6 +19,16 @@ table th {
   padding: 2px 8px;
   cursor: ns-resize;
 }
+table th.header {
+  border-left: white 2px solid;
+  background: #e3f7ff;
+  color: #44b3e2;
+  text-align: center;
+  cursor: default;
+}
+table th.border {
+  border-left: white 2px solid;
+}
 table th.nosort {
   cursor: default;
 }
@@ -28,8 +38,14 @@ table td {
   border-bottom: silver solid 1px;
   padding: 2px 8px;
 }
+table td.border {
+  border-left: white 2px solid;
+}
 table td.nowrap {
   white-space: nowrap;
+}
+table td.partial {
+  color: grey;
 }
 table tr:nth-child(odd) td {
   background: #efe;

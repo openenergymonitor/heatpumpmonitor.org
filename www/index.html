@@ -22,19 +22,27 @@
   <table width="100%">
     <thead>
       <tr>
-        <th @click="sort('hp_model')">Make / Model</th>
-        <th @click="sort('hp_type')">Type</th>
-        <th @click="sort('hp_output')">Output</th>
-        <th @click="sort('heat_loss')">Heat Loss</th>
-        <th @click="sort('emitters')">Emitters</th>
-        <th @click="sort('property')">Property</th>
+        <th class="header" colspan="6">Property</th>
+        <th class="header" colspan="4">Heating system</th>
+        <th class="header" colspan="4">Performance</th>
+      </tr>
+      <tr>
+        <!-- Property -->
+        <th @click="sort('location')">Location</th>
+        <th @click="sort('property')">Type</th>
         <th @click="sort('age')">Built</th>
         <th @click="sort('floor_area')">Floor Area</th>
         <th @click="sort('annual_kwh')">Heat Demand</th>
-        <th @click="sort('location')">Location</th>
         <th @click="sort('insulation')">Insulation</th>
         
-        <th @click="sort('year_elec')">Annual Electric</th>
+        <!-- Heating System -->
+        <th @click="sort('hp_model')" class="border">Make / Model</th>
+        <th @click="sort('hp_type')">Type</th>
+        <th @click="sort('hp_output')">Output</th>
+        <th @click="sort('emitters')">Emitters</th>
+        
+        <!-- Performance -->
+        <th @click="sort('year_elec')" class="border">Annual Electric</th>
         <th @click="sort('year_heat')">Annual Heat</th>
         <th @click="sort('year_cop')">SCOP</th>
         
@@ -43,22 +51,30 @@
     </thead>
     <tbody>
       <tr v-for="n in sortedNodes">
-        <td v-bind:title="n.hp_model">{{n.hp_model.replace(/ \(.*\)/, ' &mldr;')}}</td>
-        <td class="nowrap">{{n.hp_type}}</td>
-        <td class="nowrap">{{n.hp_output}} kW</td>
-        <td class="nowrap">{{n.heat_loss}} kW</td>
-        <td v-bind:title="n.emitters">{{n.emitters.split(' ').slice(0, 2).join(' ')}}
-            {{n.emitters.split(' ').length > 2 ? '&mldr;' : ''}}</td>
+        <!-- Property -->
+        <td>{{n.location}}</td> 
         <td>{{n.property}}</td>
         <td class="nowrap">{{n.age.replace(' to ', '-').trim()}}</td>
         <td class="nowrap">{{n.floor_area}} m&sup2;</td>
         <td class="nowrap">{{n.annual_kwh}} kWh</td>
-        <td>{{n.location}}</td>   
         <td v-bind:title="n.insulation">{{n.insulation.split(' ').slice(0, 2).join(' ')}}
            {{n.insulation.split(' ').length > 2 ? '&mldr;' : ''}}</td>
-        <td class="nowrap">{{n.year_elec}} {{n.year_elec > 0 ? 'kWh' : ''}}</td>
-        <td class="nowrap">{{n.year_heat}} {{n.year_heat > 0 ? 'kWh' : ''}}</td>
-        <td class="nowrap">{{n.year_cop}}</td>
+           
+        <!-- Heating System -->
+        <td class="border" v-bind:title="n.hp_model">{{n.hp_model.replace(/ \(.*\)/, ' &mldr;')}}</td>
+        <td class="nowrap">{{n.hp_type}}</td>
+        <td class="nowrap">{{n.hp_output}} kW</td>
+        <td v-bind:title="n.emitters">
+            {{n.emitters.split(' ').slice(0, 2).join(' ')}}
+            {{n.emitters.split(' ').length > 2 ? '&mldr;' : ''}}</td>
+        
+        <!-- Performance -->
+        <td v-bind:class="n.sinceClass()+' border'" v-bind:title="n.sinceDate()">
+           {{n.year_elec}} {{n.year_elec > 0 ? 'kWh' : ''}}</td>
+        <td v-bind:class="n.sinceClass()" v-bind:title="n.sinceDate()">
+           {{n.year_heat}} {{n.year_heat > 0 ? 'kWh' : ''}}</td>
+        <td v-bind:class="n.sinceClass()" v-bind:title="n.sinceDate()">
+           {{n.year_cop}}</td>
         <td><a v-bind:href="n.url" target="_blank">Link &raquo;</a></td>
         <!--td v-bind:title="n.notes">{{n.notes != '' ? '&#x1F5D2;' : ''}}</td-->
       </tr>
@@ -67,7 +83,7 @@
   
 </div>
 
-<script src="table.js?v=3"></script>
+<script src="table.js?v=4"></script>
 
 <div class="footer">An <a href="https://openenergymonitor.org/">OpenEnergyMonitor.org</a> community initiative</div>
 </body>
