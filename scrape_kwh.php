@@ -21,22 +21,11 @@
   {
     $site = dirname($url);
     
-    $fd = fopen($url, "r");
-    if (!$fd) {
+    $config = fetchConfig($url);
+    if (!$config) {
       # failed to connect to site
       return [ '-', '-' ];
     }
-    
-    # scrape the config info from the HTML
-    while (($line = fgets($fd)) !== false) {
-      #if (preg_match('/^var apikey = "(.*)";/', $line, $matches)) {
-      #  $apikey = $matches[1];
-      #}
-      if (preg_match('/^config.db = ({.*});/', $line, $matches)) {
-        $config = json_decode($matches[1]);
-      }
-    }
-    fclose($fd);
     
     if (!isset($config->heatpump_elec_kwh) || !isset($config->heatpump_heat_kwh)) {
       # failed to read config
@@ -62,10 +51,25 @@
              "heat" => round($heat_data->value - $year_heat) ];
   }
 
+  function fetchConfig($url)
+  {
+    # attempt to pull the config for the app
+    $config = file_get_contents($url . '/app/getconfig');
+    if (strncmp($config, '{"app":"myheatpump","config":', 29) === 0) {
+      return json_decode($config)->config;
+    }
+    
+    # fall-back: try pulling config out of html instead
+    if (preg_match('/^config.db = ({.*});/m', $config, $matches)) {
+      return json_decode($matches[1]);
+    }
+    
+    return false;
+  }
+  
   function fetchValue($site, $feed, $time)
   {
     $url = "$site/feed/value.json?id=%d&time=%d";
-    #if ($apikey != '') { $url .= "&apikey=$apikey"; }
     $url = sprintf($url, $feed, $time);
     $data = file_get_contents($url);
     return floatval($data);
@@ -74,7 +78,6 @@
   function fetchTimeValue($site, $feed)
   {
     $url = "$site/feed/timevalue.json?id=%d";
-    #if ($apikey != '') { $url .= "&apikey=$apikey"; }
     $url = sprintf($url, $feed);
     $data = file_get_contents($url);
     return json_decode($data);
