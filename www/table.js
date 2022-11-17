@@ -16,7 +16,7 @@ var app = new Vue({
     async fetchData() {
       // https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-eqigAmjwwSIc6snCYTWRYZW6wsVK98fsJ8kn4aiG_pDw8qgpc4y_ZkiHC_OtWpchDCk1nBwxza8W/pub?gid=447603213&single=true&output=tsv
       const url = `data.tsv`
-      let text = await (await fetch(url)).text()
+      let text = await (await fetch(url,{cache: "no-store"})).text()
       this.nodes = this.readData(text)
     },
     
