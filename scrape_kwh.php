@@ -1,8 +1,21 @@
 <?php
-  # TODO: pass filenames as args
+  # check args
+  if ($argc != 3) {
+    printf("Syntax: php %s <input.tsv> <output.tsv>\n", $argv[0]);
+    exit();
+  }
 
-  $input = fopen("sheet.tsv", "r");
-  $output = fopen("www/data.tsv", "w");
+  $input = @fopen($argv[1], "r");
+  if (!$input) {
+    printf("Cannot open file: %s\n", $argv[1]);
+    exit();
+  }
+
+  $output = @fopen($argv[2], "w");
+  if (!$output) {
+    printf("Cannot open file: %s\n", $argv[2]);
+    exit();
+  }
   
   # append new columns to header
   $header = trim(fgets($input));
