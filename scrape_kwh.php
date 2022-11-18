@@ -32,8 +32,6 @@
 
   function scrapeEnergyValues($url)
   {
-    $site = dirname($url);
-    
     $config = fetchConfig($url);
     if (!$config) {
       # failed to connect to site
@@ -46,12 +44,12 @@
     }
     
     # fetch meta data for kWh feeds
-    $elec_data = fetchFeedMeta($site, $config->heatpump_elec_kwh);
-    $heat_data = fetchFeedMeta($site, $config->heatpump_heat_kwh);
+    $elec_data = fetchFeedMeta($config, $config->heatpump_elec_kwh);
+    $heat_data = fetchFeedMeta($config, $config->heatpump_heat_kwh);
 
     # fetch last values from kWh feeds
-    $last_elec = fetchValue($site, $config->heatpump_elec_kwh, $elec_data->end_time);
-    $last_heat = fetchValue($site, $config->heatpump_heat_kwh, $heat_data->end_time);
+    $last_elec = fetchValue($config, $config->heatpump_elec_kwh, $elec_data->end_time);
+    $last_heat = fetchValue($config, $config->heatpump_heat_kwh, $heat_data->end_time);
 
     # determine how far back to go
     # either 1 year, start of feed or user configured start
@@ -62,8 +60,8 @@
     }
     
     # fetch values for a year ago (or since start_date)
-    $year_elec = fetchValue($site, $config->heatpump_elec_kwh, $start_date);
-    $year_heat = fetchValue($site, $config->heatpump_heat_kwh, $start_date);
+    $year_elec = fetchValue($config, $config->heatpump_elec_kwh, $start_date);
+    $year_heat = fetchValue($config, $config->heatpump_heat_kwh, $start_date);
 
     # return kWh values and start date (0 means one whole year)
     return [ "elec" => round($last_elec - $year_elec),
@@ -72,53 +70,66 @@
   }
 
   /* atempts to get the app config from emoncms
-   * returns decoded json object
+   * returns decoded json object plus server url and readkey
    */
   function fetchConfig($url)
   {
     # decode the url to separate out any args
     $url_parts = parse_url($url);
+    $server = $url_parts['scheme'] . '://' . $url_parts['host'];
     
     # check if url was to /app/view instead of username
     if ($url_parts['path'] == '/app/view') {
-      $getconfig = $url_parts['scheme'] . '://' . $url_parts['host'] . "/app/getconfig";
+      $getconfig = "$server/app/getconfig";
     }
     else {
-      $getconfig = $url_parts['scheme'] . '://' . $url_parts['host'] . $url_parts['path'] . "/app/getconfig";
+      $getconfig = $server . $url_parts['path'] . "/app/getconfig";
     }
 
     # if url has query string, pull out the readkey
     if (isset($url_parts['query'])) {
       parse_str($url_parts['query'], $url_args);
       if (isset($url_args['readkey'])) {
-        $getconfig .= '?readkey=' . $url_args['readkey'];
+        $readkey = $url_args['readkey'];
+        $getconfig .= "?readkey=$readkey";
       }
     }
     
     # attempt to pull the config for the app
-    $config = file_get_contents($getconfig);
-    if (strncmp($config, '{"app":"myheatpump","config":', 29) === 0) {
+    $content = file_get_contents($getconfig);
+    if (strncmp($content, '{"app":"myheatpump","config":', 29) === 0) {
       #print "Loaded config from $getconfig\n";
-      return json_decode($config)->config;
+      $config = json_decode($content)->config;
     }
     
     # fall-back: try pulling config out of html instead
-    if (preg_match('/^config.db = ({.*});/m', $config, $matches)) {
+    if (preg_match('/^config.db = ({.*});/m', $content, $matches)) {
       #print "Scraped config from $url\n";
-      return json_decode($matches[1]);
+      $config = json_decode($matches[1]);
+    }
+    
+    # add server and apikey values
+    if (isset($config)) {
+      $config->server = $server;
+      if (isset($readkey)) {
+        $config->apikey = $readkey;
+      }
+      return $config;
     }
     
     print "Could not load config for $url\n";
-    
     return false;
   }
   
   /* fetch value from a feed at a specific unixtime 
    * returns float
    */
-  function fetchValue($site, $feed, $time)
+  function fetchValue($config, $feed, $time)
   {
-    $url = sprintf("%s/feed/value.json?id=%d&time=%d", $site, $feed, $time);
+    $url = sprintf("%s/feed/value.json?id=%d&time=%d", $config->server, $feed, $time);
+    if (isset($config->apikey)) {
+      $url .= "&apikey=" . $config->apikey;
+    }
     $data = file_get_contents($url);
     return floatval($data);
   }
@@ -126,9 +137,12 @@
   /* fetch the meta data for a feed
    * returns decoded json object
    */
-  function fetchFeedMeta($site, $feed)
+  function fetchFeedMeta($config, $feed)
   {
-    $url = sprintf("%s/feed/getmeta.json?id=%d", $site, $feed);
+    $url = sprintf("%s/feed/getmeta.json?id=%d", $config->server, $feed);
+    if (isset($config->apikey)) {
+      $url .= "&apikey=" . $config->apikey;
+    }
     $data = file_get_contents($url);
     return json_decode($data);
   }
