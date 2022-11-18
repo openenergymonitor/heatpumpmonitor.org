@@ -114,4 +114,8 @@ function Node(row) {
     return "Since " + date.toDateString();
   }
 }
+  
+function unit(value, unit) {
+  return (value != '') ? value + ' ' + unit : '-';
+}
 
