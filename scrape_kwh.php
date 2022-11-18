@@ -76,16 +76,39 @@
    */
   function fetchConfig($url)
   {
+    # decode the url to separate out any args
+    $url_parts = parse_url($url);
+    
+    # check if url was to /app/view instead of username
+    if ($url_parts['path'] == '/app/view') {
+      $getconfig = $url_parts['scheme'] . '://' . $url_parts['host'] . "/app/getconfig";
+    }
+    else {
+      $getconfig = $url_parts['scheme'] . '://' . $url_parts['host'] . $url_parts['path'] . "/app/getconfig";
+    }
+
+    # if url has query string, pull out the readkey
+    if (isset($url_parts['query'])) {
+      parse_str($url_parts['query'], $url_args);
+      if (isset($url_args['readkey'])) {
+        $getconfig .= '?readkey=' . $url_args['readkey'];
+      }
+    }
+    
     # attempt to pull the config for the app
-    $config = file_get_contents($url . '/app/getconfig');
+    $config = file_get_contents($getconfig);
     if (strncmp($config, '{"app":"myheatpump","config":', 29) === 0) {
+      #print "Loaded config from $getconfig\n";
       return json_decode($config)->config;
     }
     
     # fall-back: try pulling config out of html instead
     if (preg_match('/^config.db = ({.*});/m', $config, $matches)) {
+      #print "Scraped config from $url\n";
       return json_decode($matches[1]);
     }
+    
+    print "Could not load config for $url\n";
     
     return false;
   }
