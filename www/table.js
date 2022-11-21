@@ -4,8 +4,8 @@ var app = new Vue({
   data: {
     nodes: [],
     filterKey: '',
-    currentSort:'',
-    currentSortDir:'asc'
+    currentSort:'year_cop',
+    currentSortDir:'desc'
   },
 
   created() {
