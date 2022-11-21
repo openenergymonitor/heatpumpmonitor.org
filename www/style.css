@@ -35,7 +35,6 @@ table th.nosort {
 tbody td {
   font-size: 90%;
   border-top: silver solid 1px;
-  border-bottom: silver solid 1px;
   padding: 2px 8px;
 }
 tbody td.border {
@@ -44,16 +43,32 @@ tbody td.border {
 tbody td.nowrap {
   white-space: nowrap;
 }
+tbody td.toggle {
+  color: #44b3e2;
+  cursor: pointer;
+}
 tbody td.partial {
   color: grey;
 }
-tbody tr:nth-child(odd) td {
+tbody td.extra {
+  border-top: none;
+  background: white;
+  color: grey;
+}
+tbody tr:nth-child(4n+1) td {
   background: #efe;
 }
-tbody tr:nth-child(even) td {
+tbody tr:nth-child(4n+2) td {
+  background: #efe;
+}
+tbody tr:nth-child(4n+3) td {
+  background: #eef;
+}
+tbody tr:nth-child(4n+4) td {
   background: #eef;
 }
 tfoot td {
+  border-top: silver solid 1px;
   text-align: center;
   background: white;
   color: grey;

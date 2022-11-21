@@ -3,7 +3,7 @@
 <head>
   <title>HeatpumpMonitor.org</title>
   <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
-  <link rel="stylesheet" href="style.css?v=2" />
+  <link rel="stylesheet" href="style.css?v=3" />
 </head>
 
 <body>
@@ -22,11 +22,13 @@
   <table width="100%">
     <thead>
       <tr>
+        <th class="header">&nbsp;</td>
         <th class="header" colspan="6">Property</th>
         <th class="header" colspan="4">Heating system</th>
         <th class="header" colspan="4">Performance</th>
       </tr>
       <tr>
+        <th>&nbsp;</td>
         <!-- Property -->
         <th @click="sort('location')">Location</th>
         <th @click="sort('property')">Type</th>
@@ -49,9 +51,11 @@
         <th class="nosort">Details</th>
       </tr>
     </thead>
+    
     <tbody>
-      <tr v-for="n in sortedNodes">
+      <template v-for="n in sortedNodes"><tr>
         <!-- Property -->
+        <td class="toggle" onclick="toggle(this)">&plusb;</td>
         <td>{{n.location}}</td> 
         <td>{{n.property}}</td>
         <td class="nowrap">{{n.age.replace(' to ', '-').trim()}}</td>
@@ -76,10 +80,25 @@
         <td v-bind:class="n.sinceClass()" v-bind:title="n.sinceDate()">
            {{n.year_cop}}</td>
         <td><a v-bind:href="n.url" target="_blank">Link &raquo;</a></td>
-        <!--td v-bind:title="n.notes">{{n.notes != '' ? '&#x1F5D2;' : ''}}</td-->
       </tr>
+      
+      <tr class="extra" style="display: none">
+        <td class="extra">&nbsp;</td>
+        <td colspan="14" class="extra">
+          <b v-if="n.refrigerant.length">Refrigerant:</b> {{n.refrigerant}}
+          <b v-if="n.flow_temp.length">Flow Temp:</b> {{n.flow_temp}}
+          <b v-if="n.buffer.length">Buffer:</b> {{n.buffer}}
+          <b v-if="n.zones.length">Zones:</b> {{n.zones}}
+          <b v-if="n.controls.length">Controls:</b> {{n.controls}}
+          <b v-if="n.freeze.length">Anti-Freeze:</b> {{n.freeze}}
+          <b v-if="n.dhw.length">DHW:</b> {{n.dhw}}
+          <b v-if="n.legionella.length">Legionella:</b> {{n.legionella}}
+          <b v-if="n.notes.length">Notes:</b> {{n.notes}}
+      </tr></template>
     </tbody>
+    
     <tfoot>
+      <td colspan="1" class="footer"></td>
       <td colspan="6" class="footer"></td>
       <td colspan="4" class="footer"></td>
       <td colspan="3" class="footer"><i>Incomplete data shown in grey</i></td>
@@ -88,7 +107,7 @@
   
 </div>
 
-<script src="table.js?v=6"></script>
+<script src="table.js?v=7"></script>
 
 <div class="footer">An <a href="https://openenergymonitor.org/">OpenEnergyMonitor.org</a> community initiative</div>
 </body>

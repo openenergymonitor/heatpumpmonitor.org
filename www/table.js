@@ -78,14 +78,14 @@ function Node(row) {
   this.age = cols[12];
   this.insulation = cols[13];
 
-  // 14 flow_temp
-  // 15 buffer
-  // 16	freeze
-  // 17	zone
-  // 18	controls
-  // 19	refrigerant
-  // 20	dhw
-  // 21	legionella
+  this.flow_temp = cols[14];
+  this.buffer = cols[15];
+  this.freeze = cols[16];
+  this.zones = cols[17];
+  this.controls = cols[18];
+  this.refrigerant = cols[19];
+  this.dhw = cols[20];
+  this.legionella = cols[21];
 
   this.year_elec = cols[22];
   this.year_heat = cols[23];
@@ -117,5 +117,18 @@ function Node(row) {
   
 function unit(value, unit) {
   return (value != '') ? value + ' ' + unit : '-';
+}
+
+var row;
+function toggle(cell) {
+  row = cell.parentElement;
+  if (row.nextElementSibling.style.display == 'none') {
+    row.nextElementSibling.style.display = 'table-row';
+    cell.innerHTML = '&minusb;';  // -
+  }
+  else {
+    row.nextElementSibling.style.display = 'none';
+    cell.innerHTML = '&plusb;';  // +
+  }
 }
 
