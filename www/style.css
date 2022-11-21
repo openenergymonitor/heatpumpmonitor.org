@@ -32,26 +32,31 @@ table th.border {
 table th.nosort {
   cursor: default;
 }
-table td {
+tbody td {
   font-size: 90%;
   border-top: silver solid 1px;
   border-bottom: silver solid 1px;
   padding: 2px 8px;
 }
-table td.border {
+tbody td.border {
   border-left: white 2px solid;
 }
-table td.nowrap {
+tbody td.nowrap {
   white-space: nowrap;
 }
-table td.partial {
+tbody td.partial {
   color: grey;
 }
-table tr:nth-child(odd) td {
+tbody tr:nth-child(odd) td {
   background: #efe;
 }
-table tr:nth-child(even) td {
+tbody tr:nth-child(even) td {
   background: #eef;
+}
+tfoot td {
+  text-align: center;
+  background: white;
+  color: grey;
 }
 div.footer {
   padding: 4px;

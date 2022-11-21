@@ -3,7 +3,7 @@
 <head>
   <title>HeatpumpMonitor.org</title>
   <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
-  <link rel="stylesheet" href="style.css?v=1" />
+  <link rel="stylesheet" href="style.css?v=2" />
 </head>
 
 <body>
@@ -79,11 +79,16 @@
         <!--td v-bind:title="n.notes">{{n.notes != '' ? '&#x1F5D2;' : ''}}</td-->
       </tr>
     </tbody>
+    <tfoot>
+      <td colspan="6" class="footer"></td>
+      <td colspan="4" class="footer"></td>
+      <td colspan="3" class="footer"><i>Incomplete data shown in grey</i></td>
+    </tfoot>
   </table>
   
 </div>
 
-<script src="table.js?v=5"></script>
+<script src="table.js?v=6"></script>
 
 <div class="footer">An <a href="https://openenergymonitor.org/">OpenEnergyMonitor.org</a> community initiative</div>
 </body>
