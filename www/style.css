@@ -50,6 +50,12 @@ tbody td.toggle {
 tbody td.partial {
   color: grey;
 }
+.center {
+  text-align: center !important;
+}
+.right {
+  text-align: right !important;
+}
 tbody td.extra {
   border-top: none;
   background: white;

@@ -3,7 +3,7 @@
 <head>
   <title>HeatpumpMonitor.org</title>
   <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
-  <link rel="stylesheet" href="style.css?v=3" />
+  <link rel="stylesheet" href="style.css?v=4" />
 </head>
 
 <body>
@@ -25,7 +25,7 @@
         <th class="header">&nbsp;</td>
         <th class="header" colspan="6">Property</th>
         <th class="header" colspan="4">Heating system</th>
-        <th class="header" colspan="4">Performance</th>
+        <th class="header" colspan="5">Performance</th>
       </tr>
       <tr>
         <th>&nbsp;</td>
@@ -33,8 +33,8 @@
         <th @click="sort('location')">Location</th>
         <th @click="sort('property')">Type</th>
         <th @click="sort('age')">Built</th>
-        <th @click="sort('floor_area')">Floor Area</th>
-        <th @click="sort('annual_kwh')">Heat Demand</th>
+        <th @click="sort('floor_area')" class="right">Floor Area</th>
+        <th @click="sort('annual_kwh')" class="right">Heat Demand</th>
         <th @click="sort('insulation')">Insulation</th>
         
         <!-- Heating System -->
@@ -44,10 +44,10 @@
         <th @click="sort('emitters')">Emitters</th>
         
         <!-- Performance -->
-        <th @click="sort('year_elec')" class="border">Annual Electric</th>
-        <th @click="sort('year_heat')">Annual Heat</th>
-        <th @click="sort('year_cop')">SCOP</th>
-        
+        <th @click="sort('year_elec')" class="border right">Annual Electric</th>
+        <th @click="sort('year_heat')" class="right">Annual Heat</th>
+        <th @click="sort('year_cop')" class="center">SCOP</th>
+        <th @click="sort('month_cop')" class="center">30 Day COP</th>
         <th class="nosort">Details</th>
       </tr>
     </thead>
@@ -59,8 +59,8 @@
         <td>{{n.location}}</td> 
         <td>{{n.property}}</td>
         <td class="nowrap">{{n.age.replace(' to ', '-').trim()}}</td>
-        <td class="nowrap">{{unit(n.floor_area, 'm&sup2;')}}</td>
-        <td class="nowrap">{{unit(n.annual_kwh, 'kWh')}}</td>
+        <td class="nowrap" align="right">{{unit(n.floor_area, 'm&sup2;')}}</td>
+        <td class="nowrap" align="right">{{unit(n.annual_kwh, 'kWh')}}</td>
         <td v-bind:title="n.insulation">{{n.insulation.split(' ').slice(0, 2).join(' ')}}
            {{n.insulation.split(' ').length > 2 ? '&mldr;' : ''}}</td>
            
@@ -73,12 +73,15 @@
             {{n.emitters.split(' ').length > 2 ? '&mldr;' : ''}}</td>
         
         <!-- Performance -->
-        <td v-bind:class="n.sinceClass()+' border'" v-bind:title="n.sinceDate()">
-           {{unit(n.year_elec, 'kWh')}}</td>
-        <td v-bind:class="n.sinceClass()" v-bind:title="n.sinceDate()">
-           {{unit(n.year_heat, 'kWh')}}</td>
-        <td v-bind:class="n.sinceClass()" v-bind:title="n.sinceDate()">
+        <td v-bind:class="n.sinceClass()" v-bind:title="n.sinceDate()" align="right">
+           {{unit(n.year_elec, 'kWh')}}
+        </td>
+        <td v-bind:class="n.sinceClass()" v-bind:title="n.sinceDate()" align="right">
+           {{unit(n.year_heat, 'kWh')}}
+        </td>
+        <td v-bind:class="n.sinceClass()+' center'" v-bind:title="n.sinceDate()">
            {{n.year_cop}}</td>
+        <td v-bind:title="n.month_elec + ' > ' + n.month_heat + ' kWh'" class="center">{{n.month_cop}}</td>
         <td><a v-bind:href="n.url" target="_blank">Link &raquo;</a></td>
       </tr>
       
@@ -94,6 +97,8 @@
           <b v-if="n.dhw.length">DHW:</b> {{n.dhw}}
           <b v-if="n.legionella.length">Legionella:</b> {{n.legionella}}
           <b v-if="n.notes.length">Notes:</b> {{n.notes}}
+        </td>
+        <td class="extra">&nbsp;</td>
       </tr></template>
     </tbody>
     
@@ -101,13 +106,14 @@
       <td colspan="1" class="footer"></td>
       <td colspan="6" class="footer"></td>
       <td colspan="4" class="footer"></td>
-      <td colspan="3" class="footer"><i>Incomplete data shown in grey</i></td>
+      <td colspan="3" class="footer"><i>Incomplete data in grey</i></td>
+      <td colspan="2" class="footer"></td>
     </tfoot>
   </table>
   
 </div>
 
-<script src="table.js?v=7"></script>
+<script src="table.js?v=8"></script>
 
 <div class="footer">An <a href="https://openenergymonitor.org/">OpenEnergyMonitor.org</a> community initiative</div>
 </body>

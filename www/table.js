@@ -91,12 +91,27 @@ function Node(row) {
   this.year_heat = cols[23];
   this.since = cols[24];
   if (this.year_heat > 0) {
-    this.year_cop = (cols[23] / cols[22]).toFixed(1);
+    this.year_cop = (this.year_heat / this.year_elec).toFixed(1);
   }
   else {
     this.year_cop = "-";
   }
+  if (this.year_cop > 7) {
+    this.year_cop = "-";
+  }
   
+  this.month_elec = cols[25];
+  this.month_heat = cols[26];
+  if (this.month_heat > 0) {
+    this.month_cop = (this.month_heat / this.month_elec).toFixed(1);
+  }
+  else {
+    this.month_cop = "-";
+  }
+  if (this.month_cop > 7) {
+    this.month_cop = "-";
+  }
+
   if (this.age == 'Pre-1900') {
     // Fix for sorting ages
     this.age = ' Pre-1900';

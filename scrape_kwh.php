@@ -19,7 +19,7 @@
   
   # append new columns to header
   $header = trim(fgets($input));
-  fputs($output, $header . "\tyear_elec\tyear_heat\tsince\n");
+  fputs($output, $header . "\tyear_elec\tyear_heat\tsince\tmonth_elec\tmonth_heat\n");
   
   # read reach row and append kWh readings for last year
   while (($fields = fgetcsv($input, 1000, "\t")) !== FALSE) {
@@ -51,6 +51,17 @@
     $last_elec = fetchValue($config, $config->heatpump_elec_kwh, $elec_data->end_time);
     $last_heat = fetchValue($config, $config->heatpump_heat_kwh, $heat_data->end_time);
 
+    # fetch last 30 days, or the most available
+    $month_ago = $elec_data->end_time - 2592000; // 30 days
+    $month_ago = max($month_ago, $elec_data->start_time, $heat_data->start_time);
+    if (isset($config->start_date)) {
+      $month_ago = max($month_ago, $config->start_date);
+    }
+    
+    # fetch values for a month ago (or since start_date)
+    $month_elec = fetchValue($config, $config->heatpump_elec_kwh, $month_ago);
+    $month_heat = fetchValue($config, $config->heatpump_heat_kwh, $month_ago);
+    
     # determine how far back to go
     # either 1 year, start of feed or user configured start
     $year_ago = $elec_data->end_time - 31536000;
@@ -64,9 +75,13 @@
     $year_heat = fetchValue($config, $config->heatpump_heat_kwh, $start_date);
 
     # return kWh values and start date (0 means one whole year)
-    return [ "elec" => round($last_elec - $year_elec),
-             "heat" => round($last_heat - $year_heat),
-             "since" => $start_date > $year_ago ? $start_date : 0];
+    return [
+      "year_elec" => round($last_elec - $year_elec),
+      "year_heat" => round($last_heat - $year_heat),
+      "since" => $start_date > $year_ago ? $start_date : 0,
+      "month_elec" => round($last_elec - $month_elec),
+      "month_heat" => round($last_heat - $month_heat)
+    ];
   }
 
   /* atempts to get the app config from emoncms
