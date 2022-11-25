@@ -40,7 +40,7 @@
         <!-- Heating System -->
         <th @click="sort('hp_model')" class="border">Make / Model</th>
         <th @click="sort('hp_type')">Type</th>
-        <th @click="sort('hp_output')">Output</th>
+        <th @click="sort('hp_output')" class="right">Output</th>
         <th @click="sort('emitters')">Emitters</th>
         
         <!-- Performance -->
@@ -67,7 +67,7 @@
         <!-- Heating System -->
         <td class="border" v-bind:title="n.hp_model">{{n.hp_model.replace(/ \(.*\)/, ' &mldr;')}}</td>
         <td class="nowrap">{{n.hp_type}}</td>
-        <td class="nowrap">{{unit(n.hp_output, 'kW')}}</td>
+        <td class="nowrap" align="right">{{unit(n.hp_output, 'kW')}}</td>
         <td v-bind:title="n.emitters">
             {{n.emitters.split(' ').slice(0, 2).join(' ')}}
             {{n.emitters.split(' ').length > 2 ? '&mldr;' : ''}}</td>

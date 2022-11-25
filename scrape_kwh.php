@@ -52,7 +52,7 @@
     $last_heat = fetchValue($config, $config->heatpump_heat_kwh, $heat_data->end_time);
 
     # fetch last 30 days, or the most available
-    $month_ago = $elec_data->end_time - 2592000; // 30 days
+    $month_ago = strtotime(strftime("%x")) - 2592000; // 30 days before midnight
     $month_ago = max($month_ago, $elec_data->start_time, $heat_data->start_time);
     if (isset($config->start_date)) {
       $month_ago = max($month_ago, $config->start_date);
@@ -64,7 +64,7 @@
     
     # determine how far back to go
     # either 1 year, start of feed or user configured start
-    $year_ago = $elec_data->end_time - 31536000;
+    $year_ago = $elec_data->end_time - 31536000; // whole year before last value
     $start_date = max($year_ago, $elec_data->start_time, $heat_data->start_time);
     if (isset($config->start_date)) {
       $start_date = max($start_date, $config->start_date);
