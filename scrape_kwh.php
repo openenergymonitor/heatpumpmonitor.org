@@ -106,7 +106,7 @@
       parse_str($url_parts['query'], $url_args);
       if (isset($url_args['readkey'])) {
         $readkey = $url_args['readkey'];
-        $getconfig .= "?readkey=$readkey";
+        $getconfig .= '?' . $url_parts['query'];
       }
     }
     
