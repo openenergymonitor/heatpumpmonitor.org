@@ -89,7 +89,7 @@ function Node(row) {
 
   this.year_elec = cols[22];
   this.year_heat = cols[23];
-  this.since = cols[24];
+  this.since = parseInt(cols[24]);
   if (this.year_heat > 0) {
     this.year_cop = (this.year_heat / this.year_elec).toFixed(1);
   }
@@ -116,9 +116,15 @@ function Node(row) {
     // Fix for sorting ages
     this.age = ' Pre-1900';
   }
-  
+
+  // grey if start date is less that 1 year ago
   this.sinceClass = function () {
     return this.since > 0 ? 'partial nowrap' : 'nowrap';
+  }
+
+  // grey if start date is less that 1 month ago
+  this.monthClass = function() {
+    return (this.since + 30 * 24 * 3600) * 1000 > Date.now() ? 'partial nowrap' : 'nowrap';
   }
   
   this.sinceDate = function() {
