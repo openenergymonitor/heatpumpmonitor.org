@@ -35,12 +35,7 @@
     $config = fetchConfig($url);
     if (!$config) {
       # failed to connect to site
-      return [ '-', '-' ];
-    }
-    
-    if (!isset($config->heatpump_elec_kwh) || !isset($config->heatpump_heat_kwh)) {
-      # failed to read config
-      return [ '-', '-' ];
+      return [ '-', '-', '-', '-', '-' ];
     }
     
     # fetch meta data for kWh feeds
@@ -76,11 +71,11 @@
 
     # return kWh values and start date (0 means one whole year)
     return [
-      "year_elec" => round($last_elec - $year_elec),
-      "year_heat" => round($last_heat - $year_heat),
-      "since" => $start_date > $year_ago ? $start_date : 0,
-      "month_elec" => round($last_elec - $month_elec),
-      "month_heat" => round($last_heat - $month_heat)
+      "year_elec" => ($last_elec > $year_elec) ? round($last_elec - $year_elec) : '-',
+      "year_heat" => ($last_heat > $year_heat) ? round($last_heat - $year_heat) : '-',
+      "since"     => ($start_date > $year_ago) ? $start_date : 0,
+      "month_elec" => ($last_elec > $month_elec) ? round($last_elec - $month_elec) : '-',
+      "month_heat" => ($last_heat > $month_heat) ? round($last_heat - $month_heat) : '-'
     ];
   }
 
@@ -131,6 +126,8 @@
       if (isset($readkey)) {
         $config->apikey = $readkey;
       }
+      if (!isset($config->heatpump_elec_kwh)) { $config->heatpump_elec_kwh = 0; }
+      if (!isset($config->heatpump_heat_kwh)) { $config->heatpump_heat_kwh = 0; }
       return $config;
     }
     
@@ -143,6 +140,8 @@
    */
   function fetchValue($config, $feed, $time)
   {
+    if ($feed == 0) { return 0; }
+
     $url = sprintf("%s/feed/value.json?id=%d&time=%d", $config->server, $feed, $time);
     if (isset($config->apikey)) {
       $url .= "&apikey=" . $config->apikey;
@@ -156,6 +155,8 @@
    */
   function fetchFeedMeta($config, $feed)
   {
+    if ($feed == 0) { return json_decode('{"start_time":0,"end_time":0}'); }
+
     $url = sprintf("%s/feed/getmeta.json?id=%d", $config->server, $feed);
     if (isset($config->apikey)) {
       $url .= "&apikey=" . $config->apikey;
