@@ -116,11 +116,13 @@
       #print "Loaded config from $getconfig\n";
       $config = json_decode($content)->config;
     }
-    
-    # fall-back: try pulling config out of html instead
-    if (preg_match('/^config.db = ({.*});/m', $content, $matches)) {
-      #print "Scraped config from $url\n";
-      $config = json_decode($matches[1]);
+    else {
+      # fall-back: try pulling config out of html instead
+      $content = file_get_contents($url);
+      if (preg_match('/^config.db = ({.*});/m', $content, $matches)) {
+        #print "Scraped config from $url\n";
+        $config = json_decode($matches[1]);
+      }
     }
     
     # add server and apikey values
