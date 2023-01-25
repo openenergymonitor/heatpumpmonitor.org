@@ -48,7 +48,7 @@ tbody td.toggle {
   cursor: pointer;
 }
 tbody td.partial {
-  color: grey;
+  color: silver;
 }
 .center {
   text-align: center !important;
@@ -59,7 +59,7 @@ tbody td.partial {
 tbody td.extra {
   border-top: none;
   background: white;
-  color: grey;
+  color: silver;
 }
 tbody tr:nth-child(4n+1) td {
   background: #efe;
@@ -77,7 +77,7 @@ tfoot td {
   border-top: silver solid 1px;
   text-align: center;
   background: white;
-  color: grey;
+  color: silver;
 }
 div.footer {
   padding: 4px;
