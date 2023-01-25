@@ -21,7 +21,7 @@
   $header = trim(fgets($input));
   fputs($output, $header . "\tyear_elec\tyear_heat\tsince\tmonth_elec\tmonth_heat\n");
   
-  # read reach row and append kWh readings for last year
+  # read each row and append kWh readings for last year
   while (($fields = fgetcsv($input, 1000, "\t")) !== FALSE) {
     $kwh = scrapeEnergyValues($fields[10]);
     $fields = array_merge($fields, $kwh);
