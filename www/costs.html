@@ -73,15 +73,15 @@
         
         <!-- Performance -->
         <td v-bind:class="n.sinceClass()" v-bind:title="n.sinceDate()" align="right">
-           £{{(n.year_elec * 0.34).toFixed(2)}}
+           &pound;{{(n.year_elec * 0.34).toFixed(2)}}
         </td>
         <td v-bind:class="n.sinceClass()" v-bind:title="n.sinceDate()" align="right">
-           £{{(n.year_heat / 0.9 * 0.1).toFixed(2)}}
+           &pound;{{(n.year_heat / 0.9 * 0.1).toFixed(2)}}
         </td>
         <td v-bind:class="n.sinceClass()+' center'" v-bind:title="n.sinceDate()">
            {{(n.year_elec * 34 / n.year_heat).toFixed(1)}}p</td>
         <td v-bind:class="n.monthClass()+' center'" v-bind:title="n.month_elec + ' > ' + n.month_heat + ' kWh'">
-           {{(n.monthClass() == 'nowrap') ? '£' + (n.month_elec * 0.34 / 30).toFixed(2) : '-'}}</td>
+           {{(n.monthClass() == 'nowrap') ? '&pound;' + (n.month_elec * 0.34 / 30).toFixed(2) : '-'}}</td>
       </tr>
       
       <tr class="extra" style="display: none">
