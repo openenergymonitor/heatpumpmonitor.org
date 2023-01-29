@@ -59,7 +59,7 @@ tbody td.partial {
 tbody td.extra {
   border-top: none;
   background: white;
-  color: silver;
+  color: grey;
 }
 tbody tr:nth-child(4n+1) td {
   background: #efe;
@@ -77,7 +77,7 @@ tfoot td {
   border-top: silver solid 1px;
   text-align: center;
   background: white;
-  color: silver;
+  color: grey;
 }
 div.footer {
   padding: 4px;
