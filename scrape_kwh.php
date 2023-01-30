@@ -41,6 +41,14 @@
     # fetch meta data for kWh feeds
     $elec_data = fetchFeedMeta($config, $config->heatpump_elec_kwh);
     $heat_data = fetchFeedMeta($config, $config->heatpump_heat_kwh);
+    
+    # sychronise both feed on same start and end times
+    if ($elec_data->start_time > 0 && $heat_data->start_time > 0) {
+      $elec_data->start_time = max($elec_data->start_time, $heat_data->start_time);
+      $heat_data->start_time = max($elec_data->start_time, $heat_data->start_time);
+      $elec_data->end_time = min($elec_data->end_time, $heat_data->end_time);
+      $heat_data->end_time = min($elec_data->end_time, $heat_data->end_time);
+    }
 
     # fetch last values from kWh feeds
     $last_elec = fetchValue($config, $config->heatpump_elec_kwh, $elec_data->end_time);
