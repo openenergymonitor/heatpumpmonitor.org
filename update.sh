@@ -21,6 +21,6 @@ else
   echo "new content"
   mv $TEMP $FILE
   # get kWh values and copy to www
-  php scrape_kwh.php $FILE www/data.tsv
+  php scrape_kwh.php $FILE www/data.json
 fi
 
