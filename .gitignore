@@ -1,6 +1,8 @@
 data.tsv
 www/data.tsv
+www/data.json
 webhook.log
 hpmon.log
+www/index.php
 www/webhook.php
 sheet.tsv
