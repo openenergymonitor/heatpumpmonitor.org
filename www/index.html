@@ -80,9 +80,9 @@
            {{unit(n.year_heat, 'kWh')}}
         </td>
         <td v-bind:class="sinceClass(n) + ' nowrap center'" v-bind:title="sinceDate(n)">
-           {{n.year_cop}}</td>
+           {{n.year_cop > 0 ? n.year_cop.toFixed(1) : '-'}}</td>
         <td v-bind:class="monthClass(n) + ' nowrap center'" v-bind:title="n.month_elec + ' > ' + n.month_heat + ' kWh'">
-           {{n.month_cop}}</td>
+           {{n.month_cop > 0 ? n.month_cop.toFixed(1) : '-'}}</td>
         <td><a v-bind:href="n.url" target="_blank">Link &raquo;</a></td>
       </tr>
       

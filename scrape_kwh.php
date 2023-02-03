@@ -77,12 +77,12 @@
     $year_heat = $last_heat - fetchValue($config, $config->heatpump_heat_kwh, $start_date);
 
     $values = [
-      "month_elec" => $month_elec > 0 ? round($month_elec) : '-',
-      "month_heat" => $month_heat > 0 ? round($month_heat) : '-',
-      "month_cop"  => $month_heat > 0 ? round($month_heat / $month_elec, 1) : '-',
-      "year_elec"  => $year_elec > 0 ? round($year_elec) : '-',
-      "year_heat"  => $year_heat > 0 ? round($year_heat) : '-',
-      "year_cop"   => $year_heat > 0 ? round($year_heat / $year_elec, 1) : '-',
+      "month_elec" => $month_elec > 0 ? round($month_elec) : 0,
+      "month_heat" => $month_heat > 0 ? round($month_heat) : 0,
+      "month_cop"  => $month_heat > 0 ? round($month_heat / $month_elec, 1) : 0,
+      "year_elec"  => $year_elec > 0 ? round($year_elec) : 0,
+      "year_heat"  => $year_heat > 0 ? round($year_heat) : 0,
+      "year_cop"   => $year_heat > 0 ? round($year_heat / $year_elec, 1) : 0,
       "since"      => ($start_date > $year_ago) ? intval($start_date) : 0,
     ];
 
