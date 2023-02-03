@@ -42,7 +42,7 @@ var app = new Vue({
       return dir * val1.toString().localeCompare(val2, undefined, {numeric: true, sensitivity: 'base'});
     },
 
-    filterNodes(n)
+    filterNodes(row)
     {
       if (this.filterKey != '') {
         return Object.keys(row).some((key) => {
