@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>HeatpumpMonitor.org</title>
+  <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+  <link rel="stylesheet" href="style.css?v=6" />
+</head>
+
+<body>
+
+<h1>HeatpumpMonitor.org</h1>
+  
+<div id="app">
+  <p style="font-size: large; font-style: italic;">An open source initiative to share and compare heat pump performance data.</p>
+  
+  <p>Here you can see a variety of installations monitored with <a href="https://openenergymonitor.org/">OpenEnergyMonitor</a>, and compare detailed statistic to see how performance can vary.</p>
+  <p>If you're monitoring a heat pump with <b>emoncms</b> and the <i>My Heat Pump</i> app, you can add your details here <a href="https://docs.google.com/forms/d/e/1FAIpQLSflTBeRpuWBxXdL2UqkB5pY60tTTGLI201fRaK6ZZEV7Dy70g/viewform" title="Heat Pump Monitoring Submission Form">by completing this form</a>.</p>
+   <p style="font-style: italic;">Join in with discussion of the results on the forums here: <a href="https://community.openenergymonitor.org/t/introducing-heatpumpmonitor-org-a-public-dashboard-of-heat-pump-performance/21885">Public dashboard of heat pumps</a>.</p>
+  <form id="search">
+    <P><b>Filter:</b> <input name="query" v-model="filterKey"></p>
+  </form>
+  <table width="100%">
+    <thead>
+      <tr>
+        <th class="header">&nbsp;</td>
+        <th class="header" colspan="4">Property</th>
+        <th class="header" colspan="3">Heating system</th>
+        <th class="header" colspan="7">Stats while running (30 Days)</th>
+      </tr>
+      <tr>
+        <th @click="sort('id', 'asc')" class="center">#</td>
+        <!-- Property -->
+        <th @click="sort('location', 'asc')">Location</th>
+        <th @click="sort('property', 'asc')">Type</th>
+        <th @click="sort('age', 'desc')">Built</th>
+        <th @click="sort('floor_area', 'desc')" class="right">Floor Area</th>
+        
+        <!-- Heating System -->
+        <th @click="sort('hp_model', 'asc')" class="border">Make / Model</th>
+        <th @click="sort('hp_output', 'desc')" class="right">Output</th>
+        <th @click="sort('hp_type', 'asc')">Type</th>
+        
+        <!-- Stats -->
+        <th @click="sort('stats.when_running.elec_W', 'desc')" class="border right">Avg Elec</th>
+        <th @click="sort('stats.when_running.heat_W', 'desc')" class="right">Avg Heat</th>
+        <th @click="sort('stats.when_running.cop', 'desc')" class="center">COP</th>
+        <th @click="sort('stats.when_running.flowT', 'desc')" class="center">Flow T</th>
+        <th @click="sort('stats.when_running.flow_minus_return', 'desc')" class="center">Delta T</th>
+        <th @click="sort('stats.standby_kwh', 'desc')" class="right">Standby</th>
+        <th class="nosort">Details</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <template v-for="n in sortedNodes"><tr v-bind:id="'row'+n.id" v-if="hasStats(n)">
+        <!-- Property -->
+        <td class="toggle" onclick="toggle(this)" align="right" v-bind:title="'#'+n.id">&plusb;</td>
+        <td>{{n.location}}</td> 
+        <td>{{n.property}}</td>
+        <td class="nowrap">{{n.age.replace(' to ', '-').trim()}}</td>
+        <td class="nowrap" align="right">{{unit(n.floor_area, 'm&sup2;')}}</td>
+           
+        <!-- Heating System -->
+        <td class="border" v-bind:title="n.hp_model">{{n.hp_model.replace(/ \(.*\)/, ' &mldr;')}}</td>
+        <td class="nowrap" align="right">{{unit(n.hp_output, 'kW')}}</td>
+        <td class="nowrap">{{n.hp_type}}</td>
+        
+        <!-- Stats -->
+        <td v-bind:class="monthClass(n) + ' nowrap'" align="right">
+           {{unit(n.stats.when_running.elec_W, 'W')}}</td>
+        <td v-bind:class="monthClass(n) + ' nowrap'" align="right">
+           {{unit(n.stats.when_running.heat_W, 'W')}}</td>
+        <td v-bind:class="monthClass(n) + ' nowrap center'">
+           {{n.stats.when_running.cop > 0 ? n.year_cop.toFixed(1) : '-'}}</td>
+        <td v-bind:class="monthClass(n) + ' nowrap center'">
+           {{unit(n.stats.when_running.flowT.toFixed(0), '°C')}}</td>
+        <td v-bind:class="monthClass(n) + ' nowrap center'">
+           {{unit(n.stats.when_running.flow_minus_return.toFixed(1), '°C')}}</td>
+        <td v-bind:class="monthClass(n) + ' nowrap'" align="right">
+           {{unit(n.stats.standby_kwh.toFixed(1), 'kWh')}}</td>
+        <td><a v-bind:href="n.url" target="_blank">Link &raquo;</a></td>
+      </tr>
+
+      <tr class="extra" style="display: none">
+        <td class="extra">&nbsp;</td>
+        <td colspan="14" class="extra">
+          <b v-if="n.heat_demand">Heat Demand:</b> {{unit(n.heat_demand, 'kWh')}}
+          <b v-if="n.insulation">Insulation:</b> {{n.insulation}}
+          <b v-if="n.emitters">Emitters:</b> {{n.emitters}}
+          <b v-if="n.refrigerant">Refrigerant:</b> {{n.refrigerant}}
+          <b v-if="n.flow_temp">Flow Temp:</b> {{n.flow_temp}}
+          <b v-if="n.buffer">Buffer:</b> {{n.buffer}}
+          <b v-if="n.zones">Zones:</b> {{n.zones}}
+          <b v-if="n.controls">Controls:</b> {{n.controls}}
+          <b v-if="n.freeze">Anti-Freeze:</b> {{n.freeze}}
+          <b v-if="n.dhw">DHW:</b> {{n.dhw}}
+          <b v-if="n.legionella">Legionella:</b> {{n.legionella}}
+          <b v-if="n.notes">Notes:</b> {{n.notes}}
+        </td>
+        <td class="extra">&nbsp;</td>
+      </tr></template>
+    </tbody>
+    
+    <tfoot>
+      <td colspan="1" class="footer"></td>
+      <td colspan="6" class="footer">Recently added systems denoted by &#10024;</td>
+      <td colspan="4" class="footer"></td>
+      <td colspan="3" class="footer"><i>Incomplete data in grey</i></td>
+      <td colspan="2" class="footer"></td>
+    </tfoot>
+  </table>
+  
+</div>
+
+<script src="table.js?v=2.0"></script>
+
+<div class="footer">An <a href="https://openenergymonitor.org/">OpenEnergyMonitor.org</a> community initiative</div>
+</body>
+</html>

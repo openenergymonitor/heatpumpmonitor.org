@@ -16,6 +16,7 @@ var app = new Vue({
     async fetchData() {
       this.nodes = await (await fetch('data.json',{cache: "no-store"})).json()
     },
+    
     sort(s, dir) {
       //if s == current sort, reverse
       if(s === this.currentSort) {
@@ -26,13 +27,28 @@ var app = new Vue({
       }
       this.currentSort = s;
     },
-    
+
+    getValue(node, path) {
+      var current=node;
+      try {
+        path.split('.').forEach(function(p){ current = current[p]; }); 
+        return current;
+      }
+      catch (e) {
+        return '?';
+      }
+    },
+
     compareNodes(n1, n2) {
       if (this.currentSort == '') {return 0;}
       
       let dir = this.currentSortDir === 'desc' ? -1 : 1;
-      let val1 = n1[this.currentSort].toString();
-      let val2 = n2[this.currentSort].toString();
+      let val1 = this.getValue(n1, this.currentSort);
+      let val2 = this.getValue(n2, this.currentSort);
+      
+      if (typeof val1 === 'undefined') {
+        return 0;
+      }
       
       if (this.currentSort == 'age') {
         val1 = val1.replace(/^Pre-/, '');
@@ -42,15 +58,19 @@ var app = new Vue({
       return dir * val1.toString().localeCompare(val2, undefined, {numeric: true, sensitivity: 'base'});
     },
 
-    filterNodes(row)
-    {
+    filterNodes(row) {
       if (this.filterKey != '') {
         return Object.keys(row).some((key) => {
           return String(row[key]).toLowerCase().indexOf(this.filterKey.toLowerCase()) > -1 })
       }
       return true;
+    },
+    
+    hasStats(row) {
+      return typeof row.stats !== 'undefined';
     }
   },
+  
   
   computed:{
     sortedNodes:function() {
