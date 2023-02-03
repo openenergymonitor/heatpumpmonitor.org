@@ -87,10 +87,8 @@
     ];
 
     $stats = fetchMoreStats($config, $month_ago, $elec_data->end_time);
-    if ($stats != null) {
-      if (isset($stats->full_period)) {
-        unset($stats->full_period);
-      }
+    if ($stats != null && isset($stats->full_period)) {
+      unset($stats->full_period);
     
       # append the other stats
       $values['stats'] = $stats;
