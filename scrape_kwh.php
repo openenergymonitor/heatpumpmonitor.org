@@ -20,6 +20,7 @@
   # read each row and append kWh readings for last year
   while (($row = fgetcsv($input, 1000, "\t")) !== FALSE) {
     $system = array_combine($header, $row);
+    $system['id'] = count($data) + 1;
     $stats = scrapeEnergyValues($row[10]);
     $data[] = array_merge($system, $stats);
     #if (count($data) > 5) {break;}

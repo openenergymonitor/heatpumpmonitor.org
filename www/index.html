@@ -28,7 +28,7 @@
         <th class="header" colspan="5">Performance</th>
       </tr>
       <tr>
-        <th>&nbsp;</td>
+        <th @click="sort('id', 'asc')">&nbsp;</td>
         <!-- Property -->
         <th @click="sort('location', 'asc')">Location</th>
         <th @click="sort('property', 'asc')">Type</th>
@@ -53,9 +53,9 @@
     </thead>
     
     <tbody>
-      <template v-for="n in sortedNodes"><tr>
+      <template v-for="n in sortedNodes"><tr v-bind:id="'row'+n.id">
         <!-- Property -->
-        <td class="toggle" onclick="toggle(this)">&plusb;</td>
+        <td class="toggle" onclick="toggle(this)" align="right" v-bind:title="'#'+n.id">&plusb;</td>
         <td>{{n.location}}</td> 
         <td>{{n.property}}</td>
         <td class="nowrap">{{n.age.replace(' to ', '-').trim()}}</td>
