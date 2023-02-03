@@ -83,7 +83,7 @@
       "year_elec"  => $year_elec > 0 ? round($year_elec) : '-',
       "year_heat"  => $year_heat > 0 ? round($year_heat) : '-',
       "year_cop"   => $year_heat > 0 ? round($year_heat / $year_elec, 1) : '-',
-      "since"      => ($start_date > $year_ago) ? $start_date : 0,
+      "since"      => ($start_date > $year_ago) ? intval($start_date) : 0,
     ];
 
     $stats = fetchMoreStats($config, $month_ago, $elec_data->end_time);
