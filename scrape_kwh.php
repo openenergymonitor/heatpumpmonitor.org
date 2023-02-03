@@ -60,6 +60,10 @@
       $month_ago = max($month_ago, $config->start_date);
     }
     
+    # fetch values for a month ago (or since start_date)
+    $month_elec = $last_elec - fetchValue($config, $config->heatpump_elec_kwh, $month_ago);
+    $month_heat = $last_heat - fetchValue($config, $config->heatpump_heat_kwh, $month_ago);
+    
     # determine how far back to go
     # either 1 year, start of feed or user configured start
     $year_ago = $elec_data->end_time - 31536000; // whole year before last value
@@ -73,33 +77,25 @@
     $year_heat = $last_heat - fetchValue($config, $config->heatpump_heat_kwh, $start_date);
 
     $values = [
-      "year_elec" => $year_elec > 0 ? round($year_elec) : '-',
-      "year_heat" => $year_heat > 0 ? round($year_heat) : '-',
-      "year_cop"  => $year_heat > 0 ? round($year_heat / $year_elec, 1) : '-',
-      "since"     => ($start_date > $year_ago) ? $start_date : 0,
+      "month_elec" => $month_elec > 0 ? round($month_elec) : '-',
+      "month_heat" => $month_heat > 0 ? round($month_heat) : '-',
+      "month_cop"  => $month_heat > 0 ? round($month_heat / $month_elec, 1) : '-',
+      "year_elec"  => $year_elec > 0 ? round($year_elec) : '-',
+      "year_heat"  => $year_heat > 0 ? round($year_heat) : '-',
+      "year_cop"   => $year_heat > 0 ? round($year_heat / $year_elec, 1) : '-',
+      "since"      => ($start_date > $year_ago) ? $start_date : 0,
     ];
 
     $stats = fetchMoreStats($config, $month_ago, $elec_data->end_time);
     if ($stats != null) {
       if (isset($stats->full_period)) {
-        $month_elec = $stats->full_period->elec_kwh;
-        $month_heat = $stats->full_period->heat_kwh;
         unset($stats->full_period);
       }
     
       # append the other stats
       $values['stats'] = $stats;
     }
-    else {
-      # fallback: fetch values for a month ago (or since start_date)
-      $month_elec = $last_elec - fetchValue($config, $config->heatpump_elec_kwh, $month_ago);
-      $month_heat = $last_heat - fetchValue($config, $config->heatpump_heat_kwh, $month_ago);
-    }
     
-    $values['month_elec'] = $month_elec > 0 ? round($month_elec) : '-';
-    $values['month_heat'] = $month_heat > 0 ? round($month_heat) : '-';
-    $values['month_cop'] = $month_heat > 0 ? round($month_heat / $month_elec, 1) : '-';
-
     # return kWh values and start date (0 means one whole year)
     return $values;
   }
