@@ -15,7 +15,6 @@ var app = new Vue({
   methods: {
     async fetchData() {
       this.nodes = await (await fetch('data.json',{cache: "no-store"})).json()
-      console.log("fetchData: " + this.nodes.length);
     },
     sort(s, dir) {
       //if s == current sort, reverse
