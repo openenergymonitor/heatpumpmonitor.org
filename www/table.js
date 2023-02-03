@@ -17,10 +17,13 @@ var app = new Vue({
       this.nodes = await (await fetch('data.json',{cache: "no-store"})).json()
       console.log("fetchData: " + this.nodes.length);
     },
-    sort(s) {
+    sort(s, dir) {
       //if s == current sort, reverse
       if(s === this.currentSort) {
         this.currentSortDir = this.currentSortDir==='asc'?'desc':'asc';
+      }
+      else {
+        this.currentSortDir = dir;
       }
       this.currentSort = s;
     },
@@ -31,6 +34,11 @@ var app = new Vue({
       let dir = this.currentSortDir === 'desc' ? -1 : 1;
       let val1 = n1[this.currentSort].toString();
       let val2 = n2[this.currentSort].toString();
+      
+      if (this.currentSort == 'age') {
+        val1 = val1.replace(/^Pre-/, '');
+        val2 = val2.replace(/^Pre-/, '');
+      }
       
       return dir * val1.toString().localeCompare(val2, undefined, {numeric: true, sensitivity: 'base'});
     },

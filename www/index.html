@@ -30,24 +30,24 @@
       <tr>
         <th>&nbsp;</td>
         <!-- Property -->
-        <th @click="sort('location')">Location</th>
-        <th @click="sort('property')">Type</th>
-        <th @click="sort('age')">Built</th>
-        <th @click="sort('floor_area')" class="right">Floor Area</th>
-        <th @click="sort('heat_demand')" class="right">Heat Demand</th>
-        <th @click="sort('insulation')">Insulation</th>
+        <th @click="sort('location', 'asc')">Location</th>
+        <th @click="sort('property', 'asc')">Type</th>
+        <th @click="sort('age', 'desc')">Built</th>
+        <th @click="sort('floor_area', 'desc')" class="right">Floor Area</th>
+        <th @click="sort('heat_demand', 'desc')" class="right">Heat Demand</th>
+        <th @click="sort('insulation', 'asc')">Insulation</th>
         
         <!-- Heating System -->
-        <th @click="sort('hp_model')" class="border">Make / Model</th>
-        <th @click="sort('hp_output')" class="right">Output</th>
-        <th @click="sort('hp_type')">Type</th>
-        <th @click="sort('emitters')">Emitters</th>
+        <th @click="sort('hp_model', 'asc')" class="border">Make / Model</th>
+        <th @click="sort('hp_output', 'desc')" class="right">Output</th>
+        <th @click="sort('hp_type', 'asc')">Type</th>
+        <th @click="sort('emitters', 'asc')">Emitters</th>
         
         <!-- Performance -->
-        <th @click="sort('year_elec')" class="border right">Annual Electric</th>
-        <th @click="sort('year_heat')" class="right">Annual Heat</th>
-        <th @click="sort('year_cop')" class="center">SCOP</th>
-        <th @click="sort('month_cop')" class="center">30 Day COP</th>
+        <th @click="sort('year_elec', 'desc')" class="border right">Annual Electric</th>
+        <th @click="sort('year_heat', 'desc')" class="right">Annual Heat</th>
+        <th @click="sort('year_cop', 'desc')" class="center">SCOP</th>
+        <th @click="sort('month_cop', 'desc')" class="center">30 Day COP</th>
         <th class="nosort">Details</th>
       </tr>
     </thead>
