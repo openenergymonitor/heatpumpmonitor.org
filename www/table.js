@@ -4,12 +4,19 @@ var app = new Vue({
   data: {
     nodes: [],
     filterKey: '',
+    hiliteKey: 0,
     currentSort:'year_cop',
     currentSortDir:'desc'
   },
 
   created() {
     this.fetchData()
+  },
+
+  mounted() {
+    const params = new URLSearchParams(window.location.search);
+    this.filterKey = params.get("filter") ?? '';
+    this.hiliteKey = window.location.hash.replace(/^#/, '');
   },
 
   methods: {
@@ -68,7 +75,12 @@ var app = new Vue({
     
     hasStats(row) {
       return typeof row.stats !== 'undefined';
-    }
+    },
+    
+    // highlight row if id matches ?h in url
+    hiliteClass(row) {
+      return row.id == this.hiliteKey ? 'hilite ' : '';
+    } 
   },
   
   

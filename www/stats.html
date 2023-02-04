@@ -58,7 +58,7 @@
     </thead>
 
     <tbody>
-      <template v-for="n in sortedNodes"><tr v-bind:id="'row'+n.id" v-if="hasStats(n)">
+      <template v-for="n in sortedNodes"><tr v-bind:id="'row'+n.id" v-if="hasStats(n)" v-bind:class="hiliteClass(n)">
         <!-- Property -->
         <td class="toggle" onclick="toggle(this)" align="right" v-bind:title="'#'+n.id">&plusb;</td>
         <td>{{n.location}}</td> 
@@ -95,7 +95,7 @@
 
       <tr class="extra" style="display: none">
         <td class="extra">&nbsp;</td>
-        <td colspan="16" class="extra">
+        <td colspan="17" class="extra">
           <b v-if="n.heat_demand">Heat Demand:</b> {{unit(n.heat_demand, 'kWh')}}
           <b v-if="n.insulation">Insulation:</b> {{n.insulation}}
           <b v-if="n.emitters">Emitters:</b> {{n.emitters}}
@@ -109,7 +109,6 @@
           <b v-if="n.legionella">Legionella:</b> {{n.legionella}}
           <b v-if="n.notes">Notes:</b> {{n.notes}}
         </td>
-        <td class="extra">&nbsp;</td>
       </tr></template>
     </tbody>
     
