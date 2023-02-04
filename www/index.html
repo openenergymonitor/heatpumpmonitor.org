@@ -60,7 +60,7 @@
         <td>{{n.property}}</td>
         <td class="nowrap">{{n.age.replace(' to ', '-').trim()}}</td>
         <td class="nowrap" align="right">{{unit(n.floor_area, 'm&sup2;')}}</td>
-        <td class="nowrap" align="right">{{unit(n.annual_kwh, 'kWh')}}</td>
+        <td class="nowrap" align="right">{{unit(n.heat_demand, 'kWh')}}</td>
         <td v-bind:title="n.insulation">{{n.insulation.split(' ').slice(0, 2).join(' ')}}
            {{n.insulation.split(' ').length > 2 ? '&mldr;' : ''}}</td>
            
