@@ -26,6 +26,14 @@ table th.header {
   text-align: center;
   cursor: default;
 }
+table th.header a {
+  color: #44b3e2;
+  font-weight: normal;
+}
+table th.header a:visited {
+  color: #44b3e2;
+  font-weight: normal;
+}
 table th.border {
   border-left: white 2px solid;
 }
@@ -72,6 +80,9 @@ tbody tr:nth-child(4n+3) td {
 }
 tbody tr:nth-child(4n+4) td {
   background: #eef;
+}
+tbody tr.hilite td {
+  background: #fee;
 }
 tfoot td {
   border-top: silver solid 1px;

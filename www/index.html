@@ -3,7 +3,8 @@
 <head>
   <title>HeatpumpMonitor.org</title>
   <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
-  <link rel="stylesheet" href="style.css?v=6" />
+  <link rel="stylesheet" href="style.css?v=7" />
+  <link href="https://openenergymonitor.org/homepage/theme/favicon.ico" rel="shortcut icon">
 </head>
 
 <body>
@@ -25,81 +26,77 @@
         <th class="header">&nbsp;</td>
         <th class="header" colspan="6">Property</th>
         <th class="header" colspan="4">Heating system</th>
-        <th class="header" colspan="5">Performance</th>
+        <th class="header" colspan="4">Annual Performance &nbsp; &raquo; &nbsp; <a href="stats.html">30 Day Stats</a></th>
       </tr>
       <tr>
-        <th>&nbsp;</td>
+        <th @click="sort('id', 'asc')" class="center">#</td>
         <!-- Property -->
-        <th @click="sort('location')">Location</th>
-        <th @click="sort('property')">Type</th>
-        <th @click="sort('age')">Built</th>
-        <th @click="sort('floor_area')" class="right">Floor Area</th>
+        <th @click="sort('location', 'asc')">Location</th>
+        <th @click="sort('property', 'asc')">Type</th>
+        <th @click="sort('age', 'desc')">Built</th>
+        <th @click="sort('floor_area', 'desc')" class="right">Floor Area</th>
         <th @click="sort('annual_kwh')" class="right">Heat Demand</th>
         <th @click="sort('insulation')">Insulation</th>
         
         <!-- Heating System -->
-        <th @click="sort('hp_model')" class="border">Make / Model</th>
-        <th @click="sort('hp_type')">Type</th>
-        <th @click="sort('hp_output')" class="right">Output</th>
+        <th @click="sort('hp_model', 'asc')" class="border">Make / Model</th>
+        <th @click="sort('hp_output', 'desc')" class="right">Output</th>
+        <th @click="sort('hp_type', 'asc')">Source</th>
         <th @click="sort('emitters')">Emitters</th>
         
         <!-- Performance -->
-        <th @click="sort('year_elec')" class="border right">Annual Electric</th>
-        <th @click="sort('year_heat')" class="right">Annual Heat</th>
-        <th @click="sort('year_cop')" class="center">SCOP</th>
-        <th @click="sort('month_cop')" class="center">30 Day COP</th>
-        <th class="nosort">Details</th>
+        <th @click="sort('year_elec', 'desc')" class="border right">Electric</th>
+        <th @click="sort('year_heat', 'desc')" class="right">Heat</th>
+        <th @click="sort('year_cop', 'desc')" class="center">SCOP</th>
+        <th class="nosort border">Charts</th>
       </tr>
     </thead>
     
     <tbody>
-      <template v-for="n in sortedNodes"><tr>
+      <template v-for="n in sortedNodes"><tr v-bind:id="'row'+n.id" v-bind:class="hiliteClass(n)">
         <!-- Property -->
-        <td class="toggle" onclick="toggle(this)">&plusb;</td>
+        <td class="toggle" onclick="toggle(this)" align="right" v-bind:title="'#'+n.id">&plusb;</td>
         <td>{{n.location}}</td> 
         <td>{{n.property}}</td>
         <td class="nowrap">{{n.age.replace(' to ', '-').trim()}}</td>
         <td class="nowrap" align="right">{{unit(n.floor_area, 'm&sup2;')}}</td>
-        <td class="nowrap" align="right">{{unit(n.annual_kwh, 'kWh')}}</td>
+        <td class="nowrap" align="right">{{unit(n.heat_demand, 'kWh')}}</td>
         <td v-bind:title="n.insulation">{{n.insulation.split(' ').slice(0, 2).join(' ')}}
            {{n.insulation.split(' ').length > 2 ? '&mldr;' : ''}}</td>
            
         <!-- Heating System -->
         <td class="border" v-bind:title="n.hp_model">{{n.hp_model.replace(/ \(.*\)/, ' &mldr;')}}</td>
-        <td class="nowrap">{{n.hp_type}}</td>
         <td class="nowrap" align="right">{{unit(n.hp_output, 'kW')}}</td>
+        <td class="nowrap">{{n.hp_type.split(' ')[0]}}</td>
         <td v-bind:title="n.emitters">
             {{n.emitters.split(' ').slice(0, 2).join(' ')}}
             {{n.emitters.split(' ').length > 2 ? '&mldr;' : ''}}</td>
         
         <!-- Performance -->
-        <td v-bind:class="n.sinceClass()" v-bind:title="n.sinceDate()" align="right">
+        <td v-bind:class="sinceClass(n) + ' nowrap border'" v-bind:title="sinceDate(n)" align="right">
            {{unit(n.year_elec, 'kWh')}}
         </td>
-        <td v-bind:class="n.sinceClass()" v-bind:title="n.sinceDate()" align="right">
+        <td v-bind:class="sinceClass(n) + ' nowrap'" v-bind:title="sinceDate(n)" align="right">
            {{unit(n.year_heat, 'kWh')}}
         </td>
-        <td v-bind:class="n.sinceClass()+' center'" v-bind:title="n.sinceDate()">
-           {{n.year_cop}}</td>
-        <td v-bind:class="n.monthClass()+' center'" v-bind:title="n.month_elec + ' > ' + n.month_heat + ' kWh'">
-           {{n.month_cop}}</td>
-        <td><a v-bind:href="n.url" target="_blank">Link &raquo;</a></td>
+        <td v-bind:class="sinceClass(n) + ' nowrap center'" v-bind:title="sinceDate(n)">
+           {{n.year_cop > 0 ? n.year_cop.toFixed(1) : '-'}}</td>
+        <td class="border"><a v-bind:href="n.url" target="_blank">Link &raquo;</a></td>
       </tr>
       
       <tr class="extra" style="display: none">
         <td class="extra">&nbsp;</td>
         <td colspan="14" class="extra">
-          <b v-if="n.refrigerant.length">Refrigerant:</b> {{n.refrigerant}}
-          <b v-if="n.flow_temp.length">Flow Temp:</b> {{n.flow_temp}}
-          <b v-if="n.buffer.length">Buffer:</b> {{n.buffer}}
-          <b v-if="n.zones.length">Zones:</b> {{n.zones}}
-          <b v-if="n.controls.length">Controls:</b> {{n.controls}}
-          <b v-if="n.freeze.length">Anti-Freeze:</b> {{n.freeze}}
-          <b v-if="n.dhw.length">DHW:</b> {{n.dhw}}
-          <b v-if="n.legionella.length">Legionella:</b> {{n.legionella}}
-          <b v-if="n.notes.length">Notes:</b> {{n.notes}}
+          <b v-if="n.refrigerant">Refrigerant:</b> {{n.refrigerant}}
+          <b v-if="n.flow_temp">Flow Temp:</b> {{n.flow_temp}}
+          <b v-if="n.buffer">Buffer:</b> {{n.buffer}}
+          <b v-if="n.zones">Zones:</b> {{n.zones}}
+          <b v-if="n.controls">Controls:</b> {{n.controls}}
+          <b v-if="n.freeze">Anti-Freeze:</b> {{n.freeze}}
+          <b v-if="n.dhw">DHW:</b> {{n.dhw}}
+          <b v-if="n.legionella">Legionella:</b> {{n.legionella}}
+          <b v-if="n.notes">Notes:</b> {{n.notes}}
         </td>
-        <td class="extra">&nbsp;</td>
       </tr></template>
     </tbody>
     
@@ -114,7 +111,7 @@
   
 </div>
 
-<script src="table.js?v=9"></script>
+<script src="table.js?v=2.0"></script>
 
 <div class="footer">An <a href="https://openenergymonitor.org/">OpenEnergyMonitor.org</a> community initiative</div>
 </body>

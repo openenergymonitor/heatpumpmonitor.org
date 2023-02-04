@@ -5,30 +5,29 @@
     exit();
   }
 
-  $input = @fopen($argv[1], "r");
+  $infile = $argv[1];
+  $outfile = $argv[2];
+
+  $input = @fopen($infile, "r");
   if (!$input) {
-    printf("Cannot open file: %s\n", $argv[1]);
+    printf("Cannot open file: %s\n", $infile);
     exit();
   }
 
-  $output = @fopen($argv[2], "w");
-  if (!$output) {
-    printf("Cannot open file: %s\n", $argv[2]);
-    exit();
-  }
-  
-  # append new columns to header
-  $header = trim(fgets($input));
-  fputs($output, $header . "\tyear_elec\tyear_heat\tsince\tmonth_elec\tmonth_heat\n");
+  $header = fgetcsv($input, 1000, "\t");
+  $data = array();
   
   # read each row and append kWh readings for last year
-  while (($fields = fgetcsv($input, 1000, "\t")) !== FALSE) {
-    $kwh = scrapeEnergyValues($fields[10]);
-    $fields = array_merge($fields, $kwh);
-    fputs($output, implode("\t", $fields)."\n");
+  while (($row = fgetcsv($input, 1000, "\t")) !== FALSE) {
+    $system = ['id' => count($data) + 1];
+    $details = array_combine($header, $row);
+    $stats = scrapeEnergyValues($row[10]);
+    $data[] = array_merge($system, $details, $stats);
+    #if (count($data) > 5) {break;}
   }
+  
+  file_put_contents($outfile, json_encode($data)); // JSON_PRETTY_PRINT
   fclose($input);
-  fclose($output);
 
   function scrapeEnergyValues($url)
   {
@@ -42,7 +41,7 @@
     $elec_data = fetchFeedMeta($config, $config->heatpump_elec_kwh);
     $heat_data = fetchFeedMeta($config, $config->heatpump_heat_kwh);
     
-    # sychronise both feed on same start and end times
+    # sychronise both feeds on same start and end times
     if ($elec_data->start_time > 0 && $heat_data->start_time > 0) {
       $elec_data->start_time = max($elec_data->start_time, $heat_data->start_time);
       $heat_data->start_time = max($elec_data->start_time, $heat_data->start_time);
@@ -62,8 +61,8 @@
     }
     
     # fetch values for a month ago (or since start_date)
-    $month_elec = fetchValue($config, $config->heatpump_elec_kwh, $month_ago);
-    $month_heat = fetchValue($config, $config->heatpump_heat_kwh, $month_ago);
+    $month_elec = $last_elec - fetchValue($config, $config->heatpump_elec_kwh, $month_ago);
+    $month_heat = $last_heat - fetchValue($config, $config->heatpump_heat_kwh, $month_ago);
     
     # determine how far back to go
     # either 1 year, start of feed or user configured start
@@ -74,17 +73,29 @@
     }
     
     # fetch values for a year ago (or since start_date)
-    $year_elec = fetchValue($config, $config->heatpump_elec_kwh, $start_date);
-    $year_heat = fetchValue($config, $config->heatpump_heat_kwh, $start_date);
+    $year_elec = $last_elec - fetchValue($config, $config->heatpump_elec_kwh, $start_date);
+    $year_heat = $last_heat - fetchValue($config, $config->heatpump_heat_kwh, $start_date);
 
-    # return kWh values and start date (0 means one whole year)
-    return [
-      "year_elec" => ($last_elec > $year_elec) ? round($last_elec - $year_elec) : '-',
-      "year_heat" => ($last_heat > $year_heat) ? round($last_heat - $year_heat) : '-',
-      "since"     => ($start_date > $year_ago) ? $start_date : 0,
-      "month_elec" => ($last_elec > $month_elec) ? round($last_elec - $month_elec) : '-',
-      "month_heat" => ($last_heat > $month_heat) ? round($last_heat - $month_heat) : '-'
+    $values = [
+      "month_elec" => $month_elec > 0 ? round($month_elec) : 0,
+      "month_heat" => $month_heat > 0 ? round($month_heat) : 0,
+      "month_cop"  => $month_heat > 0 ? round($month_heat / $month_elec, 1) : 0,
+      "year_elec"  => $year_elec > 0 ? round($year_elec) : 0,
+      "year_heat"  => $year_heat > 0 ? round($year_heat) : 0,
+      "year_cop"   => $year_heat > 0 ? round($year_heat / $year_elec, 1) : 0,
+      "since"      => ($start_date > $year_ago) ? intval($start_date) : 0,
     ];
+
+    $stats = fetchMoreStats($config, $month_ago, $elec_data->end_time);
+    if ($stats != null && isset($stats->full_period)) {
+      unset($stats->full_period);
+    
+      # append the other stats
+      $values['stats'] = $stats;
+    }
+    
+    # return kWh values and start date (0 means one whole year)
+    return $values;
   }
 
   /* atempts to get the app config from emoncms
@@ -99,9 +110,11 @@
     # check if url was to /app/view instead of username
     if ($url_parts['path'] == '/app/view') {
       $getconfig = "$server/app/getconfig";
+      $getstats = "$server/app/getstats";
     }
     else {
       $getconfig = $server . $url_parts['path'] . "/app/getconfig";
+      $getstats = $server . $url_parts['path'] . "/app/getstats";
     }
 
     # if url has query string, pull out the readkey
@@ -131,6 +144,7 @@
     # add server and apikey values
     if (isset($config)) {
       $config->server = $server;
+      $config->getstats = $getstats;
       if (isset($readkey)) {
         $config->apikey = $readkey;
       }
@@ -166,6 +180,16 @@
     if ($feed == 0) { return json_decode('{"start_time":0,"end_time":0}'); }
 
     $url = sprintf("%s/feed/getmeta.json?id=%d", $config->server, $feed);
+    if (isset($config->apikey)) {
+      $url .= "&apikey=" . $config->apikey;
+    }
+    $data = file_get_contents($url);
+    return json_decode($data);
+  }
+  
+  function fetchMoreStats($config, $start, $end)
+  {
+    $url = sprintf("%s?start=%d&end=%d", $config->getstats, $start, $end);
     if (isset($config->apikey)) {
       $url .= "&apikey=" . $config->apikey;
     }

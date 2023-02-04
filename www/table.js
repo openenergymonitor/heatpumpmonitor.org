@@ -4,6 +4,7 @@ var app = new Vue({
   data: {
     nodes: [],
     filterKey: '',
+    hiliteKey: 0,
     currentSort:'year_cop',
     currentSortDir:'desc'
   },
@@ -12,130 +13,103 @@ var app = new Vue({
     this.fetchData()
   },
 
+  mounted() {
+    const params = new URLSearchParams(window.location.search);
+    this.filterKey = params.get("filter") ?? '';
+    this.hiliteKey = window.location.hash.replace(/^#/, '');
+  },
+
   methods: {
     async fetchData() {
-      // https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-eqigAmjwwSIc6snCYTWRYZW6wsVK98fsJ8kn4aiG_pDw8qgpc4y_ZkiHC_OtWpchDCk1nBwxza8W/pub?gid=447603213&single=true&output=tsv
-      const url = `data.tsv`
-      let text = await (await fetch(url,{cache: "no-store"})).text()
-      this.nodes = this.readData(text)
+      this.nodes = await (await fetch('data.json',{cache: "no-store"})).json()
     },
     
-    readData(text) {
-      let nodes = [];
-      let rows = text.split("\n");
-      rows.shift(); // skip header
-      for (let row of rows) {
-        if (row.includes("\t")) {
-          nodes.push(new Node(row));
-        }
-      }
-      return nodes;
-    },
-    
-    sort(s) {
+    sort(s, dir) {
       //if s == current sort, reverse
       if(s === this.currentSort) {
         this.currentSortDir = this.currentSortDir==='asc'?'desc':'asc';
       }
+      else {
+        this.currentSortDir = dir;
+      }
       this.currentSort = s;
-    }
+    },
+
+    getValue(node, path) {
+      var current=node;
+      try {
+        path.split('.').forEach(function(p){ current = current[p]; }); 
+        return current;
+      }
+      catch (e) {
+        return '?';
+      }
+    },
+
+    compareNodes(n1, n2) {
+      if (this.currentSort == '') {return 0;}
+      
+      let dir = this.currentSortDir === 'desc' ? -1 : 1;
+      let val1 = this.getValue(n1, this.currentSort);
+      let val2 = this.getValue(n2, this.currentSort);
+      
+      if (typeof val1 === 'undefined') {
+        return 0;
+      }
+      
+      if (this.currentSort == 'age') {
+        val1 = val1.replace(/^Pre-/, '');
+        val2 = val2.replace(/^Pre-/, '');
+      }
+      
+      return dir * val1.toString().localeCompare(val2, undefined, {numeric: true, sensitivity: 'base'});
+    },
+
+    filterNodes(row) {
+      if (this.filterKey != '') {
+        return Object.keys(row).some((key) => {
+          return String(row[key]).toLowerCase().indexOf(this.filterKey.toLowerCase()) > -1 })
+      }
+      return true;
+    },
+    
+    hasStats(row) {
+      return typeof row.stats !== 'undefined';
+    },
+    
+    // highlight row if id matches ?h in url
+    hiliteClass(row) {
+      return row.id == this.hiliteKey ? 'hilite ' : '';
+    } 
   },
+  
   
   computed:{
     sortedNodes:function() {
-      return this.nodes.sort((a,b) => {
-        if (this.currentSort == '') {return 0;}
-        if(this.currentSortDir === 'desc') {
-          return b[this.currentSort].localeCompare(a[this.currentSort], undefined, {numeric: true, sensitivity: 'base'});
-        }
-        else {
-          return a[this.currentSort].localeCompare(b[this.currentSort], undefined, {numeric: true, sensitivity: 'base'});
-        }
-      }).filter((row) => {
-        if (this.filterKey != '') {
-          return Object.keys(row).some((key) => {
-            return String(row[key]).toLowerCase().indexOf(this.filterKey.toLowerCase()) > -1 })
-        }
-        return true;
-      });
+      return this.nodes.sort(this.compareNodes).filter(this.filterNodes);
     }
   }
 });
-    
-function Node(row) {
-  let cols = row.split("\t");
-  this.location = cols[0];
-  this.hp_model = cols[1];
-  this.hp_type = cols[2];
-  this.hp_output = cols[3];
-  this.emitters = cols[4];
-  this.annual_kwh = cols[5];
-  this.notes = cols[6];
-  this.property = cols[7];
-  this.floor_area = cols[8];
-  this.heat_loss = cols[9];
-  this.url = cols[10];
-  this.age = cols[12];
-  this.insulation = cols[13];
 
-  this.flow_temp = cols[14];
-  this.buffer = cols[15];
-  this.freeze = cols[16];
-  this.zones = cols[17];
-  this.controls = cols[18];
-  this.refrigerant = cols[19];
-  this.dhw = cols[20];
-  this.legionella = cols[21];
-
-  this.year_elec = cols[22];
-  this.year_heat = cols[23];
-  this.since = parseInt(cols[24]);
-  if (this.year_heat > 0) {
-    this.year_cop = (this.year_heat / this.year_elec).toFixed(1);
-  }
-  else {
-    this.year_cop = "-";
-  }
-  if (this.year_cop > 7) {
-    this.year_cop = "-";
-  }
-  
-  this.month_elec = cols[25];
-  this.month_heat = cols[26];
-  if (this.month_heat > 0) {
-    this.month_cop = (this.month_heat / this.month_elec).toFixed(1);
-  }
-  else {
-    this.month_cop = "-";
-  }
-  if (this.month_cop > 7) {
-    this.month_cop = "-";
-  }
-
-  if (this.age == 'Pre-1900') {
-    // Fix for sorting ages
-    this.age = ' Pre-1900';
-  }
-
-  // grey if start date is less that 1 year ago
-  this.sinceClass = function () {
-    return this.since > 0 ? 'partial nowrap' : 'nowrap';
-  }
-
-  // grey if start date is less that 1 month ago
-  this.monthClass = function() {
-    return (this.since + 30 * 24 * 3600) * 1000 > Date.now() ? 'partial nowrap' : 'nowrap';
-  }
-  
-  this.sinceDate = function() {
-    if (this.since == 0) {
-      return "";
-    }
-    var date = new Date(this.since*1000);
-    return "Since " + date.toDateString();
-  }
+// grey if start date is less that 1 year ago
+function sinceClass(node) {
+  return node.since > 0 ? 'partial ' : '';
 }
-  
+ 
+// grey if start date is less that 1 month ago
+function monthClass(node) {
+  return (node.since + 30 * 24 * 3600) * 1000 > Date.now() ? 'partial ' : '';
+}
+   
+function sinceDate(node) {
+  if (node.since == 0) {
+    return "";
+  }
+  var date = new Date(node.since*1000);
+  return "Since " + date.toDateString();
+}
+
+// helper function to append unit to a value, but only if it's not blank  
 function unit(value, unit) {
   return (value != '') ? value + ' ' + unit : '-';
 }
