@@ -73,7 +73,7 @@
             {{n.emitters.split(' ').length > 2 ? '&mldr;' : ''}}</td>
         
         <!-- Performance -->
-        <td v-bind:class="sinceClass(n) + ' nowrap'" v-bind:title="sinceDate(n)" align="right">
+        <td v-bind:class="sinceClass(n) + ' nowrap border'" v-bind:title="sinceDate(n)" align="right">
            {{unit(n.year_elec, 'kWh')}}
         </td>
         <td v-bind:class="sinceClass(n) + ' nowrap'" v-bind:title="sinceDate(n)" align="right">
