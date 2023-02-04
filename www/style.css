@@ -26,6 +26,14 @@ table th.header {
   text-align: center;
   cursor: default;
 }
+table th.header a {
+  color: #44b3e2;
+  font-weight: normal;
+}
+table th.header a:visited {
+  color: #44b3e2;
+  font-weight: normal;
+}
 table th.border {
   border-left: white 2px solid;
 }

@@ -3,7 +3,8 @@
 <head>
   <title>HeatpumpMonitor.org</title>
   <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
-  <link rel="stylesheet" href="style.css?v=6" />
+  <link rel="stylesheet" href="style.css?v=7" />
+  <link href="https://openenergymonitor.org/homepage/theme/favicon.ico" rel="shortcut icon">
 </head>
 
 <body>
@@ -25,7 +26,9 @@
         <th class="header">&nbsp;</td>
         <th class="header" colspan="4">Property</th>
         <th class="header" colspan="3">Heating system</th>
-        <th class="header" colspan="5"><a href="index.html">Home</a> | <a href="stats.html">Stats</a> &nbsp; &laquo; &nbsp;Running costs</th>
+        <th class="header" colspan="3">Annual Running costs</th>
+        <th class="header" colspan="1">30 Days</th>
+        <th class="header">&nbsp;</td>
       </tr>
       <tr>
         <th @click="sort('id', 'asc')" class="center">#</td>
@@ -41,11 +44,11 @@
         <th @click="sort('hp_type', 'asc')">Source</th>
         
         <!-- Running costs -->
-        <th @click="sort('year_elec', 'desc')" class="border right">Annual Electric</th>
+        <th @click="sort('year_elec', 'desc')" class="border right">Electric</th>
         <th @click="sort('year_heat', 'desc')" class="right">Equiv. Gas</th>
         <th @click="sort('year_cop', 'desc')" class="center">Cost per kWh</th>
-        <th @click="sort('month_cop', 'desc')" class="center">Average daily cost</th>
-        <th class="nosort">Details</th>
+        <th @click="sort('month_cop', 'desc')" class="border center">Daily cost</th>
+        <th class="nosort border">Charts</th>
       </tr>
     </thead>
     
@@ -64,7 +67,7 @@
         <td class="nowrap">{{n.hp_type.split(' ')[0]}}</td>
         
         <!-- Running costs -->
-        <td v-bind:class="sinceClass(n) + ' nowrap'" v-bind:title="unit(n.year_elec, 'kWh ') + sinceDate(n)" align="right">
+        <td v-bind:class="sinceClass(n) + ' nowrap border'" v-bind:title="unit(n.year_elec, 'kWh ') + sinceDate(n)" align="right">
            &pound;{{(n.year_elec * 0.34).toFixed(2)}}
         </td>
         <td v-bind:class="sinceClass(n) + ' nowrap'" v-bind:title="unit(Math.round(n.year_heat/0.9), 'kWh ') + sinceDate(n)" align="right">
@@ -72,9 +75,9 @@
         </td>
         <td v-bind:class="sinceClass(n) + ' nowrap center'" v-bind:title="sinceDate(n)">
            {{n.year_cop > 0 ? (n.year_elec * 34 / n.year_heat).toFixed(1)+'p' : '-'}}</td>
-        <td v-bind:class="monthClass(n) + ' nowrap center'" v-bind:title="n.month_elec">
+        <td v-bind:class="monthClass(n) + ' nowrap center border'" v-bind:title="n.month_elec">
            {{(monthClass(n) == '') ? '&pound;' + (n.month_elec * 0.34 / 30).toFixed(2) : '-'}}</td>
-        <td><a v-bind:href="n.url" target="_blank">Link &raquo;</a></td>
+        <td class="border"><a v-bind:href="n.url" target="_blank">Link &raquo;</a></td>
       </tr>
       
       <tr class="extra" style="display: none">
@@ -99,10 +102,10 @@
     
     <tfoot>
       <td colspan="1" class="footer"></td>
-      <td colspan="6" class="footer">Recently added systems denoted by &#10024;</td>
-      <td colspan="4" class="footer"></td>
+      <td colspan="4" class="footer">Recently added systems denoted by &#10024;</td>
+      <td colspan="3" class="footer"></td>
       <td colspan="3" class="footer"><i>Incomplete data in grey</i></td>
-      <td colspan="1" class="footer"></td>
+      <td colspan="2" class="footer"></td>
     </tfoot>
   </table>
   

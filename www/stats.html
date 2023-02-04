@@ -3,7 +3,8 @@
 <head>
   <title>HeatpumpMonitor.org</title>
   <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
-  <link rel="stylesheet" href="style.css?v=6" />
+  <link rel="stylesheet" href="style.css?v=7" />
+  <link href="https://openenergymonitor.org/homepage/theme/favicon.ico" rel="shortcut icon">
 </head>
 
 <body>
@@ -25,7 +26,9 @@
         <th class="header">&nbsp;</td>
         <th class="header" colspan="4">Property</th>
         <th class="header" colspan="3">Heating system</th>
-        <th class="header" colspan="8"><a href="index.html">Home</a>&nbsp; &laquo; &nbsp;Stats while running (30 Days) &nbsp; &raquo; &nbsp; <a href="costs.html">Costs</a></th>
+        <th class="header" colspan="4">Performance (30 days)</th>
+        <th class="header" colspan="5">Average stats when running</th>
+        <th class="header">&nbsp;</td>
       </tr>
       <tr>
         <th @click="sort('id', 'asc')" class="center">#</td>
@@ -41,14 +44,16 @@
         <th @click="sort('hp_type', 'asc')">Source</th>
         
         <!-- Stats -->
-        <th @click="sort('stats.when_running.elec_W', 'desc')" class="border right">Avg Elec</th>
-        <th @click="sort('stats.when_running.heat_W', 'desc')" class="right">Avg Heat</th>
+        <th @click="sort('stats.when_running.elec_kwh', 'desc')" class="border right">Electric</th>
+        <th @click="sort('stats.when_running.heat_kwh', 'desc')" class="right">Heat</th>
         <th @click="sort('stats.when_running.cop', 'desc')" class="center">COP</th>
-        <th @click="sort('stats.when_running.flowT', 'desc')" class="center">Flow T</th>
-        <th @click="sort('stats.when_running.flow_minus_return', 'desc')" class="center">Delta T</th>
-        <th @click="sort('stats.when_running.outsideT', 'desc')" class="center">Outside T</th>
         <th @click="sort('stats.standby_kwh', 'desc')" class="right">Standby</th>
-        <th class="nosort">Details</th>
+        <th @click="sort('stats.when_running.elec_W', 'desc')" class="border right">Electric</th>
+        <th @click="sort('stats.when_running.heat_W', 'desc')" class="right">Heat</th>
+        <th @click="sort('stats.when_running.flowT', 'desc')" class="center">Flow</th>
+        <th @click="sort('stats.when_running.flow_minus_return', 'desc')" class="center">Delta</th>
+        <th @click="sort('stats.when_running.outsideT', 'desc')" class="center">Outside</th>
+        <th class="nosort border">Charts</th>
       </tr>
     </thead>
 
@@ -67,27 +72,30 @@
         <td class="nowrap">{{n.hp_type.split(' ')[0]}}</td>
         
         <!-- Stats -->
+        <td v-bind:class="monthClass(n) + ' nowrap border'" align="right">
+           {{unit(n.stats.when_running.elec_kwh.toFixed(0), 'kWh')}}</td>
         <td v-bind:class="monthClass(n) + ' nowrap'" align="right">
+           {{unit(n.stats.when_running.heat_kwh.toFixed(0), 'kWh')}}</td>
+        <td v-bind:class="monthClass(n) + ' nowrap center'">
+           {{n.stats.when_running.cop > 0 ? n.year_cop.toFixed(1) : '-'}}</td>
+        <td v-bind:class="monthClass(n) + ' nowrap'" align="right">
+           {{unit(n.stats.standby_kwh.toFixed(1), 'kWh')}}</td>
+        <td v-bind:class="monthClass(n) + ' nowrap border'" align="right">
            {{unit(n.stats.when_running.elec_W, 'W')}}</td>
         <td v-bind:class="monthClass(n) + ' nowrap'" align="right">
            {{unit(n.stats.when_running.heat_W, 'W')}}</td>
-        <td v-bind:class="monthClass(n) + ' nowrap center'" 
-           v-bind:title="n.stats.when_running.elec_kwh + ' > ' + n.stats.when_running.heat_kwh + ' kWh'">
-           {{n.stats.when_running.cop > 0 ? n.year_cop.toFixed(1) : '-'}}</td>
         <td v-bind:class="monthClass(n) + ' nowrap center'">
            {{unit(n.stats.when_running.flowT.toFixed(0), '&#8451;')}}</td>
         <td v-bind:class="monthClass(n) + ' nowrap center'">
-           {{unit(n.stats.when_running.flow_minus_return.toFixed(1), '&#8451;')}}</td>
+           +{{unit(n.stats.when_running.flow_minus_return.toFixed(1), '&#8451;')}}</td>
         <td v-bind:class="monthClass(n) + ' nowrap center'">
            {{unit(n.stats.when_running.outsideT.toFixed(1), '&#8451;')}}</td>
-        <td v-bind:class="monthClass(n) + ' nowrap'" align="right">
-           {{unit(n.stats.standby_kwh.toFixed(1), 'kWh')}}</td>
-        <td><a v-bind:href="n.url" target="_blank">Link &raquo;</a></td>
+        <td class="border"><a v-bind:href="n.url" target="_blank">Link &raquo;</a></td>
       </tr>
 
       <tr class="extra" style="display: none">
         <td class="extra">&nbsp;</td>
-        <td colspan="14" class="extra">
+        <td colspan="16" class="extra">
           <b v-if="n.heat_demand">Heat Demand:</b> {{unit(n.heat_demand, 'kWh')}}
           <b v-if="n.insulation">Insulation:</b> {{n.insulation}}
           <b v-if="n.emitters">Emitters:</b> {{n.emitters}}
@@ -107,10 +115,10 @@
     
     <tfoot>
       <td colspan="1" class="footer"></td>
-      <td colspan="6" class="footer">Recently added systems denoted by &#10024;</td>
-      <td colspan="4" class="footer"></td>
-      <td colspan="3" class="footer"><i>Incomplete data in grey</i></td>
-      <td colspan="2" class="footer"></td>
+      <td colspan="4" class="footer">Recently added systems denoted by &#10024;</td>
+      <td colspan="3" class="footer"></td>
+      <td colspan="9" class="footer"><i>Incomplete data in grey</i></td>
+      <td colspan="1" class="footer"></td>
     </tfoot>
   </table>
   
