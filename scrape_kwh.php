@@ -21,7 +21,8 @@
   while (($row = fgetcsv($input, 1000, "\t")) !== FALSE) {
     $system = ['id' => count($data) + 1];
     $details = array_combine($header, $row);
-    $stats = scrapeEnergyValues($row[10]);
+    $system['hash'] = hash("crc32b", $details['submitted']);
+    $stats = scrapeEnergyValues($details['url']);
     $data[] = array_merge($system, $details, $stats);
     #if (count($data) > 5) {break;}
   }
