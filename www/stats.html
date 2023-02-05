@@ -77,7 +77,7 @@
         <td v-bind:class="monthClass(n) + ' nowrap'" align="right">
            {{unit(n.stats.when_running.heat_kwh.toFixed(0), 'kWh')}}</td>
         <td v-bind:class="monthClass(n) + ' nowrap center'">
-           {{n.stats.when_running.cop > 0 ? n.year_cop.toFixed(1) : '-'}}</td>
+           {{n.stats.when_running.cop > 0 ? n.stats.when_running.cop.toFixed(1) : '-'}}</td>
         <td v-bind:class="monthClass(n) + ' nowrap'" align="right">
            {{unit(n.stats.standby_kwh.toFixed(1), 'kWh')}}</td>
         <td v-bind:class="monthClass(n) + ' nowrap border'" align="right">
