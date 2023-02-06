@@ -83,7 +83,7 @@ var app = new Vue({
     
     isNew(row) {
       const submitted = Date.parse(row.submitted);
-      return submitted > Date.now() - 30 * 24 * 3600 * 1000;
+      return submitted > Date.now() - 14 * 24 * 3600 * 1000;
     },
     
     hasStats(row) {
