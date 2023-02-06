@@ -35,14 +35,14 @@
         <th @click="sort('property', 'asc')">Type</th>
         <th @click="sort('age', 'desc')">Built</th>
         <th @click="sort('floor_area', 'desc')" class="right">Floor Area</th>
-        <th @click="sort('annual_kwh')" class="right">Heat Demand</th>
-        <th @click="sort('insulation')">Insulation</th>
+        <th @click="sort('heat_demand', 'desc')" class="right">Heat Demand</th>
+        <th @click="sort('insulation', 'asc')">Insulation</th>
         
         <!-- Heating System -->
         <th @click="sort('hp_model', 'asc')" class="border">Make / Model</th>
         <th @click="sort('hp_output', 'desc')" class="right">Output</th>
         <th @click="sort('hp_type', 'asc')">Source</th>
-        <th @click="sort('emitters')">Emitters</th>
+        <th @click="sort('emitters', 'asc')">Emitters</th>
         
         <!-- Performance -->
         <th @click="sort('year_elec', 'desc')" class="border right">Electric</th>
@@ -111,7 +111,7 @@
   
 </div>
 
-<script src="table.js?v=2.0"></script>
+<script src="table.js?v=2.1"></script>
 
 <div class="footer">An <a href="https://openenergymonitor.org/">OpenEnergyMonitor.org</a> community initiative</div>
 </body>

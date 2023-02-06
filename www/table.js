@@ -42,7 +42,7 @@ var app = new Vue({
         return current;
       }
       catch (e) {
-        return '?';
+        return 0;
       }
     },
 
@@ -54,15 +54,23 @@ var app = new Vue({
       let val2 = this.getValue(n2, this.currentSort);
       
       if (typeof val1 === 'undefined') {
-        return 0;
+        return -dir;
+      }
+      if (typeof val2 === 'undefined') {
+        return dir;
       }
       
       if (this.currentSort == 'age') {
         val1 = val1.replace(/^Pre-/, '');
         val2 = val2.replace(/^Pre-/, '');
       }
-      
-      return dir * val1.toString().localeCompare(val2, undefined, {numeric: true, sensitivity: 'base'});
+
+      if (isFinite(val1) && isFinite(val2)) {
+        return dir * (val1 - val2);
+      }
+      else {
+        return dir * val1.localeCompare(val2, undefined, {numeric: true, sensitivity: 'base'});
+      }
     },
 
     filterNodes(row) {
@@ -82,7 +90,6 @@ var app = new Vue({
       return row.id == this.hiliteKey ? 'hilite ' : '';
     } 
   },
-  
   
   computed:{
     sortedNodes:function() {
@@ -114,9 +121,8 @@ function unit(value, unit) {
   return (value != '') ? value + ' ' + unit : '-';
 }
 
-var row;
 function toggle(cell) {
-  row = cell.parentElement;
+  var row = cell.parentElement;
   if (row.nextElementSibling.style.display == 'none') {
     row.nextElementSibling.style.display = 'table-row';
     cell.innerHTML = '&minusb;';  // -
