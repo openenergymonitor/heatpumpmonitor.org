@@ -81,6 +81,11 @@ var app = new Vue({
       return true;
     },
     
+    isNew(row) {
+      const submitted = Date.parse(row.submitted);
+      return submitted > Date.now() - 30 * 24 * 3600 * 1000;
+    },
+    
     hasStats(row) {
       return typeof row.stats !== 'undefined';
     },

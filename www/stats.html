@@ -61,7 +61,7 @@
       <template v-for="n in sortedNodes"><tr v-bind:id="'row'+n.id" v-if="hasStats(n)" v-bind:class="hiliteClass(n)">
         <!-- Property -->
         <td class="toggle" onclick="toggle(this)" align="right" v-bind:title="'#'+n.id">&plusb;</td>
-        <td>{{n.location}}</td> 
+        <td>{{n.location}} {{isNew(n) ? '&#10024;' : ''}}</td> 
         <td>{{n.property}}</td>
         <td class="nowrap">{{n.age.replace(' to ', '-').trim()}}</td>
         <td class="nowrap" align="right">{{unit(n.floor_area, 'm&sup2;')}}</td>
