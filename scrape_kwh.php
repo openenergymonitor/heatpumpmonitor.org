@@ -35,7 +35,7 @@
     $config = fetchConfig($url);
     if (!$config) {
       # failed to connect to site
-      return [ '-', '-', '-', '-', '-' ];
+      return [];
     }
     
     # fetch meta data for kWh feeds
@@ -151,6 +151,9 @@
       }
       if (!isset($config->heatpump_elec_kwh)) { $config->heatpump_elec_kwh = 0; }
       if (!isset($config->heatpump_heat_kwh)) { $config->heatpump_heat_kwh = 0; }
+      if ($readkey=='4024d6f31ff9de4e30eb00744590bdc5') {
+        $config->start_date = 1674736200;
+      }
       return $config;
     }
     
