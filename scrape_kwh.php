@@ -109,9 +109,9 @@
     $server = $url_parts['scheme'] . '://' . $url_parts['host'];
     
     # check if url was to /app/view instead of username
-    if ($url_parts['path'] == '/app/view') {
-      $getconfig = "$server/app/getconfig";
-      $getstats = "$server/app/getstats";
+    if (preg_match('/^(.*)\/app\/view$/', $url_parts['path'], $matches)) {
+      $getconfig = "$server$matches[1]/app/getconfig";
+      $getstats = "$server$matches[1]/app/getstats";
     }
     else {
       $getconfig = $server . $url_parts['path'] . "/app/getconfig";
@@ -124,6 +124,7 @@
       if (isset($url_args['readkey'])) {
         $readkey = $url_args['readkey'];
         $getconfig .= '?' . $url_parts['query'];
+        $getstats .= '?' . $url_parts['query'];
       }
     }
     
@@ -193,10 +194,7 @@
   
   function fetchMoreStats($config, $start, $end)
   {
-    $url = sprintf("%s?start=%d&end=%d", $config->getstats, $start, $end);
-    if (isset($config->apikey)) {
-      $url .= "&apikey=" . $config->apikey;
-    }
+    $url = sprintf("%s&start=%d&end=%d", $config->getstats, $start, $end);
     $data = file_get_contents($url);
     return json_decode($data);
   }
