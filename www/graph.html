@@ -26,7 +26,15 @@
     <option value="flow_minus_return">Flow - Return temperature</option>
     <option value="outsideT">Outside temperature</option>
     <option value="flow_minus_outside">Flow - Outside temperature</option>
+    <option value="elec_W">Electric consumption (W)</option>
+    <option value="heat_W">Heat output (W)</option>
+    <option value="elec_kwh">Electric consumption (kWh)</option>
+    <option value="heat_kwh">Heat output (kWh)</option>
     <option value="carnot_prc">% Carnot</option>
+    <option value="floor_area">Floor area (m2)</option>
+    <option value="calc_heat_demand">Calculated annual heat demand (kWh)</option>
+    <option value="calc_heat_demand_m2">Calculated annual heat demand (kWh/m2)</option>
+    <option value="monthly_heat_demand_m2">Measured 30 day heat demand (kWh/m2)</option>
   </select>
 
   <label>Y-axis</label>
@@ -36,8 +44,14 @@
   </select>
   
   <label>Colour coding</label>
-  <select>
-    <option>Buffer</option>
+  <select id="c_axis_select">
+    <option value="buffer">Buffer</option>
+    <option value="R290">Refrigerant: R290</option>
+    <option value="R32">Refrigerant: R32</option>
+    <option value="R410a">Refrigerant: R410a</option>
+    <option value="afglycol">Anti-Freeze: Glycol/water mixture</option>   
+    <option value="afvalves">Anti-Freeze: Anti-freeze valves</option> 
+    <option value="afcirc">Anti-Freeze: Central heat pump water circulation</option>  
   </select>
 
 </div>
@@ -123,6 +137,11 @@ $("#y_axis_select").change(function() {
   y_axis_select = $(this).val();
   plot()
 });
+
+$("#c_axis_select").change(function() {
+  c_axis_select = $(this).val();
+  plot()
+});
     
 function plot() {
     console.log(nodes);
@@ -142,10 +161,29 @@ function plot() {
           x_val = nodes[z].stats.when_running.flow_minus_outside;
         } else if (x_axis_select=="flow_minus_return") {
           x_val = nodes[z].stats.when_running.flow_minus_return;
+        } else if (x_axis_select=="elec_W") {
+          x_val = nodes[z].stats.when_running.elec_W;
+        } else if (x_axis_select=="heat_W") {
+          x_val = nodes[z].stats.when_running.heat_W;
+        } else if (x_axis_select=="elec_kwh") {
+          x_val = nodes[z].stats.when_running.elec_kwh;
+        } else if (x_axis_select=="heat_kwh") {
+          x_val = nodes[z].stats.when_running.heat_kwh;
         } else if (x_axis_select=="carnot_prc") {
           x_val = nodes[z].stats.when_running.carnot_prc;
           if (x_val==0) x_val = null;
+        } else if (x_axis_select=="floor_area") {
+          x_val = nodes[z].floor_area*1;
+        } else if (x_axis_select=="calc_heat_demand") {
+          x_val = nodes[z].heat_demand*1;
+        } else if (x_axis_select=="calc_heat_demand_m2") {
+          x_val = nodes[z].heat_demand*1 / nodes[z].floor_area*1;
+        } else if (x_axis_select=="monthly_heat_demand_m2") {
+          x_val = nodes[z].stats.when_running.heat_kwh / nodes[z].floor_area*1;
         }
+        
+        
+        
         if (x_val===false) x_val = null;  
       
         var y_val = null;
@@ -154,19 +192,27 @@ function plot() {
             y_val = nodes[z].month_cop;
           }
         }
-
         if (y_axis_select=="when_running_cop") {
           if (nodes[z].stats.when_running.cop>0) y_val = nodes[z].stats.when_running.cop;
         }
         
         var c_val = null;
         if (c_axis_select=="buffer") {
-          if (nodes[z].buffer=="No") {
-            c_val = 0; 
-          } else {
-            c_val = 1;
-          }
-        }
+          if (nodes[z].buffer=="No") c_val = 0; else c_val = 1;
+        } else if (c_axis_select=="R32") {
+          if (nodes[z].refrigerant=="R32") c_val = 1; else c_val = 0;
+        } else if (c_axis_select=="R410a") {
+          if (nodes[z].refrigerant=="R410a") c_val = 1; else c_val = 0;
+        } else if (c_axis_select=="R290") {
+          if (nodes[z].refrigerant=="R290") c_val = 1; else c_val = 0;
+        } else if (c_axis_select=="afglycol") {
+          if (nodes[z].freeze=="Glycol/water mixture") c_val = 1; else c_val = 0;
+        } else if (c_axis_select=="afvalves") {
+          if (nodes[z].freeze=="Anti-freeze valves") c_val = 1; else c_val = 0;
+        } else if (c_axis_select=="afcirc") {
+          if (nodes[z].freeze=="Central heat pump water circulation") c_val = 1; else c_val = 0;
+        } 
+
         
         if (x_val!==null && y_val!==null && c_val!==null) {
           x.push(x_val)
