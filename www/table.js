@@ -122,8 +122,14 @@ function sinceDate(node) {
 }
 
 // helper function to append unit to a value, but only if it's not blank  
-function unit(value, unit) {
-  return (value != '') ? value + ' ' + unit : '-';
+function unit_dp(value, unit, dp = false) {
+  if (value != '' && value!==false) {
+    if (dp!==false) value = value.toFixed(dp);
+    value += ' ' + unit
+  } else {
+    value = '-';
+  }
+  return value;
 }
 
 function toggle(cell) {

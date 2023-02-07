@@ -59,18 +59,18 @@
         <td>{{n.location}} {{isNew(n) ? '&#10024;' : ''}}</td> 
         <td>{{n.property}}</td>
         <td class="nowrap">{{n.age.replace(' to ', '-').trim()}}</td>
-        <td class="nowrap" align="right">{{unit(n.floor_area, 'm&sup2;')}}</td>
+        <td class="nowrap" align="right">{{unit_dp(n.floor_area, 'm&sup2;')}}</td>
            
         <!-- Heating System -->
         <td class="border" v-bind:title="n.hp_model">{{n.hp_model.replace(/ \(.*\)/, ' &mldr;')}}</td>
-        <td class="nowrap" align="right">{{unit(n.hp_output, 'kW')}}</td>
+        <td class="nowrap" align="right">{{unit_dp(n.hp_output, 'kW')}}</td>
         <td class="nowrap">{{n.hp_type.split(' ')[0]}}</td>
         
         <!-- Running costs -->
-        <td v-bind:class="sinceClass(n) + ' nowrap border'" v-bind:title="unit(n.year_elec, 'kWh ') + sinceDate(n)" align="right">
+        <td v-bind:class="sinceClass(n) + ' nowrap border'" v-bind:title="unit_dp(n.year_elec, 'kWh ') + sinceDate(n)" align="right">
            &pound;{{(n.year_elec * 0.34).toFixed(2)}}
         </td>
-        <td v-bind:class="sinceClass(n) + ' nowrap'" v-bind:title="unit(Math.round(n.year_heat/0.9), 'kWh ') + sinceDate(n)" align="right">
+        <td v-bind:class="sinceClass(n) + ' nowrap'" v-bind:title="unit_dp(Math.round(n.year_heat/0.9), 'kWh ') + sinceDate(n)" align="right">
            {{n.year_heat > 0 ? '&pound;'+(n.year_heat / 0.9 * 0.1).toFixed(2) : '-'}}
         </td>
         <td v-bind:class="sinceClass(n) + ' nowrap center'" v-bind:title="sinceDate(n)">
@@ -83,7 +83,7 @@
       <tr class="extra" style="display: none">
         <td class="extra">&nbsp;</td>
         <td colspan="12" class="extra">
-          <b v-if="n.heat_demand">Heat Demand:</b> {{unit(n.heat_demand, 'kWh')}}
+          <b v-if="n.heat_demand">Heat Demand:</b> {{unit_dp(n.heat_demand, 'kWh')}}
           <b v-if="n.insulation">Insulation:</b> {{n.insulation}}
           <b v-if="n.emitters">Emitters:</b> {{n.emitters}}
           <b v-if="n.refrigerant">Refrigerant:</b> {{n.refrigerant}}

@@ -59,14 +59,14 @@
         <td>{{n.location}} {{isNew(n) ? '&#10024;' : ''}}</td> 
         <td>{{n.property}}</td>
         <td class="nowrap">{{n.age.replace(' to ', '-').trim()}}</td>
-        <td class="nowrap" align="right">{{unit(n.floor_area, 'm&sup2;')}}</td>
-        <td class="nowrap" align="right">{{unit(n.heat_demand, 'kWh')}}</td>
+        <td class="nowrap" align="right">{{unit_dp(n.floor_area, 'm&sup2;')}}</td>
+        <td class="nowrap" align="right">{{unit_dp(n.heat_demand, 'kWh')}}</td>
         <td v-bind:title="n.insulation">{{n.insulation.split(' ').slice(0, 2).join(' ')}}
            {{n.insulation.split(' ').length > 2 ? '&mldr;' : ''}}</td>
            
         <!-- Heating System -->
         <td class="border" v-bind:title="n.hp_model">{{n.hp_model.replace(/ \(.*\)/, ' &mldr;')}}</td>
-        <td class="nowrap" align="right">{{unit(n.hp_output, 'kW')}}</td>
+        <td class="nowrap" align="right">{{unit_dp(n.hp_output, 'kW')}}</td>
         <td class="nowrap">{{n.hp_type.split(' ')[0]}}</td>
         <td v-bind:title="n.emitters">
             {{n.emitters.split(' ').slice(0, 2).join(' ')}}
@@ -74,10 +74,10 @@
         
         <!-- Performance -->
         <td v-bind:class="sinceClass(n) + ' nowrap border'" v-bind:title="sinceDate(n)" align="right">
-           {{unit(n.year_elec, 'kWh')}}
+           {{unit_dp(n.year_elec, 'kWh')}}
         </td>
         <td v-bind:class="sinceClass(n) + ' nowrap'" v-bind:title="sinceDate(n)" align="right">
-           {{unit(n.year_heat, 'kWh')}}
+           {{unit_dp(n.year_heat, 'kWh')}}
         </td>
         <td v-bind:class="sinceClass(n) + ' nowrap center'" v-bind:title="sinceDate(n)">
            {{n.year_cop > 0 ? n.year_cop.toFixed(1) : '-'}}</td>
