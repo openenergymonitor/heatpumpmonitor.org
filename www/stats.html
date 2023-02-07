@@ -64,39 +64,39 @@
         <td>{{n.location}} {{isNew(n) ? '&#10024;' : ''}}</td> 
         <td>{{n.property}}</td>
         <td class="nowrap">{{n.age.replace(' to ', '-').trim()}}</td>
-        <td class="nowrap" align="right">{{unit(n.floor_area, 'm&sup2;')}}</td>
+        <td class="nowrap" align="right">{{unit_dp(n.floor_area, 'm&sup2;')}}</td>
            
         <!-- Heating System -->
         <td class="border" v-bind:title="n.hp_model">{{n.hp_model.replace(/ \(.*\)/, ' &mldr;')}}</td>
-        <td class="nowrap" align="right">{{unit(n.hp_output, 'kW')}}</td>
+        <td class="nowrap" align="right">{{unit_dp(n.hp_output, 'kW')}}</td>
         <td class="nowrap">{{n.hp_type.split(' ')[0]}}</td>
         
         <!-- Stats -->
         <td v-bind:class="monthClass(n) + ' nowrap border'" align="right">
-           {{unit(n.month_elec.toFixed(0), 'kWh')}}</td>
+           {{unit_dp(n.month_elec, 'kWh', 0)}}</td>
         <td v-bind:class="monthClass(n) + ' nowrap'" align="right">
-           {{unit(n.month_heat.toFixed(0), 'kWh')}}</td>
+           {{unit_dp(n.month_heat, 'kWh', 0)}}</td>
         <td v-bind:class="monthClass(n) + ' nowrap center'">
            {{n.month_cop > 0 ? n.month_cop.toFixed(2) : '-'}}</td>
         <td v-bind:class="monthClass(n) + ' nowrap'" align="right">
-           {{unit(n.stats.standby_kwh.toFixed(1), 'kWh')}}</td>
+           {{unit_dp(n.stats.standby_kwh, 'kWh', 1)}}</td>
         <td v-bind:class="monthClass(n) + ' nowrap border'" align="right">
-           {{unit(n.stats.when_running.elec_W, 'W')}}</td>
+           {{unit_dp(n.stats.when_running.elec_W, 'W', 0)}}</td>
         <td v-bind:class="monthClass(n) + ' nowrap'" align="right">
-           {{unit(n.stats.when_running.heat_W, 'W')}}</td>
+           {{unit_dp(n.stats.when_running.heat_W, 'W', 0)}}</td>
         <td v-bind:class="monthClass(n) + ' nowrap center'">
-           {{unit(n.stats.when_running.flowT.toFixed(0), '&#8451;')}}</td>
+           {{unit_dp(n.stats.when_running.flowT, '&#8451;', 0)}}</td>
         <td v-bind:class="monthClass(n) + ' nowrap center'">
-           +{{unit(n.stats.when_running.flow_minus_return.toFixed(1), '&#8451;')}}</td>
+           +{{unit_dp(n.stats.when_running.flow_minus_return, '&#8451;', 1)}}</td>
         <td v-bind:class="monthClass(n) + ' nowrap center'">
-           {{unit(n.stats.when_running.outsideT.toFixed(1), '&#8451;')}}</td>
+           {{unit_dp(n.stats.when_running.outsideT, '&#8451;', 1)}}</td>
         <td class="border"><a v-bind:href="n.url" target="_blank">Link &raquo;</a></td>
       </tr>
 
       <tr class="extra" style="display: none">
         <td class="extra">&nbsp;</td>
         <td colspan="17" class="extra">
-          <b v-if="n.heat_demand">Heat Demand:</b> {{unit(n.heat_demand, 'kWh')}}
+          <b v-if="n.heat_demand">Heat Demand:</b> {{unit_dp(n.heat_demand, 'kWh')}}
           <b v-if="n.insulation">Insulation:</b> {{n.insulation}}
           <b v-if="n.emitters">Emitters:</b> {{n.emitters}}
           <b v-if="n.refrigerant">Refrigerant:</b> {{n.refrigerant}}
