@@ -27,7 +27,14 @@
     #if (count($data) > 5) {break;}
   }
   
-  file_put_contents($outfile, json_encode($data)); // JSON_PRETTY_PRINT
+  if (gethostname() == 'li37-229') {
+    $json = json_encode($data, JSON_PRETTY_PRINT);
+  }
+  else {
+    $json = json_encode($data);
+  }
+
+  file_put_contents($outfile, $json);
   fclose($input);
 
   function scrapeEnergyValues($url)
