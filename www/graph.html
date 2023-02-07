@@ -53,9 +53,13 @@
     <option value="afvalves">Anti-Freeze: Anti-freeze valves</option> 
     <option value="afcirc">Anti-Freeze: Central heat pump water circulation</option>  
   </select>
+  
+
 
 </div>
   <div id="gd" style="height:650px"></div>
+
+  <div id="trend_line_equation"></div>
 
 <div class="footer">An <a href="https://openenergymonitor.org/">OpenEnergyMonitor.org</a> community initiative</div>
 </body>
@@ -148,6 +152,7 @@ function plot() {
     var x = [];
     var y = [];
     var c = [];
+    var tooltips = [];
     for (var z in nodes) {
       if (nodes[z].stats!=undefined) {
         var x_val = null;
@@ -181,8 +186,6 @@ function plot() {
         } else if (x_axis_select=="monthly_heat_demand_m2") {
           x_val = nodes[z].stats.when_running.heat_kwh / nodes[z].floor_area*1;
         }
-        
-        
         
         if (x_val===false) x_val = null;  
       
@@ -218,6 +221,7 @@ function plot() {
           x.push(x_val)
           y.push(y_val)
           c.push(c_val)
+          tooltips.push(nodes[z].location+"<br>"+nodes[z].hp_model+"<br>"+nodes[z].hp_type)
         }
       }
     }
@@ -225,6 +229,7 @@ function plot() {
     plot_data.data[0].x = x;
     plot_data.data[0].y = y;
     plot_data.data[0].marker.color = c;
+    plot_data.data[0].text = tooltips;
     var lr = linearRegression(x, y);
 
     var trace = {x: x,
@@ -245,6 +250,8 @@ function plot() {
     };
 
     plot_data.data[1] = fit;
+    
+    $("#trend_line_equation").html("Trend line equation: "+lr.sl.toFixed(3)+"x + "+lr.off.toFixed(3)+", R<sup>2</sup>:"+lr.r2.toFixed(2));
 
     Plotly.newPlot("gd",plot_data);
 }
