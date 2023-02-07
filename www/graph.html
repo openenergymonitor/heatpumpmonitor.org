@@ -21,16 +21,16 @@
 
   <label>X-axis</label>
   <select id="x_axis_select">
-    <option value="flowT">Flow temperature</option>
-    <option value="returnT">Return temperature</option>
-    <option value="flow_minus_return">Flow - Return temperature</option>
-    <option value="outsideT">Outside temperature</option>
-    <option value="flow_minus_outside">Flow - Outside temperature</option>
-    <option value="elec_W">Electric consumption (W)</option>
-    <option value="heat_W">Heat output (W)</option>
-    <option value="elec_kwh">Electric consumption (kWh)</option>
-    <option value="heat_kwh">Heat output (kWh)</option>
-    <option value="carnot_prc">% Carnot</option>
+    <option value="flowT">Flow temperature last 30 days</option>
+    <option value="returnT">Return temperature last 30 days</option>
+    <option value="flow_minus_return">Flow - Return temperature last 30 days</option>
+    <option value="outsideT">Outside temperature last 30 days</option>
+    <option value="flow_minus_outside">Flow - Outside temperature last 30 days</option>
+    <option value="elec_W">Electric consumption last 30 days (W)</option>
+    <option value="heat_W">Heat output last 30 days (W)</option>
+    <option value="elec_kwh">Electric consumption last 30 days (kWh)</option>
+    <option value="heat_kwh">Heat output last 30 days (kWh)</option>
+    <option value="carnot_prc">% Carnot last 30 days</option>
     <option value="floor_area">Floor area (m2)</option>
     <option value="calc_heat_demand">Calculated annual heat demand (kWh)</option>
     <option value="calc_heat_demand_m2">Calculated annual heat demand (kWh/m2)</option>
@@ -41,6 +41,8 @@
   <select id="y_axis_select">
     <option value="monthly_cop">COP including standby</option>
     <option value="when_running_cop">COP when running</option>
+    <option value="elec_kwh">Electric consumption last 30 days (kWh)</option>
+    <option value="heat_kwh">Heat output last 30 days (kWh)</option>
   </select>
   
   <label>Colour coding</label>
@@ -171,9 +173,9 @@ function plot() {
         } else if (x_axis_select=="heat_W") {
           x_val = nodes[z].stats.when_running.heat_W;
         } else if (x_axis_select=="elec_kwh") {
-          x_val = nodes[z].stats.when_running.elec_kwh;
+          x_val = nodes[z].month_elec;
         } else if (x_axis_select=="heat_kwh") {
-          x_val = nodes[z].stats.when_running.heat_kwh;
+          x_val = nodes[z].month_heat;
         } else if (x_axis_select=="carnot_prc") {
           x_val = nodes[z].stats.when_running.carnot_prc;
           if (x_val==0) x_val = null;
@@ -194,9 +196,12 @@ function plot() {
           if (nodes[z].month_cop>0) {
             y_val = nodes[z].month_cop;
           }
-        }
-        if (y_axis_select=="when_running_cop") {
+        } else if (y_axis_select=="when_running_cop") {
           if (nodes[z].stats.when_running.cop>0) y_val = nodes[z].stats.when_running.cop;
+        } else if (y_axis_select=="elec_kwh") {
+          y_val = nodes[z].month_elec;
+        } else if (y_axis_select=="heat_kwh") {
+          y_val = nodes[z].month_heat;
         }
         
         var c_val = null;
