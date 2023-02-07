@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>HeatpumpMonitor.org</title>
+<script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
+  <link rel="stylesheet" href="style.css?v=7" />
+  <link href="https://openenergymonitor.org/homepage/theme/favicon.ico" rel="shortcut icon">
+      <script src="https://cdn.plot.ly/plotly-2.18.1.min.js" charset="utf-8"></script>
+</head>
+
+<body>
+
+<h1>HeatpumpMonitor.org</h1>
+  
+<div id="app">
+  <p style="font-size: large; font-style: italic;">An open source initiative to share and compare heat pump performance data.</p>
+  
+  <p>Here you can see a variety of installations monitored with <a href="https://openenergymonitor.org/">OpenEnergyMonitor</a>, and compare detailed statistic to see how performance can vary.</p>
+  <p>If you're monitoring a heat pump with <b>emoncms</b> and the <i>My Heat Pump</i> app, you can add your details here <a href="https://docs.google.com/forms/d/e/1FAIpQLSflTBeRpuWBxXdL2UqkB5pY60tTTGLI201fRaK6ZZEV7Dy70g/viewform" title="Heat Pump Monitoring Submission Form">by completing this form</a>.</p>
+   <p style="font-style: italic;">Join in with discussion of the results on the forums here: <a href="https://community.openenergymonitor.org/t/introducing-heatpumpmonitor-org-a-public-dashboard-of-heat-pump-performance/21885">Public dashboard of heat pumps</a>.</p>
+
+  <label>X-axis</label>
+  <select id="x_axis_select">
+    <option value="flowT">Flow temperature</option>
+    <option value="returnT">Return temperature</option>
+    <option value="flow_minus_return">Flow - Return temperature</option>
+    <option value="outsideT">Outside temperature</option>
+    <option value="flow_minus_outside">Flow - Outside temperature</option>
+    <option value="carnot_prc">% Carnot</option>
+  </select>
+
+  <label>Y-axis</label>
+  <select id="y_axis_select">
+    <option value="monthly_cop">COP including standby</option>
+    <option value="when_running_cop">COP when running</option>
+  </select>
+  
+  <label>Colour coding</label>
+  <select>
+    <option>Buffer</option>
+  </select>
+
+</div>
+  <div id="gd" style="height:650px"></div>
+
+<div class="footer">An <a href="https://openenergymonitor.org/">OpenEnergyMonitor.org</a> community initiative</div>
+</body>
+</html>
+
+
+<script>
+var plot_data = {
+  "data": [
+    {
+      "mode": "markers",
+      "type": "scatter",
+      "x": [],
+      "y": [],
+      "marker": {
+        "line": {
+          "width": 0
+        },
+        "size": 10,
+        "color": [],
+        "colorscale": [
+          [0,"#0000ff"],
+          [1,"#ff0000"],
+        ]
+      },
+      "autocolorscale": false
+    }
+  ],
+  "layout": {
+    "font": {
+      "size": 14
+    },
+    "title": {
+      "text": "COP vs Flow temperature"
+    },
+    "xaxis": {
+      "type": "linear",
+      "range": [],
+      "title": {
+        "text": "Flow temperature"
+      },
+      "autorange": true
+    },
+    "yaxis": {
+      "type": "linear",
+      "range": [],
+      "title": {
+        "text": "COP"
+      },
+      "autorange": true
+    },
+    "autosize": true,
+    "showlegend": false,
+    "annotations": []
+  },
+  "frames": []
+}
+
+var nodes = false;
+var x_axis_select = "flowT";
+var y_axis_select = "monthly_cop";
+var c_axis_select = "buffer";
+
+$.getJSON( "data.json", function( data ) {
+  nodes = data;
+  plot()
+});
+
+$("#x_axis_select").change(function() {
+  plot_data.layout.xaxis.title.text = $("#x_axis_select option:selected" ).text();
+  
+  plot_data.layout.title.text = plot_data.layout.xaxis.title.text + " vs " + plot_data.layout.yaxis.title.text
+  x_axis_select = $(this).val();
+  plot()
+});
+
+$("#y_axis_select").change(function() {
+  plot_data.layout.yaxis.title.text = $("#y_axis_select option:selected" ).text();
+  y_axis_select = $(this).val();
+  plot()
+});
+    
+function plot() {
+    console.log(nodes);
+    var x = [];
+    var y = [];
+    var c = [];
+    for (var z in nodes) {
+      if (nodes[z].stats!=undefined) {
+        var x_val = null;
+        if (x_axis_select=="flowT") {
+          x_val = nodes[z].stats.when_running.flowT;
+        } else if (x_axis_select=="returnT") {
+          x_val = nodes[z].stats.when_running.returnT;
+        } else if (x_axis_select=="outsideT") {
+          x_val = nodes[z].stats.when_running.outsideT;
+        } else if (x_axis_select=="flow_minus_outside") {
+          x_val = nodes[z].stats.when_running.flow_minus_outside;
+        } else if (x_axis_select=="flow_minus_return") {
+          x_val = nodes[z].stats.when_running.flow_minus_return;
+        } else if (x_axis_select=="carnot_prc") {
+          x_val = nodes[z].stats.when_running.carnot_prc;
+          if (x_val==0) x_val = null;
+        }
+        if (x_val===false) x_val = null;  
+      
+        var y_val = null;
+        if (y_axis_select=="monthly_cop") {
+          if (nodes[z].month_cop>0) {
+            y_val = nodes[z].month_cop;
+          }
+        }
+
+        if (y_axis_select=="when_running_cop") {
+          if (nodes[z].stats.when_running.cop>0) y_val = nodes[z].stats.when_running.cop;
+        }
+        
+        var c_val = null;
+        if (c_axis_select=="buffer") {
+          if (nodes[z].buffer=="No") {
+            c_val = 0; 
+          } else {
+            c_val = 1;
+          }
+        }
+        
+        if (x_val!==null && y_val!==null && c_val!==null) {
+          x.push(x_val)
+          y.push(y_val)
+          c.push(c_val)
+        }
+      }
+    }
+    
+    plot_data.data[0].x = x;
+    plot_data.data[0].y = y;
+    plot_data.data[0].marker.color = c;
+    var lr = linearRegression(x, y);
+
+    var trace = {x: x,
+                y: y,
+                name: "Scatter"
+                };  
+
+    var fit_from = Math.min(...x)
+    var fit_to = Math.max(...x)
+    
+
+    var fit = {
+      x: [fit_from, fit_to],
+      y: [fit_from*lr.sl+lr.off, fit_to*lr.sl+lr.off],
+      mode: 'lines',
+      type: 'scatter',
+      name: "R2=".concat((Math.round(lr.r2 * 10000) / 10000).toString())
+    };
+
+    plot_data.data[1] = fit;
+
+    Plotly.newPlot("gd",plot_data);
+}
+
+// https://github.com/plotly/plotly.js/issues/4921
+function linearRegression(x,y){
+    var lr = {};
+    var n = y.length;
+    var sum_x = 0;
+    var sum_y = 0;
+    var sum_xy = 0;
+    var sum_xx = 0;
+    var sum_yy = 0;
+
+    for (var i = 0; i < y.length; i++) {
+        x[i] *= 1;
+        y[i] *= 1;
+        sum_x += x[i];
+        sum_y += y[i];
+        sum_xy += (x[i]*y[i]);
+        sum_xx += (x[i]*x[i]);
+        sum_yy += (y[i]*y[i]);
+    } 
+
+    lr['sl'] = (n * sum_xy - sum_x * sum_y) / (n*sum_xx - sum_x * sum_x);
+    lr['off'] = (sum_y - lr.sl * sum_x)/n;
+    lr['r2'] = Math.pow((n*sum_xy - sum_x*sum_y)/Math.sqrt((n*sum_xx-sum_x*sum_x)*(n*sum_yy-sum_y*sum_y)),2);
+
+    return lr;
+}
+</script>
