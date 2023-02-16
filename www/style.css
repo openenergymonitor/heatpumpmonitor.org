@@ -43,6 +43,12 @@ div#header a {
 div#header a.active {
   background: #368fb4;
 }
+p#intro {
+  float: left;
+}
+form#search {
+  float: right;
+}
 div#app {
   margin-top: 4em;
 }

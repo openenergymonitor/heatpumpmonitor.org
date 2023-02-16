@@ -24,11 +24,12 @@
 </div>
   
 <div id="app">
+  <form id="search">
+    <br>
+    <b>Filter:</b> <input name="query" v-model="filterKey">
+  </form>
   <p>Here you can see an estimataion of running costs for the heat pumps, based on the performance information collected using <a href="https://openenergymonitor.org/">OpenEnergyMonitor</a>.<br>
   Costs are calculated assuming UK fixed tariffs at the start of 2023, and presented in UK currency: electricity at 34p per kWh, gas at 10p per kWh.</p>
-  <form id="search">
-    <P><b>Filter:</b> <input name="query" v-model="filterKey"></p>
-  </form>
   <table width="100%">
     <thead>
       <tr>
