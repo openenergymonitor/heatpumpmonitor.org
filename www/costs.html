@@ -24,12 +24,13 @@
 </div>
   
 <div id="app">
+  <p>Here you can see an estimataion of running costs for the heat pumps, based on the performance information collected using <a href="https://openenergymonitor.org/">OpenEnergyMonitor</a>.</p>
   <form id="search">
     <br>
     <b>Filter:</b> <input name="query" v-model="filterKey">
   </form>
-  <p>Here you can see an estimataion of running costs for the heat pumps, based on the performance information collected using <a href="https://openenergymonitor.org/">OpenEnergyMonitor</a>.<br>
-  Costs are calculated assuming UK fixed tariffs at the start of 2023, and presented in UK currency: electricity at 34p per kWh, gas at 10p per kWh.</p>
+  <p><i>Costs are calculated assuming UK fixed tariffs at the start of 2023, and presented in UK currency: electricity at 34p per kWh, gas at 10p per kWh.<br>
+  Equivalent gas cost is estimated for a 85% efficient boiler producing the same amount of heat, with a comparative cost of 12p per kWh of heat.</i></p>
   <table width="100%">
     <thead>
       <tr>
@@ -55,9 +56,9 @@
         
         <!-- Running costs -->
         <th @click="sort('year_elec', 'desc')" class="border right">Electric</th>
+        <th @click="sort('year_cop', 'desc')" class="center">Per kWh Heat</th>
         <th @click="sort('year_heat', 'desc')" class="right">Equiv. Gas</th>
-        <th @click="sort('year_cop', 'desc')" class="center">Cost per kWh</th>
-        <th @click="sort('month_cop', 'desc')" class="border center">Daily cost</th>
+        <th @click="sort('month_elec', 'asc')" class="border center">Daily cost</th>
         <th class="nosort border">Charts</th>
       </tr>
     </thead>
@@ -80,11 +81,11 @@
         <td v-bind:class="sinceClass(n) + ' nowrap border'" v-bind:title="unit_dp(n.year_elec, 'kWh ') + sinceDate(n)" align="right">
            &pound;{{(n.year_elec * 0.34).toFixed(2)}}
         </td>
-        <td v-bind:class="sinceClass(n) + ' nowrap'" v-bind:title="unit_dp(Math.round(n.year_heat/0.9), 'kWh ') + sinceDate(n)" align="right">
-           {{n.year_heat > 0 ? '&pound;'+(n.year_heat / 0.9 * 0.1).toFixed(2) : '-'}}
-        </td>
         <td v-bind:class="sinceClass(n) + ' nowrap center'" v-bind:title="sinceDate(n)">
            {{n.year_cop > 0 ? (n.year_elec * 34 / n.year_heat).toFixed(1)+'p' : '-'}}</td>
+        <td v-bind:class="sinceClass(n) + ' nowrap'" v-bind:title="unit_dp(Math.round(n.year_heat/0.9), 'kWh ') + sinceDate(n)" align="right">
+           {{n.year_heat > 0 ? '&pound;'+(n.year_heat / 0.85 * 0.10).toFixed(2) : '-'}}
+        </td>
         <td v-bind:class="monthClass(n) + ' nowrap center border'" v-bind:title="n.month_elec">
            {{(monthClass(n) == '') ? '&pound;' + (n.month_elec * 0.34 / 30).toFixed(2) : '-'}}</td>
         <td class="border"><a v-bind:href="n.url" target="_blank">Link &raquo;</a></td>
