@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>HeatpumpMonitor.org</title>
+<script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
+  <link rel="stylesheet" href="views/style.css?v=8" />
+  <link href="https://openenergymonitor.org/homepage/theme/favicon.ico" rel="shortcut icon">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css">
+  <script src="https://cdn.plot.ly/plotly-2.18.1.min.js" charset="utf-8"></script>
+</head>
+
+<body>
+
+<div id="header">
+  <div id="title"><span class="big">
+    <b>HeatpumpMonitor</b>.org</span></div>
+  <div id="navigation">
+    <a href="." title="Home"><i aria-hidden="true" class="fas fa-home"></i></a>
+    <a href="stats.html" title="30 Day Stats"><i aria-hidden="true" class="fas fa-table"></i></a>
+    <a href="costs.html" title="Running Costs"><i aria-hidden="true" class="fas fa-coins"></i></a>
+    <a href="graph.html" title="Comparison Charts" class="active"><i aria-hidden="true" class="fas fa-chart-line"></i></a>
+  </div>
+  <div id="tagline">An open source initiative to share and compare heat pump performance data.</div>
+</div>
+  
+<div id="app"></div>
+
+  <p>Compare hourly performance data from two systems over the last 30 days</p>
+
+  <label style="color:#0000ff">Blue</label>
+  <select id="blue_system_select">
+  </select>
+
+  <label style="color:#ff0000">Red</label>
+  <select id="red_system_select">
+  </select>
+
+  <!--
+  <label>Start</label>
+  <input type="date" value="2023-01-01">
+  <label>End</label>
+  <input type="date" value="2023-02-01">
+  
+  <label>Interval</label>
+  <select>
+    <option>Hourly</option>
+  </select>
+  -->
+  
+  
+  <div id="gd" style="height:650px"></div>
+  
+
+<div class="footer">An <a href="https://openenergymonitor.org/">OpenEnergyMonitor.org</a> community initiative</div>
+</body>
+</html>
+
+
+<script>
+
+var blue_system = 1;
+var red_system = 2;
+
+var system_data_cache = {};
+
+var out = "";
+$.getJSON( "data.json", function( systems ) {
+  for (var z in systems) {
+    out += "<option value='"+(parseInt(z)+1)+"'>"+systems[z].location+", "+systems[z].hp_model+" "+systems[z].hp_output+"kW</option>";
+  }
+  $("#blue_system_select").html(out);
+  $("#red_system_select").html(out);
+  $("#blue_system_select").val(blue_system);
+  $("#red_system_select").val(red_system);
+});
+
+interval = 3600;
+date = new Date();
+end = Math.floor((date.getTime()*0.001)/interval)*interval;
+start = end - (3600*24*30);
+
+load_system_data(blue_system,function(){
+    load_system_data(red_system,function(){
+        draw_chart();
+    });
+});
+
+function draw_chart() {
+
+   var plot_data = {
+      "data": [],
+      "layout": {
+        "font": {
+          "size": 14
+        },
+        "title": {
+          "text": "Flow minus Outside temperature vs COP"
+        },
+        "xaxis": {
+          "type": "linear",
+          "range": [],
+          "title": {
+            "text": "Flow minus Outside temperature"
+          },
+          "autorange": true
+        },
+        "yaxis": {
+          "type": "linear",
+          "range": [],
+          "title": {
+            "text": "COP"
+          },
+          "autorange": true
+        },
+        "autosize": true,
+        "showlegend": false,
+        "annotations": []
+      },
+      "frames": []
+    }
+    
+    var systems = [
+      {systemid:blue_system, color:"#0000ff"},
+      {systemid:red_system, color:"#ff0000"}
+    ];
+    
+    for (var i in systems) {
+        let systemid = systems[i].systemid
+
+        let x = [];
+        let y = [];
+        let size = []
+                
+        let time = start;
+        for (var z in system_data_cache[systemid]['elec']) {
+            let elec = system_data_cache[systemid]['elec'][z];
+            let heat = system_data_cache[systemid]['heat'][z];
+            let outsideT = system_data_cache[systemid]['outsideT'][z];
+            let flowT = system_data_cache[systemid]['flowT'][z];
+            let returnT = system_data_cache[systemid]['returnT'][z];
+            
+            if (elec!=null && heat!=null && outsideT!=null && flowT!=null && elec>0 && heat>0) {
+                // x.push((flowT+273+2)/((flowT+273+2)-(outsideT+273-6)))
+                x.push(flowT - outsideT)
+                y.push(heat / elec)   
+                size.push(heat*0.002)
+            }
+            
+            time += interval;
+        }
+        
+        plot_data.data.push({
+          "mode": "markers",
+          "type": "scatter",
+          "x": x, "y": y,
+          "marker": {
+            "line": {
+              "width": 0
+            },
+            "size": size,
+            "color": systems[i].color
+          }
+        });
+    }
+
+    Plotly.newPlot("gd",plot_data);
+}
+ 
+$("#blue_system_select").change(function(){
+    blue_system = $("#blue_system_select").val();
+    
+    if (system_data_cache[blue_system]==undefined) {
+        load_system_data(blue_system,function(){
+            draw_chart();
+        });
+    } else {
+        draw_chart(); 
+    }
+});
+
+$("#red_system_select").change(function(){
+    red_system = $("#red_system_select").val();
+    
+    if (system_data_cache[red_system]==undefined) {
+        load_system_data(red_system,function(){
+            draw_chart();
+        });
+    } else {
+        draw_chart(); 
+    }
+});
+
+function load_system_data(systemid,callback) {
+    $.ajax({dataType: "json", url: "api/data/all?system="+systemid+"&start="+start+"&end="+end+"&interval="+interval, success: function(system_data) {
+        system_data_cache[systemid] = system_data;
+        callback();
+    }});
+}
+</script>

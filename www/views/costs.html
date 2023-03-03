@@ -3,7 +3,7 @@
 <head>
   <title>HeatpumpMonitor.org</title>
   <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
-  <link rel="stylesheet" href="style.css?v=8" />
+  <link rel="stylesheet" href="views/style.css?v=8" />
   <link href="https://openenergymonitor.org/homepage/theme/favicon.ico" rel="shortcut icon">
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css">
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css">
@@ -15,28 +15,30 @@
   <div id="title"><span class="big">
     <b>HeatpumpMonitor</b>.org</span></div>
   <div id="navigation">
-    <a href="." title="Home" class="active"><i aria-hidden="true" class="fas fa-home"></i></a>
+    <a href="." title="Home"><i aria-hidden="true" class="fas fa-home"></i></a>
     <a href="stats.html" title="30 Day Stats"><i aria-hidden="true" class="fas fa-table"></i></a>
-    <a href="costs.html" title="Running Costs"><i aria-hidden="true" class="fas fa-coins"></i></a>
+    <a href="costs.html" title="Running Costs" class="active"><i aria-hidden="true" class="fas fa-coins"></i></a>
     <a href="graph.html" title="Comparison Charts"><i aria-hidden="true" class="fas fa-chart-line"></i></a>
   </div>
   <div id="tagline">An open source initiative to share and compare heat pump performance data.</div>
 </div>
-
+  
 <div id="app">
-  <p>Here you can see a variety of installations monitored with <a href="https://openenergymonitor.org/">OpenEnergyMonitor</a>, and compare detailed statistic to see how performance can vary.</p>
-  <p>If you're monitoring a heat pump with <b>emoncms</b> and the <i>My Heat Pump</i> app, you can add your details here <a href="https://docs.google.com/forms/d/e/1FAIpQLSflTBeRpuWBxXdL2UqkB5pY60tTTGLI201fRaK6ZZEV7Dy70g/viewform" title="Heat Pump Monitoring Submission Form">by completing this form</a>.</p>
+  <p>Here you can see an estimataion of running costs for the heat pumps, based on the performance information collected using <a href="https://openenergymonitor.org/">OpenEnergyMonitor</a>.</p>
   <form id="search">
+    <br>
     <b>Filter:</b> <input name="query" v-model="filterKey">
   </form>
-  <p style="font-style: italic;">Join in with discussion of the results on the forums here: <a href="https://community.openenergymonitor.org/t/introducing-heatpumpmonitor-org-a-public-dashboard-of-heat-pump-performance/21885">Public dashboard of heat pumps</a>.</p>
+  <p><i>Costs are calculated assuming UK fixed tariffs at the start of 2023, and presented in UK currency: electricity at 34p per kWh, gas at 10p per kWh.<br>
+  Equivalent gas cost is estimated for a 85% efficient boiler producing the same amount of heat, with a comparative cost of 12p per kWh of heat.</i></p>
   <table width="100%">
     <thead>
       <tr>
         <th class="header">&nbsp;</td>
-        <th class="header" colspan="6">Property</th>
-        <th class="header" colspan="4">Heating system</th>
-        <th class="header" colspan="3">Annual Performance</th>
+        <th class="header" colspan="4">Property</th>
+        <th class="header" colspan="3">Heating system</th>
+        <th class="header" colspan="3">Annual Running costs</th>
+        <th class="header" colspan="1">30 Days</th>
         <th class="header">&nbsp;</td>
       </tr>
       <tr>
@@ -46,19 +48,17 @@
         <th @click="sort('property', 'asc')">Type</th>
         <th @click="sort('age', 'desc')">Built</th>
         <th @click="sort('floor_area', 'desc')" class="right">Floor Area</th>
-        <th @click="sort('heat_demand', 'desc')" class="right">Heat Demand</th>
-        <th @click="sort('insulation', 'asc')">Insulation</th>
         
         <!-- Heating System -->
         <th @click="sort('hp_model', 'asc')" class="border">Make / Model</th>
         <th @click="sort('hp_output', 'desc')" class="right">Output</th>
         <th @click="sort('hp_type', 'asc')">Source</th>
-        <th @click="sort('emitters', 'asc')">Emitters</th>
         
-        <!-- Performance -->
+        <!-- Running costs -->
         <th @click="sort('year_elec', 'desc')" class="border right">Electric</th>
-        <th @click="sort('year_heat', 'desc')" class="right">Heat</th>
-        <th @click="sort('year_cop', 'desc')" class="center">SCOP</th>
+        <th @click="sort('year_cop', 'desc')" class="center">Per kWh Heat</th>
+        <th @click="sort('year_heat', 'desc')" class="right">Equiv. Gas</th>
+        <th @click="sort('month_elec', 'asc')" class="border center">Daily cost</th>
         <th class="nosort border">Charts</th>
       </tr>
     </thead>
@@ -71,33 +71,32 @@
         <td>{{n.property}}</td>
         <td class="nowrap">{{n.age.replace(' to ', '-').trim()}}</td>
         <td class="nowrap" align="right">{{unit_dp(n.floor_area, 'm&sup2;')}}</td>
-        <td class="nowrap" align="right">{{unit_dp(n.heat_demand, 'kWh')}}</td>
-        <td v-bind:title="n.insulation">{{n.insulation.split(' ').slice(0, 2).join(' ')}}
-           {{n.insulation.split(' ').length > 2 ? '&mldr;' : ''}}</td>
            
         <!-- Heating System -->
         <td class="border" v-bind:title="n.hp_model">{{n.hp_model.replace(/ \(.*\)/, ' &mldr;')}}</td>
         <td class="nowrap" align="right">{{unit_dp(n.hp_output, 'kW')}}</td>
         <td class="nowrap">{{n.hp_type.split(' ')[0]}}</td>
-        <td v-bind:title="n.emitters">
-            {{n.emitters.split(' ').slice(0, 2).join(' ')}}
-            {{n.emitters.split(' ').length > 2 ? '&mldr;' : ''}}</td>
         
-        <!-- Performance -->
-        <td v-bind:class="sinceClass(n) + ' nowrap border'" v-bind:title="sinceDate(n)" align="right">
-           {{unit_dp(n.year_elec, 'kWh')}}
-        </td>
-        <td v-bind:class="sinceClass(n) + ' nowrap'" v-bind:title="sinceDate(n)" align="right">
-           {{unit_dp(n.year_heat, 'kWh')}}
+        <!-- Running costs -->
+        <td v-bind:class="sinceClass(n) + ' nowrap border'" v-bind:title="unit_dp(n.year_elec, 'kWh ') + sinceDate(n)" align="right">
+           &pound;{{(n.year_elec * 0.34).toFixed(2)}}
         </td>
         <td v-bind:class="sinceClass(n) + ' nowrap center'" v-bind:title="sinceDate(n)">
-           {{n.year_cop > 0 ? n.year_cop.toFixed(1) : '-'}}</td>
+           {{n.year_cop > 0 ? (n.year_elec * 34 / n.year_heat).toFixed(1)+'p' : '-'}}</td>
+        <td v-bind:class="sinceClass(n) + ' nowrap'" v-bind:title="unit_dp(Math.round(n.year_heat/0.9), 'kWh ') + sinceDate(n)" align="right">
+           {{n.year_heat > 0 ? '&pound;'+(n.year_heat / 0.85 * 0.10).toFixed(2) : '-'}}
+        </td>
+        <td v-bind:class="monthClass(n) + ' nowrap center border'" v-bind:title="n.month_elec">
+           {{(monthClass(n) == '') ? '&pound;' + (n.month_elec * 0.34 / 30).toFixed(2) : '-'}}</td>
         <td class="border"><a v-bind:href="n.url" target="_blank">Link &raquo;</a></td>
       </tr>
       
       <tr class="extra" style="display: none">
         <td class="extra">&nbsp;</td>
-        <td colspan="14" class="extra">
+        <td colspan="12" class="extra">
+          <b v-if="n.heat_demand">Heat Demand:</b> {{unit_dp(n.heat_demand, 'kWh')}}
+          <b v-if="n.insulation">Insulation:</b> {{n.insulation}}
+          <b v-if="n.emitters">Emitters:</b> {{n.emitters}}
           <b v-if="n.refrigerant">Refrigerant:</b> {{n.refrigerant}}
           <b v-if="n.flow_temp">Flow Temp:</b> {{n.flow_temp}}
           <b v-if="n.buffer">Buffer:</b> {{n.buffer}}
@@ -113,8 +112,8 @@
     
     <tfoot>
       <td colspan="1" class="footer"></td>
-      <td colspan="6" class="footer">Recently added systems denoted by &#10024;</td>
-      <td colspan="4" class="footer"></td>
+      <td colspan="4" class="footer">Recently added systems denoted by &#10024;</td>
+      <td colspan="3" class="footer"></td>
       <td colspan="3" class="footer"><i>Incomplete data in grey</i></td>
       <td colspan="2" class="footer"></td>
     </tfoot>
@@ -122,7 +121,7 @@
   
 </div>
 
-<script src="table.js?v=2.2"></script>
+<script src="views/table.js?v=2.2"></script>
 
 <div class="footer">An <a href="https://openenergymonitor.org/">OpenEnergyMonitor.org</a> community initiative</div>
 </body>

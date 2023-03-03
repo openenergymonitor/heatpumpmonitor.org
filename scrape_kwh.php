@@ -20,6 +20,7 @@
   # read each row and append kWh readings for last year
   while (($row = fgetcsv($input, 1000, "\t")) !== FALSE) {
     $system = ['id' => count($data) + 1];
+    echo json_encode($system)."\n";
     $details = array_combine($header, $row);
     $system['hash'] = hash("crc32b", $details['submitted']);
     $stats = scrapeEnergyValues($details['url']);
@@ -46,7 +47,9 @@
     }
     
     # fetch meta data for kWh feeds
+    echo "- elec data meta\n";
     $elec_data = fetchFeedMeta($config, $config->heatpump_elec_kwh);
+    echo "- heat data meta\n";
     $heat_data = fetchFeedMeta($config, $config->heatpump_heat_kwh);
     
     # sychronise both feeds on same start and end times
@@ -58,7 +61,9 @@
     }
 
     # fetch last values from kWh feeds
+    echo "- elec data last value\n";
     $last_elec = fetchValue($config, $config->heatpump_elec_kwh, $elec_data->end_time);
+    echo "- heat data last value\n";
     $last_heat = fetchValue($config, $config->heatpump_heat_kwh, $heat_data->end_time);
 
     # fetch last 30 days, or the most available
@@ -69,7 +74,9 @@
     }
     
     # fetch values for a month ago (or since start_date)
+    echo "- elec month value\n";
     $month_elec = $last_elec - fetchValue($config, $config->heatpump_elec_kwh, $month_ago);
+    echo "- heat month value\n";
     $month_heat = $last_heat - fetchValue($config, $config->heatpump_heat_kwh, $month_ago);
     
     # determine how far back to go
@@ -81,7 +88,9 @@
     }
     
     # fetch values for a year ago (or since start_date)
+    echo "- elec year value\n";
     $year_elec = $last_elec - fetchValue($config, $config->heatpump_elec_kwh, $start_date);
+    echo "- heat year value\n";
     $year_heat = $last_heat - fetchValue($config, $config->heatpump_heat_kwh, $start_date);
 
     $values = [
@@ -94,6 +103,7 @@
       "since"      => ($start_date > $year_ago) ? intval($start_date) : 0,
     ];
 
+    echo "- fetch stats\n";
     $stats = fetchMoreStats($config, $month_ago, $elec_data->end_time);
     if ($stats != null && isset($stats->full_period)) {
       unset($stats->full_period);
