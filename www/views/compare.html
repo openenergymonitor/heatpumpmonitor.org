@@ -36,18 +36,20 @@
   <select id="red_system_select">
   </select>
 
-  <!--
   <label>Start</label>
-  <input type="date" value="2023-01-01">
+  <input id="start" type="date" value="2023-01-01">
   <label>End</label>
-  <input type="date" value="2023-02-01">
+  <input id="end" type="date" value="2023-02-01">
+  
+  <button id="change_date" style="display:none">Load</button>
+  <span id="loading">Loading...</span>
+  
   
   <label>Interval</label>
-  <select>
-    <option>Hourly</option>
+  <select id="interval_select">
+    <option value="3600">Hourly</option>
+    <option value="86400">Daily</option>
   </select>
-  -->
-  
   
   <div id="gd" style="height:650px"></div>
   
@@ -76,13 +78,22 @@ $.getJSON( "data.json", function( systems ) {
 });
 
 interval = 3600;
+$("#interval_select").val(interval);
 date = new Date();
-end = Math.floor((date.getTime()*0.001)/interval)*interval;
-start = end - (3600*24*30);
 
+end = Math.floor((date.getTime()*0.001)/interval)*interval;
+$("#end").val(time_to_date_str(end));
+
+start = end - (3600*24*30);
+$("#start").val(time_to_date_str(start));
+
+var timeout = false;
+
+$("#loading").show();
 load_system_data(blue_system,function(){
     load_system_data(red_system,function(){
         draw_chart();
+        $("#loading").hide();
     });
 });
 
@@ -191,10 +202,105 @@ $("#red_system_select").change(function(){
     }
 });
 
+$("#start").change(function(){
+    $("#change_date").show();
+});
+
+$("#end").change(function(){
+    $("#change_date").show();
+});
+
+$("#change_date").click(function() {
+
+    var date = new Date($("#start").val());
+    date.setHours(0);
+    date.setMinutes(0);
+    date.setSeconds(0);
+
+    if (date.getFullYear()<2020) {
+      date.setFullYear(2020);
+      $("#start").val(time_to_date_str(date.getTime()*0.001));
+    }
+    
+    if (!isNaN(date.getTime())) {
+        start = date.getTime()*0.001;
+    }
+
+    if (start>(end-(3600*24))) {
+        start = end-(3600*24)
+        $("#start").val(time_to_date_str(start));
+    }
+
+    date = new Date($("#end").val());
+    date.setHours(0);
+    date.setMinutes(0);
+    date.setSeconds(0);
+
+    if (date.getFullYear()>(new Date()).getFullYear()) {
+      date.setFullYear((new Date()).getFullYear());
+      $("#end").val(time_to_date_str(date.getTime()*0.001));
+    }
+    
+    if (!isNaN(date.getTime())) {
+        end = date.getTime()*0.001;
+    }
+    
+    if (end<(start+(3600*24))) {
+        end = start+(3600*24)
+        $("#end").val(time_to_date_str(end));
+    }
+    
+    var npoints = Math.round((end - start)/interval);
+    if (npoints>6000) interval = 3600*24;
+    
+    $("#interval_select").val(interval);
+    
+    console.log("date changed");
+    $("#change_date").hide();
+    $("#loading").show();
+    
+    system_data_cache = {}
+    load_system_data(blue_system,function(){
+        load_system_data(red_system,function(){
+            draw_chart();
+            $("#loading").hide();
+        });
+    });
+});
+
+$("#interval_select").change(function(){
+    var _interval = $(this).val()*1;
+
+    var npoints = Math.round((end - start)/_interval);
+    if (npoints>6000) _interval = 3600*24;
+    interval = _interval;
+
+    $("#loading").show();
+    
+    system_data_cache = {}
+    load_system_data(blue_system,function(){
+        load_system_data(red_system,function(){
+            draw_chart();
+            $("#loading").hide();
+        });
+    });
+
+});
+
 function load_system_data(systemid,callback) {
     $.ajax({dataType: "json", url: "api/data/all?system="+systemid+"&start="+start+"&end="+end+"&interval="+interval, success: function(system_data) {
         system_data_cache[systemid] = system_data;
         callback();
     }});
+}
+
+function time_to_date_str(time) {
+    var date = new Date(time*1000);
+    var yyyy = date.getFullYear();
+    var mm = date.getMonth()+1;
+    if (mm<10) mm = "0"+mm;
+    var dd = date.getDate();
+    if (dd<10) dd = "0"+dd;
+    return yyyy+"-"+mm+"-"+dd;
 }
 </script>
