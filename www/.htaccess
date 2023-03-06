@@ -1,0 +1,15 @@
+DirectoryIndex index.php
+
+<IfModule mod_rewrite.c>
+  RewriteEngine on
+  
+  # Rewrite URLs of the form 'x' to the form 'index.php?q=x'.
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_FILENAME} !-s
+  
+  # Skip rewrites for known files, folders and 4xx/5xx errors so we know if something is wrong
+  RewriteCond %{REQUEST_URI} !^/?views.*$
+  RewriteCond %{ENV:REDIRECT_STATUS} ![45]0[0-9]
+  RewriteRule ^(.*)$ index.php?q=$1 [L,QSA]
+</IfModule>

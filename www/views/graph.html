@@ -1,0 +1,51 @@
+
+<div id="app">
+  <p>Pick two metrics to plot on the graph, using data collected from the heat pumps over the last 30 days.</p>
+
+  <label>X-axis</label>
+  <select id="x_axis_select">
+    <option value="flowT">Flow temperature last 30 days</option>
+    <option value="returnT">Return temperature last 30 days</option>
+    <option value="flow_minus_return">Flow - Return temperature last 30 days</option>
+    <option value="outsideT">Outside temperature last 30 days</option>
+    <option value="flow_minus_outside">Flow - Outside temperature last 30 days</option>
+    <option value="elec_W">Electric consumption last 30 days (W)</option>
+    <option value="heat_W">Heat output last 30 days (W)</option>
+    <option value="elec_kwh">Electric consumption last 30 days (kWh)</option>
+    <option value="heat_kwh">Heat output last 30 days (kWh)</option>
+    <option value="carnot_prc">% Carnot last 30 days</option>
+    <option value="floor_area">Floor area (m2)</option>
+    <option value="calc_heat_demand">Calculated annual heat demand (kWh)</option>
+    <option value="calc_heat_demand_m2">Calculated annual heat demand (kWh/m2)</option>
+    <option value="monthly_heat_demand_m2">Measured 30 day heat demand (kWh/m2)</option>
+  </select>
+
+  <label>Y-axis</label>
+  <select id="y_axis_select">
+    <option value="monthly_cop">COP including standby</option>
+    <option value="when_running_cop">COP when running</option>
+    <option value="elec_kwh">Electric consumption last 30 days (kWh)</option>
+    <option value="heat_kwh">Heat output last 30 days (kWh)</option>
+  </select>
+  
+  <label>Colour coding</label>
+  <select id="c_axis_select">
+    <option value="buffer">Buffer</option>
+    <option value="R290">Refrigerant: R290</option>
+    <option value="R32">Refrigerant: R32</option>
+    <option value="R410a">Refrigerant: R410a</option>
+    <option value="afglycol">Anti-Freeze: Glycol/water mixture</option>   
+    <option value="afvalves">Anti-Freeze: Anti-freeze valves</option> 
+    <option value="afcirc">Anti-Freeze: Central heat pump water circulation</option>  
+  </select>
+  
+
+
+</div>
+
+<div id="gd" style="height:650px"></div>
+<div id="trend_line_equation"></div>
+
+<script src="https://cdn.plot.ly/plotly-2.18.1.min.js" charset="utf-8"></script>
+<script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
+<script src="views/graph.js?v=1"></script>

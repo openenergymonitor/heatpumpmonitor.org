@@ -1,82 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <title>HeatpumpMonitor.org</title>
-<script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
-  <link rel="stylesheet" href="style.css?v=8" />
-  <link href="https://openenergymonitor.org/homepage/theme/favicon.ico" rel="shortcut icon">
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css">
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css">
-  <script src="https://cdn.plot.ly/plotly-2.18.1.min.js" charset="utf-8"></script>
-</head>
 
-<body>
-
-<div id="header">
-  <div id="title"><span class="big">
-    <b>HeatpumpMonitor</b>.org</span></div>
-  <div id="navigation">
-    <a href="." title="Home"><i aria-hidden="true" class="fas fa-home"></i></a>
-    <a href="stats.html" title="30 Day Stats"><i aria-hidden="true" class="fas fa-table"></i></a>
-    <a href="costs.html" title="Running Costs"><i aria-hidden="true" class="fas fa-coins"></i></a>
-    <a href="graph.html" title="Comparison Charts" class="active"><i aria-hidden="true" class="fas fa-chart-line"></i></a>
-  </div>
-  <div id="tagline">An open source initiative to share and compare heat pump performance data.</div>
-</div>
-  
-<div id="app">
-  <p>Pick two metrics to plot on the graph, using data collected from the heat pumps over the last 30 days.</p>
-
-  <label>X-axis</label>
-  <select id="x_axis_select">
-    <option value="flowT">Flow temperature last 30 days</option>
-    <option value="returnT">Return temperature last 30 days</option>
-    <option value="flow_minus_return">Flow - Return temperature last 30 days</option>
-    <option value="outsideT">Outside temperature last 30 days</option>
-    <option value="flow_minus_outside">Flow - Outside temperature last 30 days</option>
-    <option value="elec_W">Electric consumption last 30 days (W)</option>
-    <option value="heat_W">Heat output last 30 days (W)</option>
-    <option value="elec_kwh">Electric consumption last 30 days (kWh)</option>
-    <option value="heat_kwh">Heat output last 30 days (kWh)</option>
-    <option value="carnot_prc">% Carnot last 30 days</option>
-    <option value="floor_area">Floor area (m2)</option>
-    <option value="calc_heat_demand">Calculated annual heat demand (kWh)</option>
-    <option value="calc_heat_demand_m2">Calculated annual heat demand (kWh/m2)</option>
-    <option value="monthly_heat_demand_m2">Measured 30 day heat demand (kWh/m2)</option>
-  </select>
-
-  <label>Y-axis</label>
-  <select id="y_axis_select">
-    <option value="monthly_cop">COP including standby</option>
-    <option value="when_running_cop">COP when running</option>
-    <option value="elec_kwh">Electric consumption last 30 days (kWh)</option>
-    <option value="heat_kwh">Heat output last 30 days (kWh)</option>
-  </select>
-  
-  <label>Colour coding</label>
-  <select id="c_axis_select">
-    <option value="buffer">Buffer</option>
-    <option value="R290">Refrigerant: R290</option>
-    <option value="R32">Refrigerant: R32</option>
-    <option value="R410a">Refrigerant: R410a</option>
-    <option value="afglycol">Anti-Freeze: Glycol/water mixture</option>   
-    <option value="afvalves">Anti-Freeze: Anti-freeze valves</option> 
-    <option value="afcirc">Anti-Freeze: Central heat pump water circulation</option>  
-  </select>
-  
-
-
-</div>
-  <div id="gd" style="height:650px"></div>
-
-  <div id="trend_line_equation"></div>
-
-<div class="footer">An <a href="https://openenergymonitor.org/">OpenEnergyMonitor.org</a> community initiative</div>
-</body>
-</html>
-
-
-<script>
 var plot_data = {
   "data": [
     {
@@ -295,4 +217,3 @@ function linearRegression(x,y){
 
     return lr;
 }
-</script>
