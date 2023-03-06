@@ -40,7 +40,7 @@
     </select>
     
     <label>Interval</label>
-    <select id="interval_select">
+    <select v-model="interval" @change="change_interval">
       <option value="3600">Hourly</option>
       <option value="86400">Daily</option>
     </select>
@@ -89,9 +89,10 @@ var app = new Vue({
   el: '#app',
   data: {
     mode: "cop_vs_dt",
-    months: ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
-    days_in_month: [31,28,31,30,31,30,31,31,30,31,30,31],
-    years: [2020,2021,2022,2023],
+    // months: ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
+    // days_in_month: [31,28,31,30,31,30,31,31,30,31,30,31],
+    // years: [2020,2021,2022,2023],
+    interval: 3600,
     match_dates: true,
     selected_systems: [
       {color:"#0000ff", id:0, start: "2023-02-05", end: "2023-03-05", time_changed: false, data: false},
@@ -175,19 +176,34 @@ var app = new Vue({
               app.selected_systems[i].end = time_to_date_str(end);
           }
       }
-
-      var npoints = Math.round((end - start)/interval);
-      if (npoints>6000) interval = 3600*24;
-
+      
+      for (var i in app.selected_systems) {
+        let start = date_str_to_time(app.selected_systems[i].start)
+        let end = date_str_to_time(app.selected_systems[i].end)
+        let npoints = Math.round((end - start)/app.interval);
+        if (npoints>6000) app.interval = 3600*24;
+      }
+      
       load_all();
       draw_chart();
       app.selected_systems[idx].time_changed = false;
+    },
+    
+    change_interval: function() {
+      for (var i in app.selected_systems) {
+        let start = date_str_to_time(app.selected_systems[i].start)
+        let end = date_str_to_time(app.selected_systems[i].end)
+        let npoints = Math.round((end - start)/app.interval);
+        if (npoints>6000) app.interval = 3600*24;
+      }
+      load_all();
+      draw_chart();
+      for (var i in app.selected_systems) {
+      app.selected_systems[i].time_changed = false;
+      }
     }
   }
 });
-
-interval = 3600;
-$("#interval_select").val(interval);
 
 var timeout = false;
 
@@ -241,7 +257,7 @@ function draw_chart() {
         var time = date_str_to_time(app.selected_systems[i].start);
                 
         var profile = {};
-        for (var t=0; t<24; t+=(interval/3600)) {
+        for (var t=0; t<24; t+=(app.interval/3600)) {
             profile[t]=0;
         }
                 
@@ -299,15 +315,15 @@ function draw_chart() {
                 if (elec!=null) { 
                     date.setTime(time*1000);
                     let hm = date.getHours() + (date.getMinutes()/60);
-                    profile[hm] += (elec*interval)/3600000;
+                    profile[hm] += (elec*app.interval)/3600000;
                 }
             }
             
-            time += interval;
+            time += app.interval;
         }
         
         if (app.mode=="profile") { 
-            for (var hm=0; hm<24; hm+=(interval/3600)) {
+            for (var hm=0; hm<24; hm+=(app.interval/3600)) {
                 x.push(hm)
                 y.push(profile[hm])
                 size.push(10)  
@@ -347,18 +363,6 @@ function draw_chart() {
     console.log("redraw complete");
 }
 
-$("#interval_select").change(function(){
-    var _interval = $(this).val()*1;
-
-    var npoints = Math.round((end - start)/_interval);
-    if (npoints>6000) _interval = 3600*24;
-    interval = _interval;
-
-    $("#loading").show();
-    
-
-});
-
 function load_all() {
   for (var z in app.selected_systems) {
     load_system_data(z);
@@ -369,7 +373,7 @@ function load_system_data(idx) {
   var system = app.selected_systems[idx];
   $.ajax({
     dataType: "json", 
-    url: "api/data/all?system="+(system.id+1)+"&start="+date_str_to_time(system.start)+"&end="+date_str_to_time(system.end)+"&interval="+interval, 
+    url: "api/data/all?system="+(system.id+1)+"&start="+date_str_to_time(system.start)+"&end="+date_str_to_time(system.end)+"&interval="+app.interval, 
     async:false, 
     success: function(system_data) {
       app.selected_systems[idx].data = system_data;
