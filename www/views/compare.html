@@ -45,6 +45,9 @@
       <option value="86400">Daily</option>
     </select>
     
+    <label>Match dates</label>
+    <input v-model="match_dates" type="checkbox" @click="match_dates_fn">
+    
     <button @click="add_system">+ Add system</button>
     
     <br><br>
@@ -57,13 +60,15 @@
       <th>Start</th>
       <th>End</th>
       <th></th>
+      <th></th>
     </tr>
     <tr v-for="system,idx in selected_systems">
       <td><input type="color" v-model="system.color" @change="change_color"></td>
       <td><select v-model="system.id" @change="change_system(idx)"><option v-for="s,i in system_list" v-bind:value="i">{{ s.location }},  {{ s.hp_model }}, {{ s.hp_output }} kW</option></select></td>
-      <td><input v-model="system.start" type="date" @change="date_changed(idx)"></td>
-      <td><input v-model="system.end" type="date" @change="date_changed(idx)"></td>
+      <td><input v-if="idx==0 || !match_dates" v-model="system.start" type="date" @change="date_changed(idx)"></td>
+      <td><input v-if="idx==0 || !match_dates" v-model="system.end" type="date" @change="date_changed(idx)"></td>
       <td><button v-if="system.time_changed" @click="change_dates(idx)">Load</button></td>
+      <td><button v-if="idx>0" @click="remove_system(idx)">Remove</button>
     </tr>
     </table>
   </div>
@@ -87,6 +92,7 @@ var app = new Vue({
     months: ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
     days_in_month: [31,28,31,30,31,30,31,31,30,31,30,31],
     years: [2020,2021,2022,2023],
+    match_dates: true,
     selected_systems: [
       {color:"#0000ff", id:0, start: "2023-02-05", end: "2023-03-05", time_changed: false, data: false},
       {color:"#ff0000", id:1, start: "2023-02-05", end: "2023-03-05", time_changed: false, data: false}
@@ -100,6 +106,11 @@ var app = new Vue({
       draw_chart();
     }, 
     
+    remove_system: function(idx) {
+      app.selected_systems.splice(idx,1);
+      draw_chart();  
+    },
+    
     change_mode: function() {
       // load_all();
       draw_chart();    
@@ -107,6 +118,21 @@ var app = new Vue({
     
     change_color: function() {
       draw_chart();  
+    },
+    
+    match_dates_fn: function() {
+      if (!app.match_dates) {
+        console.log("matching dates");
+        let start = app.selected_systems[0].start;
+        let end = app.selected_systems[0].end;
+
+        for (var i in app.selected_systems) {
+          app.selected_systems[i].start = start;
+          app.selected_systems[i].end = end;
+        }
+        load_all();
+        draw_chart();  
+      }
     },
     
     change_system: function(idx) {
@@ -141,7 +167,14 @@ var app = new Vue({
       if (start>(end-(3600*24))) {
           start = end-(3600*24)
           app.selected_systems[idx].start = time_to_date_str(start);
-      } 
+      }
+      
+      if (app.match_dates) {
+          for (var i in app.selected_systems) {
+              app.selected_systems[i].start = time_to_date_str(start);
+              app.selected_systems[i].end = time_to_date_str(end);
+          }
+      }
 
       var npoints = Math.round((end - start)/interval);
       if (npoints>6000) interval = 3600*24;
