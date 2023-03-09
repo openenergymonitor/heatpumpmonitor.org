@@ -11,15 +11,17 @@
 
   <label>Username</label>
   <div class="input-group mb-3">
-    <input type="text" class="form-control"> 
+    <input type="text" class="form-control" id="username"> 
   </div>
 
   <label>Password</label>
   <div class="input-group mb-3">
-    <input type="password" class="form-control"> 
+    <input type="password" class="form-control" id="password"> 
   </div>
   
-  <button type="button" class="btn btn-primary">Login</button>
+  <button type="button" class="btn btn-primary" id="login">Login</button>
+  
+  <div id="error"></div>
 
   </div>
 </div>
@@ -28,5 +30,26 @@
 
 <script>
 $("body").css("background-color","#1d8dbc");
+
+$("#login").click(function() {
+
+  var username
+  $.ajax({
+    type: "POST", url: "login.json",
+    data: {
+        username: encodeURIComponent($("#username").val()),
+        password: encodeURIComponent($("#password").val())
+    },
+    dataType: "json", async: false,
+    success: function(result) {
+       console.log(result);
+       if (!result.success) {
+           $("#error").html("<br>"+result.message);
+       } else {
+           window.location = "form";
+       }
+    }
+  });
+});
 </script>
 

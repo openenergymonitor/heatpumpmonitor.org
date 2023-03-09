@@ -56,7 +56,11 @@ switch ($route->controller) {
         
     case "login":
         if ($route->format=="html") {
-            $output = view("views/login.html", array());  
+            if (!$session['userid']) {
+                $output = view("views/login.html", array());  
+            } else {
+                header('Location: '.$path);
+            }
         } else if ($route->format=="json") {
             $output = $user->login(post("username"),post("password"));
         }
@@ -64,6 +68,7 @@ switch ($route->controller) {
 
     case "logout":
         $user->logout();
+        $session = $user->emon_session_start();
         $route->format = "html";
         $output = view("views/main.html", array());
         break;
