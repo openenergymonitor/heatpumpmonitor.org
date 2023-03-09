@@ -50,14 +50,16 @@ switch ($route->controller) {
         $data_obj = json_decode($data);
         if (isset($data_obj[$systemid])) {
             $system = $data_obj[$systemid];
-            echo view("views/form.php", array("system"=>$system,"session"=>$session));
-            die;
+            $output = view("views/form.php", array("system"=>$system,"session"=>$session));
         }
         break;
         
     case "login":
-        $route->format = "json";
-        $output = $user->login(post("username"),post("password"));
+        if ($route->format=="html") {
+            $output = view("views/login.html", array());  
+        } else if ($route->format=="json") {
+            $output = $user->login(post("username"),post("password"));
+        }
         break;
         
     case "api":

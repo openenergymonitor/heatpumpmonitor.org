@@ -10,7 +10,8 @@ div#header {
   background: #44b3e2;
   color: white;
   width: 100%;
-  height: 1cm;
+  /*height: 1cm;*/
+  z-index: 1000;
 }
 div#header div#title {
   float: left;

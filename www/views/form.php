@@ -1,19 +1,12 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Heat Pump Monitoring Submission</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
-</head>
-<body >
 
-<div id="app">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
 
-<div style=" background-color:#44b3e2; color:#fff; padding-top:20px; padding-bottom:10px">
+<div id="app" class="bg-light">
+
+<div style=" background-color:#f0f0f0; padding-top:20px; padding-bottom:10px">
   <div class="container" style="max-width:800px;">
-    <h3>Heat Pump Monitoring Submission</h3>
+    <h3>Heat Pump Monitoring Submission: <?php if (isset($session["username"])) echo $session["username"]; ?></h3>
     <p>If you have a heat pump and publish stats via emoncms, submit your details here.</p>
   </div>
 </div>
@@ -301,9 +294,6 @@
 </div>
 </div>
 
-</body>
-</html>
-
 <script>
 
 var data = <?php echo json_encode($system); ?>;
@@ -358,3 +348,4 @@ var app = new Vue({
 });
 
 </script>
+<script src="/docs/5.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
