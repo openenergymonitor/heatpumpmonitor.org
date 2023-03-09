@@ -61,6 +61,12 @@ switch ($route->controller) {
             $output = $user->login(post("username"),post("password"));
         }
         break;
+
+    case "logout":
+        $user->logout();
+        $route->format = "html";
+        $output = view("views/main.html", array());
+        break;
         
     case "api":
         $route->format = "json";
@@ -142,7 +148,7 @@ switch ($route->controller) {
 switch ($route->format) {
 
     case "html":
-        echo view("theme/theme.php", array("content"=>$output, "route"=>$route));
+        echo view("theme/theme.php", array("content"=>$output, "route"=>$route, "session"=>$session));
         break;
         
     case "json":

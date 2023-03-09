@@ -18,6 +18,13 @@ $navigation = array(
   array("controller"=>"graph", "href"=>"graph", "title"=>"Comparison Charts", "icon"=>"fa-chart-line"),
   array("controller"=>"compare", "href"=>"compare", "title"=>"Comparison Charts", "icon"=>"fa-object-group")
 );
+
+if (!$session['userid']) {
+  $navigation[] = array("controller"=>"login", "href"=>"login", "title"=>"Login", "icon"=>"fa-user");
+} else {
+  $navigation[] = array("controller"=>"form", "href"=>"form", "title"=>"Profile", "icon"=>"fa-user");
+}
+
 ?>
 
 <div id="header">
