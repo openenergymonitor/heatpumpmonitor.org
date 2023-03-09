@@ -7,9 +7,13 @@ ini_set('display_errors', 'on');
 
 require "core.php";
 require "route.php";
+require("user_model.php");
+$user = new User();
 
 $path = get_application_path(false);
 $route = new Route(get('q'), server('DOCUMENT_ROOT'), server('REQUEST_METHOD'));
+
+$session = $user->emon_session_start();
 
 switch ($route->controller) {
 
@@ -46,9 +50,14 @@ switch ($route->controller) {
         $data_obj = json_decode($data);
         if (isset($data_obj[$systemid])) {
             $system = $data_obj[$systemid];
-            echo view("views/form.php", array("system"=>$system));
+            echo view("views/form.php", array("system"=>$system,"session"=>$session));
             die;
         }
+        break;
+        
+    case "login":
+        $route->format = "json";
+        $output = $user->login(post("username"),post("password"));
         break;
         
     case "api":
