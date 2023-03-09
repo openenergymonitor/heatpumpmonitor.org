@@ -37,6 +37,19 @@ switch ($route->controller) {
         $route->format = "html";
         $output = view("views/compare.html", array());
         break;
+
+    case "form":
+        $route->format = "html";
+        $systemid = (int) $route->action;
+        
+        $data = file_get_contents("data.json");
+        $data_obj = json_decode($data);
+        if (isset($data_obj[$systemid])) {
+            $system = $data_obj[$systemid];
+            echo view("views/form.php", array("system"=>$system));
+            die;
+        }
+        break;
         
     case "api":
         $route->format = "json";
