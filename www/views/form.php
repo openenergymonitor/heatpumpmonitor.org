@@ -21,14 +21,11 @@
 <div class="container" style="max-width:800px" >
   <br>
 
-  <div class="row">
-    <div class="col">   
-      <p><b>Email *</b></p>
-      <div class="input-group mb-3">
-        <input type="text" class="form-control" v-model="email" @change="update"> 
-      </div>
-    </div>
+  <p><b>Email *</b></p>
+  <div class="input-group mb-3">
+    <input type="text" class="form-control" v-model="email" @change="update"> 
   </div>
+  
   <div class="row">
     <div class="col">  
       <p><b>Name *</b><br>Your name. This will not be displayed publicly but will allow for updating records if necessary.</p>
@@ -85,18 +82,13 @@
       </div>
     </div>
   </div>
-  
-  <div class="row">
-    <div class="col">
 
-      <p><b>System includes buffer or low loss header</b></p>
-      <div class="input-group mb-3">
-        <select class="form-control" v-model="buffer" @change="update">
-          <option>Yes</option>
-          <option>No</option>
-        </select>
-      </div>
-    </div>
+  <p><b>System includes buffer or low loss header</b></p>
+  <div class="input-group mb-3">
+    <select class="form-control" v-model="buffer" @change="update">
+      <option>Yes</option>
+      <option>No</option>
+    </select>
   </div>
   
   <div class="row">
@@ -128,6 +120,7 @@
       <br>
     </div>
   </div>
+  
   <div class="row">
     <p><b>Weather compensation</b></p>
     <div class="col">    
@@ -151,29 +144,27 @@
       </div> 
     </div>
   </div>
-  <div class="row">
-    <div class="col">
-      <p><b>Heating zones</b><br>Number and configuration</p>
-      <div class="input-group mb-3">
-        <input type="text" class="form-control" v-model="zone" @change="update"> 
-      </div> 
 
-      <p><b>Space heating control settings</b><br>e.g weather-compensation, 3rd party thermostat, heat pumps own controller, auto-adapt.<br>Please provide details.</p>
-      <div class="input-group mb-3">
-        <input type="text" class="form-control" v-model="controls" @change="update"> 
-      </div> 
+  <p><b>Heating zones</b><br>Number and configuration</p>
+  <div class="input-group mb-3">
+    <input type="text" class="form-control" v-model="zone" @change="update"> 
+  </div> 
 
-      <p><b>Water heating control settings</b><br>(e.g scheduled 2am heat up period or top-up if temperature drops by 5 degrees)</p>
-      <div class="input-group mb-3">
-        <input type="text" class="form-control" v-model="dhw" @change="update"> 
-      </div>
+  <p><b>Space heating control settings</b><br>e.g weather-compensation, 3rd party thermostat, heat pumps own controller, auto-adapt.<br>Please provide details.</p>
+  <div class="input-group mb-3">
+    <input type="text" class="form-control" v-model="controls" @change="update"> 
+  </div> 
 
-      <p><b>Legionella protection settings</b><br>e.g weekly immersion heater schedule 55°C</p>
-      <div class="input-group mb-3">
-        <input type="text" class="form-control" v-model="legionella" @change="update"> 
-      </div>
-    </div>
+  <p><b>Water heating control settings</b><br>(e.g scheduled 2am heat up period or top-up if temperature drops by 5 degrees)</p>
+  <div class="input-group mb-3">
+    <input type="text" class="form-control" v-model="dhw" @change="update"> 
   </div>
+
+  <p><b>Legionella protection settings</b><br>e.g weekly immersion heater schedule 55°C</p>
+  <div class="input-group mb-3">
+    <input type="text" class="form-control" v-model="legionella" @change="update"> 
+  </div>
+  
   <div class="row">
     <p><b>Anti-freeze protection</b></p>
     <div class="col">
@@ -201,19 +192,16 @@
       </div>
     </div>
   </div>
-  <div class="row">
-    <div class="col">
-      <p><b>Additional notes</b></p>
-      <div class="input-group mb-3">
-        <input type="text" class="form-control" v-model="notes" @change="update"> 
-      </div>
-          
-      <hr>
-      <h4>About Your Property</h4>
-      <br>
-
-    </div>
+  
+  <p><b>Additional notes</b></p>
+  <div class="input-group mb-3">
+    <input type="text" class="form-control" v-model="notes" @change="update" placeholder="Any additional notes about your system..."> 
   </div>
+      
+  <hr>
+  <h4>About Your Property</h4>
+  <br>
+    
   <div class="row">
     <div class="col"> 
       <p><b>Type of property</b></p>
@@ -242,6 +230,7 @@
       </div>
     </div>
   </div>
+  
   <div class="row">
     <div class="col"> 
       <p><b>Floor area</b></p>
@@ -263,6 +252,7 @@
       </div>
     </div>
   </div>
+  
   <div class="row">
     <div class="col"> 
       <p><b>Annual heating demand</b><br>For example, as given on the EPC for the property</p>
@@ -280,18 +270,15 @@
     </div>
   </div>
 
-  <div class="row">
-    <div class="col"> 
-      <hr>
-      <h4>Monitoring information</h4>
-      
-      <p><b>URL of public MyHeatPump app</b><br>
-      Requires an account on emoncms.org, or a self-hosted instance of emoncms</p>
-      <div class="input-group mb-3">
-        <input type="text" class="form-control" v-model="url" @change="update"> 
-      </div> 
-    </div>
+  <hr>
+  <h4>Monitoring information</h4>
+  
+  <p><b>URL of public MyHeatPump app</b><br>
+  Requires an account on emoncms.org, or a self-hosted instance of emoncms</p>
+  <div class="input-group mb-3">
+    <input type="text" class="form-control" v-model="url" @change="update"> 
   </div>
+   
 </div>
 <div style=" background-color:#eee; padding-top:20px; padding-bottom:10px">
   <div class="container" style="max-width:800px;">
@@ -304,9 +291,7 @@
       <br>
       <div class="form-check">
         <input class="form-check-input" type="checkbox" checked>
-        <label class="form-check-label">
-          Yes
-        </label>
+        <label>Yes</label>
       </div>
     </div>
   </div>
