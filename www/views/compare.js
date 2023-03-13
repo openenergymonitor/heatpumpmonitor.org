@@ -1,3 +1,6 @@
+var date = new Date();
+var tend = date.getTime()*0.001;
+var tstart = tend - (3600*24*30);
 
 var system_list = [];
 $.ajax({dataType: "json", url: "data.json", async: false, success: function(result) { system_list = result; }});
@@ -12,8 +15,8 @@ var app = new Vue({
     interval: 3600,
     match_dates: true,
     selected_systems: [
-      {color:"#0000ff", id:0, start: "2023-02-05", end: "2023-03-05", time_changed: false, data: false},
-      {color:"#ff0000", id:1, start: "2023-02-05", end: "2023-03-05", time_changed: false, data: false}
+      {color:"#0000ff", id:0, start: time_to_date_str(tstart), end: time_to_date_str(tend), time_changed: false, data: false},
+      {color:"#ff0000", id:1, start: time_to_date_str(tstart), end: time_to_date_str(tend), time_changed: false, data: false}
     ],
     system_list: system_list
   },
@@ -262,8 +265,13 @@ function draw_chart() {
         plot_data.layout.xaxis.title.text = titles[app.mode].xaxis;
         plot_data.layout.yaxis.title.text = titles[app.mode].yaxis;
         
+        var plot_mode = "markers";
+        if (app.mode=="profile") {
+            plot_mode = "lines";
+        }
+        
         plot_data.data.push({
-          "mode": "markers",
+          "mode": plot_mode,
           "type": "scatter",
           "x": x, "y": y,
           "marker": {
