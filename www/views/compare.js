@@ -18,7 +18,8 @@ var app = new Vue({
       {color:"#0000ff", id:0, start: time_to_date_str(tstart), end: time_to_date_str(tend), time_changed: false, data: false},
       {color:"#ff0000", id:1, start: time_to_date_str(tstart), end: time_to_date_str(tend), time_changed: false, data: false}
     ],
-    system_list: system_list
+    system_list: system_list,
+    point_scale: 0.002
   },
   methods: {
     add_system: function() {
@@ -121,6 +122,10 @@ var app = new Vue({
       for (var i in app.selected_systems) {
       app.selected_systems[i].time_changed = false;
       }
+    },
+
+    change_point_scale: function() {
+      draw_chart();
     }
   }
 });
@@ -192,46 +197,58 @@ function draw_chart() {
                 if (elec!=null && heat!=null && outsideT!=null && flowT!=null && elec>0 && heat>0) {
                     x.push(flowT - outsideT)
                     y.push(heat / elec)   
-                    size.push(heat*0.002)
+                    size.push(heat*app.point_scale)
                 }
             } else if (app.mode=="cop_vs_outside") { 
                 if (elec!=null && heat!=null && outsideT!=null && elec>0 && heat>0) {  
                     x.push(outsideT)
                     y.push(heat / elec)   
-                    size.push(heat*0.002)              
+                    size.push(heat*app.point_scale)              
                 }        
             } else if (app.mode=="cop_vs_flow") { 
                 if (elec!=null && heat!=null && flowT!=null && elec>0 && heat>0) {
                     x.push(flowT)
                     y.push(heat / elec)   
-                    size.push(heat*0.002)  
+                    size.push(heat*app.point_scale)  
                 }
             } else if (app.mode=="cop_vs_return") { 
                 if (elec!=null && heat!=null && returnT!=null && elec>0 && heat>0) {
                     x.push(returnT)
                     y.push(heat / elec)   
-                    size.push(heat*0.002)
+                    size.push(heat*app.point_scale)
                 }
             } else if (app.mode=="cop_vs_carnot") { 
                 if (elec!=null && heat!=null && outsideT!=null && flowT!=null && elec>0 && heat>0) {
                     let carnot = (flowT+2+273) / ((flowT+2+273) - (outsideT-6+273));
                     x.push(carnot)
                     y.push(heat / elec)   
-                    size.push(heat*0.002)
+                    size.push(heat*app.point_scale)
                 }
             } else if (app.mode=="heat_vs_outside") { 
                 if (heat!=null && outsideT!=null && heat>0) {
                     x.push(outsideT)
                     y.push(heat)   
-                    size.push(heat*0.002)
+                    size.push(heat*app.point_scale)
+                }
+            } else if (app.mode=="heat_vs_flow") { 
+                if (heat!=null && flowT!=null && heat>0) {
+                    x.push(flowT)
+                    y.push(heat)   
+                    size.push(heat*app.point_scale)
                 }
             } else if (app.mode=="elec_vs_outside") { 
                 if (elec!=null && outsideT!=null && elec>0) { 
                     x.push(outsideT)
                     y.push(elec)   
-                    size.push(elec*0.002) 
+                    size.push(elec*app.point_scale) 
                 } 
-            } else if (app.mode=="profile") { 
+              } else if (app.mode=="elec_vs_flow") { 
+                if (elec!=null && flowT!=null && elec>0) { 
+                    x.push(flowT)
+                    y.push(elec)   
+                    size.push(elec*app.point_scale) 
+                } 
+              } else if (app.mode=="profile") { 
                 if (elec!=null) { 
                     date.setTime(time*1000);
                     let hm = date.getHours() + (date.getMinutes()/60);
@@ -257,7 +274,9 @@ function draw_chart() {
             "cop_vs_return": {xaxis: "Return temperature", yaxis: "COP"},
             "cop_vs_carnot": {xaxis: "Ideal Carnot COP", yaxis: "COP"},
             "heat_vs_outside": {xaxis: "Outside temperature", yaxis: "Heat"},
+            "heat_vs_flow": {xaxis: "Flow temperature", yaxis: "Heat"},
             "elec_vs_outside": {xaxis: "Outside temperature", yaxis: "Elec"},
+            "elec_vs_flow": {xaxis: "Flow temperature", yaxis: "Elec"},
             "profile": {xaxis: "Time of day", yaxis: "Elec"}
         }
         

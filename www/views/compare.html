@@ -12,7 +12,10 @@
     <option value="cop_vs_return">COP vs Return temperature</option>
     <option value="cop_vs_carnot">COP vs Carnot COP</option>
     <option value="heat_vs_outside">Heat output vs Outside temperature</option>
+    <option value="heat_vs_flow">Heat output vs Flow temperature</option>
     <option value="elec_vs_outside">Electric input vs Outside temperature</option>
+    <option value="elec_vs_flow">Electric input vs Flow temperature</option>
+
     <option value="profile">Average Profile</option>
   </select>
   
@@ -26,6 +29,9 @@
   <input v-model="match_dates" type="checkbox" @click="match_dates_fn">
   
   <button @click="add_system">+ Add system</button>
+
+  <label>Point scale</label>
+  <input type="text" v-model.number="point_scale" @change="change_point_scale" style="width: 65px">
   
   <br><br>
   <!--<select><option v-for="days, index in days_in_month" v-bind:value="index">{{ days }}</option></select>
@@ -52,4 +58,4 @@
 
 <div id="gd" style="height:690px"></div>
 
-<script src="views/compare.js?v=2"></script>
+<script src="views/compare.js?v=4"></script>
