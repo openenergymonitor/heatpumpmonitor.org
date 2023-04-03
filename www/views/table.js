@@ -6,7 +6,8 @@ var app = new Vue({
     filterKey: '',
     hiliteKey: 0,
     currentSort:'year_cop',
-    currentSortDir:'desc'
+    currentSortDir:'desc',
+    show_kwh_m2: false
   },
 
   created() {
@@ -22,6 +23,18 @@ var app = new Vue({
   methods: {
     async fetchData() {
       this.nodes = await (await fetch('data.json',{cache: "no-store"})).json()
+
+      // calculate fabric efficiency
+      this.nodes.forEach(function(node) {
+        node.kwh_m2_heat = 0;
+        node.kwh_m2_elec = 0;
+        if (node.floor_area>0) {
+          node.kwh_m2_heat = node.heat_demand / node.floor_area;
+        }
+        if (node.year_cop>0) {
+          node.kwh_m2_elec = (node.heat_demand / node.floor_area) / node.year_cop;
+        }
+      });
     },
     
     sort(s, dir) {
@@ -93,7 +106,7 @@ var app = new Vue({
     // highlight row if id matches ?h in url
     hiliteClass(row) {
       return row.id == this.hiliteKey ? 'hilite ' : '';
-    } 
+    }
   },
   
   computed:{
