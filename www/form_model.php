@@ -92,8 +92,18 @@ class Form
 
     public function save_stats($userid,$stats) {
         $userid = (int) $userid;
-
-        $keys = array('month_elec','month_heat','month_cop','year_elec','year_heat','year_cop','since','stats');
+        
+        $stats = [
+            "month_elec" => $stats->last30->elec_kwh,
+            "month_heat" => $stats->last30->heat_kwh,
+            "month_cop"  => $stats->last30->cop,
+            "year_elec"  => $stats->last365->elec_kwh,
+            "year_heat"  => $stats->last365->heat_kwh,
+            "year_cop"   => $stats->last365->cop,
+            "since"      => $stats->last365->since,
+            "stats"      => $stats
+        ];
+        $keys = array_keys($stats);
 
         $query = array();
         $codes = array();
