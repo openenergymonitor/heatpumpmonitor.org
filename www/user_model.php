@@ -111,4 +111,15 @@ class User
         session_unset();
         session_destroy();
     }
+
+    public function get($userid) {
+        $userid = (int) $userid;
+        $result = $this->mysqli->query("SELECT * FROM users WHERE id='$userid'");
+        if ($result->num_rows==0) {
+            return false;
+        } else {
+            $row = $result->fetch_object();
+            return $row;
+        }
+    }
 }

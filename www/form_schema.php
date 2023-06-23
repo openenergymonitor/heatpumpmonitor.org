@@ -1,32 +1,47 @@
 <?php
 
 $schema['form'] = array(
-    'userid' => array('type' => 'int(11)', 'code' => 'i'),
-    'submitted' => array('type' => 'datetime', 'code' => 's'),
-    'name' => array('type' => 'varchar(64)', 'code' => 's'),
-    'email' => array('type' => 'varchar(64)', 'code' => 's'),
-    'location' => array('type' => 'varchar(64)', 'code' => 's'),
-    'hp_model' => array('type' => 'varchar(64)', 'code' => 's'),
-    'hp_type' => array('type' => 'varchar(64)', 'code' => 's'),
-    'hp_output' => array('type' => 'float', 'code' => 'd'),
-    'emitters' => array('type' => 'varchar(64)', 'code' => 's'),
-    'heat_demand' => array('type' => 'int(11)', 'code' => 'i'),
-    'notes' => array('type' => 'varchar(300)', 'code' => 's'),
-    'property' => array('type' => 'varchar(64)', 'code' => 's'),
-    'floor_area' => array('type' => 'float', 'code' => 'd'),
-    'heat_loss' => array('type' => 'float', 'code' => 'd'),
-    'url' => array('type' => 'varchar(128)', 'code' => 's'),
-    'age' => array('type' => 'varchar(64)', 'code' => 's'),
-    'insulation' => array('type' => 'varchar(64)', 'code' => 's'),
-    'flow_temp' => array('type' => 'float', 'code' => 'd'),
-    'buffer' => array('type' => 'varchar(8)', 'code' => 's'),
-    'freeze' => array('type' => 'varchar(64)', 'code' => 's'),
-    'zone' => array('type' => 'varchar(64)', 'code' => 's'),
-    'controls' => array('type' => 'varchar(64)', 'code' => 's'),
-    'refrigerant' => array('type' => 'varchar(64)', 'code' => 's'),
-    'dhw' => array('type' => 'varchar(64)', 'code' => 's'),
-    'legionella' => array('type' => 'varchar(64)', 'code' => 's')
+    // Form meta data
+    'userid' => array('type' => 'int(11)', 'code' => 'i', 'editable' => false),
+    'submitted' => array('type' => 'datetime', 'code' => 's', 'editable' => false),
+
+    // Form data
+    'name' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
+    'email' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
+    'location' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
+    'hp_model' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
+    'hp_type' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
+    'hp_output' => array('type' => 'float', 'code' => 'd', 'editable' => true),
+    'emitters' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
+    'heat_demand' => array('type' => 'int(11)', 'code' => 'i', 'editable' => true),
+    'notes' => array('type' => 'varchar(300)', 'code' => 's', 'editable' => true),
+    'property' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
+    'floor_area' => array('type' => 'float', 'code' => 'd', 'editable' => true),
+    'heat_loss' => array('type' => 'float', 'code' => 'd', 'editable' => true),
+    'url' => array('type' => 'varchar(128)', 'code' => 's', 'editable' => true),
+    'age' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
+    'insulation' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
+    'flow_temp' => array('type' => 'float', 'code' => 'd', 'editable' => true),
+    'buffer' => array('type' => 'varchar(8)', 'code' => 's', 'editable' => true),
+    'freeze' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
+    'zone' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
+    'controls' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
+    'refrigerant' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
+    'dhw' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
+    'legionella' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
+
+    // Scraped heat pump data
+    'month_elec' => array('type' => 'float', 'code' => 'd', 'editable' => false),
+    'month_heat' => array('type' => 'float', 'code' => 'd', 'editable' => false),
+    'month_cop' => array('type' => 'float', 'code' => 'd', 'editable' => false),
+    'year_elec' => array('type' => 'float', 'code' => 'd', 'editable' => false),
+    'year_heat' => array('type' => 'float', 'code' => 'd', 'editable' => false),
+    'year_cop' => array('type' => 'float', 'code' => 'd', 'editable' => false),
+    'since' => array('type' => 'int(11)', 'code' => 'i', 'editable' => false),
+    'stats' => array('type' => 'varchar(1024)', 'code' => 's', 'editable' => false)
 );
+
+
 
 /*
 {"id":1,"hash":"1c63d2e1",

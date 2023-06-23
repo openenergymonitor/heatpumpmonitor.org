@@ -90,8 +90,6 @@ switch ($route->controller) {
         
     case "api":
         $route->format = "json";
-        // $data = file_get_contents("data.json");
-        // $data_obj = json_decode($data);
         
         $data_obj = $form->get_list();
 

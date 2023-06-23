@@ -21,6 +21,14 @@ class Form
         $result = $this->mysqli->query("SELECT * FROM form");
         $list = array();
         while ($row = $result->fetch_object()) {
+            // convert numeric strings to numbers
+            foreach ($row as $key=>$value) {
+                if ($this->schema["form"][$key]["code"]=='i') $row->$key = (int) $value;
+                if ($this->schema["form"][$key]["code"]=='d') $row->$key = (float) $value;
+
+            }
+
+            $row->stats = json_decode($row->stats);
             $list[] = $row;
         }
         return $list;
@@ -46,10 +54,12 @@ class Form
         $codes = array();
         $values = array();
         foreach ($this->schema["form"] as $key=>$value) {
-            if (isset($form_data->$key)) {
-                $values[] = $form_data->$key;
-                $query[] = $key."=?";
-                $codes[] = $this->schema["form"][$key]["code"];
+            if ($this->schema["form"]['editable']) {
+                if (isset($form_data->$key)) {
+                    $values[] = $form_data->$key;
+                    $query[] = $key."=?";
+                    $codes[] = $this->schema["form"][$key]["code"];
+                }
             }
         }
         // Add userid to the end
@@ -59,6 +69,47 @@ class Form
         $query = implode(",",$query);
         $codes = implode("",$codes);
         
+        // Prepare and execute the query with error checking
+        if (!$stmt = $this->mysqli->prepare("UPDATE form SET $query WHERE userid=?")) {
+            return array("success"=>false,"message"=>"Prepare failed: (" . $this->mysqli->errno . ") " . $this->mysqli->error);
+        }
+        if (!$stmt->bind_param($codes, ...$values)) {
+            return array("success"=>false,"message"=>"Binding parameters failed: (" . $stmt->errno . ") " . $stmt->error);
+        }
+        if (!$stmt->execute()) {
+            return array("success"=>false,"message"=>"Execute failed: (" . $stmt->errno . ") " . $stmt->error);
+        }
+        $stmt->close();
+
+        return array("success"=>true,"message"=>"Saved");
+    }
+
+    public function save_stats($userid,$stats) {
+        $userid = (int) $userid;
+
+        $keys = array('month_elec','month_heat','month_cop','year_elec','year_heat','year_cop','since','stats');
+
+        $query = array();
+        $codes = array();
+        $values = array();
+
+        $stats['stats'] = json_encode($stats['stats']);
+
+        foreach ($keys as $key) {
+            if (isset($stats[$key])) {
+                $values[] = $stats[$key];
+                $query[] = $key."=?";
+                $codes[] = $this->schema["form"][$key]["code"];
+            }
+        }
+
+        // Add userid to the end
+        $values[] = $userid;
+        $codes[] = "i";
+        // convert to string
+        $query = implode(",",$query);
+        $codes = implode("",$codes);
+
         // Prepare and execute the query with error checking
         if (!$stmt = $this->mysqli->prepare("UPDATE form SET $query WHERE userid=?")) {
             return array("success"=>false,"message"=>"Prepare failed: (" . $this->mysqli->errno . ") " . $this->mysqli->error);
