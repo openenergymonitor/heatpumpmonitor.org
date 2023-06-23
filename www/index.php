@@ -82,12 +82,19 @@ switch ($route->controller) {
         $route->format = "html";
         $output = view("views/main.html", array());
         break;
+
+    case "data": 
+        $route->format = "json";
+        $output = $form->get_list();
+        break;
         
     case "api":
         $route->format = "json";
-        $data = file_get_contents("data.json");
-        $data_obj = json_decode($data);
+        // $data = file_get_contents("data.json");
+        // $data_obj = json_decode($data);
         
+        $data_obj = $form->get_list();
+
         if (isset($_GET['system'])) {
             // Find ID
             $system = false;

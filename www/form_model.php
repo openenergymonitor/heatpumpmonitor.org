@@ -17,6 +17,15 @@ class Form
         $this->schema = $schema;
     }
 
+    public function get_list() {
+        $result = $this->mysqli->query("SELECT * FROM form");
+        $list = array();
+        while ($row = $result->fetch_object()) {
+            $list[] = $row;
+        }
+        return $list;
+    }
+
     public function get_form($userid) {
         $userid = (int) $userid;
         $result = $this->mysqli->query("SELECT * FROM form WHERE userid='$userid'");
