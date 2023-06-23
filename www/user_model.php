@@ -5,10 +5,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 class User
 {
+    private $mysqli;
 
-    public function __construct()
+    public function __construct($mysqli)
     {
-    
+        $this->mysqli = $mysqli;
     }
 
     public function emon_session_start()
@@ -68,14 +69,36 @@ class User
         if (isset($result->success) && $result->success===true) {
             session_regenerate_id();
             $userid = (int) $result->userid;
+            $apikey_read = $result->apikey_read;
+            $apikey_write = $result->apikey_write;
             
             $_SESSION['userid'] = $userid;
             $_SESSION['username'] = $username;
             $_SESSION['apikey_read'] = $result->apikey_read;
             $_SESSION['apikey_write'] = $result->apikey_write;
-            
-            // $profile = json_decode(http_request("POST","https://emoncms.org/user/get.json",array("id"=>$userid, "apikey"=>$result->apikey_write)));
-            // echo json_encode($profile);
+
+            // Fetch email using emoncms.org/user/get.json
+            $user_get = json_decode(file_get_contents("https://emoncms.org/user/get.json?apikey=".$result->apikey_write));
+            $email = $user_get->email;
+
+            // Check if user exists with userid in heatpumpmonitor.org database using mysqli
+            $result = $this->mysqli->query("SELECT * FROM users WHERE id='$userid'");
+            if ($result->num_rows==0) {
+                // User does not exist in heatpumpmonitor.org database
+                // Create user in heatpumpmonitor.org database
+                $stmt = $this->mysqli->prepare("INSERT INTO users (id, username, email, apikey_read, apikey_write) VALUES (?, ?, ?, ?, ?)");
+                $stmt->bind_param("issss", $userid, $username, $email, $apikey_read, $apikey_write);
+                $stmt->execute();
+                $stmt->close();
+
+            } else {
+                // User exists in heatpumpmonitor.org database
+                // Update user in heatpumpmonitor.org database
+                $stmt = $this->mysqli->prepare("UPDATE users SET username=?, email=?, apikey_read=?, apikey_write=? WHERE id=?");
+                $stmt->bind_param("ssssi", $username, $email, $apikey_read, $apikey_write, $userid);
+                $stmt->execute();
+                $stmt->close();
+            }
             
             return array('success'=>true, 'message'=>_("Login successful"));
         } else {

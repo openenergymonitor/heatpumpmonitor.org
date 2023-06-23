@@ -1,0 +1,57 @@
+<?php
+
+$schema['form'] = array(
+    'userid' => array('type' => 'int(11)', 'code' => 'i'),
+    'submitted' => array('type' => 'datetime', 'code' => 's'),
+    'name' => array('type' => 'varchar(64)', 'code' => 's'),
+    'email' => array('type' => 'varchar(64)', 'code' => 's'),
+    'location' => array('type' => 'varchar(64)', 'code' => 's'),
+    'hp_model' => array('type' => 'varchar(64)', 'code' => 's'),
+    'hp_type' => array('type' => 'varchar(64)', 'code' => 's'),
+    'hp_output' => array('type' => 'float', 'code' => 'd'),
+    'emitters' => array('type' => 'varchar(64)', 'code' => 's'),
+    'heat_demand' => array('type' => 'int(11)', 'code' => 'i'),
+    'notes' => array('type' => 'varchar(300)', 'code' => 's'),
+    'property' => array('type' => 'varchar(64)', 'code' => 's'),
+    'floor_area' => array('type' => 'float', 'code' => 'd'),
+    'heat_loss' => array('type' => 'float', 'code' => 'd'),
+    'url' => array('type' => 'varchar(128)', 'code' => 's'),
+    'age' => array('type' => 'varchar(64)', 'code' => 's'),
+    'insulation' => array('type' => 'varchar(64)', 'code' => 's'),
+    'flow_temp' => array('type' => 'float', 'code' => 'd'),
+    'buffer' => array('type' => 'varchar(8)', 'code' => 's'),
+    'freeze' => array('type' => 'varchar(64)', 'code' => 's'),
+    'zone' => array('type' => 'varchar(64)', 'code' => 's'),
+    'controls' => array('type' => 'varchar(64)', 'code' => 's'),
+    'refrigerant' => array('type' => 'varchar(64)', 'code' => 's'),
+    'dhw' => array('type' => 'varchar(64)', 'code' => 's'),
+    'legionella' => array('type' => 'varchar(64)', 'code' => 's')
+);
+
+/*
+{"id":1,"hash":"1c63d2e1",
+    "submitted":"2022-11-05T22:10:10",
+    "location":"North Yorkshire",
+    "hp_model":"Mitsubishi Ecodan",
+    "hp_type":"Air Source",
+    "hp_output":"11.2",
+    "emitters":"New radiators",
+    "heat_demand":"22000",
+    "notes":"",
+    "property":"Detached",
+    "floor_area":"134",
+    "heat_loss":"9.4",
+    "url":"https:\/\/emon.cryosphere.co.uk\/ashp",
+    "01\/03\/2023":"Yes",
+    "age":"1940 to 1982",
+    "insulation":"Cavity wall, plus some loft insulation",
+    "flow_temp":"45C",
+    "buffer":"No",
+    "freeze":"Glycol\/water mixture",
+    "zone":"1",
+    "controls":"Custom software",
+    "refrigerant":"R32",
+    "dhw":"Daily cycle at noon to 45C",
+    "legionella":"None"
+    }
+*/

@@ -1,14 +1,13 @@
 <?php
 
-define('EMONCMS_EXEC', 1);
-
-error_reporting(E_ALL);
-ini_set('display_errors', 'on');
+require "Lib/load_database.php";
 
 require "core.php";
 require "route.php";
 require("user_model.php");
-$user = new User();
+$user = new User($mysqli);
+require ("form_model.php");
+$form = new Form($mysqli);
 
 $path = get_application_path(false);
 $route = new Route(get('q'), server('DOCUMENT_ROOT'), server('REQUEST_METHOD'));
@@ -44,16 +43,27 @@ switch ($route->controller) {
 
     case "form":
         $route->format = "html";
-        $systemid = (int) $route->action;
-        
-        $data = file_get_contents("data.json");
-        $data_obj = json_decode($data);
-        if (isset($data_obj[$systemid])) {
-            $system = $data_obj[$systemid];
-            $output = view("views/form.php", array("system"=>$system,"session"=>$session));
+        if ($session['userid']) {
+            $form_data = $form->get_form($session['userid']);
+            $output = view("views/form.php", array("form_data"=>$form_data));
         }
         break;
-        
+
+    case "form_data":
+        $route->format = "json";
+        if ($session['userid']) {
+            $output = $form->get_form($session['userid']);
+        }
+        break;
+
+    case "save_form":
+        $route->format = "json";
+        if ($session['userid']) {
+            $input = json_decode(file_get_contents('php://input'));
+            $output = $form->save_form($session['userid'],$input->data);
+        }
+        break;
+
     case "login":
         if ($route->format=="html") {
             if (!$session['userid']) {
