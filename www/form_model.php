@@ -6,7 +6,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 class Form
 {
     private $mysqli;
-    private $schema;
+    public $schema;
 
     public function __construct($mysqli)
     {
@@ -27,8 +27,11 @@ class Form
                 if ($this->schema["form"][$key]["code"]=='d') $row->$key = (float) $value;
 
             }
-
-            $row->stats = json_decode($row->stats);
+            if ($row->stats!=null) {
+                $row->stats = json_decode($row->stats);
+            } else {
+                $row->stats = array();
+            }
             $list[] = $row;
         }
         return $list;
@@ -53,8 +56,9 @@ class Form
         $query = array();
         $codes = array();
         $values = array();
+        
         foreach ($this->schema["form"] as $key=>$value) {
-            if ($this->schema["form"]['editable']) {
+            if ($this->schema["form"][$key]['editable']) {
                 if (isset($form_data->$key)) {
                     $values[] = $form_data->$key;
                     $query[] = $key."=?";

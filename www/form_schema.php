@@ -24,10 +24,10 @@ $schema['form'] = array(
     'flow_temp' => array('type' => 'float', 'code' => 'd', 'editable' => true),
     'buffer' => array('type' => 'varchar(8)', 'code' => 's', 'editable' => true),
     'freeze' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
-    'zone' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
-    'controls' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
+    'zone' => array('type' => 'varchar(128)', 'code' => 's', 'editable' => true),
+    'controls' => array('type' => 'varchar(128)', 'code' => 's', 'editable' => true),
     'refrigerant' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
-    'dhw' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
+    'dhw' => array('type' => 'varchar(200)', 'code' => 's', 'editable' => true),
     'legionella' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
 
     // Scraped heat pump data
