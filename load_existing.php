@@ -14,7 +14,6 @@ $form = new Form($mysqli);
 
 foreach ($data as $row) {
 
-
     // if url contains string emoncms.org
     // fetch userid from feed list
     if (strpos($row->url, "emoncms.org") !== false) {

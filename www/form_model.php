@@ -29,8 +29,10 @@ class Form
             }
             if ($row->stats!=null) {
                 $row->stats = json_decode($row->stats);
-            } else {
-                $row->stats = array();
+            }
+
+            if ($row->stats==null) {
+                unset($row->stats);
             }
             $list[] = $row;
         }
