@@ -2,6 +2,7 @@
 
 $schema['form'] = array(
     // Form meta data
+    'id' => array('type' => 'int(11)', 'Null'=>false, 'Key'=>'PRI', 'Extra'=>'auto_increment', 'code' => 'i', 'editable' => false),
     'userid' => array('type' => 'int(11)', 'code' => 'i', 'editable' => false),
     'submitted' => array('type' => 'datetime', 'code' => 's', 'editable' => false),
 
