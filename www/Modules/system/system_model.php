@@ -3,7 +3,7 @@
 // no direct access
 defined('EMONCMS_EXEC') or die('Restricted access');
 
-class Form
+class System
 {
     private $mysqli;
     public $schema;
@@ -13,24 +13,27 @@ class Form
         $this->mysqli = $mysqli;
 
         $schema = array();
-        require "form_schema.php";
-        $this->schema = $schema;
+        require "Modules/system/system_schema.php";
+        $this->schema = $schema['form'];
     }
 
-    public function get_list() {
-        $result = $this->mysqli->query("SELECT * FROM form");
+    public function list($userid=false) {
+        if ($userid===false) {
+            $result = $this->mysqli->query("SELECT * FROM form");
+        } else {
+            $userid = (int) $userid;
+            $result = $this->mysqli->query("SELECT * FROM form WHERE userid='$userid'");
+        }
         $list = array();
         while ($row = $result->fetch_object()) {
             // convert numeric strings to numbers
             foreach ($row as $key=>$value) {
-                if ($this->schema["form"][$key]["code"]=='i') $row->$key = (int) $value;
-                if ($this->schema["form"][$key]["code"]=='d') $row->$key = (float) $value;
-
+                if ($this->schema[$key]["code"]=='i') $row->$key = (int) $value;
+                if ($this->schema[$key]["code"]=='d') $row->$key = (float) $value;
             }
             if ($row->stats!=null) {
                 $row->stats = json_decode($row->stats);
             }
-
             if ($row->stats==null) {
                 unset($row->stats);
             }
@@ -39,44 +42,56 @@ class Form
         return $list;
     }
 
-    public function get_form($userid) {
+    public function create($userid) {
         $userid = (int) $userid;
-        $result = $this->mysqli->query("SELECT * FROM form WHERE userid='$userid'");
-        if (!$row = $result->fetch_object()) {
-            $this->mysqli->query("INSERT INTO form (userid) VALUES ('$userid')");
-            $result = $this->mysqli->query("SELECT * FROM form WHERE userid='$userid'");
-            $row = $result->fetch_object();
-        }
+        $this->mysqli->query("INSERT INTO form (userid) VALUES ('$userid')");
+        $systemid = $this->mysqli->insert_id;
+        return array("success"=>true, "id"=>$systemid);
+    }
 
+    public function get($userid,$systemid) {
+        $userid = (int) $userid;
+        $systemid = (int) $systemid;
+        $result = $this->mysqli->query("SELECT * FROM form WHERE id='$systemid'");
+        if (!$row = $result->fetch_object()) {
+            return array("success"=>false, "message"=>"System does not exist");
+        }
+        if ($userid!=$row->userid) {
+            return array("success"=>false, "message"=>"Invalid access");
+        }
         return $row;
     }
 
-    public function save_form($userid,$form_data) {
+    public function save($userid,$systemid,$form_data) {
         $userid = (int) $userid;
+        $systemid = (int) $systemid;
 
         // Loop through the form schema and generate the query
         $query = array();
         $codes = array();
         $values = array();
         
-        foreach ($this->schema["form"] as $key=>$value) {
-            if ($this->schema["form"][$key]['editable']) {
+        foreach ($this->schema as $key=>$value) {
+            if ($this->schema[$key]['editable']) {
                 if (isset($form_data->$key)) {
                     $values[] = $form_data->$key;
                     $query[] = $key."=?";
-                    $codes[] = $this->schema["form"][$key]["code"];
+                    $codes[] = $this->schema[$key]["code"];
                 }
             }
         }
         // Add userid to the end
         $values[] = $userid;
         $codes[] = "i";
+        $values[] = $systemid;
+        $codes[] = "i";
+
         // convert to string
         $query = implode(",",$query);
         $codes = implode("",$codes);
         
         // Prepare and execute the query with error checking
-        if (!$stmt = $this->mysqli->prepare("UPDATE form SET $query WHERE userid=?")) {
+        if (!$stmt = $this->mysqli->prepare("UPDATE form SET $query WHERE userid=? AND id=?")) {
             return array("success"=>false,"message"=>"Prepare failed: (" . $this->mysqli->errno . ") " . $this->mysqli->error);
         }
         if (!$stmt->bind_param($codes, ...$values)) {
@@ -85,9 +100,15 @@ class Form
         if (!$stmt->execute()) {
             return array("success"=>false,"message"=>"Execute failed: (" . $stmt->errno . ") " . $stmt->error);
         }
+
+        $affected = $stmt->affected_rows;
         $stmt->close();
 
-        return array("success"=>true,"message"=>"Saved");
+        if ($affected==0) {
+            return array("success"=>true,"message"=>"No changes");
+        }  else {
+            return array("success"=>true,"message"=>"Saved");
+        }
     }
 
     public function save_stats($userid,$stats) {
@@ -115,7 +136,7 @@ class Form
             if (isset($stats[$key])) {
                 $values[] = $stats[$key];
                 $query[] = $key."=?";
-                $codes[] = $this->schema["form"][$key]["code"];
+                $codes[] = $this->schema[$key]["code"];
             }
         }
 
@@ -139,5 +160,20 @@ class Form
         $stmt->close();
 
         return array("success"=>true,"message"=>"Saved");
+    }
+
+    public function delete($userid,$systemid) {
+        $userid = (int) $userid;
+        $systemid = (int) $systemid;
+        $result = $this->mysqli->query("SELECT * FROM form WHERE id='$systemid'");
+        if (!$row = $result->fetch_object()) {
+            return array("success"=>false, "message"=>"System does not exist");
+        }
+        if ($userid!=$row->userid) {
+            return array("success"=>false, "message"=>"Invalid access");
+        }
+
+        $this->mysqli->query("DELETE FROM form WHERE id='$systemid'");
+        return array("success"=>true, "message"=>"Deleted");
     }
 }

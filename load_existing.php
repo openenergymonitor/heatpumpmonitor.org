@@ -6,11 +6,11 @@ $data = json_decode($data_obj);
 chdir("/var/www/heatpumpmonitororg");
 require "www/Lib/load_database.php";
 
-require("user_model.php");
+require("Modules/user/user_model.php");
 $user = new User($mysqli);
 
-require ("form_model.php");
-$form = new Form($mysqli);
+require ("Modules/system/system_model.php");
+$system = new System($mysqli);
 
 foreach ($data as $row) {
 
@@ -40,7 +40,6 @@ foreach ($data as $row) {
             }
         }
 
-
         // Check if user exists with userid in heatpumpmonitor.org database using mysqli
         $result = $mysqli->query("SELECT * FROM users WHERE id='$userid'");
         if ($result->num_rows==0) {
@@ -59,7 +58,7 @@ foreach ($data as $row) {
 
         $form_data = array();
 
-        foreach ($form->schema['form'] as $key=>$schema_row) {
+        foreach ($system->schema as $key=>$schema_row) {
             if ($schema_row['editable']==true) {
                 if (isset($row->$key)) {
                     print $key.": ".$row->$key."\n";
@@ -70,10 +69,12 @@ foreach ($data as $row) {
 
         $form_data = json_decode(json_encode($form_data));
 
-        $form->get_form($userid);
-        $r = $form->save_form($userid, $form_data);
+        $result = $system->create($userid);
+        $systemid = $result['id'];
+
+        $r = $system->save($userid, $systemid, $form_data);
         print json_encode($r)."\n";
-        print "form saved\n";
+        print "system saved\n";
 
         usleep(10000);
     }

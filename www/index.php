@@ -4,10 +4,10 @@ require "Lib/load_database.php";
 
 require "core.php";
 require "route.php";
-require("user_model.php");
+require("Modules/user/user_model.php");
 $user = new User($mysqli);
-require ("form_model.php");
-$form = new Form($mysqli);
+require ("Modules/system/system_model.php");
+$system = new System($mysqli);
 
 $path = get_application_path(false);
 $route = new Route(get('q'), server('DOCUMENT_ROOT'), server('REQUEST_METHOD'));
@@ -20,7 +20,7 @@ switch ($route->controller) {
         $route->format = "html";
         $output = view("views/main.html", array());
         break;
-        
+
     case "stats":
         $route->format = "html";
         $output = view("views/stats.html", array());
@@ -41,57 +41,25 @@ switch ($route->controller) {
         $output = view("views/compare.html", array());
         break;
 
-    case "form":
-        $route->format = "html";
-        if ($session['userid']) {
-            $form_data = $form->get_form($session['userid']);
-            $output = view("views/form.php", array("form_data"=>$form_data));
-        }
+    case "user":
+        require "Modules/user/user_controller.php";
+        $output = user_controller();
         break;
 
-    case "form_data":
-        $route->format = "json";
-        if ($session['userid']) {
-            $output = $form->get_form($session['userid']);
-        }
-        break;
-
-    case "save_form":
-        $route->format = "json";
-        if ($session['userid']) {
-            $input = json_decode(file_get_contents('php://input'));
-            $output = $form->save_form($session['userid'],$input->data);
-        }
-        break;
-
-    case "login":
-        if ($route->format=="html") {
-            if (!$session['userid']) {
-                $output = view("views/login.html", array());  
-            } else {
-                header('Location: '.$path);
-            }
-        } else if ($route->format=="json") {
-            $output = $user->login(post("username"),post("password"));
-        }
-        break;
-
-    case "logout":
-        $user->logout();
-        $session = $user->emon_session_start();
-        $route->format = "html";
-        $output = view("views/main.html", array());
+    case "system":
+        require "Modules/system/system_controller.php";
+        $output = system_controller();
         break;
 
     case "data": 
         $route->format = "json";
-        $output = $form->get_list();
+        $output = $system->list();
         break;
         
     case "api":
         $route->format = "json";
         
-        $data_obj = $form->get_list();
+        $data_obj = $system->list();
 
         if (isset($_GET['system'])) {
             // Find ID

@@ -46,7 +46,7 @@ $("#login").click(function() {
        if (!result.success) {
            $("#error").html("<b>Error:</b> "+result.message).show();
        } else {
-           window.location = "form";
+           window.location = path+"system/list";
        }
     }
   });

@@ -41,33 +41,3 @@ $schema['form'] = array(
     'since' => array('type' => 'int(11)', 'code' => 'i', 'editable' => false),
     'stats' => array('type' => 'varchar(1024)', 'code' => 's', 'editable' => false)
 );
-
-
-
-/*
-{"id":1,"hash":"1c63d2e1",
-    "submitted":"2022-11-05T22:10:10",
-    "location":"North Yorkshire",
-    "hp_model":"Mitsubishi Ecodan",
-    "hp_type":"Air Source",
-    "hp_output":"11.2",
-    "emitters":"New radiators",
-    "heat_demand":"22000",
-    "notes":"",
-    "property":"Detached",
-    "floor_area":"134",
-    "heat_loss":"9.4",
-    "url":"https:\/\/emon.cryosphere.co.uk\/ashp",
-    "01\/03\/2023":"Yes",
-    "age":"1940 to 1982",
-    "insulation":"Cavity wall, plus some loft insulation",
-    "flow_temp":"45C",
-    "buffer":"No",
-    "freeze":"Glycol\/water mixture",
-    "zone":"1",
-    "controls":"Custom software",
-    "refrigerant":"R32",
-    "dhw":"Daily cycle at noon to 45C",
-    "legionella":"None"
-    }
-*/

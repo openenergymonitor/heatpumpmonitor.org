@@ -114,7 +114,7 @@ class User
 
     public function get($userid) {
         $userid = (int) $userid;
-        $result = $this->mysqli->query("SELECT * FROM users WHERE id='$userid'");
+        $result = $this->mysqli->query("SELECT id,username,email FROM users WHERE id='$userid'");
         if ($result->num_rows==0) {
             return false;
         } else {

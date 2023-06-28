@@ -1,11 +1,12 @@
 <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
   
-<div id="app">
-  <form id="search">
-    <b>Filter:</b> <input name="query" v-model="filterKey">
-  </form>
+<div id="app" class="pad-top">
+  <div class="input-group mb-3" style="width:300px; float:right">
+    <span class="input-group-text">Filter</span>
+    <input id="search" name="query" v-model="filterKey" class="form-control">
+  </div>
   <p>Here you can see some detailed statistics for these heat pump over the last 30 days, for when they are running.</p>
-  <table width="100%">
+  <table width="100%" class="table-hpmon">
     <thead>
       <tr>
         <th class="header">&nbsp;</td>

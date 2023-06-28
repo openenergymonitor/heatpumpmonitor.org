@@ -2,7 +2,7 @@
 <script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
 <script src="https://cdn.plot.ly/plotly-2.18.1.min.js" charset="utf-8"></script>
 
-<div id="app">
+<div id="app" class="pad-top">
 <p>Compare hourly performance data over the last 30 days</p>
   <label>Mode</label>
   <select v-model="mode" @change="change_mode">
@@ -25,12 +25,12 @@
   <label>Match dates</label>
   <input v-model="match_dates" type="checkbox" @click="match_dates_fn">
   
-  <button @click="add_system">+ Add system</button>
+  <button class="btn btn-primary btn-sm" @click="add_system">+ Add system</button>
   
   <br><br>
   <!--<select><option v-for="days, index in days_in_month" v-bind:value="index">{{ days }}</option></select>
   <select><option v-for="month, index in months" v-bind:value="index">{{ month }}</option></select>-->
-  <table>
+  <table class="table-hpmon">
   <tr>
     <th>Color</th>
     <th>System</th>
@@ -44,8 +44,8 @@
     <td><select v-model="system.id" @change="change_system(idx)"><option v-for="s,i in system_list" v-bind:value="i">{{ s.location }},  {{ s.hp_model }}, {{ s.hp_output }} kW</option></select></td>
     <td><input v-if="idx==0 || !match_dates" v-model="system.start" type="date" @change="date_changed(idx)"></td>
     <td><input v-if="idx==0 || !match_dates" v-model="system.end" type="date" @change="date_changed(idx)"></td>
-    <td><button v-if="system.time_changed" @click="change_dates(idx)">Load</button></td>
-    <td><button v-if="idx>0" @click="remove_system(idx)">Remove</button>
+    <td><button class="btn btn-warning btn-sm" v-if="system.time_changed" @click="change_dates(idx)">Load</button></td>
+    <td><button class="btn btn-danger btn-sm" v-if="idx>0" @click="remove_system(idx)">Remove</button>
   </tr>
   </table>
 </div>

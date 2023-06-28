@@ -1,14 +1,14 @@
 <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
 
-<div id="app">
+<div id="app" class="pad-top">
   <p>Here you can see an estimataion of running costs for the heat pumps, based on the performance information collected using <a href="https://openenergymonitor.org/">OpenEnergyMonitor</a>.</p>
-  <form id="search">
-    <br>
-    <b>Filter:</b> <input name="query" v-model="filterKey">
-  </form>
+  <div class="input-group mb-3" style="width:300px; float:right">
+    <span class="input-group-text">Filter</span>
+    <input id="search" name="query" v-model="filterKey" class="form-control">
+  </div>
   <p><i>Costs are calculated assuming UK fixed tariffs at the start of 2023, and presented in UK currency: electricity at 34p per kWh, gas at 10p per kWh.<br>
   Equivalent gas cost is estimated for a 85% efficient boiler producing the same amount of heat, with a comparative cost of 12p per kWh of heat.</i></p>
-  <table width="100%">
+  <table width="100%" class="table-hpmon">
     <thead>
       <tr>
         <th class="header">&nbsp;</td>

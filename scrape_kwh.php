@@ -3,13 +3,13 @@
 chdir("/var/www/heatpumpmonitororg");
 require "www/Lib/load_database.php";
 
-require("user_model.php");
+require("Modules/user/user_model.php");
 $user = new User($mysqli);
 
-require ("form_model.php");
-$form = new Form($mysqli);
+require ("Modules/system/system_model.php");
+$system = new System($mysqli);
 
-$data = $form->get_list();
+$data = $system->list();
 foreach ($data as $row) {
     $userid = (int) $row->userid;
     if ($user_data = $user->get($userid)) {
@@ -17,7 +17,7 @@ foreach ($data as $row) {
         // print "$apikey_read\n";
         $stats = scrapeEnergyValues($row->url);
         if ($stats !== false) {
-            $form->save_stats($userid, $stats);
+            $system->save_stats($userid, $stats);
             print json_encode($stats) . "\n";        
         }
     }
