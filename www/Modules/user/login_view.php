@@ -1,55 +1,94 @@
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-<script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
 
-<div class="container" style="max-width:380px; padding-top:120px; height:800px;" >
+<div id="app" class="container" style="max-width:380px; padding-top:120px; height:800px;">
 
-<div class="card">
-  <div class="card-body bg-light">
+    <div class="card">
+        <div class="card-body bg-light">
 
-  <h1 class="h3 mb-3 fw-normal">Login</h1>
-  <p>Login with your emoncms.org account</p>
+            <div v-if="!mode">
+                <button type="button" class="btn btn-primary btn-lg" style="width:100%" @click="mode='emoncmsorg'">Login with emoncms.org</button>
+                <button type="button" class="btn btn-outline-primary btn-lg" style="width:100%; margin-top:10px" @click="mode='other'">Use another account</button>
+                <button type="button" class="btn btn-outline-secondary btn-lg" style="width:100%; margin-top:10px" @click="mode='register'">Sign up</button>
+            </div>
 
-  <label>Username</label>
-  <div class="input-group mb-3">
-    <input type="text" class="form-control" id="username"> 
-  </div>
+            <div v-else>
+                <div v-if="mode!='register'">
+                    <h1 class="h3 mb-3 fw-normal">Login <span v-if="mode=='emoncmsorg'">with emoncms.org</span></h1>
+                </div>
+                <div v-if="mode=='register'">
+                    <h1 class="h3 mb-3 fw-normal">Register</h1>
+                </div>
 
-  <label>Password</label>
-  <div class="input-group mb-3">
-    <input type="password" class="form-control" id="password"> 
-  </div>
-  
-  <button type="button" class="btn btn-primary" id="login">Login</button>
-  
-  <div id="error" class="alert alert-danger" role="alert" style="display: none; margin-top:20px; margin-bottom: 5px;"></div>
+                <label>Username</label>
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" v-model="username">
+                </div>
 
-  </div>
-</div>
+                <label>Password</label>
+                <div class="input-group mb-3">
+                    <input type="password" class="form-control" v-model="password">
+                </div>
 
+                <div v-if="mode=='register'">
+                    <label>Repeat password</label>
+                    <div class="input-group mb-3">
+                        <input type="password" class="form-control" v-model="password2">
+                    </div>
+
+                    <label>Email</label>
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" v-model="email">
+                    </div>
+                </div>
+
+                <button type="button" class="btn btn-primary" @click="login" v-if="mode!='register'">Login</button>
+                <button type="button" class="btn btn-primary" @click="register" v-if="mode=='register'">Register</button>
+                <button type="button" class="btn btn-light" @click="mode=false">Cancel</button>
+                <a href="#" v-if="mode=='other'">Forgot password</a>
+            </div>
+
+            <div class="alert alert-danger" style="margin-top:20px; margin-bottom: 5px;" v-if="error" v-html="error"></div>
+
+        </div>
+
+    </div>
 </div>
 
 <script>
-$("body").css("background-color","#1d8dbc");
+    document.body.style.backgroundColor = "#1d8dbc";
 
-$("#login").click(function() {
+    var app = new Vue({
+        el: '#app',
+        data: {
+            username: "",
+            password: "",
+            password2: "",
+            email: "",
+            error: false,
+            mode: false
+        },
+        methods: {
+            login: function() {
+                const params = new URLSearchParams();
+                params.append('username', this.username);
+                params.append('password', this.password);
 
-  var username
-  $.ajax({
-    type: "POST", url: "login.json",
-    data: {
-        username: encodeURIComponent($("#username").val()),
-        password: encodeURIComponent($("#password").val())
-    },
-    dataType: "json", async: false,
-    success: function(result) {
-       console.log(result);
-       if (!result.success) {
-           $("#error").html("<b>Error:</b> "+result.message).show();
-       } else {
-           window.location = path+"system/list";
-       }
-    }
-  });
-});
+                axios.post(path + "user/login.json", params)
+                    .then(function(response) {
+                        if (response.data.success) {
+                            window.location.href = path + "system/list";
+                        } else {
+                            app.error = response.data.message;
+                        }
+                    })
+                    .catch(function(error) {
+                        console.log(error);
+                    });
+            },
+            register: function() {
+
+            }
+        }
+    });
 </script>
-
