@@ -7,5 +7,6 @@ $settings = array(
         "password"=>"password",
         "database"=>"heatpumpmonitor",
         "port"=>3306
-    )
+    ),
+    "mailersend_api_key"=>""
 );

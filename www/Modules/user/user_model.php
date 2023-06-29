@@ -6,7 +6,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 class User
 {
     private $mysqli;
-    private $email_verification = false;
+    private $email_verification = true;
 
     public function __construct($mysqli)
     {
@@ -196,8 +196,7 @@ class User
         
         // Email verification
         if ($this->email_verification) {
-            // $result = $this->send_verification_email($username);
-            // if ($result['success']) return array('success'=>true, 'verifyemail'=>true, 'message'=>"Email verification email sent, please check your inbox");
+            return $this->send_verification_email($userid);
         } else {
             session_regenerate_id();
             $_SESSION['userid'] = $userid;
@@ -205,7 +204,88 @@ class User
             $_SESSION['admin'] = 0;
             $_SESSION['email'] = $email; 
             return array('success'=>true, 'verifyemail'=>false, 'userid'=>$userid, 'message'=>"User account created");
-        }        
+        }
+    }
+
+    public function send_verification_email($userid)
+    {
+        $userid = (int) $userid;
+
+        // check that username exists and load email and verification status 
+        $stmt = $this->mysqli->prepare("SELECT username, email, email_verified FROM users WHERE id = ?");
+        $stmt->bind_param("i", $userid);
+        $stmt->execute();
+        $stmt->store_result();
+
+        if (!$stmt->num_rows) {
+            $stmt->close();
+            return array('success'=>false, 'message'=>_("User does not exist"));
+        }
+
+        // User exists
+        $stmt->bind_result($username, $email, $email_verified);
+        $stmt->fetch();
+        $stmt->close();
+        
+        // exit if account is already verified
+        if ($email_verified) return array('success'=>false, 'message'=>_("Email already verified"));
+        
+        // Create new verification key
+        $verification_key = generate_secure_key(32);
+
+        // Save new verification key
+        $stmt = $this->mysqli->prepare("UPDATE users SET verification_key=? WHERE id=?");
+        $stmt->bind_param("si",$verification_key,$userid);
+        $stmt->execute();
+        $stmt->close();
+        
+        // Send verification email
+        global $path;
+        $verification_url = $path."user/verify?email=".urlencode($email)."&key=$verification_key";
+        
+        require_once "Lib/email.php";
+        $email_class = new Email();
+        $email_class->send(array(
+            "to" => $email,
+            "subject" => "Please verify your email address",
+            "text" => "Hello $username, please verify your email address by clicking on the following link: $verification_url",
+            "html" => view("Modules/user/email_templates/verify_email.php",array(
+                "username"=>$username,
+                "verification_url"=>$verification_url
+            ))
+        ));
+        
+        return array('success'=>true, 'verifyemail'=>true, 'message'=>"Email verification email sent, please check your inbox");
+    }
+
+    public function verify_email($email,$verification_key)
+    {
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) return array('success'=>false, 'message'=>_("Email address format error"));
+        if (strlen($verification_key)!=64) return array('success'=>false, 'message'=>_("Invalid verification key"));
+        
+        $stmt = $this->mysqli->prepare("SELECT id,email_verified FROM users WHERE email=? AND verification_key=?");
+        $stmt->bind_param("ss",$email,$verification_key);
+        $stmt->execute();
+        $stmt->store_result();
+
+        if (!$stmt->num_rows) {
+            $stmt->close();
+            return array('success'=>false, 'message'=>_("Invalid email or verification key"));
+        }
+
+        $stmt->bind_result($id,$email_verified);
+        $stmt->fetch();
+        $stmt->close();
+        
+        if ($email_verified==0) {
+            $stmt = $this->mysqli->prepare("UPDATE users SET email_verified='1' WHERE id=?");
+            $stmt->bind_param("i",$id);
+            $stmt->execute();
+            $stmt->close();
+            return array('success'=>true, 'message'=>"Email verified");
+        } else {
+            return array('success'=>false, 'message'=>"Email already verified");
+        }    
     }
 
     public function logout()

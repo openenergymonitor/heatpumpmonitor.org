@@ -7,7 +7,7 @@ function user_controller() {
     if ($route->action=="login") {
         if ($route->format=="html") {
             if (!$session['userid']) {
-                return view("Modules/user/login_view.php", array());  
+                return view("Modules/user/login_view.php", array("result"=>false));  
             } else {
                 header('Location: '.$path);
             }
@@ -24,6 +24,13 @@ function user_controller() {
             return array("success"=>false,"message"=>"Passwords do not match");
         }
         return $user->register(post("username"),$password1,post("email"));
+    }
+
+    if ($route->action == 'verify') {
+        $email = get('email',true);
+        $key = get('key',true);
+        $result = $user->verify_email($email,$key);
+        return view("Modules/user/login_view.php", array("result"=>$result));  
     }
 
     if ($route->action=="view" && $session['userid']) {

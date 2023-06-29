@@ -50,6 +50,7 @@
             </div>
 
             <div class="alert alert-danger" style="margin-top:20px; margin-bottom: 5px;" v-if="error" v-html="error"></div>
+            <div class="alert alert-success" style="margin-top:20px; margin-bottom: 5px;" v-if="success" v-html="success"></div>
 
         </div>
 
@@ -67,6 +68,7 @@
             password2: "",
             email: "",
             error: false,
+            success: false,
             mode: false
         },
         methods: {
@@ -98,7 +100,12 @@
                 axios.post(path + "user/register.json", params)
                     .then(function(response) {
                         if (response.data.success) {
-                            window.location.href = path + "system/list";
+                            if (response.data.verifyemail!=undefined && response.data.verifyemail) {
+                                app.mode = 'login';
+                                app.success = "Registration successful, please check your email to verify your account";
+                            } else {
+                                window.location.href = path + "system/list"
+                            }
                         } else {
                             app.error = response.data.message;
                         }
@@ -109,4 +116,13 @@
             }
         }
     });
+
+    var result = <?php echo json_encode($result); ?>;
+    if (result.success!=undefined) {
+        if (result.success) {
+            app.success = result.message;
+        } else {
+            app.error = result.message;
+        }
+    }
 </script>
