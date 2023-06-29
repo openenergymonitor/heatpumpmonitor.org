@@ -50,6 +50,7 @@ class User
         if (isset($_SESSION['admin'])) $session['admin'] = $_SESSION['admin']; else $session['admin'] = 0;
         if (isset($_SESSION['userid'])) $session['userid'] = $_SESSION['userid']; else $session['userid'] = 0;
         if (isset($_SESSION['username'])) $session['username'] = $_SESSION['username']; else $session['username'] = '';
+        if (isset($_SESSION['email'])) $session['email'] = $_SESSION['email']; else $session['email'] = '';
         
         return $session;
     }
@@ -80,6 +81,7 @@ class User
             // Fetch email using emoncms.org/user/get.json
             $user_get = json_decode(file_get_contents("https://emoncms.org/user/get.json?apikey=".$result->apikey_write));
             $email = $user_get->email;
+            $_SESSION['email'] = $email;
 
             // Check if user exists with userid in heatpumpmonitor.org database using mysqli
             $result = $this->mysqli->query("SELECT * FROM users WHERE id='$userid'");

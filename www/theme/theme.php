@@ -101,7 +101,7 @@ $navigation = array(
 
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="avatarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <img src="https://s.gravatar.com/avatar/bd5c171e26dbdb370c820dd049bf2f595d759dda672301694ab23ad7e790ad59?s=80" width="32" height="32" alt="Avatar" class="rounded-circle avatar-image">
+                                <img width="32" height="32" class="rounded-circle avatar-image">
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="avatarDropdown">
                                 <li><a class="dropdown-item" href="<?php echo $path; ?>system/list">My systems</a></li>
@@ -130,6 +130,14 @@ $navigation = array(
     </footer>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <?php if ($session['userid']) { ?>
+        <script src="<?php echo $path; ?>Lib/md5.js"></script>
+        <script>
+            // Include gravitar profile image
+            var avatar = document.getElementsByClassName("avatar-image");
+            avatar[0].src = "https://www.gravatar.com/avatar/" + CryptoJS.MD5("<?php echo $session['email']; ?>") + "?s=32&d=mm";
+        </script>
+    <?php } ?>
 </body>
 
 </html>
