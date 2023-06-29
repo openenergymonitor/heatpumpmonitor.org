@@ -111,6 +111,7 @@ $navigation = array(
                                     <hr class="dropdown-divider">
                                 </li>
                                 <li><a class="dropdown-item" href="<?php echo $path; ?>system/admin">Admin systems</a></li>
+                                <li><a class="dropdown-item" href="<?php echo $path; ?>user/admin">Admin users</a></li>
                                 <?php } ?>
                                 <li>
                                     <hr class="dropdown-divider">

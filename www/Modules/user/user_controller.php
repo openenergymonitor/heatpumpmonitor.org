@@ -30,6 +30,10 @@ function user_controller() {
         return view("Modules/user/account_view.php", array('account'=>$user->get($session['userid'])));  
     }
 
+    if ($route->action=="admin" && $session['admin']) {
+        return view("Modules/user/admin_view.php", array());  
+    }
+
     if ($route->action=="logout" && $session['userid']) {
         $user->logout();
         header("Location: ".$path);
