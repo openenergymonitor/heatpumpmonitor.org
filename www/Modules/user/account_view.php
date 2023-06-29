@@ -9,21 +9,26 @@
     </div>
     <div class="container" style="max-width:800px">
         <br>
+        <div class="card" v-if="account.emoncmsorg_link" style="margin-bottom:10px">
+            <div class="card-body">
+                <b>This account is linked to an emoncms.org account</b><br>please update account details on emoncms.org, logout and log back in here to update details.
+            </div>
+        </div>
 
         <label><b>Username</b></label>
         <div class="input-group mb-3">
-            <input type="text" class="form-control" v-model="account.username" @change="onchange_username">
+            <input type="text" class="form-control" v-model="account.username" @change="onchange_username" :disabled="account.emoncmsorg_link">
             <button class="btn btn-warning" v-if="username_changed">Save</button>
         </div>
 
         <label><b>Email</b></label>
         <div class="input-group mb-3">
-            <input type="text" class="form-control" v-model="account.email" @change="onchange_email">
+            <input type="text" class="form-control" v-model="account.email" @change="onchange_email" :disabled="account.emoncmsorg_link">
             <button class="btn btn-warning" v-if="email_changed">Verify</button>
         </div>
         <hr>
 
-        <button class="btn btn-primary">Change password</button>
+        <button class="btn btn-primary" v-if="!account.emoncmsorg_link">Change password</button>
         <button class="btn btn-danger" style="float:right">Delete account</button>
         <br>
         <br>

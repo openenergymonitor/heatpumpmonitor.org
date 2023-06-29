@@ -18,6 +18,7 @@
                 </div>
                 <div v-if="mode=='register'">
                     <h1 class="h3 mb-3 fw-normal">Register</h1>
+                    <p>If you already have an emoncms.org account, you can login with that. Click cancel and select Login with emoncms.org.</p>
                 </div>
 
                 <label>Username</label>
@@ -73,6 +74,7 @@
                 const params = new URLSearchParams();
                 params.append('username', this.username);
                 params.append('password', this.password);
+                params.append('emoncmsorg', this.mode == "emoncmsorg" ? 1 : 0);
 
                 axios.post(path + "user/login.json", params)
                     .then(function(response) {

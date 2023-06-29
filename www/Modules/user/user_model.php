@@ -54,58 +54,86 @@ class User
         
         return $session;
     }
-    
-    
-    public function login($username, $password)
+
+    public function login($username, $password, $with_emoncmsorg=false)
     {
         if (!$username || !$password) return array('success'=>false, 'message'=>_("Username or password empty"));
 
-
+        if ($with_emoncmsorg) {
+            return $this->login_using_emoncmsorg($username, $password);
+        } else {
+            return $this->login_local($username, $password);
+        }
+    }
+    
+    public function login_using_emoncmsorg($username, $password)
+    {
+        // Login using emoncms.org/user/auth.json
         if (!$result = http_request("POST", "https://emoncms.org/user/auth.json", array("username"=>$username,"password"=>$password))) {
             return array('success'=>false, 'message'=>_("Login error"));  
         }
-        
         $result = json_decode($result);
+        if (!isset($result->success) || $result->success!==true) return $result;
 
-        if (isset($result->success) && $result->success===true) {
-            session_regenerate_id();
-            $userid = (int) $result->userid;
-            $apikey_read = $result->apikey_read;
-            $apikey_write = $result->apikey_write;
+        $emoncmsorg_userid = (int) $result->userid;
+        $emoncmsorg_apikey_read = $result->apikey_read;
+        $emoncmsorg_apikey_write = $result->apikey_write;
+
+        // Fetch email using emoncms.org/user/get.json
+        $user_get = json_decode(file_get_contents("https://emoncms.org/user/get.json?apikey=".$emoncmsorg_apikey_write));
+        $email = $user_get->email;
+
+        // Check if emoncmsorg link exists
+        $result = $this->mysqli->query("SELECT userid FROM emoncmsorg_link WHERE emoncmsorg_userid='$emoncmsorg_userid'");
+        if ($result->num_rows==0) {
+            $email = "";
             
-            $_SESSION['userid'] = $userid;
-            $_SESSION['username'] = $username;
-            $_SESSION['apikey_read'] = $result->apikey_read;
-            $_SESSION['apikey_write'] = $result->apikey_write;
+            // Create new user fetch userid
+            $stmt = $this->mysqli->prepare("INSERT INTO users (username, email) VALUES (?, ?)");
+            $stmt->bind_param("ss", $username, $email);
+            $stmt->execute();
+            $userid = (int) $stmt->insert_id;
+            $stmt->close();
 
-            // Fetch email using emoncms.org/user/get.json
-            $user_get = json_decode(file_get_contents("https://emoncms.org/user/get.json?apikey=".$result->apikey_write));
-            $email = $user_get->email;
-            $_SESSION['email'] = $email;
+            // Create emoncmsorg link using prepared statement
+            $stmt = $this->mysqli->prepare("INSERT INTO emoncmsorg_link (userid, emoncmsorg_userid, emoncmsorg_apikey_read, emoncmsorg_apikey_write) VALUES (?, ?, ?, ?)");
+            $stmt->bind_param("iiss", $userid, $emoncmsorg_userid, $emoncmsorg_apikey_read, $emoncmsorg_apikey_write);
+            $stmt->execute();
+            $stmt->close();
 
-            // Check if user exists with userid in heatpumpmonitor.org database using mysqli
-            $result = $this->mysqli->query("SELECT * FROM users WHERE id='$userid'");
-            if ($result->num_rows==0) {
-                // User does not exist in heatpumpmonitor.org database
-                // Create user in heatpumpmonitor.org database
-                $stmt = $this->mysqli->prepare("INSERT INTO users (id, username, email, apikey_read, apikey_write) VALUES (?, ?, ?, ?, ?)");
-                $stmt->bind_param("issss", $userid, $username, $email, $apikey_read, $apikey_write);
-                $stmt->execute();
-                $stmt->close();
-
-            } else {
-                // User exists in heatpumpmonitor.org database
-                // Update user in heatpumpmonitor.org database
-                $stmt = $this->mysqli->prepare("UPDATE users SET username=?, email=?, apikey_read=?, apikey_write=? WHERE id=?");
-                $stmt->bind_param("ssssi", $username, $email, $apikey_read, $apikey_write, $userid);
-                $stmt->execute();
-                $stmt->close();
-            }
-            
-            return array('success'=>true, 'message'=>_("Login successful"));
         } else {
-            return $result;
+            $row = $result->fetch_object();
+            $userid = (int) $row->userid;
         }
+
+        // Check that the userid exists
+        $result = $this->mysqli->query("SELECT * FROM users WHERE id='$userid'");
+        if ($result->num_rows==0) {
+            return array('success'=>false, 'message'=>_("User does not exist in users table"));
+        }
+
+        // Update fields in users table
+        $stmt = $this->mysqli->prepare("UPDATE users SET username=?, email=? WHERE id=?");
+        $stmt->bind_param("ssi", $username, $email, $userid);
+        $stmt->execute();
+        $stmt->close();
+
+        // Update emoncmsorg link
+        $stmt = $this->mysqli->prepare("UPDATE emoncmsorg_link SET emoncmsorg_apikey_read=?, emoncmsorg_apikey_write=? WHERE userid=?");
+        $stmt->bind_param("ssi", $emoncmsorg_apikey_read, $emoncmsorg_apikey_write, $userid);
+        $stmt->execute();
+
+        session_regenerate_id();
+        $_SESSION['userid'] = $userid;
+        $_SESSION['username'] = $username;
+        $_SESSION['email'] = $email;
+
+        return array('success'=>true, 'message'=>_("Login successful"));
+    }
+    
+    public function login_local($username, $password)
+    {
+        return array('success'=>false, 'message'=>_("Local login not implemented"));
     }
     
     public function logout()
@@ -121,6 +149,15 @@ class User
             return false;
         } else {
             $row = $result->fetch_object();
+
+            // check if emoncmsorg link exists
+            $result = $this->mysqli->query("SELECT emoncmsorg_userid FROM emoncmsorg_link WHERE userid='$userid'");
+            if ($result->num_rows>0) {
+                $row->emoncmsorg_link = true;
+            } else {
+                $row->emoncmsorg_link = false;
+            }
+
             return $row;
         }
     }
