@@ -89,7 +89,23 @@
                     });
             },
             register: function() {
+                const params = new URLSearchParams();
+                params.append('username', this.username);
+                params.append('password', this.password);
+                params.append('password2', this.password2);
+                params.append('email', this.email);
 
+                axios.post(path + "user/register.json", params)
+                    .then(function(response) {
+                        if (response.data.success) {
+                            window.location.href = path + "system/list";
+                        } else {
+                            app.error = response.data.message;
+                        }
+                    })
+                    .catch(function(error) {
+                        console.log(error);
+                    });
             }
         }
     });

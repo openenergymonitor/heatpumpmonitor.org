@@ -172,6 +172,42 @@ class User
         }
     }
 
+    public function register($username, $password, $email)
+    {
+        // Input validation, sanitisation and error reporting
+        if (!$username || !$password || !$email) return array('success'=>false, 'message'=>_("Missing username, password or email parameter"));
+        if (!ctype_alnum($username)) return array('success'=>false, 'message'=>_("Username must only contain a-z and 0-9 characters"));
+        if ($this->get_id($username) != 0) return array('success'=>false, 'message'=>_("Username already exists"));
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) return array('success'=>false, 'message'=>_("Email address format error"));
+
+        if (strlen($username) < 3 || strlen($username) > 30) return array('success'=>false, 'message'=>_("Username length error"));
+        if (strlen($password) < 4 || strlen($password) > 250) return array('success'=>false, 'message'=>_("Password length error"));
+        
+        $hash = hash('sha256', $password);
+        $salt = generate_secure_key(16);
+        $hash = hash('sha256', $salt . $hash);
+
+        $stmt = $this->mysqli->prepare("INSERT INTO users ( username, hash, email, salt, admin) VALUES (?,?,?,?,0)");
+        $stmt->bind_param("ssss", $username, $hash, $email, $salt);
+        $stmt->execute();
+        $userid = (int) $stmt->insert_id;
+        $stmt->close();
+        
+        // Email verification
+        if ($this->email_verification) {
+            // $result = $this->send_verification_email($username);
+            // if ($result['success']) return array('success'=>true, 'verifyemail'=>true, 'message'=>"Email verification email sent, please check your inbox");
+        } else {
+            session_regenerate_id();
+            $_SESSION['userid'] = $userid;
+            $_SESSION['username'] = $username;
+            $_SESSION['admin'] = 0;
+            $_SESSION['email'] = $email; 
+            return array('success'=>true, 'verifyemail'=>false, 'userid'=>$userid, 'message'=>"User account created");
+        }        
+    }
+
     public function logout()
     {
         session_unset();

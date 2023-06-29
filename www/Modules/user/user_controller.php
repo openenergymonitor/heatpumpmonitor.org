@@ -16,6 +16,16 @@ function user_controller() {
         }
     }
 
+    if ($route->action=="register") {
+        $route->format = "json";
+        $password1 = post("password");
+        $password2 = post("password2");
+        if ($password1!=$password2) {
+            return array("success"=>false,"message"=>"Passwords do not match");
+        }
+        return $user->register(post("username"),$password1,post("email"));
+    }
+
     if ($route->action=="view" && $session['userid']) {
         return view("Modules/user/account_view.php", array('account'=>$user->get($session['userid'])));  
     }
