@@ -84,6 +84,7 @@
                             window.location.href = path + "system/list";
                         } else {
                             app.error = response.data.message;
+                            app.success = false;
                         }
                     })
                     .catch(function(error) {
@@ -108,6 +109,7 @@
                             }
                         } else {
                             app.error = response.data.message;
+                            app.success = false;
                         }
                     })
                     .catch(function(error) {
@@ -121,8 +123,10 @@
     if (result.success!=undefined) {
         if (result.success) {
             app.success = result.message;
+            app.error = false;
         } else {
             app.error = result.message;
+            app.success = false;
         }
     }
 </script>
