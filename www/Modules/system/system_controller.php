@@ -30,7 +30,7 @@ function system_controller() {
 
     if ($route->action=="admin") {
         $route->format = "html";
-        if ($session['userid']) {
+        if ($session['userid'] && $session['admin']) {
             $systems = $system->list();
             return view("Modules/system/user_list_view.php",array("admin"=>true, "systems"=>$systems));
         }

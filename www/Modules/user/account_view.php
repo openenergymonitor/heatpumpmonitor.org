@@ -11,7 +11,7 @@
         <br>
         <div class="card" v-if="account.emoncmsorg_link" style="margin-bottom:10px">
             <div class="card-body">
-                <b>This account is linked to an emoncms.org account</b><br>please update account details on emoncms.org, logout and log back in here to update details.
+                <b>This account is linked to an emoncms.org account</b><br>Please update account details on emoncms.org, logout and log back in here to update details.
             </div>
         </div>
 

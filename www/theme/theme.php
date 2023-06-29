@@ -104,8 +104,14 @@ $navigation = array(
                                 <img width="32" height="32" class="rounded-circle avatar-image">
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="avatarDropdown">
-                                <li><a class="dropdown-item" href="<?php echo $path; ?>system/list">My systems</a></li>
                                 <li><a class="dropdown-item" href="<?php echo $path; ?>user/view">My account</a></li>
+                                <li><a class="dropdown-item" href="<?php echo $path; ?>system/list">My systems</a></li>
+                                <?php if ($session['admin']) { ?>
+                                <li>
+                                    <hr class="dropdown-divider">
+                                </li>
+                                <li><a class="dropdown-item" href="<?php echo $path; ?>system/admin">Admin systems</a></li>
+                                <?php } ?>
                                 <li>
                                     <hr class="dropdown-divider">
                                 </li>

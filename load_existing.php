@@ -48,7 +48,7 @@ foreach ($data as $row) {
             $apikey_read = $readkey;
             $apikey_write = "";
 
-            $stmt = $mysqli->prepare("INSERT INTO users (username, email) VALUES (?, ?)");
+            $stmt = $mysqli->prepare("INSERT INTO users (username, email, admin) VALUES (?, ?, 0)");
             $stmt->bind_param("ss", $username, $email);
             $stmt->execute();
             $userid = $stmt->insert_id;
