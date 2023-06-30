@@ -41,6 +41,13 @@ function user_controller() {
         return view("Modules/user/admin_view.php", array());  
     }
 
+    if ($route->action=="switch" && $session['admin']) {
+        $userid = get('userid');
+        $user->admin_switch_user($userid);
+        header("Location: ".$path."user/view");
+        exit();
+    }
+
     if ($route->action=="logout" && $session['userid']) {
         $user->logout();
         header("Location: ".$path);

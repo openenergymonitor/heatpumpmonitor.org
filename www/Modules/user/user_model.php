@@ -345,4 +345,20 @@ class User
             return false;
         }
     }
+
+    public function admin_switch_user($userid) {
+        $userid = (int) $userid;
+        $result = $this->mysqli->query("SELECT id,username,email FROM users WHERE id='$userid'");
+        if ($result->num_rows == 0) {
+            return false;
+        } else {
+            $row = $result->fetch_object();
+            session_regenerate_id();
+            $_SESSION['userid'] = $row->id;
+            $_SESSION['username'] = $row->username;
+            $_SESSION['admin'] = 1;
+            $_SESSION['email'] = $row->email;
+            return true;
+        }
+    }
 }
