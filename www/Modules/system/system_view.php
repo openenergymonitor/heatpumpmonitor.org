@@ -19,6 +19,21 @@
                 </div>
             </div>
         </div>
+        <div class="row">
+            <p><b>Installer</b><br>Optional. If you are not the installer we recommend asking the installer if they are happy with their name being displayed. Self install is also an option..</p>
+            <div class="col">
+                <p><b>Name</b></p>
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" v-model="system.installer_name" @change="update">
+                </div>
+            </div>
+            <div class="col">
+                <p><b>Website</b></p>
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" v-model="system.installer_url" @change="update">
+                </div>
+            </div>
+        </div>
 
         <hr>
         <h4>About Your Heating System</h4>
@@ -52,9 +67,10 @@
                     <select class="form-control" @change="update" v-model="system.refrigerant">
                         <option value="R290">R290 (Propane)</option>
                         <option value="R32">R32</option>
-                        <option value="R410a">R410a</option>
-                        <option value="R407C">R407C</option>
                         <option value="CO2">CO2</option>
+                        <option value="R410A">R410a</option>
+                        <option value="R134A">R134a</option>
+                        <option value="R407C">R407c</option>
                     </select>
                 </div>
             </div>
@@ -140,14 +156,14 @@
             <div class="col">
                 <p>Typical flow temperature of heat emitters in January (e.g 35C at 6C outside)</p>
                 <div class="input-group mb-3">
-                    <input type="text" class="form-control" @change="update">
+                    <input type="text" class="form-control" v-model="system.flow_temp_typical" @change="update">
                     <span class="input-group-text">°C</span>
                 </div>
             </div>
             <div class="col">
                 <p>Curve setting<br>(if known e.g 0.6)<br><br></p>
                 <div class="input-group mb-3">
-                    <input type="text" class="form-control" @change="update">
+                    <input type="text" class="form-control" v-model="system.wc_curve" @change="update">
                 </div>
             </div>
         </div>
@@ -174,28 +190,14 @@
 
         <div class="row">
             <p><b>Anti-freeze protection</b></p>
+
             <div class="col">
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" v-model="system.freeze">
-                    <label>
-                        Glycol/water mixture
-                    </label>
-                </div>
-            </div>
-            <div class="col">
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" v-model="system.freeze">
-                    <label>
-                        Anti-freeze valves
-                    </label>
-                </div>
-            </div>
-            <div class="col">
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" v-model="system.freeze">
-                    <label>
-                        Central heat pump water circulation
-                    </label>
+                <div class="input-group mb-3">
+                    <select class="form-control" @change="update" v-model="system.freeze">
+                        <option>Glycol/water mixture</option>
+                        <option>Anti-freeze valves</option>
+                        <option>Central heat pump water circulation</option>
+                    </select>
                 </div>
             </div>
         </div>
@@ -279,25 +281,110 @@
 
         <hr>
         <h4>Monitoring information</h4>
+        <br>
+
+        <div class="row">
+            <div class="col">
+                <p><b>Electric meter</b></p>
+                <div class="input-group mb-3">
+                    <select class="form-control" v-model="system.electric_meter">
+                        <option>OpenEnergyMonitor EmonPi v1, EmonTx3 or earlier</option>
+                        <option>OpenEnergyMonitor EmonPi v2, EmonTx4 or newer</option>
+                        <option>SDM120 Modbus/MBUS Single Phase (class 1)</option>
+                        <option>SDM220 Modbus/MBUS Single Phase (class 1)</option>
+                        <option>SDM630 Modbus/MBUS Three Phase (class 1)</option>
+                        <option>Other Modbus/MBUS meter (class 1)</option>
+                        <option>Other pulse output meter (class 1)</option>
+                        <option>Heat pump integration</option>
+                        <option>Other electricity meter</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <p><b>Heat meter</b></p>
+                <div class="input-group mb-3">
+                    <select class="form-control" v-model="system.heat_meter">
+                        <option>Sontex heat meter (class 2)</option>
+                        <option>Kamstrup heat meter (class 2)</option>
+                        <option>Sharky heat meter (class 2)</option>
+                        <option>Qalcosonic heat meter (class 2)</option>
+                        <option>SensoStar heat meter (class 2)</option>
+                        <option>Itron heat meter (class 2)</option>
+                        <option>Danfoss Sono heat meter (class 2)</option>
+                        <option>Ista Ultego heat meter (class 2)</option>
+                        <option>Sika or Grundfos VFS flow meter</option>
+                        <option>Heat pump integration</option>
+                        <option>Other heat meter</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <p><b>Metering includes</b></p>
+
+            <div class="col">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" v-model="system.metering_inc_boost" @click="update">
+                    <label class="form-check-label">
+                        DHW Immersion heater or other booster heater
+                    </label>
+                </div>
+            </div>
+            <div class="col">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" v-model="system.metering_inc_central_heating_pumps" @click="update">
+                    <label class="form-check-label">
+                        Central heating pump
+                    </label>
+                </div>
+            </div>
+            <div class="col">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" v-model="system.metering_inc_brine_pumps" @click="update">
+                    <label class="form-check-label">
+                        Ground source brine pump
+                    </label>
+                </div>
+            </div>
+            <div class="col">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" v-model="system.metering_inc_controls" @click="update">
+                    <label class="form-check-label">
+                        Indoor controller or other controls
+                    </label>
+                </div>
+                <br>
+            </div>
+        </div><br>
+        <p><b>Additional notes</b></p>
+        <div class="input-group mb-3">
+            <input type="text" class="form-control" v-model="system.metering_notes" @change="update" placeholder="Any additional notes about system metering...">
+        </div>
+        <br>
 
         <p><b>URL of public MyHeatPump app</b><br>
             Requires an account on emoncms.org, or a self-hosted instance of emoncms</p>
         <div class="input-group mb-3">
             <input type="text" class="form-control" v-model="system.url" @change="update">
+            <button class="btn btn-warning" type="button" @click="test_url">Load stats</button>
         </div>
+
+        <pre>{{ stats }}</pre>
+        <br>
 
     </div>
     <div style=" background-color:#eee; padding-top:20px; padding-bottom:10px">
         <div class="container" style="max-width:800px;">
             <div class="row">
                 <div class="col">
-                    <p><b>Agree to share this information publicly</b><br>
-                        (except for name and email address)</p>
+                    <p><b>Agree to share this information publicly</b></p>
                 </div>
                 <div class="col">
-                    <br>
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" checked>
+                        <input class="form-check-input" type="checkbox" v-model="system.share">
                         <label>Yes</label>
                     </div>
                 </div>
@@ -321,7 +408,8 @@
             system: <?php echo json_encode($system_data); ?>,
             show_error: false,
             show_success: false,
-            message: ''
+            message: '',
+            stats: ''
         },
         methods: {
             update: function() {
@@ -357,6 +445,16 @@
             },
             cancel: function() {
                 window.location.href = 'list';
+            },
+            test_url: function() {
+                axios.post('loadstats', {
+                        url: this.$data.system.url
+                    })
+                    .then(function(response) {
+                        if (response.data) {
+                            app.stats = JSON.stringify(response.data, null, 2);
+                        }
+                    });
             }
         },
         filters: {

@@ -78,7 +78,7 @@ foreach ($data as $row) {
     // ---------------------------------------
     // Translate existing format to new format
     // ---------------------------------------
-    
+
     // Buffer is now a boolean
     if ($row->buffer=="Yes") $row->buffer = 1;
     else $row->buffer = 0;
@@ -94,6 +94,11 @@ foreach ($data as $row) {
     // Underfloor heating
     if (strpos($row->emitters, "Underfloor heating")!==false) $row->UFH = 1;
     else $row->UFH = 0;
+
+    // Anti freeze protection
+    // - Central heat pump water circulation
+    // - Anti-freeze valves
+    // - Glycol/water mixture
 
     // ---------------------------------------
 

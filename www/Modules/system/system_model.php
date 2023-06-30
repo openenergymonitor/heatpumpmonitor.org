@@ -148,6 +148,34 @@ class System
         }
     }
 
+    public function load_stats_from_url($url) {
+        # decode the url to separate out any args
+        $url_parts = parse_url($url);
+        $server = $url_parts['scheme'] . '://' . $url_parts['host'];
+
+        # check if url was to /app/view instead of username
+        if (preg_match('/^(.*)\/app\/view$/', $url_parts['path'], $matches)) {
+            $getstats = "$server$matches[1]/app/getstats";
+        } else {
+            $getstats = $server . $url_parts['path'] . "/app/getstats";
+        }
+
+        # if url has query string, pull out the readkey
+        if (isset($url_parts['query'])) {
+            parse_str($url_parts['query'], $url_args);
+            if (isset($url_args['readkey'])) {
+                // $readkey = $url_args['readkey'];
+                $getstats .= '?' . $url_parts['query'];
+            }
+        }
+
+        if (!$stats = json_decode(file_get_contents($getstats))) {
+            return false;
+        } else {
+            return $stats;
+        }
+    }
+
     public function save_stats($systemid,$stats) {
         $systemid = (int) $systemid;
         

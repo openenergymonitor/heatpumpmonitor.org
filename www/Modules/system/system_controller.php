@@ -60,5 +60,13 @@ function system_controller() {
         }
     }
 
+    if ($route->action=="loadstats") {
+        $route->format = "json";
+        if ($session['userid']) {
+            $input = json_decode(file_get_contents('php://input'));
+            return $system->load_stats_from_url($input->url);
+        }
+    }
+
     return false;
 }
