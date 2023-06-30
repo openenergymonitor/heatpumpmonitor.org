@@ -7,16 +7,24 @@ chdir("/var/www/heatpumpmonitororg");
 require "www/Lib/load_database.php";
 
 // Clear all existing data
-$mysqli->query("TRUNCATE TABLE users");
-$mysqli->query("TRUNCATE TABLE emoncmsorg_link");
-$mysqli->query("TRUNCATE TABLE form");
+$mysqli->query("DROP TABLE users");
+$mysqli->query("DROP TABLE emoncmsorg_link");
+$mysqli->query("DROP TABLE form");
 
+// Rebuid database
+require "www/Lib/dbschemasetup.php";
+$schema = array();
+require "www/Modules/user/user_schema.php";
+require "www/Modules/system/system_schema.php";
+db_schema_setup($mysqli, $schema, true);
+
+// Load user and system models
 require("Modules/user/user_model.php");
 $user = new User($mysqli);
-
 require ("Modules/system/system_model.php");
 $system = new System($mysqli);
 
+// For each user in data.json
 foreach ($data as $row) {
     print $row->url."\n";
     $url = parse_url($row->url);
@@ -67,6 +75,28 @@ foreach ($data as $row) {
 
     print "user $userid created\n";
 
+    // ---------------------------------------
+    // Translate existing format to new format
+    // ---------------------------------------
+    
+    // Buffer is now a boolean
+    if ($row->buffer=="Yes") $row->buffer = 1;
+    else $row->buffer = 0;
+
+    // Emitters are now 3 booleans (new_radiators, old_radiators, UFH)
+    // check if "New radiators" is in string emitters
+    // set new_radiators to 1 if it is
+    if (strpos($row->emitters, "New radiators")!==false) $row->new_radiators = 1;
+    else $row->new_radiators = 0;
+    // Exitings radiators
+    if (strpos($row->emitters, "Existing radiators")!==false) $row->old_radiators = 1;
+    else $row->old_radiators = 0;
+    // Underfloor heating
+    if (strpos($row->emitters, "Underfloor heating")!==false) $row->UFH = 1;
+    else $row->UFH = 0;
+
+    // ---------------------------------------
+
     $form_data = array();
 
     foreach ($system->schema as $key=>$schema_row) {
@@ -90,4 +120,5 @@ foreach ($data as $row) {
     print "system saved\n";
 
     usleep(10000);
+    // die;
 }

@@ -13,7 +13,7 @@
         <br>
         <div class="row">
             <div class="col">
-                <p><b>Vague Location *</b><br>Roughly where the heat pump is installed, to nearest city or county.</p>
+                <p><b>Vague Location</b><br>Roughly where the heat pump is installed, to nearest city or county.</p>
                 <div class="input-group mb-3">
                     <input type="text" class="form-control" v-model="system.location" @change="update">
                 </div>
@@ -49,7 +49,13 @@
             <div class="col">
                 <p><b>Refrigerant type</b><br>(e.g R410a, R32, R290)</p>
                 <div class="input-group mb-3">
-                    <input type="text" class="form-control" v-model="system.refrigerant" @change="update">
+                    <select class="form-control" @change="update" v-model="system.refrigerant">
+                        <option value="R290">R290 (Propane)</option>
+                        <option value="R32">R32</option>
+                        <option value="R410a">R410a</option>
+                        <option value="R407C">R407C</option>
+                        <option value="CO2">CO2</option>
+                    </select>
                 </div>
             </div>
 
@@ -62,20 +68,42 @@
             </div>
         </div>
 
-        <p><b>System includes buffer or low loss header</b></p>
-        <div class="input-group mb-3">
-            <select class="form-control" v-model="system.buffer" @change="update">
-                <option>Yes</option>
-                <option>No</option>
-            </select>
-        </div>
-
         <div class="row">
-            <p><b>Heat Emitters</b></p>
+            <p><b>Does the system include any of the following hydraulic separation:</b></p>
 
             <div class="col">
                 <div class="form-check">
-                    <input class="form-check-input" type="checkbox" v-model="system.emitters" @click="update">
+                    <input class="form-check-input" type="checkbox" v-model="system.buffer" @click="update">
+                    <label class="form-check-label">
+                        Buffer
+                    </label>
+                </div>
+            </div>
+            <div class="col">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" v-model="system.LLH" @click="update">
+                    <label class="form-check-label">
+                        Low loss header
+                    </label>
+                </div>
+            </div>
+            <div class="col">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" v-model="system.HEX" @click="update">
+                    <label class="form-check-label">
+                        Heat exchanger
+                    </label>
+                </div>
+                <br>
+            </div>
+        </div>
+
+        <div class="row">
+            <p><b>Type of heat emitters installed</b></p>
+
+            <div class="col">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" v-model="system.new_radiators" @click="update">
                     <label class="form-check-label">
                         New radiators
                     </label>
@@ -83,7 +111,7 @@
             </div>
             <div class="col">
                 <div class="form-check">
-                    <input class="form-check-input" type="checkbox" v-model="system.emitters" @click="update">
+                    <input class="form-check-input" type="checkbox" v-model="system.old_radiators" @click="update">
                     <label class="form-check-label">
                         Existing radiators
                     </label>
@@ -91,7 +119,7 @@
             </div>
             <div class="col">
                 <div class="form-check">
-                    <input class="form-check-input" type="checkbox" v-model="system.emitters" @click="update">
+                    <input class="form-check-input" type="checkbox" v-model="system.UFH" @click="update">
                     <label class="form-check-label">
                         Underfloor heating
                     </label>

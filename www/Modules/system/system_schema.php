@@ -11,7 +11,17 @@ $schema['form'] = array(
     'hp_model' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
     'hp_type' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
     'hp_output' => array('type' => 'float', 'code' => 'd', 'editable' => true),
-    'emitters' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
+
+    // Hydraulic seperation
+    'buffer' => array('type' => 'tinyint(1)', 'code' => 'i', 'editable' => true),
+    'LLH' => array('type' => 'tinyint(1)', 'code' => 'i', 'editable' => true),
+    'HEX' => array('type' => 'tinyint(1)', 'code' => 'i', 'editable' => true),
+
+    // Heat emitters
+    'new_radiators' => array('type' => 'tinyint(1)', 'code' => 'i', 'editable' => true),
+    'old_radiators' => array('type' => 'tinyint(1)', 'code' => 'i', 'editable' => true),
+    'UFH' => array('type' => 'tinyint(1)', 'code' => 'i', 'editable' => true),
+
     'heat_demand' => array('type' => 'int(11)', 'code' => 'i', 'editable' => true),
     'notes' => array('type' => 'varchar(300)', 'code' => 's', 'editable' => true),
     'property' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
@@ -21,7 +31,7 @@ $schema['form'] = array(
     'age' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
     'insulation' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
     'flow_temp' => array('type' => 'float', 'code' => 'd', 'editable' => true),
-    'buffer' => array('type' => 'varchar(8)', 'code' => 's', 'editable' => true),
+    
     'freeze' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
     'zone' => array('type' => 'varchar(128)', 'code' => 's', 'editable' => true),
     'controls' => array('type' => 'varchar(128)', 'code' => 's', 'editable' => true),
