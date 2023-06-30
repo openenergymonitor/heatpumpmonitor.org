@@ -5,10 +5,12 @@
 <div id="app" class="bg-light">
     <div style=" background-color:#f0f0f0; padding-top:20px; padding-bottom:10px">
         <div class="container" style="max-width:1200px;">
-            <h3>My Systems</h3>
+            <h3 v-if="!admin">My Systems</h3>
+            <h3 v-if="admin">Admin Systems</h3>
 
             <button class="btn btn-primary btn-sm" @click="create" style="float:right; margin-right:30px">Add new system</button>
-            <p>Add, edit and view systems associated with your account.</p>
+            <p v-if="!admin">Add, edit and view systems associated with your account.</p>
+            <p v-if="admin">Add, edit and view all systems.</p>
         </div>
     </div>
 
@@ -17,14 +19,18 @@
         
         <table class="table">
             <tr>
-                <th>ID</th>
+                <th>System ID</th>
+                <th v-if="admin">User ID</th>
                 <th>Location</th>
+                <th>Last updated</th>
                 <th>Year COP</th>
                 <th style="width:150px">Actions</th>
             </tr>
             <tr v-for="(system,index) in systems">
                 <td>{{ system.id }}</td>
+                <td v-if="admin">{{ system.userid }}</td>
                 <td>{{ system.location }}</td>
+                <td>{{ system.last_updated | time_ago }}</td>
                 <td>{{ system.year_cop | toFixed(1) }}</td>
                 <td>
                     <button class="btn btn-info btn-sm" @click="edit(index)">Edit</button>
@@ -40,7 +46,8 @@
     var app = new Vue({
         el: '#app',
         data: {
-            systems: <?php echo json_encode($systems); ?>
+            systems: <?php echo json_encode($systems); ?>,
+            admin: <?php echo ($admin) ? 'true' : 'false'; ?>
         },
         methods: {
             create: function() {
@@ -80,11 +87,33 @@
         },
         filters: {
             toFixed: function(val, dp) {
-                if (isNaN(val)) {
+                if (isNaN(val) || val==null) {
                     return val;
                 } else {
                     return val.toFixed(dp)
                 }
+            },
+            time_ago: function(val) {
+                if (val==null || val==0) {
+                    return '';
+                }
+                // convert timestamp to date time
+                let date = new Date(val*1000);
+                // format date time
+                let year = date.getFullYear();
+                let month = date.getMonth()+1;
+                let day = date.getDate();
+                let hour = date.getHours();
+                let min = date.getMinutes();
+                let sec = date.getSeconds();
+                // add leading zeros
+                month = (month < 10) ? "0"+month : month;
+                day = (day < 10) ? "0"+day : day;
+                hour = (hour < 10) ? "0"+hour : hour;
+                min = (min < 10) ? "0"+min : min;
+                sec = (sec < 10) ? "0"+sec : sec;
+                // return formatted date time
+                return year+"-"+month+"-"+day+" "+hour+":"+min+":"+sec;
             }
         }
     });

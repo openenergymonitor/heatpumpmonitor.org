@@ -21,6 +21,10 @@ class Email
         if (!isset($message['text'])) return array("success"=>false, "message"=>"No text");
         if (!isset($message['html'])) return array("success"=>false, "message"=>"No html");
 
+        if (!is_array($message['to'])) {
+            $message['to'] = array(array("email" => $message['to']));
+        }
+
         $curl = curl_init();
 
         curl_setopt($curl, CURLOPT_URL, "https://api.mailersend.com/v1/email");
@@ -28,7 +32,7 @@ class Email
 
         curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode(array(
             "from" => array("email" => $message['from']),
-            "to" => array(array("email" => $message['to'])),
+            "to" => $message['to'],
             "subject" => $message['subject'],
             "text" => $message['text'],
             "html" => $message['html']

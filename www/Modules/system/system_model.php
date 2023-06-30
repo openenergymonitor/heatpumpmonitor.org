@@ -18,18 +18,23 @@ class System
     }
 
     public function list($userid=false) {
+
         if ($userid===false) {
+            $admin = false;
             $result = $this->mysqli->query("SELECT * FROM form");
         } else {
             $userid = (int) $userid;
+            $admin = $this->is_admin($userid);
             $result = $this->mysqli->query("SELECT * FROM form WHERE userid='$userid'");
         }
         $list = array();
         while ($row = $result->fetch_object()) {
             // convert numeric strings to numbers
-            foreach ($row as $key=>$value) {
-                if ($this->schema[$key]["code"]=='i') $row->$key = (int) $value;
-                if ($this->schema[$key]["code"]=='d') $row->$key = (float) $value;
+            foreach ($this->schema as $key=>$schema_row) {
+                if (isset($row->$key) || $row->$key==null) {
+                    if ($schema_row["code"]=='i') $row->$key = (int) $row->$key;
+                    if ($schema_row["code"]=='d') $row->$key = (float) $row->$key;
+                }
             }
             if ($row->stats!=null) {
                 $row->stats = json_decode($row->stats);
@@ -37,6 +42,14 @@ class System
             if ($row->stats==null) {
                 unset($row->stats);
             }
+
+            // Remove non public fields
+            // automate this?
+            // maybe no need for email in form given that it's in the user table?
+            if ($admin==false && $userid==false) {
+                unset($row->email);
+            }
+
             $list[] = $row;
         }
         return $list;
@@ -56,9 +69,17 @@ class System
         if (!$row = $result->fetch_object()) {
             return array("success"=>false, "message"=>"System does not exist");
         }
-        if ($userid!=$row->userid) {
+        if ($userid!=$row->userid && $this->is_admin($userid)==false) {
             return array("success"=>false, "message"=>"Invalid access");
         }
+
+        foreach ($this->schema as $key=>$schema_row) {
+            if (isset($row->$key) || $row->$key==null) {
+                if ($schema_row["code"]=='i') $row->$key = (int) $row->$key;
+                if ($schema_row["code"]=='d') $row->$key = (float) $row->$key;
+            }
+        }
+
         return $row;
     }
 
@@ -66,10 +87,19 @@ class System
         $userid = (int) $userid;
         $systemid = (int) $systemid;
 
+        // Check if user has access
+        if ($this->has_access($userid,$systemid)==false) {
+            return array("success"=>false, "message"=>"Invalid access");
+        }
+
+        // Compile change log
+        $original = $this->get($userid, $systemid);
+        
         // Loop through the form schema and generate the query
         $query = array();
         $codes = array();
         $values = array();
+        $change_log = array();
         
         foreach ($this->schema as $key=>$value) {
             if ($this->schema[$key]['editable']) {
@@ -77,12 +107,14 @@ class System
                     $values[] = $form_data->$key;
                     $query[] = $key."=?";
                     $codes[] = $this->schema[$key]["code"];
+
+                    if ($original->$key!=$form_data->$key) {
+                        $change_log[] = array("key"=>$key,"old"=>$original->$key,"new"=>$form_data->$key);
+                    }
                 }
             }
         }
-        // Add userid to the end
-        $values[] = $userid;
-        $codes[] = "i";
+        // Add systemid to the end
         $values[] = $systemid;
         $codes[] = "i";
 
@@ -91,7 +123,7 @@ class System
         $codes = implode("",$codes);
         
         // Prepare and execute the query with error checking
-        if (!$stmt = $this->mysqli->prepare("UPDATE form SET $query WHERE userid=? AND id=?")) {
+        if (!$stmt = $this->mysqli->prepare("UPDATE form SET $query WHERE id=?")) {
             return array("success"=>false,"message"=>"Prepare failed: (" . $this->mysqli->errno . ") " . $this->mysqli->error);
         }
         if (!$stmt->bind_param($codes, ...$values)) {
@@ -107,12 +139,17 @@ class System
         if ($affected==0) {
             return array("success"=>true,"message"=>"No changes");
         }  else {
-            return array("success"=>true,"message"=>"Saved");
+            $this->send_change_notification($userid,$systemid,$change_log);
+
+            // Update last updated time
+            $now = time();
+            $this->mysqli->query("UPDATE form SET last_updated='$now' WHERE id='$systemid'");
+            return array("success"=>true,"message"=>"Saved", "change_log"=>$change_log);
         }
     }
 
-    public function save_stats($userid,$stats) {
-        $userid = (int) $userid;
+    public function save_stats($systemid,$stats) {
+        $systemid = (int) $systemid;
         
         $stats = [
             "month_elec" => $stats->last30->elec_kwh,
@@ -140,15 +177,15 @@ class System
             }
         }
 
-        // Add userid to the end
-        $values[] = $userid;
+        // Add systemid to the end
+        $values[] = $systemid;
         $codes[] = "i";
         // convert to string
         $query = implode(",",$query);
         $codes = implode("",$codes);
 
         // Prepare and execute the query with error checking
-        if (!$stmt = $this->mysqli->prepare("UPDATE form SET $query WHERE userid=?")) {
+        if (!$stmt = $this->mysqli->prepare("UPDATE form SET $query WHERE id=?")) {
             return array("success"=>false,"message"=>"Prepare failed: (" . $this->mysqli->errno . ") " . $this->mysqli->error);
         }
         if (!$stmt->bind_param($codes, ...$values)) {
@@ -165,15 +202,80 @@ class System
     public function delete($userid,$systemid) {
         $userid = (int) $userid;
         $systemid = (int) $systemid;
-        $result = $this->mysqli->query("SELECT * FROM form WHERE id='$systemid'");
-        if (!$row = $result->fetch_object()) {
-            return array("success"=>false, "message"=>"System does not exist");
-        }
-        if ($userid!=$row->userid) {
+
+        // Check if user has access
+        if ($this->has_access($userid,$systemid)==false) {
             return array("success"=>false, "message"=>"Invalid access");
         }
-
+        // Delete the system
         $this->mysqli->query("DELETE FROM form WHERE id='$systemid'");
         return array("success"=>true, "message"=>"Deleted");
+    }
+
+    public function has_access($userid,$systemid) {
+        $userid = (int) $userid;
+        $systemid = (int) $systemid;
+        $result = $this->mysqli->query("SELECT userid FROM form WHERE id='$systemid'");
+        if (!$row = $result->fetch_object()) {
+            return false;
+        }
+        if ($userid!=$row->userid && $this->is_admin($userid)==false) {
+            return false;
+        }
+        return true;
+    }
+
+    public function is_admin($userid) {
+        $userid = (int) $userid;
+        $result = $this->mysqli->query("SELECT admin FROM users WHERE id='$userid'");
+        if (!$row = $result->fetch_object()) {
+            return false;
+        }
+        if ($row->admin==1) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public function send_change_notification($userid,$systemid,$change_log) {
+        $userid = (int) $userid;
+        $systemid = (int) $systemid;
+        $change_count = count($change_log);
+
+        global $settings;
+        if (isset($settings['change_notifications_enabled'])) {
+            if ($settings['change_notifications_enabled']==false) {
+                return;
+            }
+        } else {
+            return;
+        }
+
+        // Get admin users email addresses
+        $result = $this->mysqli->query("SELECT email FROM users WHERE admin=1");
+        $emails = array();
+        while ($row = $result->fetch_object()) {
+            $emails[] = array("email"=>$row->email);
+        }
+
+        $html = "<h3>System $systemid has been updated</h3>";
+        $html .= "<p>$change_count fields updated</p>";
+        $html .= "<ul>";
+        foreach ($change_log as $change) {
+            // as list
+            $html .= "<li><b>".$change['key']."</b> changed from <b>".$change['old']."</b> to <b>".$change['new']."</b></li>";
+        }
+        $html .= "</ul>";
+
+        // Move this to background task
+        require_once "Lib/email.php";
+        $email_class = new Email();
+        $email_class->send(array(
+            "to" => $emails,
+            "subject" => "System $systemid has been updated",
+            "text" => "System $systemid has been updated, $change_count fields updated",
+            "html" => $html
+        ));
     }
 }

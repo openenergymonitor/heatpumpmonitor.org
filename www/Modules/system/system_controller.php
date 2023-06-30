@@ -24,7 +24,7 @@ function system_controller() {
         $route->format = "html";
         if ($session['userid']) {
             $systems = $system->list($session['userid']);
-            return view("Modules/system/user_list_view.php",array("systems"=>$systems));
+            return view("Modules/system/user_list_view.php",array("admin"=>false, "systems"=>$systems));
         }
     }
 

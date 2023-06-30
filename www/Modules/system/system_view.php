@@ -11,19 +11,7 @@
 
     <div class="container" style="max-width:800px">
         <br>
-
-        <p><b>Email *</b></p>
-        <div class="input-group mb-3">
-            <input type="text" class="form-control" v-model="system.email" @change="update">
-        </div>
-
         <div class="row">
-            <div class="col">
-                <p><b>Name *</b><br>Your name. This will not be displayed publicly but will allow for updating records if necessary.</p>
-                <div class="input-group mb-3">
-                    <input type="text" class="form-control" v-model="system.name" @change="update">
-                </div>
-            </div>
             <div class="col">
                 <p><b>Vague Location *</b><br>Roughly where the heat pump is installed, to nearest city or county.</p>
                 <div class="input-group mb-3">
@@ -291,8 +279,8 @@
             <button type="button" class="btn btn-light" @click="cancel" style="margin-left:10px">Cancel</button>
             <br><br>
 
-            <div class="alert alert-danger" role="alert" v-if="show_error">{{ message }}</div>
-            <div class="alert alert-success" role="alert" v-if="show_success">{{ message }}</div>
+            <div class="alert alert-danger" role="alert" v-if="show_error" v-html="message"></div>
+            <div class="alert alert-success" role="alert" v-if="show_success" v-html="message"></div>
 
         </div>
     </div>
@@ -312,7 +300,6 @@
 
             },
             save: function() {
-                console.log(JSON.stringify(this.$data))
                 // Send data to server using axios, check response for success
                 axios.post('save', {
                         id: this.$data.system.id,
@@ -323,6 +310,16 @@
                             app.show_success = true;
                             app.show_error = false;
                             app.message = response.data.message;
+
+                            if (response.data.change_log!=undefined) {
+                                let change_log = response.data.change_log;
+                                app.message = '<br><ul>';
+                                // Loop through change log add as list
+                                for (var i = 0; i < change_log.length; i++) {
+                                    app.message += "<li><b>"+change_log[i]['key']+"</b> changed from <b>"+change_log[i]['old']+"</b> to <b>"+change_log[i]['new']+"</b></li>";
+                                }
+                                app.message += '</ul>';
+                            }
                         } else {
                             app.show_error = true;
                             app.show_success = false;

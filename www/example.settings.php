@@ -8,5 +8,6 @@ $settings = array(
         "database"=>"heatpumpmonitor",
         "port"=>3306
     ),
-    "mailersend_api_key"=>""
+    "mailersend_api_key"=>"",
+    "change_notifications_enabled"=>false
 );

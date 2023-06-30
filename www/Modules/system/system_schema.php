@@ -4,11 +4,9 @@ $schema['form'] = array(
     // Form meta data
     'id' => array('type' => 'int(11)', 'Null'=>false, 'Key'=>'PRI', 'Extra'=>'auto_increment', 'code' => 'i', 'editable' => false),
     'userid' => array('type' => 'int(11)', 'code' => 'i', 'editable' => false),
-    'submitted' => array('type' => 'datetime', 'code' => 's', 'editable' => false),
+    'last_updated' => array('type' => 'int(11)', 'code' => 'i', 'editable' => false),
 
     // Form data
-    'name' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
-    'email' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
     'location' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
     'hp_model' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
     'hp_type' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
