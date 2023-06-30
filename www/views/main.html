@@ -35,7 +35,7 @@
         <th @click="sort('hp_model', 'asc')" class="border">Make / Model</th>
         <th @click="sort('hp_output', 'desc')" class="right">Output</th>
         <th @click="sort('hp_type', 'asc')">Source</th>
-        <th @click="sort('emitters', 'asc')">Emitters</th>
+        <!--<th @click="sort('emitters', 'asc')">Emitters</th>-->
         
         <!-- Performance -->
         <th @click="sort('year_elec', 'desc')" class="border right">Electric</th>
@@ -61,9 +61,9 @@
         <td v-bind:title="n.hp_model">{{n.hp_model.replace(/ \(.*\)/, ' &mldr;')}}</td>
         <td class="nowrap" align="right">{{unit_dp(n.hp_output, 'kW')}}</td>
         <td class="nowrap">{{n.hp_type.split(' ')[0]}}</td>
-        <td v-bind:title="n.emitters">
+        <!--<td v-bind:title="n.emitters">
             {{n.emitters.split(' ').slice(0, 2).join(' ')}}
-            {{n.emitters.split(' ').length > 2 ? '&mldr;' : ''}}</td>
+            {{n.emitters.split(' ').length > 2 ? '&mldr;' : ''}}</td>-->
         
         <!-- Performance -->
         <td v-bind:class="sinceClass(n) + ' nowrap  '" v-bind:title="sinceDate(n)" align="right">
