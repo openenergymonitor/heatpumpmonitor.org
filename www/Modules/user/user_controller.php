@@ -38,7 +38,8 @@ function user_controller() {
     }
 
     if ($route->action=="admin" && $session['admin']) {
-        return view("Modules/user/admin_view.php", array());  
+        $users = $user->admin_user_list();
+        return view("Modules/user/admin_view.php", array("users"=>$users));  
     }
 
     if ($route->action=="switch" && $session['admin']) {

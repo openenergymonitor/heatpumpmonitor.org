@@ -346,6 +346,15 @@ class User
         }
     }
 
+    public function admin_user_list() {
+        $result = $this->mysqli->query("SELECT id,username,name,email FROM users");
+        $users = array();
+        while ($row = $result->fetch_object()) {
+            $users[] = $row;
+        }
+        return $users;
+    }
+
     public function admin_switch_user($userid) {
         $userid = (int) $userid;
         $result = $this->mysqli->query("SELECT id,username,email FROM users WHERE id='$userid'");
