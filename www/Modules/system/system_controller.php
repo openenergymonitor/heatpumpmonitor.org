@@ -1,5 +1,8 @@
 <?php
 
+// no direct access
+defined('EMONCMS_EXEC') or die('Restricted access');
+
 function system_controller() {
 
     global $mysqli, $session, $route, $system;
