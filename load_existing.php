@@ -1,10 +1,13 @@
 <?php
 
-$data_obj = file_get_contents("https://heatpumpmonitor.org/data.json");
+// $data_obj = file_get_contents("https://heatpumpmonitor.org/data.json");
+$data_obj = file_get_contents("data.json");
+
 $data = json_decode($data_obj);
 
 chdir("/var/www/heatpumpmonitororg");
 require "www/Lib/load_database.php";
+require "www/core.php";
 
 // Clear all existing data
 $mysqli->query("DROP TABLE users");
@@ -35,7 +38,24 @@ foreach ($data as $row) {
 
     $readkey = "";
     $username = "";
+    $name = "";
     $email = "";
+
+    // If we are loading the full dataset including protected data
+
+    if (isset($row->name)) {
+        $name = $row->name;
+        // lower case and remove spaces
+        $username = str_replace(" ","", strtolower($row->name));
+    }
+
+    if (isset($row->email)) {
+        $email = $row->email;
+        // validate email
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            die("Error: invalid email\n");
+        }
+    }
 
     // if url contains read key
 
@@ -59,9 +79,16 @@ foreach ($data as $row) {
             die("Error: no feeds found\n");
         }
     }
+
+    // Generate new random password
+    $newpass = hash('sha256',generate_secure_key(32));
+    // Hash and salt
+    $hash = hash('sha256', $newpass);
+    $salt = generate_secure_key(16);
+    $hash = hash('sha256', $salt . $hash);
     
-    $stmt = $mysqli->prepare("INSERT INTO users (username, email, admin) VALUES (?, ?, 0)");
-    $stmt->bind_param("ss", $username, $email);
+    $stmt = $mysqli->prepare("INSERT INTO users (username, name, email, salt, hash, email_verified, admin) VALUES (?, ?, ?, ?, ?, 1, 0)");
+    $stmt->bind_param("sssss", $username, $name, $email, $salt, $hash);
     $stmt->execute();
     $userid = $stmt->insert_id;
     $stmt->close();
@@ -121,7 +148,7 @@ foreach ($data as $row) {
     print "system $systemid created\n";
 
     $r = $system->save($userid, $systemid, $form_data);
-    print json_encode($r)."\n";
+    // print json_encode($r)."\n";
     print "system saved\n";
 
     usleep(10000);

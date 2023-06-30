@@ -1,4 +1,6 @@
 data.tsv
+data.json
+hpmon_all.tsv
 www/data.tsv
 www/data.json
 webhook.log

@@ -3,6 +3,7 @@
 $schema['users'] = array(
     'id' => array('type' => 'int(11)', 'Null'=>false, 'Key'=>'PRI', 'Extra'=>'auto_increment'),
     'username' => array('type' => 'varchar(30)'),
+    'name' => array('type' => 'varchar(30)'),
     'email' => array('type' => 'varchar(64)'),
     'hash' => array('type' => 'varchar(64)'),
     'salt' => array('type' => 'varchar(32)'),
