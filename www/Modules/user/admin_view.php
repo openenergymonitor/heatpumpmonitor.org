@@ -24,6 +24,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     <th scope="col">Created</th>
                     <th scope="col">Last login</th>
                     <th scope="col">Actions</th>
+                    <th scope="col">Welcome</th>
                 </tr>
             </thead>
             <tbody>
@@ -36,6 +37,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     <td>{{ user.lastlogin }}</td>
                     <td>
                         <button class="btn btn-primary btn-sm" v-on:click="switch_user(user.id)">Switch</button>
+                    </td>
+                    <td>
+                        <button class="btn btn-warning btn-sm" v-on:click="send_welcome_email(user.id,user.name)"><i class="fa fa-envelope" style="color: #ffffff;"></i></button>
                     </td>
                 </tr>
             </tbody>
@@ -54,6 +58,23 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         methods: {
             switch_user: function(userid) {
                 window.location.href = "<?php echo $path; ?>user/switch?userid="+userid;
+            },
+            send_welcome_email: function(userid,name) {
+                
+                if (confirm("Send welcome email to "+name+"?")) {
+                    axios.get("<?php echo $path; ?>user/welcome?userid="+userid)
+                    .then(function (response) {
+                        if (response.data.success) {
+                            alert("Welcome email sent");
+                        } else {
+                            alert("Error sending welcome email");
+                        }
+                    })
+                    .catch(function (error) {
+                        console.log(error);
+                    });
+                }
+
             }
         }
     });

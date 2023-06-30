@@ -51,6 +51,12 @@ function user_controller() {
         exit();
     }
 
+    if ($route->action=="welcome" && $session['admin']) {
+        $route->format = "json";
+        $userid = get('userid');
+        return $user->send_welcome_email($userid);
+    }
+
     if ($route->action=="logout" && $session['userid']) {
         $user->logout();
         header("Location: ".$path);

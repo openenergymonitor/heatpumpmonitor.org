@@ -288,6 +288,64 @@ class User
         }    
     }
 
+    public function send_welcome_email($userid)
+    {
+        $userid = (int) $userid;
+
+        // check that username exists and load email and verification status 
+        $stmt = $this->mysqli->prepare("SELECT username, name, email FROM users WHERE id = ?");
+        $stmt->bind_param("i", $userid);
+        $stmt->execute();
+        $stmt->store_result();
+
+        if (!$stmt->num_rows) {
+            $stmt->close();
+            return array('success'=>false, 'message'=>_("User does not exist"));
+        }
+
+        // User exists
+        $stmt->bind_result($username, $name, $email);
+        $stmt->fetch();
+        $stmt->close();
+
+        require_once "Lib/email.php";
+        $email_class = new Email();
+
+        // Check for emoncms.org account link
+        if ($this->emoncmsorg_link_exists($userid)) {
+            $email_class->send(array(
+                "to" => $email,
+                "subject" => "Your HeatpumpMonitor.org login",
+                "text" => "Hello $name, to login to HeatpumpMonitor.org please use your emoncms.org account details for username: $username\n\nRegards\nHeatpumpMonitor.org",
+                "html" => "<h4>Hello $name,</h4><p>To login to HeatpumpMonitor.org please use your emoncms.org account details for username: $username</p><p>Please login at <a href='https://heatpumpmonitor.org'>https://heatpumpmonitor.org</a></p><p>Regards<br>HeatpumpMonitor.org</p>"
+            ));
+            return array('success'=>true, 'message'=>"Welcome email sent");
+        } else {
+            // Generate new random password
+            $newpass = hash('sha256',generate_secure_key(32));
+            // Hash and salt
+            $hash = hash('sha256', $newpass);
+            $salt = generate_secure_key(16);
+            $hash = hash('sha256', $salt . $hash);
+
+            // Update table
+            $stmt = $this->mysqli->prepare("UPDATE users SET hash=?, salt=? WHERE id=?");
+            $stmt->bind_param("ssi",$hash,$salt,$userid);
+            $stmt->execute();
+            $stmt->close();
+
+            require_once "Lib/email.php";
+            $email_class = new Email();
+            $email_class->send(array(
+                "to" => $email,
+                "subject" => "Your HeatpumpMonitor.org login",
+                "text" => "Hello $name, your HeatpumpMonitor.org login details are:\nUsername: $username\nPassword: $newpass\nPlease login at https://heatpumpmonitor.org\nRegards\nHeatpumpMonitor.org",
+                "html" => "<h4>Hello $name</h4><p>Your HeatpumpMonitor.org login details are:</p><p>Username: $username</p><p>Password: $newpass</p><p>Please login at <a href='https://heatpumpmonitor.org'>https://heatpumpmonitor.org</a></p><p>Regards</p><p>HeatpumpMonitor.org</p>"
+            ));
+            return array('success'=>true, 'message'=>"Welcome email sent");
+        }
+    }
+
     public function logout()
     {
         session_unset();
