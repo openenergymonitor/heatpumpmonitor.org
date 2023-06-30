@@ -41,19 +41,31 @@ foreach ($data as $row) {
     $name = "";
     $email = "";
 
-    // If we are loading the full dataset including protected data
+    $add_system_to_existing_user = false;
 
-    if (isset($row->name)) {
-        $name = $row->name;
-        // lower case and remove spaces
-        $username = str_replace(" ","", strtolower($row->name));
-    }
+    // If we are loading the full dataset including protected data
 
     if (isset($row->email)) {
         $email = $row->email;
         // validate email
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             die("Error: invalid email\n");
+        }
+    }
+
+    if (isset($row->name)) {
+        $name = $row->name;
+        // lower case and remove spaces
+        $username = str_replace(" ","", strtolower($row->name));
+
+        // check if username already exists
+        $result_u = $mysqli->query("SELECT id,email FROM users WHERE username='$username'");
+        if ($result_u->num_rows>0) {
+            $row_u = $result_u->fetch_object();
+            if ($row_u->email!=$email) {
+                die("Error: username: $username already exists with different email $row_u->email!=$email\n");
+            }
+            $add_system_to_existing_user = $row_u->id;
         }
     }
 
@@ -80,27 +92,31 @@ foreach ($data as $row) {
         }
     }
 
-    // Generate new random password
-    $newpass = hash('sha256',generate_secure_key(32));
-    // Hash and salt
-    $hash = hash('sha256', $newpass);
-    $salt = generate_secure_key(16);
-    $hash = hash('sha256', $salt . $hash);
-    
-    $stmt = $mysqli->prepare("INSERT INTO users (username, name, email, salt, hash, email_verified, admin) VALUES (?, ?, ?, ?, ?, 1, 0)");
-    $stmt->bind_param("sssss", $username, $name, $email, $salt, $hash);
-    $stmt->execute();
-    $userid = $stmt->insert_id;
-    $stmt->close();
-
-    if ($url['host']=="emoncms.org") {
-        $stmt = $mysqli->prepare("INSERT INTO emoncmsorg_link (userid, emoncmsorg_userid, emoncmsorg_apikey_read) VALUES (?, ?, ?)");
-        $stmt->bind_param("iis", $userid, $emoncmsorg_userid, $readkey);
+    if (!$add_system_to_existing_user) {
+        // Generate new random password
+        $newpass = hash('sha256',generate_secure_key(32));
+        // Hash and salt
+        $hash = hash('sha256', $newpass);
+        $salt = generate_secure_key(16);
+        $hash = hash('sha256', $salt . $hash);
+        
+        $stmt = $mysqli->prepare("INSERT INTO users (username, name, email, salt, hash, email_verified, admin) VALUES (?, ?, ?, ?, ?, 1, 0)");
+        $stmt->bind_param("sssss", $username, $name, $email, $salt, $hash);
         $stmt->execute();
+        $userid = $stmt->insert_id;
         $stmt->close();
-    }
 
-    print "user $userid created\n";
+        if ($url['host']=="emoncms.org") {
+            $stmt = $mysqli->prepare("INSERT INTO emoncmsorg_link (userid, emoncmsorg_userid, emoncmsorg_apikey_read) VALUES (?, ?, ?)");
+            $stmt->bind_param("iis", $userid, $emoncmsorg_userid, $readkey);
+            $stmt->execute();
+            $stmt->close();
+        }
+
+        print "user $userid created\n";
+    } else {
+        $userid = $add_system_to_existing_user;
+    }
 
     // ---------------------------------------
     // Translate existing format to new format
