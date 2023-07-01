@@ -10,9 +10,10 @@ require "www/Lib/load_database.php";
 require "www/core.php";
 
 // Clear all existing data
-$mysqli->query("DROP TABLE users");
-$mysqli->query("DROP TABLE emoncmsorg_link");
-$mysqli->query("DROP TABLE form");
+$result = $mysqli->query("SHOW TABLES");
+while ($row = $result->fetch_row()) {
+    $mysqli->query("DROP TABLE IF EXISTS `$row[0]`");
+}
 
 // Rebuid database
 require "www/Lib/dbschemasetup.php";
@@ -147,7 +148,7 @@ foreach ($data as $row) {
 
     $form_data = array();
 
-    foreach ($system->schema as $key=>$schema_row) {
+    foreach ($system->schema_meta as $key=>$schema_row) {
         if ($schema_row['editable']==true) {
             if (isset($row->$key)) {
                 print "-- ".$key.": ".$row->$key."\n";

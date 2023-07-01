@@ -1,6 +1,6 @@
 <?php
 
-$schema['form'] = array(
+$schema['system_meta'] = array(
     // Form meta data
     'id' => array('type' => 'int(11)', 'Null'=>false, 'Key'=>'PRI', 'Extra'=>'auto_increment', 'code' => 'i', 'editable' => false),
     'userid' => array('type' => 'int(11)', 'code' => 'i', 'editable' => false),
@@ -54,7 +54,11 @@ $schema['form'] = array(
     'metering_inc_controls'=> array('type' => 'tinyint(1)', 'code' => 'i', 'editable' => true),
     'metering_notes' => array('type' => 'varchar(300)', 'code' => 's', 'editable' => true),
 
-    'share' => array('type' => 'tinyint(1)', 'code' => 'i', 'editable' => true),
+    'share' => array('type' => 'tinyint(1)', 'code' => 'i', 'editable' => true)
+);
+
+$schema['system_stats'] = array(
+    'id' => array('type' => 'int(11)', 'code' => 'i', 'editable' => false),
 
     // Scraped heat pump data
     'month_elec' => array('type' => 'float', 'code' => 'd', 'editable' => false),
@@ -64,6 +68,5 @@ $schema['form'] = array(
     'year_heat' => array('type' => 'float', 'code' => 'd', 'editable' => false),
     'year_cop' => array('type' => 'float', 'code' => 'd', 'editable' => false),
     'since' => array('type' => 'int(11)', 'code' => 'i', 'editable' => false),
-    
     'stats' => array('type' => 'varchar(1024)', 'code' => 's', 'editable' => false)
 );

@@ -7,6 +7,7 @@ class System
 {
     private $mysqli;
     public $schema;
+    public $schema_stats;
 
     public function __construct($mysqli)
     {
@@ -14,23 +15,30 @@ class System
 
         $schema = array();
         require "Modules/system/system_schema.php";
-        $this->schema = $schema['form'];
+        $this->schema_meta = $schema['system_meta'];
+        $this->schema_stats = $schema['system_stats'];
     }
 
     public function list($userid=false) {
 
         if ($userid===false) {
             $admin = false;
-            $result = $this->mysqli->query("SELECT * FROM form");
+            $result = $this->mysqli->query("SELECT * FROM system_meta JOIN system_stats ON system_meta.id = system_stats.id");            
         } else {
             $userid = (int) $userid;
             $admin = $this->is_admin($userid);
-            $result = $this->mysqli->query("SELECT * FROM form WHERE userid='$userid'");
+            $result = $this->mysqli->query("SELECT * FROM system_meta JOIN system_stats ON system_meta.id = system_stats.id WHERE userid='$userid'");
         }
         $list = array();
         while ($row = $result->fetch_object()) {
             // convert numeric strings to numbers
-            foreach ($this->schema as $key=>$schema_row) {
+            foreach ($this->schema_meta as $key=>$schema_row) {
+                if (isset($row->$key) || $row->$key==null) {
+                    if ($schema_row["code"]=='i') $row->$key = (int) $row->$key;
+                    if ($schema_row["code"]=='d') $row->$key = (float) $row->$key;
+                }
+            }
+            foreach ($this->schema_stats as $key=>$schema_row) {
                 if (isset($row->$key) || $row->$key==null) {
                     if ($schema_row["code"]=='i') $row->$key = (int) $row->$key;
                     if ($schema_row["code"]=='d') $row->$key = (float) $row->$key;
@@ -57,15 +65,18 @@ class System
 
     public function create($userid) {
         $userid = (int) $userid;
-        $this->mysqli->query("INSERT INTO form (userid) VALUES ('$userid')");
+        $this->mysqli->query("INSERT INTO system_meta (userid) VALUES ('$userid')");
         $systemid = $this->mysqli->insert_id;
+
+        $this->mysqli->query("INSERT INTO system_stats (id) VALUES ('$systemid')");
+
         return array("success"=>true, "id"=>$systemid);
     }
 
     public function get($userid,$systemid) {
         $userid = (int) $userid;
         $systemid = (int) $systemid;
-        $result = $this->mysqli->query("SELECT * FROM form WHERE id='$systemid'");
+        $result = $this->mysqli->query("SELECT * FROM system_meta WHERE id='$systemid'");
         if (!$row = $result->fetch_object()) {
             return array("success"=>false, "message"=>"System does not exist");
         }
@@ -73,7 +84,7 @@ class System
             return array("success"=>false, "message"=>"Invalid access");
         }
 
-        foreach ($this->schema as $key=>$schema_row) {
+        foreach ($this->schema_meta as $key=>$schema_row) {
             if (isset($row->$key) || $row->$key==null) {
                 if ($schema_row["code"]=='i') $row->$key = (int) $row->$key;
                 if ($schema_row["code"]=='d') $row->$key = (float) $row->$key;
@@ -101,12 +112,12 @@ class System
         $values = array();
         $change_log = array();
         
-        foreach ($this->schema as $key=>$value) {
-            if ($this->schema[$key]['editable']) {
+        foreach ($this->schema_meta as $key=>$value) {
+            if ($this->schema_meta[$key]['editable']) {
                 if (isset($form_data->$key)) {
                     $values[] = $form_data->$key;
                     $query[] = $key."=?";
-                    $codes[] = $this->schema[$key]["code"];
+                    $codes[] = $this->schema_meta[$key]["code"];
 
                     if ($original->$key!=$form_data->$key) {
                         $change_log[] = array("key"=>$key,"old"=>$original->$key,"new"=>$form_data->$key);
@@ -123,7 +134,7 @@ class System
         $codes = implode("",$codes);
         
         // Prepare and execute the query with error checking
-        if (!$stmt = $this->mysqli->prepare("UPDATE form SET $query WHERE id=?")) {
+        if (!$stmt = $this->mysqli->prepare("UPDATE system_meta SET $query WHERE id=?")) {
             return array("success"=>false,"message"=>"Prepare failed: (" . $this->mysqli->errno . ") " . $this->mysqli->error);
         }
         if (!$stmt->bind_param($codes, ...$values)) {
@@ -143,7 +154,7 @@ class System
 
             // Update last updated time
             $now = time();
-            $this->mysqli->query("UPDATE form SET last_updated='$now' WHERE id='$systemid'");
+            $this->mysqli->query("UPDATE system_meta SET last_updated='$now' WHERE id='$systemid'");
             return array("success"=>true,"message"=>"Saved", "change_log"=>$change_log);
         }
     }
@@ -201,7 +212,7 @@ class System
             if (isset($stats[$key])) {
                 $values[] = $stats[$key];
                 $query[] = $key."=?";
-                $codes[] = $this->schema[$key]["code"];
+                $codes[] = $this->schema_stats[$key]["code"];
             }
         }
 
@@ -213,7 +224,7 @@ class System
         $codes = implode("",$codes);
 
         // Prepare and execute the query with error checking
-        if (!$stmt = $this->mysqli->prepare("UPDATE form SET $query WHERE id=?")) {
+        if (!$stmt = $this->mysqli->prepare("UPDATE system_stats SET $query WHERE id=?")) {
             return array("success"=>false,"message"=>"Prepare failed: (" . $this->mysqli->errno . ") " . $this->mysqli->error);
         }
         if (!$stmt->bind_param($codes, ...$values)) {
@@ -236,14 +247,15 @@ class System
             return array("success"=>false, "message"=>"Invalid access");
         }
         // Delete the system
-        $this->mysqli->query("DELETE FROM form WHERE id='$systemid'");
+        $this->mysqli->query("DELETE FROM system_meta WHERE id='$systemid'");
+        $this->mysqli->query("DELETE FROM system_stats WHERE id='$systemid'");
         return array("success"=>true, "message"=>"Deleted");
     }
 
     public function has_access($userid,$systemid) {
         $userid = (int) $userid;
         $systemid = (int) $systemid;
-        $result = $this->mysqli->query("SELECT userid FROM form WHERE id='$systemid'");
+        $result = $this->mysqli->query("SELECT userid FROM system_meta WHERE id='$systemid'");
         if (!$row = $result->fetch_object()) {
             return false;
         }
