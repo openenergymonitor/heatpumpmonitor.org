@@ -7,10 +7,11 @@ function system_controller() {
 
     global $mysqli, $session, $route, $system;
 
-    if ($route->action=="create") {
-        $route->format = "json";
+    if ($route->action=="new") {
+        $route->format = "html";
         if ($session['userid']) {
-            return $system->create($session['userid']);
+            $system_data = $system->new();
+            return view("Modules/system/system_view.php", array("system_data"=>$system_data));
         }
     }
 

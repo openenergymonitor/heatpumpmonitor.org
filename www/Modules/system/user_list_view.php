@@ -56,17 +56,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         },
         methods: {
             create: function() {
-                axios.get('create')
-                    .then(response => {
-                            if (response.data.success) {
-                                window.location = "edit?id="+response.data.id;
-                            } else {
-                                alert("Error creating system: "+response.data.message);
-                            }
-                        })
-                        .catch(error => {
-                            alert("Error creating system: "+error);
-                        });     
+                window.location = "new";
             },
             edit: function(index) {
                 let systemid = this.systems[index].id;

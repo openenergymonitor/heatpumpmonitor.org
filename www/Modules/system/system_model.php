@@ -6,7 +6,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 class System
 {
     private $mysqli;
-    public $schema;
+    public $schema_meta;
     public $schema_stats;
 
     public function __construct($mysqli)
@@ -70,7 +70,20 @@ class System
 
         $this->mysqli->query("INSERT INTO system_stats (id) VALUES ('$systemid')");
 
-        return array("success"=>true, "id"=>$systemid);
+        return $systemid;
+    }
+
+    // Returns blank form data following the schema
+    public function new() {
+        $form_data = new stdClass();
+        foreach ($this->schema_meta as $key=>$value) {
+            // if editable
+            if ($this->schema_meta[$key]['editable']) {
+                $form_data->$key = null;
+            }
+        }
+        $form_data->id = false;
+        return $form_data;
     }
 
     public function get($userid,$systemid) {
@@ -97,6 +110,12 @@ class System
     public function save($userid,$systemid,$form_data) {
         $userid = (int) $userid;
         $systemid = (int) $systemid;
+
+        $new_system = false;
+        if ($systemid==false) {
+            $systemid = $this->create($userid);
+            $new_system = $systemid;
+        }
 
         // Check if user has access
         if ($this->has_access($userid,$systemid)==false) {
@@ -125,6 +144,11 @@ class System
                 }
             }
         }
+
+        if (!count($values)) {
+            return array("success"=>false, "message"=>"No changes");
+        }
+
         // Add systemid to the end
         $values[] = $systemid;
         $codes[] = "i";
@@ -155,7 +179,7 @@ class System
             // Update last updated time
             $now = time();
             $this->mysqli->query("UPDATE system_meta SET last_updated='$now' WHERE id='$systemid'");
-            return array("success"=>true,"message"=>"Saved", "change_log"=>$change_log);
+            return array("success"=>true,"message"=>"Saved", "change_log"=>$change_log, "new_system"=>$new_system);
         }
     }
 

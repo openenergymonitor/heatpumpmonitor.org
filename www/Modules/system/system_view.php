@@ -436,6 +436,10 @@
                                 }
                                 app.message += '</ul>';
                             }
+
+                            if (response.data.new_system!=undefined) {
+                                window.location.href = 'edit?id='+response.data.new_system;
+                            }
                         } else {
                             app.show_error = true;
                             app.show_success = false;
