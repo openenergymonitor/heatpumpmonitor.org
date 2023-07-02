@@ -27,7 +27,7 @@ function system_controller() {
     if ($route->action=="list") {
         $route->format = "html";
         if ($session['userid']) {
-            $systems = $system->list($session['userid'],false,false);
+            $systems = $system->list_user($session['userid']);
             return view("Modules/system/user_list_view.php",array("admin"=>false, "systems"=>$systems));
         }
     }
@@ -35,7 +35,7 @@ function system_controller() {
     if ($route->action=="admin") {
         $route->format = "html";
         if ($session['userid'] && $session['admin']) {
-            $systems = $system->list(false,false,true);
+            $systems = $system->list_admin();
             return view("Modules/system/user_list_view.php",array("admin"=>true, "systems"=>$systems));
         }
     }

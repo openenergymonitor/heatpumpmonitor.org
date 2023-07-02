@@ -53,13 +53,13 @@ switch ($route->controller) {
 
     case "data": 
         $route->format = "json";
-        $output = $system->list($session['userid'],true,false);
+        $output = $system->list_public($session['userid']);
         break;
         
     case "api":
         $route->format = "json";
         
-        $data_obj = $system->list();
+        $data_obj = $system->list_public($session['userid']);
 
         if (isset($_GET['system'])) {
             // Find ID

@@ -19,58 +19,53 @@ class System
         $this->schema_stats = $schema['system_stats'];
     }
 
-    public function list($userid=false,$public=false,$admin=false) {
-
-        // if admin load all
-        // if user load user only
-        // if public load public and logged in user
-
-        if ($admin) {
-            $result = $this->mysqli->query("SELECT * FROM system_meta JOIN system_stats ON system_meta.id = system_stats.id");
-        } else if ($public) {
-            $result = $this->mysqli->query("SELECT * FROM system_meta JOIN system_stats ON system_meta.id = system_stats.id WHERE public=1 OR userid='$userid'"); 
-        } else if ($userid) {
-            $userid = (int) $userid;
-            $result = $this->mysqli->query("SELECT * FROM system_meta JOIN system_stats ON system_meta.id = system_stats.id WHERE userid='$userid'");
-        } else {
-            return array();
-        }
-
+    // Returns a list of public systems
+    public function list_public($userid=false) {
+        $result = $this->mysqli->query("SELECT * FROM system_meta JOIN system_stats ON system_meta.id = system_stats.id WHERE public=1 OR userid='$userid'");
         $list = array();
         while ($row = $result->fetch_object()) {
-            $row->public = (bool) $row->public;
-            $row->userid = (int) $row->userid;
-
-            // convert numeric strings to numbers
-            foreach ($this->schema_meta as $key=>$schema_row) {
-                if (isset($row->$key) || $row->$key==null) {
-                    if ($schema_row["code"]=='i') $row->$key = (int) $row->$key;
-                    if ($schema_row["code"]=='d') $row->$key = (float) $row->$key;
-                }
-            }
-            foreach ($this->schema_stats as $key=>$schema_row) {
-                if (isset($row->$key) || $row->$key==null) {
-                    if ($schema_row["code"]=='i') $row->$key = (int) $row->$key;
-                    if ($schema_row["code"]=='d') $row->$key = (float) $row->$key;
-                }
-            }
-            if ($row->stats!=null) {
-                $row->stats = json_decode($row->stats);
-            }
-            if ($row->stats==null) {
-                unset($row->stats);
-            }
-
-            // Remove non public fields
-            // automate this?
-            // maybe no need for email in form given that it's in the user table?
-            if ($admin==false && $userid==false) {
-                unset($row->email);
-            }
-
-            $list[] = $row;
+            $list[] = $this->typecast($this->schema_meta,$row);
         }
         return $list;
+    }
+
+    // All systems
+    public function list_admin() {
+        $result = $this->mysqli->query("SELECT * FROM system_meta JOIN system_stats ON system_meta.id = system_stats.id");
+        $list = array();
+        while ($row = $result->fetch_object()) {
+            $list[] = $this->typecast($this->schema_meta,$row);
+        }
+        return $list;
+    }
+
+    // User systems
+    public function list_user($userid=false) {
+        $result = $this->mysqli->query("SELECT * FROM system_meta JOIN system_stats ON system_meta.id = system_stats.id WHERE userid='$userid'");
+        $list = array();
+        while ($row = $result->fetch_object()) {
+            $list[] = $this->typecast($this->schema_meta,$row);
+        }
+        return $list;
+    }
+
+    public function typecast($schema,$row) {
+        foreach ($this->schema_meta as $key=>$schema_row) {
+            if (isset($row->$key) || $row->$key==null) {
+                if ($schema_row["code"]=='i') $row->$key = (int) $row->$key;
+                if ($schema_row["code"]=='d') $row->$key = (float) $row->$key;
+            }
+        }
+        foreach ($this->schema_stats as $key=>$schema_row) {
+            if (isset($row->$key) || $row->$key==null) {
+                if ($schema_row["code"]=='i') $row->$key = (int) $row->$key;
+                if ($schema_row["code"]=='d') $row->$key = (float) $row->$key;
+            }
+        }
+        if ($row->stats!=null) {
+            $row->stats = json_decode($row->stats);
+        }
+        return $row;
     }
 
     public function create($userid) {
