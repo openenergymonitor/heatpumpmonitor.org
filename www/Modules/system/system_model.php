@@ -136,13 +136,17 @@ class System
         return array("success"=>true, "warning_log"=>$warning_log);
     }
 
-    public function save($userid,$systemid,$form_data) {
+    public function save($userid,$systemid,$form_data,$validate=true) {
         $userid = (int) $userid;
         $systemid = (int) $systemid;
 
-        $validate_result = $this->validate($form_data);
-        if ($validate_result['success']==false) {
-            return $validate_result;
+        if ($validate) {
+            $validate_result = $this->validate($form_data);
+            if ($validate_result['success']==false) {
+                return $validate_result;
+            }
+        } else {
+            $validate_result = array("success"=>true, "warning_log"=>array());
         }
 
         $new_system = false;
@@ -167,7 +171,7 @@ class System
         
         foreach ($this->schema_meta as $key=>$value) {
             if ($this->schema_meta[$key]['editable']) {
-                if (isset($form_data->$key) || $form_data->$key===null) {
+                if (isset($form_data->$key)) {
                     $values[] = $form_data->$key;
                     $query[] = $key."=?";
                     $codes[] = $this->schema_meta[$key]["code"];

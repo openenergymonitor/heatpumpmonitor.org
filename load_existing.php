@@ -159,12 +159,7 @@ foreach ($data as $row) {
 
     $form_data = json_decode(json_encode($form_data));
 
-    $result = $system->create($userid);
-    $systemid = $result['id'];
-
-    print "system $systemid created\n";
-
-    $r = $system->save($userid, $systemid, $form_data);
+    $r = $system->save($userid, false, $form_data, false);
     // print json_encode($r)."\n";
     print "system saved\n";
 
