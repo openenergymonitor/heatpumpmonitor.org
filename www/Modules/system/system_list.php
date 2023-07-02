@@ -24,29 +24,27 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         
         <table class="table">
             <tr>
-                <th>System ID</th>
-                <th v-if="admin">User ID</th>
+                <th v-if="admin">User</th>
                 <th>Location</th>
                 <th>Last updated</th>
                 <th>Year COP</th>
-                <th>Public</th>
+                <th>Status</th>
                 <th style="width:150px">Actions</th>
             </tr>
             <tr v-for="(system,index) in systems">
-                <td>{{ system.id }}</td>
-                <td v-if="admin">{{ system.userid }}</td>
+                <td v-if="admin" :title="system.username+'\n'+system.email">{{ system.name }}</td>
                 <td>{{ system.location }}</td>
                 <td>{{ system.last_updated | time_ago }}</td>
                 <td>{{ system.year_cop | toFixed(1) }}</td>
                 <td>
-                    <input v-if="admin" type="checkbox" v-model="system.public" @click="public(index)">
-                    <!-- badge -->
-                    <span v-if="!admin && system.public" class="badge bg-success">Public</span>
-                    <span v-if="!admin && !system.public" class="badge bg-secondary">Waiting for review</span>
+                    <span v-if="system.share" class="badge bg-success">Shared</span>
+                    <span v-if="!system.share" class="badge bg-danger">Private</span>
+                    <span v-if="system.published" class="badge bg-success">Published</span>
+                    <span v-if="!system.published" class="badge bg-secondary">Waiting for review</span>
                 </td>
                 <td>
-                    <button class="btn btn-info btn-sm" @click="edit(index)">Edit</button>
-                    <button class="btn btn-danger btn-sm" @click="remove(index)">Delete</button>
+                    <button class="btn btn-warning btn-sm" @click="edit(index)" title="Edit"><i class="fa fa-edit" style="color: #ffffff;"></i></button>
+                    <button class="btn btn-danger btn-sm" @click="remove(index)" title="Delete"><i class="fa fa-trash" style="color: #ffffff;"></i></button>
                 </td>
             </tr>
         </table>
@@ -85,20 +83,6 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             alert("Error deleting system: "+error);
                         });
                 }
-            },
-            public: function(index) {
-                let systemid = this.systems[index].id;
-                let public = !this.systems[index].public*1;
-                // axios get
-                axios.get('public?id='+systemid+"&public="+public)
-                    .then(response => {
-                        if (!response.data.success) {
-                            alert("Error updating public: "+response.data.message);
-                        }
-                    })
-                    .catch(error => {
-                        alert("Error updating public: "+error);
-                    });
             }
         },
         filters: {

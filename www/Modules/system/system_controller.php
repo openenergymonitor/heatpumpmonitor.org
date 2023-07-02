@@ -5,7 +5,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 function system_controller() {
 
-    global $mysqli, $session, $route, $system;
+    global $session, $route, $system;
 
     if ($route->action=="new") {
         $route->format = "html";
@@ -20,7 +20,7 @@ function system_controller() {
         if ($session['userid']) {
             $systemid = get("id",false);
             $system_data = $system->get($session['userid'],$systemid);
-            return view("Modules/system/system_view.php", array("system_data"=>$system_data));
+            return view("Modules/system/system_view.php", array("system_data"=>$system_data, 'admin'=>$session['admin']));
         }
     }
 
@@ -28,7 +28,7 @@ function system_controller() {
         $route->format = "html";
         if ($session['userid']) {
             $systems = $system->list_user($session['userid']);
-            return view("Modules/system/user_list_view.php",array("admin"=>false, "systems"=>$systems));
+            return view("Modules/system/system_list.php",array("admin"=>false, "systems"=>$systems));
         }
     }
 
@@ -36,7 +36,7 @@ function system_controller() {
         $route->format = "html";
         if ($session['userid'] && $session['admin']) {
             $systems = $system->list_admin();
-            return view("Modules/system/user_list_view.php",array("admin"=>true, "systems"=>$systems));
+            return view("Modules/system/system_list.php",array("admin"=>true, "systems"=>$systems));
         }
     }
 
@@ -61,15 +61,6 @@ function system_controller() {
         if ($session['userid']) {
             $systemid = get("id",false);
             return $system->delete($session['userid'],$systemid);
-        }
-    }
-
-    if ($route->action=="public") {
-        $route->format = "json";
-        if ($session['userid'] && $session['admin']) {
-            $systemid = (int) get("id",true);
-            $public = (int) get("public",true,0);
-            return $system->set_public($session['userid'],$systemid,$public);
         }
     }
 

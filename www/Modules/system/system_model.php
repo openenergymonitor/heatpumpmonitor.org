@@ -21,20 +21,20 @@ class System
 
     // Returns a list of public systems
     public function list_public($userid=false) {
-        $result = $this->mysqli->query("SELECT * FROM system_meta JOIN system_stats ON system_meta.id = system_stats.id WHERE public=1 OR userid='$userid'");
+        $result = $this->mysqli->query("SELECT * FROM system_meta JOIN system_stats ON system_meta.id = system_stats.id WHERE share=1 AND published=1 OR userid='$userid'");
         $list = array();
         while ($row = $result->fetch_object()) {
-            $list[] = $this->typecast($this->schema_meta,$row);
+            $list[] = $this->typecast($row);
         }
         return $list;
     }
 
     // All systems
     public function list_admin() {
-        $result = $this->mysqli->query("SELECT * FROM system_meta JOIN system_stats ON system_meta.id = system_stats.id");
+        $result = $this->mysqli->query("SELECT system_meta.*,system_stats.*,users.name,users.username,users.email FROM system_meta JOIN system_stats ON system_meta.id = system_stats.id JOIN users ON system_meta.userid = users.id");
         $list = array();
         while ($row = $result->fetch_object()) {
-            $list[] = $this->typecast($this->schema_meta,$row);
+            $list[] = $this->typecast($row);
         }
         return $list;
     }
@@ -44,28 +44,9 @@ class System
         $result = $this->mysqli->query("SELECT * FROM system_meta JOIN system_stats ON system_meta.id = system_stats.id WHERE userid='$userid'");
         $list = array();
         while ($row = $result->fetch_object()) {
-            $list[] = $this->typecast($this->schema_meta,$row);
+            $list[] = $this->typecast($row);
         }
         return $list;
-    }
-
-    public function typecast($schema,$row) {
-        foreach ($this->schema_meta as $key=>$schema_row) {
-            if (isset($row->$key) || $row->$key==null) {
-                if ($schema_row["code"]=='i') $row->$key = (int) $row->$key;
-                if ($schema_row["code"]=='d') $row->$key = (float) $row->$key;
-            }
-        }
-        foreach ($this->schema_stats as $key=>$schema_row) {
-            if (isset($row->$key) || $row->$key==null) {
-                if ($schema_row["code"]=='i') $row->$key = (int) $row->$key;
-                if ($schema_row["code"]=='d') $row->$key = (float) $row->$key;
-            }
-        }
-        if ($row->stats!=null) {
-            $row->stats = json_decode($row->stats);
-        }
-        return $row;
     }
 
     public function create($userid) {
@@ -103,15 +84,7 @@ class System
         if ($userid!=$row->userid && $this->is_admin($userid)==false) {
             return array("success"=>false, "message"=>"Invalid access");
         }
-
-        foreach ($this->schema_meta as $key=>$schema_row) {
-            if (isset($row->$key) || $row->$key==null) {
-                if ($schema_row["code"]=='i') $row->$key = (int) $row->$key;
-                if ($schema_row["code"]=='d') $row->$key = (float) $row->$key;
-            }
-        }
-
-        return $row;
+        return $this->typecast($row);
     }
 
     public function validate($form_data) {
@@ -184,6 +157,18 @@ class System
                     if ($original->$key!=$form_data->$key) {
                         $change_log[] = array("key"=>$key,"old"=>$original->$key,"new"=>$form_data->$key);
                     }
+                }
+            }
+        }
+
+        // Check for admin published
+        if ($this->is_admin($userid)) {
+            if (isset($form_data->published)) {
+                $values[] = $form_data->published;
+                $query[] = "published=?";
+                $codes[] = "i";
+                if ($original->published!=$form_data->published) {
+                    $change_log[] = array("key"=>"published","old"=>$original->published,"new"=>$form_data->published);
                 }
             }
         }
@@ -325,21 +310,6 @@ class System
         return array("success"=>true, "message"=>"Deleted");
     }
 
-    // set public access
-    public function set_public($userid,$systemid,$public) {
-        $userid = (int) $userid;
-        $systemid = (int) $systemid;
-        $public = (int) $public;
-
-        // Check if user has access
-        if ($this->has_access($userid,$systemid)==false) {
-            return array("success"=>false, "message"=>"Invalid access");
-        }
-        // Update the system
-        $this->mysqli->query("UPDATE system_meta SET public='$public' WHERE id='$systemid'");
-        return array("success"=>true, "message"=>"Saved");
-    }
-
     public function has_access($userid,$systemid) {
         $userid = (int) $userid;
         $systemid = (int) $systemid;
@@ -405,5 +375,30 @@ class System
             "text" => "System $systemid has been updated, $change_count fields updated",
             "html" => $html
         ));
+    }
+
+    public function typecast($row) {
+        foreach ($this->schema_meta as $key=>$schema_row) {
+            if (isset($row->$key)) {
+                if ($schema_row["code"]=='i') $row->$key = (int) $row->$key;
+                if ($schema_row["code"]=='d') $row->$key = (float) $row->$key;
+            } else {
+                if ($schema_row["code"]=='i') $row->$key = 0;
+                if ($schema_row["code"]=='d') $row->$key = 0.0;
+            }
+        }
+        foreach ($this->schema_stats as $key=>$schema_row) {
+            if (isset($row->$key)) {
+                if ($schema_row["code"]=='i') $row->$key = (int) $row->$key;
+                if ($schema_row["code"]=='d') $row->$key = (float) $row->$key;
+            } else {
+                if ($schema_row["code"]=='i') $row->$key = 0;
+                if ($schema_row["code"]=='d') $row->$key = 0.0;
+            }
+        }
+        if (isset($row->stats) && $row->stats!=null) {
+            $row->stats = json_decode($row->stats);
+        }
+        return $row;
     }
 }

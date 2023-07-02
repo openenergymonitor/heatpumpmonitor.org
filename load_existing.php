@@ -158,11 +158,16 @@ foreach ($data as $row) {
     }
 
     $form_data = json_decode(json_encode($form_data));
+    $form_data->share = 1;
 
     $r = $system->save($userid, false, $form_data, false);
     // print json_encode($r)."\n";
     print "system saved\n";
 
+
+
     usleep(10000);
     // die;
 }
+// publish all systems
+$mysqli->query("UPDATE system_meta SET published=1");

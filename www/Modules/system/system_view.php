@@ -1,3 +1,7 @@
+<?php
+// no direct access
+defined('EMONCMS_EXEC') or die('Restricted access');
+?>
 <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
 
@@ -389,19 +393,38 @@
                     </div>
                 </div>
             </div>
+            <div class="row" v-if="admin">
+                <div class="col">
+                    <p><b>Publish system (Admin only)</b></p>
+                </div>
+                <div class="col">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" v-model="system.published">
+                        <label>Yes</label>
+                    </div>
+                </div>
+            </div>
 
             <button type="button" class="btn btn-primary" @click="save">Save</button>
             <button type="button" class="btn btn-light" @click="cancel" style="margin-left:10px">Cancel</button>
             <br><br>
 
             <div class="alert alert-danger" role="alert" v-if="show_error" v-html="message"></div>
-            <div class="alert alert-success" role="alert" v-if="show_success" v-html="message"></div>
+            <div class="alert alert-success" role="alert" v-if="show_success" >
+                <span v-html="message"></span> 
+                <button type="button" class="btn btn-light" @click="cancel" v-if="show_success">Back to system list</button>
+            </div>
 
+            
         </div>
     </div>
 </div>
 
 <script>
+    var referrer = document.referrer;
+    referrer = referrer.substr(referrer.lastIndexOf('/') + 1);
+    console.log(referrer);
+
     var app = new Vue({
         el: '#app',
         data: {
@@ -409,7 +432,8 @@
             show_error: false,
             show_success: false,
             message: '',
-            stats: ''
+            stats: '',
+            admin: <?php echo $admin; ?>
         },
         methods: {
             update: function() {
@@ -470,7 +494,13 @@
                     });
             },
             cancel: function() {
-                window.location.href = 'list';
+                if (referrer=='list') {
+                    window.location.href = 'list';
+                } else if (referrer=='admin') {
+                    window.location.href = 'admin';
+                } else {
+                    window.location.href = 'list';
+                }
             },
             test_url: function() {
                 axios.post('loadstats', {

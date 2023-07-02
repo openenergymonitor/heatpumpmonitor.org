@@ -423,7 +423,7 @@ class User
             session_regenerate_id();
             $_SESSION['userid'] = $row->id;
             $_SESSION['username'] = $row->username;
-            $_SESSION['admin'] = 1;
+            $_SESSION['admin'] = 0;
             $_SESSION['email'] = $row->email;
             return true;
         }

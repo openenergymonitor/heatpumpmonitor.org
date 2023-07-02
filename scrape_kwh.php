@@ -9,7 +9,7 @@ $user = new User($mysqli);
 require ("Modules/system/system_model.php");
 $system = new System($mysqli);
 
-$data = $system->list();
+$data = $system->list_admin();
 foreach ($data as $row) {
     $userid = (int) $row->userid;
     if ($user_data = $user->get($userid)) {
