@@ -4,7 +4,7 @@ var app = new Vue({
   data: {
     nodes: [],
     filterKey: '',
-    hiliteKey: 0,
+    hiliteKey: userid,
     currentSort:'year_cop',
     currentSortDir:'desc'
   },
@@ -16,7 +16,7 @@ var app = new Vue({
   mounted() {
     const params = new URLSearchParams(window.location.search);
     this.filterKey = params.get("filter") ?? '';
-    this.hiliteKey = window.location.hash.replace(/^#/, '');
+    // this.hiliteKey = window.location.hash.replace(/^#/, '');
   },
 
   methods: {
@@ -92,7 +92,7 @@ var app = new Vue({
     
     // highlight row if id matches ?h in url
     hiliteClass(row) {
-      return row.id == this.hiliteKey ? 'hilite ' : '';
+      return row.userid == this.hiliteKey ? 'hilite ' : '';
     } 
   },
   

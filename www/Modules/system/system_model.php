@@ -19,18 +19,28 @@ class System
         $this->schema_stats = $schema['system_stats'];
     }
 
-    public function list($userid=false) {
+    public function list($userid=false,$public=false,$admin=false) {
 
-        if ($userid===false) {
-            $admin = false;
-            $result = $this->mysqli->query("SELECT * FROM system_meta JOIN system_stats ON system_meta.id = system_stats.id");            
-        } else {
+        // if admin load all
+        // if user load user only
+        // if public load public and logged in user
+
+        if ($admin) {
+            $result = $this->mysqli->query("SELECT * FROM system_meta JOIN system_stats ON system_meta.id = system_stats.id");
+        } else if ($public) {
+            $result = $this->mysqli->query("SELECT * FROM system_meta JOIN system_stats ON system_meta.id = system_stats.id WHERE public=1 OR userid='$userid'"); 
+        } else if ($userid) {
             $userid = (int) $userid;
-            $admin = $this->is_admin($userid);
             $result = $this->mysqli->query("SELECT * FROM system_meta JOIN system_stats ON system_meta.id = system_stats.id WHERE userid='$userid'");
+        } else {
+            return array();
         }
+
         $list = array();
         while ($row = $result->fetch_object()) {
+            $row->public = (bool) $row->public;
+            $row->userid = (int) $row->userid;
+
             // convert numeric strings to numbers
             foreach ($this->schema_meta as $key=>$schema_row) {
                 if (isset($row->$key) || $row->$key==null) {
@@ -318,6 +328,21 @@ class System
         $this->mysqli->query("DELETE FROM system_meta WHERE id='$systemid'");
         $this->mysqli->query("DELETE FROM system_stats WHERE id='$systemid'");
         return array("success"=>true, "message"=>"Deleted");
+    }
+
+    // set public access
+    public function set_public($userid,$systemid,$public) {
+        $userid = (int) $userid;
+        $systemid = (int) $systemid;
+        $public = (int) $public;
+
+        // Check if user has access
+        if ($this->has_access($userid,$systemid)==false) {
+            return array("success"=>false, "message"=>"Invalid access");
+        }
+        // Update the system
+        $this->mysqli->query("UPDATE system_meta SET public='$public' WHERE id='$systemid'");
+        return array("success"=>true, "message"=>"Saved");
     }
 
     public function has_access($userid,$systemid) {

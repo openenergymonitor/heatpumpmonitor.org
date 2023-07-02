@@ -27,7 +27,7 @@ function system_controller() {
     if ($route->action=="list") {
         $route->format = "html";
         if ($session['userid']) {
-            $systems = $system->list($session['userid']);
+            $systems = $system->list($session['userid'],false,false);
             return view("Modules/system/user_list_view.php",array("admin"=>false, "systems"=>$systems));
         }
     }
@@ -35,7 +35,7 @@ function system_controller() {
     if ($route->action=="admin") {
         $route->format = "html";
         if ($session['userid'] && $session['admin']) {
-            $systems = $system->list();
+            $systems = $system->list(false,false,true);
             return view("Modules/system/user_list_view.php",array("admin"=>true, "systems"=>$systems));
         }
     }
@@ -61,6 +61,15 @@ function system_controller() {
         if ($session['userid']) {
             $systemid = get("id",false);
             return $system->delete($session['userid'],$systemid);
+        }
+    }
+
+    if ($route->action=="public") {
+        $route->format = "json";
+        if ($session['userid'] && $session['admin']) {
+            $systemid = (int) get("id",true);
+            $public = (int) get("public",true,0);
+            return $system->set_public($session['userid'],$systemid,$public);
         }
     }
 

@@ -18,7 +18,7 @@ switch ($route->controller) {
 
     case "":
         $route->format = "html";
-        $output = view("views/main.html", array());
+        $output = view("views/main.php", array("userid"=>$session['userid']));
         break;
 
     case "stats":
@@ -53,7 +53,7 @@ switch ($route->controller) {
 
     case "data": 
         $route->format = "json";
-        $output = $system->list();
+        $output = $system->list($session['userid'],true,false);
         break;
         
     case "api":

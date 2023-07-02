@@ -29,6 +29,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 <th>Location</th>
                 <th>Last updated</th>
                 <th>Year COP</th>
+                <th>Public</th>
                 <th style="width:150px">Actions</th>
             </tr>
             <tr v-for="(system,index) in systems">
@@ -37,6 +38,12 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 <td>{{ system.location }}</td>
                 <td>{{ system.last_updated | time_ago }}</td>
                 <td>{{ system.year_cop | toFixed(1) }}</td>
+                <td>
+                    <input v-if="admin" type="checkbox" v-model="system.public" @click="public(index)">
+                    <!-- badge -->
+                    <span v-if="!admin && system.public" class="badge bg-success">Public</span>
+                    <span v-if="!admin && !system.public" class="badge bg-secondary">Waiting for review</span>
+                </td>
                 <td>
                     <button class="btn btn-info btn-sm" @click="edit(index)">Edit</button>
                     <button class="btn btn-danger btn-sm" @click="remove(index)">Delete</button>
@@ -78,6 +85,20 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             alert("Error deleting system: "+error);
                         });
                 }
+            },
+            public: function(index) {
+                let systemid = this.systems[index].id;
+                let public = !this.systems[index].public*1;
+                // axios get
+                axios.get('public?id='+systemid+"&public="+public)
+                    .then(response => {
+                        if (!response.data.success) {
+                            alert("Error updating public: "+response.data.message);
+                        }
+                    })
+                    .catch(error => {
+                        alert("Error updating public: "+error);
+                    });
             }
         },
         filters: {

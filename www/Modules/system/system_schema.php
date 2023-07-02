@@ -54,7 +54,9 @@ $schema['system_meta'] = array(
     'metering_inc_controls'=> array('type' => 'tinyint(1)', 'code' => 'i', 'editable' => true, 'optional' => false),
     'metering_notes' => array('type' => 'varchar(300)', 'code' => 's', 'editable' => true, 'optional' => true),
 
-    'share' => array('type' => 'tinyint(1)', 'code' => 'i', 'editable' => true, 'optional' => false)
+    'share' => array('type' => 'tinyint(1)', 'code' => 'i', 'editable' => true, 'optional' => false),
+    'public' => array('type' => 'tinyint(1)', 'code' => 'i', 'editable' => false, 'optional' => false)
+
 );
 
 $schema['system_stats'] = array(
