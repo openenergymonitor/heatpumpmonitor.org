@@ -427,17 +427,29 @@
                             app.show_error = false;
                             app.message = response.data.message;
 
+                            var list_items = "";
+
                             if (response.data.change_log!=undefined) {
                                 let change_log = response.data.change_log;
-                                app.message = '<br><ul>';
                                 // Loop through change log add as list
                                 for (var i = 0; i < change_log.length; i++) {
-                                    app.message += "<li><b>"+change_log[i]['key']+"</b> changed from <b>"+change_log[i]['old']+"</b> to <b>"+change_log[i]['new']+"</b></li>";
+                                    list_items += "<li><b>"+change_log[i]['key']+"</b> changed from <b>"+change_log[i]['old']+"</b> to <b>"+change_log[i]['new']+"</b></li>";
                                 }
-                                app.message += '</ul>';
                             }
 
-                            if (response.data.new_system!=undefined) {
+                            if (response.data.warning_log!=undefined) {
+                                let warning_log = response.data.warning_log;
+                                // Loop through change log add as list
+                                for (var i = 0; i < warning_log.length; i++) {
+                                    list_items += "<li>"+warning_log[i]['message']+"</li>";
+                                }
+                            }
+
+                            if (list_items) {
+                                app.message = "<br><ul>"+list_items+"</ul>";
+                            }
+
+                            if (response.data.new_system!=undefined && response.data.new_system) {
                                 window.location.href = 'edit?id='+response.data.new_system;
                             }
                         } else {

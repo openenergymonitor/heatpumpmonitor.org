@@ -111,6 +111,8 @@ class System
 
     public function validate($form_data) {
         $error_log = array();
+        $warning_log = array();
+
         foreach ($this->schema_meta as $key=>$value) {
             if ($this->schema_meta[$key]['editable']) {
                 if (isset($form_data->$key) || $form_data->$key===null) {
@@ -125,22 +127,22 @@ class System
             }
         }
         if (isset($form_data->share) && !$form_data->share) {
-            $error_log[] = array("key"=>"share","message"=>"required");
+            $warning_log[] = array("message"=>"Share is un-ticked? Please tick share if you are happy to share your submission publicly");
         }
         
         if(count($error_log)) {
             return array("success"=>false, "message"=>"Error saving", "error_log"=>$error_log);
         }
-        return array("success"=>true);
+        return array("success"=>true, "warning_log"=>$warning_log);
     }
 
     public function save($userid,$systemid,$form_data) {
         $userid = (int) $userid;
         $systemid = (int) $systemid;
 
-        $result = $this->validate($form_data);
-        if ($result['success']==false) {
-            return $result;
+        $validate_result = $this->validate($form_data);
+        if ($validate_result['success']==false) {
+            return $validate_result;
         }
 
         $new_system = false;
@@ -162,7 +164,6 @@ class System
         $codes = array();
         $values = array();
         $change_log = array();
-        $error_log = array();
         
         foreach ($this->schema_meta as $key=>$value) {
             if ($this->schema_meta[$key]['editable']) {
@@ -212,7 +213,13 @@ class System
             // Update last updated time
             $now = time();
             $this->mysqli->query("UPDATE system_meta SET last_updated='$now' WHERE id='$systemid'");
-            return array("success"=>true,"message"=>"Saved", "change_log"=>$change_log, "new_system"=>$new_system);
+            return array(
+                "success"=>true,
+                "message"=>"Saved",
+                "change_log"=>$change_log,
+                "warning_log"=>$validate_result["warning_log"],
+                "new_system"=>$new_system
+            );
         }
     }
 
