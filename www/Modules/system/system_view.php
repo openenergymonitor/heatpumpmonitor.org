@@ -444,6 +444,16 @@
                             app.show_error = true;
                             app.show_success = false;
                             app.message = response.data.message;
+
+                            if (response.data.error_log!=undefined) {
+                                let error_log = response.data.error_log;
+                                app.message = 'Could not save form data<br><br><ul>';
+                                // Loop through change log add as list
+                                for (var i = 0; i < error_log.length; i++) {
+                                    app.message += "<li><b>"+error_log[i]['key']+"</b>: "+error_log[i]['message']+"</li>";
+                                }
+                                app.message += '</ul>';
+                            }
                         }
                     });
             },

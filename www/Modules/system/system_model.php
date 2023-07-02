@@ -76,10 +76,12 @@ class System
     // Returns blank form data following the schema
     public function new() {
         $form_data = new stdClass();
-        foreach ($this->schema_meta as $key=>$value) {
+        foreach ($this->schema_meta as $key=>$schema_row) {
             // if editable
-            if ($this->schema_meta[$key]['editable']) {
-                $form_data->$key = null;
+            if ($schema_row['editable']) {
+                $form_data->$key = '';
+                if ($schema_row["code"]=='i') $form_data->$key = (int) $form_data->$key;
+                if ($schema_row["code"]=='d') $form_data->$key = (float) $form_data->$key;   
             }
         }
         $form_data->id = false;
@@ -107,9 +109,39 @@ class System
         return $row;
     }
 
+    public function validate($form_data) {
+        $error_log = array();
+        foreach ($this->schema_meta as $key=>$value) {
+            if ($this->schema_meta[$key]['editable']) {
+                if (isset($form_data->$key) || $form_data->$key===null) {
+                    if ($form_data->$key===null || $form_data->$key==='') {
+                        if (!$this->schema_meta[$key]['optional']) {
+                            $error_log[] = array("key"=>$key,"message"=>"required");
+                        }
+                    }
+                } else {
+                    $error_log[] = array("key"=>$key,"message"=>"missing");
+                }
+            }
+        }
+        if (isset($form_data->share) && !$form_data->share) {
+            $error_log[] = array("key"=>"share","message"=>"required");
+        }
+        
+        if(count($error_log)) {
+            return array("success"=>false, "message"=>"Error saving", "error_log"=>$error_log);
+        }
+        return array("success"=>true);
+    }
+
     public function save($userid,$systemid,$form_data) {
         $userid = (int) $userid;
         $systemid = (int) $systemid;
+
+        $result = $this->validate($form_data);
+        if ($result['success']==false) {
+            return $result;
+        }
 
         $new_system = false;
         if ($systemid==false) {
@@ -130,10 +162,11 @@ class System
         $codes = array();
         $values = array();
         $change_log = array();
+        $error_log = array();
         
         foreach ($this->schema_meta as $key=>$value) {
             if ($this->schema_meta[$key]['editable']) {
-                if (isset($form_data->$key)) {
+                if (isset($form_data->$key) || $form_data->$key===null) {
                     $values[] = $form_data->$key;
                     $query[] = $key."=?";
                     $codes[] = $this->schema_meta[$key]["code"];

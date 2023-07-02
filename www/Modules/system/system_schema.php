@@ -7,54 +7,54 @@ $schema['system_meta'] = array(
     'last_updated' => array('type' => 'int(11)', 'code' => 'i', 'editable' => false),
 
     // Form data
-    'location' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
-    'installer_name' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
-    'installer_url' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
+    'location' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true, 'optional' => false),
+    'installer_name' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true, 'optional' => true),
+    'installer_url' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true, 'optional' => true),
 
-    'hp_model' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
-    'hp_type' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
-    'hp_output' => array('type' => 'float', 'code' => 'd', 'editable' => true),
+    'hp_model' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true, 'optional' => false),
+    'hp_type' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true, 'optional' => false),
+    'hp_output' => array('type' => 'float', 'code' => 'd', 'editable' => true, 'optional' => false),
 
     // Hydraulic seperation
-    'buffer' => array('type' => 'tinyint(1)', 'code' => 'i', 'editable' => true),
-    'LLH' => array('type' => 'tinyint(1)', 'code' => 'i', 'editable' => true),
-    'HEX' => array('type' => 'tinyint(1)', 'code' => 'i', 'editable' => true),
+    'buffer' => array('type' => 'tinyint(1)', 'code' => 'i', 'editable' => true, 'optional' => false),
+    'LLH' => array('type' => 'tinyint(1)', 'code' => 'i', 'editable' => true, 'optional' => false),
+    'HEX' => array('type' => 'tinyint(1)', 'code' => 'i', 'editable' => true, 'optional' => false),
 
     // Heat emitters
-    'new_radiators' => array('type' => 'tinyint(1)', 'code' => 'i', 'editable' => true),
-    'old_radiators' => array('type' => 'tinyint(1)', 'code' => 'i', 'editable' => true),
-    'UFH' => array('type' => 'tinyint(1)', 'code' => 'i', 'editable' => true),
+    'new_radiators' => array('type' => 'tinyint(1)', 'code' => 'i', 'editable' => true, 'optional' => false),
+    'old_radiators' => array('type' => 'tinyint(1)', 'code' => 'i', 'editable' => true, 'optional' => false),
+    'UFH' => array('type' => 'tinyint(1)', 'code' => 'i', 'editable' => true, 'optional' => false),
 
     // Flow temperature & weather compensation
-    'flow_temp' => array('type' => 'float', 'code' => 'd', 'editable' => true),
-    'flow_temp_typical' => array('type' => 'float', 'code' => 'd', 'editable' => true),
-    'wc_curve' => array('type' => 'float', 'code' => 'd', 'editable' => true),
+    'flow_temp' => array('type' => 'float', 'code' => 'd', 'editable' => true, 'optional' => false),
+    'flow_temp_typical' => array('type' => 'float', 'code' => 'd', 'editable' => true, 'optional' => false),
+    'wc_curve' => array('type' => 'float', 'code' => 'd', 'editable' => true, 'optional' => true),
 
-    'heat_demand' => array('type' => 'int(11)', 'code' => 'i', 'editable' => true),
-    'notes' => array('type' => 'varchar(300)', 'code' => 's', 'editable' => true),
-    'property' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
-    'floor_area' => array('type' => 'float', 'code' => 'd', 'editable' => true),
-    'heat_loss' => array('type' => 'float', 'code' => 'd', 'editable' => true),
-    'age' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
-    'insulation' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
+    'heat_demand' => array('type' => 'int(11)', 'code' => 'i', 'editable' => true, 'optional' => false),
+    'notes' => array('type' => 'varchar(300)', 'code' => 's', 'editable' => true, 'optional' => true),
+    'property' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true, 'optional' => false),
+    'floor_area' => array('type' => 'float', 'code' => 'd', 'editable' => true, 'optional' => false),
+    'heat_loss' => array('type' => 'float', 'code' => 'd', 'editable' => true, 'optional' => false),
+    'age' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true, 'optional' => false),
+    'insulation' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true, 'optional' => false),
     
-    'freeze' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
-    'zone' => array('type' => 'varchar(128)', 'code' => 's', 'editable' => true),
-    'controls' => array('type' => 'varchar(128)', 'code' => 's', 'editable' => true),
-    'refrigerant' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
-    'dhw' => array('type' => 'varchar(200)', 'code' => 's', 'editable' => true),
-    'legionella' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true),
+    'freeze' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true, 'optional' => false),
+    'zone' => array('type' => 'varchar(128)', 'code' => 's', 'editable' => true, 'optional' => false),
+    'controls' => array('type' => 'varchar(128)', 'code' => 's', 'editable' => true, 'optional' => false),
+    'refrigerant' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true, 'optional' => false),
+    'dhw' => array('type' => 'varchar(200)', 'code' => 's', 'editable' => true, 'optional' => false),
+    'legionella' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true, 'optional' => false),
 
-    'url' => array('type' => 'varchar(128)', 'code' => 's', 'editable' => true),
-    'electric_meter' => array('type' => 'varchar(128)', 'code' => 's', 'editable' => true),
-    'heat_meter' => array('type' => 'varchar(128)', 'code' => 's', 'editable' => true),
-    'metering_inc_boost' => array('type' => 'tinyint(1)', 'code' => 'i', 'editable' => true),
-    'metering_inc_central_heating_pumps' => array('type' => 'tinyint(1)', 'code' => 'i', 'editable' => true),
-    'metering_inc_brine_pumps' => array('type' => 'tinyint(1)', 'code' => 'i', 'editable' => true),
-    'metering_inc_controls'=> array('type' => 'tinyint(1)', 'code' => 'i', 'editable' => true),
-    'metering_notes' => array('type' => 'varchar(300)', 'code' => 's', 'editable' => true),
+    'url' => array('type' => 'varchar(128)', 'code' => 's', 'editable' => true, 'optional' => false),
+    'electric_meter' => array('type' => 'varchar(128)', 'code' => 's', 'editable' => true, 'optional' => false),
+    'heat_meter' => array('type' => 'varchar(128)', 'code' => 's', 'editable' => true, 'optional' => false),
+    'metering_inc_boost' => array('type' => 'tinyint(1)', 'code' => 'i', 'editable' => true, 'optional' => false),
+    'metering_inc_central_heating_pumps' => array('type' => 'tinyint(1)', 'code' => 'i', 'editable' => true, 'optional' => false),
+    'metering_inc_brine_pumps' => array('type' => 'tinyint(1)', 'code' => 'i', 'editable' => true, 'optional' => false),
+    'metering_inc_controls'=> array('type' => 'tinyint(1)', 'code' => 'i', 'editable' => true, 'optional' => false),
+    'metering_notes' => array('type' => 'varchar(300)', 'code' => 's', 'editable' => true, 'optional' => true),
 
-    'share' => array('type' => 'tinyint(1)', 'code' => 'i', 'editable' => true)
+    'share' => array('type' => 'tinyint(1)', 'code' => 'i', 'editable' => true, 'optional' => false)
 );
 
 $schema['system_stats'] = array(
