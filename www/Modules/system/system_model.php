@@ -171,7 +171,15 @@ class System
                     $change_log[] = array("key"=>"published","old"=>$original->published,"new"=>$form_data->published);
                 }
             }
+        } else {
+            // require admin to publish
+            // this could be removed.. 
+            // $values[] = 0;
+            // $query[] = "published=?";
+            // $codes[] = "i";        
         }
+
+
 
         if (!count($values)) {
             return array("success"=>false, "message"=>"No changes");
