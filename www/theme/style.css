@@ -28,7 +28,7 @@
   color: #44b3e2;
   font-weight: normal;
 }
-.table-hpmon th.border {
+.table-hpmon th.lborder {
   border-left: white 2px solid;
 }
 .table-hpmon th.nosort {
@@ -39,7 +39,7 @@
   border-top: silver solid 1px;
   padding: 2px 8px;
 }
-.table-hpmon tbody td.border {
+.table-hpmon tbody td.lborder {
   border-left: white 2px solid;
 }
 .table-hpmon tbody td.nowrap {
