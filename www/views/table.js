@@ -105,19 +105,19 @@ var app = new Vue({
 
 // grey if start date is less that 1 year ago
 function sinceClass(node) {
-  return node.since > 0 ? 'partial ' : '';
+  return (node.last_365_since + 365 * 24 * 3600) * 1000 > Date.now() ? 'partial ' : '';
 }
  
 // grey if start date is less that 1 month ago
 function monthClass(node) {
-  return (node.since + 30 * 24 * 3600) * 1000 > Date.now() ? 'partial ' : '';
+  return (node.last_30_since + 30 * 24 * 3600) * 1000 > Date.now() ? 'partial ' : '';
 }
    
-function sinceDate(node) {
-  if (node.since == 0) {
+function sinceDate(timestamp) {
+  if (timestamp == 0) {
     return "";
   }
-  var date = new Date(node.since*1000);
+  var date = new Date(timestamp*1000);
   return "Since " + date.toDateString();
 }
 

@@ -65,13 +65,13 @@
             {{n.emitters.split(' ').length > 2 ? '&mldr;' : ''}}</td>-->
         
         <!-- Performance -->
-        <td v-bind:class="sinceClass(n) + ' nowrap  '" v-bind:title="sinceDate(n)" align="right">
+        <td v-bind:class="sinceClass(n) + ' nowrap  '" v-bind:title="sinceDate(n.last_365_since)" align="right">
            {{unit_dp(n.last_365_elec_kwh, 'kWh')}}
         </td>
-        <td v-bind:class="sinceClass(n) + ' nowrap'" v-bind:title="sinceDate(n)" align="right">
+        <td v-bind:class="sinceClass(n) + ' nowrap'" v-bind:title="sinceDate(n.last_365_since)" align="right">
            {{unit_dp(n.last_365_heat_kwh, 'kWh')}}
         </td>
-        <td v-bind:class="sinceClass(n) + ' nowrap center'" v-bind:title="sinceDate(n)">
+        <td v-bind:class="sinceClass(n) + ' nowrap center'" v-bind:title="sinceDate(n.last_365_since)">
            {{n.last_365_cop > 0 ? n.last_365_cop.toFixed(1) : '-'}}</td>
         <td><a v-bind:href="n.url" target="_blank">Link &raquo;</a></td>
       </tr>

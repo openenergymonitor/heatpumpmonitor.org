@@ -55,12 +55,12 @@
         <td class="nowrap">{{n.hp_type.split(' ')[0]}}</td>
         
         <!-- Running costs -->
-        <td v-bind:class="sinceClass(n) + ' nowrap border'" v-bind:title="unit_dp(n.last_365_elec_kwh, 'kWh ') + sinceDate(n)" align="right">
+        <td v-bind:class="sinceClass(n) + ' nowrap border'" v-bind:title="unit_dp(n.last_365_elec_kwh, 'kWh ') + sinceDate(n.last_365_since)" align="right">
            &pound;{{(n.last_365_elec_kwh * 0.34).toFixed(2)}}
         </td>
-        <td v-bind:class="sinceClass(n) + ' nowrap center'" v-bind:title="sinceDate(n)">
+        <td v-bind:class="sinceClass(n) + ' nowrap center'" v-bind:title="sinceDate(n.last_365_since)">
            {{n.last_365_cop > 0 ? (n.last_365_elec_kwh * 34 / n.last_365_heat_kwh).toFixed(1)+'p' : '-'}}</td>
-        <td v-bind:class="sinceClass(n) + ' nowrap'" v-bind:title="unit_dp(Math.round(n.last_365_heat_kwh/0.9), 'kWh ') + sinceDate(n)" align="right">
+        <td v-bind:class="sinceClass(n) + ' nowrap'" v-bind:title="unit_dp(Math.round(n.last_365_heat_kwh/0.9), 'kWh ') + sinceDate(n.last_365_since)" align="right">
            {{n.last_365_heat_kwh > 0 ? '&pound;'+(n.last_365_heat_kwh / 0.85 * 0.10).toFixed(2) : '-'}}
         </td>
         <td v-bind:class="monthClass(n) + ' nowrap center border'" v-bind:title="n.last_30_elec_kwh">
