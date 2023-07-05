@@ -139,6 +139,9 @@ foreach ($data as $row) {
     if (strpos($row->emitters, "Underfloor heating")!==false) $row->UFH = 1;
     else $row->UFH = 0;
 
+    $row->zone_notes = $row->zone;
+    $row->space_heat_control_notes = $row->controls;
+
     // Anti freeze protection
     // - Central heat pump water circulation
     // - Anti-freeze valves

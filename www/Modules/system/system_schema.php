@@ -39,8 +39,10 @@ $schema['system_meta'] = array(
     'insulation' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true, 'optional' => false),
     
     'freeze' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true, 'optional' => false),
-    'zone' => array('type' => 'varchar(128)', 'code' => 's', 'editable' => true, 'optional' => false),
-    'controls' => array('type' => 'varchar(128)', 'code' => 's', 'editable' => true, 'optional' => false),
+    'zone_number' => array('type' => 'int(11)', 'code' => 'i', 'editable' => true, 'optional' => false),
+    'zone_notes' => array('type' => 'varchar(128)', 'code' => 's', 'editable' => true, 'optional' => true),
+    'space_heat_control_type' => array('type' => 'varchar(32)', 'code' => 's', 'editable' => true, 'optional' => false),
+    'space_heat_control_notes' => array('type' => 'varchar(128)', 'code' => 's', 'editable' => true, 'optional' => false),
     'refrigerant' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true, 'optional' => false),
     'dhw' => array('type' => 'varchar(200)', 'code' => 's', 'editable' => true, 'optional' => false),
     'legionella' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true, 'optional' => false),

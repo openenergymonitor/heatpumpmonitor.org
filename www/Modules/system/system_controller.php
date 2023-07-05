@@ -11,7 +11,7 @@ function system_controller() {
         $route->format = "html";
         if ($session['userid']) {
             $system_data = $system->new();
-            return view("Modules/system/system_view.php", array("system_data"=>$system_data));
+            return view("Modules/system/system_view.php", array("system_data"=>$system_data, 'admin'=>$session['admin']));
         }
     }
 

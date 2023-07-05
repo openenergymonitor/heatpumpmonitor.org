@@ -172,14 +172,58 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             </div>
         </div>
 
-        <p><b>Heating zones</b><br>Number and configuration</p>
-        <div class="input-group mb-3">
-            <input type="text" class="form-control" v-model="system.zone" @change="update">
+        <div class="row">
+            <p><b>Zones</b></p>
+            <div class="col">
+                <p>Number of zones</p>
+                <div class="input-group mb-3">
+                    <select class="form-control" v-model="system.zone_number" @change="update">
+                        <option>1</option>
+                        <option>2</option>
+                        <option>3</option>
+                        <option>4</option>
+                        <option>5</option>
+                        <option>6</option>
+                        <option>7</option>
+                        <option>8</option>
+                        <option>9</option>
+                        <option>10+</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-9" v-if="system.zone_number!=1">
+                <p>How are the zones controlled?</p>
+                <div class="input-group mb-3">
+                <input type="text" class="form-control" v-model="system.zone_notes" @change="update">
+                </div>
+            </div>
         </div>
 
         <p><b>Space heating control settings</b><br>e.g weather-compensation, 3rd party thermostat, heat pumps own controller, auto-adapt.<br>Please provide details.</p>
         <div class="input-group mb-3">
             <input type="text" class="form-control" v-model="system.controls" @change="update">
+        </div>
+
+        <div class="row">
+            <p><b>Space heating control settings</b></p>
+            <div class="col">
+                <p>Select type that best describes your system</p>
+                <div class="input-group mb-3">
+                    <select class="form-control" v-model="system.space_heat_control_type" @change="update">
+                        <option value="pure_wc">Pure weather compensation, no room influence</option>
+                        <option value="wc_room_min">Weather compensation with a little room influence</option>
+                        <option value="wc_room_max">Weather compensation with significant room influence</option>
+                        <option value="room_only">Room influence only (e.g Auto adapt)</option>
+                        <option value="manual_flow">Manual flow temperature control</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col">
+                <p>Feel free to add further details...</p>
+                <div class="input-group mb-3">
+                <input type="text" class="form-control" v-model="system.space_heat_control_notes" @change="update">
+                </div>
+            </div>
         </div>
 
         <p><b>Water heating control settings</b><br>(e.g scheduled 2am heat up period or top-up if temperature drops by 5 degrees)</p>

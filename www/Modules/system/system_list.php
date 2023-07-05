@@ -20,13 +20,13 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     </div>
 
     <div class="container" style="max-width:1200px">
-
         
         <table class="table">
             <tr>
                 <th v-if="admin">User</th>
                 <th>Location</th>
                 <th>Last updated</th>
+                <th v-for="field in custom_fields">{{ field }}</th>
                 <th>Year COP</th>
                 <th>Status</th>
                 <th style="width:150px">Actions</th>
@@ -35,6 +35,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 <td v-if="admin" :title="system.username+'\n'+system.email">{{ system.name }}</td>
                 <td>{{ system.location }}</td>
                 <td>{{ system.last_updated | time_ago }}</td>
+                <td v-for="field in custom_fields">{{ system[field] }}</td>
                 <td>{{ system.year_cop | toFixed(1) }}</td>
                 <td>
                     <span v-if="system.share" class="badge bg-success">Shared</span>
@@ -49,6 +50,16 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             </tr>
         </table>
 
+
+        <!-- add field -->
+        <div class="input-group mb-3" style="max-width:300px">
+            <select class="form-control" v-model="add_field_select">
+                <option>SELECT FIELD</option>
+                <option v-for="opt in field_options">{{ opt }}</option>
+            </select>
+            <button class="btn btn-primary" @click="add_field">Add</button>
+        </div>
+
     </div>
 </div>
 
@@ -57,7 +68,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         el: '#app',
         data: {
             systems: <?php echo json_encode($systems); ?>,
-            admin: <?php echo ($admin) ? 'true' : 'false'; ?>
+            admin: <?php echo ($admin) ? 'true' : 'false'; ?>,
+            add_field_select: 'SELECT FIELD',
+            field_options: [],
+            custom_fields: []
         },
         methods: {
             create: function() {
@@ -83,6 +97,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             alert("Error deleting system: "+error);
                         });
                 }
+            },
+            add_field: function() {
+                if (this.add_field_select=='SELECT FIELD') return;
+                // this.custom_fields = [];
+                this.custom_fields.push(this.add_field_select);
             }
         },
         filters: {
@@ -117,4 +136,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             }
         }
     });
+
+    app.field_options = [];
+    for (var key in app.systems[0]) {
+        if (key!='id' && key!='userid' && key!='name' && key!='location' && key!='last_updated' && key!='year_cop' && key!='share' && key!='published' && key!='stats') {
+            app.field_options.push(key);
+        }
+    }
 </script>
