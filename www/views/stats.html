@@ -30,15 +30,15 @@
         <th @click="sort('hp_type', 'asc')">Source</th>
         
         <!-- Stats -->
-        <th @click="sort('month_elec', 'desc')" class="border right">Electric</th>
-        <th @click="sort('month_heat', 'desc')" class="right">Heat</th>
-        <th @click="sort('month_cop', 'desc')" class="center">COP</th>
-        <th @click="sort('stats.standby_kwh', 'desc')" class="right">Standby</th>
-        <th @click="sort('stats.when_running.elec_W', 'desc')" class="border right">Electric</th>
-        <th @click="sort('stats.when_running.heat_W', 'desc')" class="right">Heat</th>
-        <th @click="sort('stats.when_running.flowT', 'desc')" class="center">Flow</th>
-        <th @click="sort('stats.when_running.flow_minus_return', 'desc')" class="center">Delta</th>
-        <th @click="sort('stats.when_running.outsideT', 'desc')" class="center">Outside</th>
+        <th @click="sort('full_period_elec_kwh', 'desc')" class="border right">Electric</th>
+        <th @click="sort('full_period_heat_kwh', 'desc')" class="right">Heat</th>
+        <th @click="sort('full_period_cop', 'desc')" class="center">COP</th>
+        <th @click="sort('standby_kwh', 'desc')" class="right">Standby</th>
+        <th @click="sort('when_running_elec_W', 'desc')" class="border right">Electric</th>
+        <th @click="sort('when_running_heat_W', 'desc')" class="right">Heat</th>
+        <th @click="sort('when_running_flowT', 'desc')" class="center">Flow</th>
+        <th @click="sort('when_running_flow_minus_return', 'desc')" class="center">Delta</th>
+        <th @click="sort('when_running_outsideT', 'desc')" class="center">Outside</th>
         <th class="nosort border">Charts</th>
       </tr>
     </thead>
@@ -59,23 +59,23 @@
         
         <!-- Stats -->
         <td v-bind:class="monthClass(n) + ' nowrap border'" align="right">
-           {{unit_dp(n.month_elec, 'kWh', 0)}}</td>
+           {{unit_dp(n.full_period_elec_kwh, 'kWh', 0)}}</td>
         <td v-bind:class="monthClass(n) + ' nowrap'" align="right">
-           {{unit_dp(n.month_heat, 'kWh', 0)}}</td>
+           {{unit_dp(n.full_period_heat_kwh, 'kWh', 0)}}</td>
         <td v-bind:class="monthClass(n) + ' nowrap center'">
-           {{n.month_cop > 0 ? n.month_cop.toFixed(2) : '-'}}</td>
+           {{n.full_period_cop > 0 ? n.full_period_cop.toFixed(2) : '-'}}</td>
         <td v-bind:class="monthClass(n) + ' nowrap'" align="right">
-           {{unit_dp(n.stats.standby_kwh, 'kWh', 1)}}</td>
+           {{unit_dp(n.standby_kwh, 'kWh', 1)}}</td>
         <td v-bind:class="monthClass(n) + ' nowrap border'" align="right">
-           {{unit_dp(n.stats.when_running.elec_W, 'W', 0)}}</td>
+           {{unit_dp(n.when_running_elec_W, 'W', 0)}}</td>
         <td v-bind:class="monthClass(n) + ' nowrap'" align="right">
-           {{unit_dp(n.stats.when_running.heat_W, 'W', 0)}}</td>
+           {{unit_dp(n.when_running_heat_W, 'W', 0)}}</td>
         <td v-bind:class="monthClass(n) + ' nowrap center'">
-           {{unit_dp(n.stats.when_running.flowT, '&#8451;', 0)}}</td>
+           {{unit_dp(n.when_running_flowT, '&#8451;', 0)}}</td>
         <td v-bind:class="monthClass(n) + ' nowrap center'">
-           +{{unit_dp(n.stats.when_running.flow_minus_return, '&#8451;', 1)}}</td>
+           +{{unit_dp(n.when_running_flow_minus_return, '&#8451;', 1)}}</td>
         <td v-bind:class="monthClass(n) + ' nowrap center'">
-           {{unit_dp(n.stats.when_running.outsideT, '&#8451;', 1)}}</td>
+           {{unit_dp(n.when_running_outsideT, '&#8451;', 1)}}</td>
         <td class="border"><a v-bind:href="n.url" target="_blank">Link &raquo;</a></td>
       </tr>
 
@@ -109,4 +109,5 @@
   
 </div>
 
+<script>var userid = <?php echo $userid; ?>;</script>
 <script src="views/table.js?v=2.2"></script>

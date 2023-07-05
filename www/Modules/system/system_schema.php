@@ -64,15 +64,43 @@ $schema['system_meta'] = array(
 );
 
 $schema['system_stats'] = array(
-    'id' => array('type' => 'int(11)', 'code' => 'i', 'editable' => false),
+    'id' => array('type' => 'int(11)', 'code' => 'i'),
 
-    // Scraped heat pump data
-    'month_elec' => array('type' => 'float', 'code' => 'd', 'editable' => false),
-    'month_heat' => array('type' => 'float', 'code' => 'd', 'editable' => false),
-    'month_cop' => array('type' => 'float', 'code' => 'd', 'editable' => false),
-    'year_elec' => array('type' => 'float', 'code' => 'd', 'editable' => false),
-    'year_heat' => array('type' => 'float', 'code' => 'd', 'editable' => false),
-    'year_cop' => array('type' => 'float', 'code' => 'd', 'editable' => false),
-    'since' => array('type' => 'int(11)', 'code' => 'i', 'editable' => false),
-    'stats' => array('type' => 'varchar(1024)', 'code' => 's', 'editable' => false)
+    // Request period details
+    'start' => array('type' => 'int(11)', 'code' => 'i'),
+    'end' => array('type' => 'int(11)', 'code' => 'i'),
+    'interval' => array('type' => 'int(11)', 'code' => 'i'),
+    'datapoints' => array('type' => 'int(11)', 'code' => 'i'),
+    'standby_threshold' => array('type' => 'float', 'code' => 'd'),
+
+    // Request period totals
+    'full_period_elec_kwh' => array('type' => 'float', 'code' => 'd'),
+    'full_period_heat_kwh' => array('type' => 'float', 'code' => 'd'),
+    'full_period_cop' => array('type' => 'float', 'code' => 'd'),
+    'standby_kwh' => array('type' => 'float', 'code' => 'd'),
+
+    // when running
+    'when_running_elec_kwh' => array('type' => 'float', 'code' => 'd'),
+    'when_running_heat_kwh' => array('type' => 'float', 'code' => 'd'),
+    'when_running_cop' => array('type' => 'float', 'code' => 'd'),
+    'when_running_elec_W' => array('type' => 'float', 'code' => 'd'),
+    'when_running_heat_W' => array('type' => 'float', 'code' => 'd'),
+    'when_running_flowT' => array('type' => 'float', 'code' => 'd'),
+    'when_running_returnT' => array('type' => 'float', 'code' => 'd'),
+    'when_running_flow_minus_return' => array('type' => 'float', 'code' => 'd'),
+    'when_running_outsideT' => array('type' => 'float', 'code' => 'd'),
+    'when_running_flow_minus_outside' => array('type' => 'float', 'code' => 'd'),
+    'when_running_carnot_prc' => array('type' => 'float', 'code' => 'd'),
+
+    // Last 365
+    'last_365_elec_kwh' => array('type' => 'float', 'code' => 'd'),
+    'last_365_heat_kwh' => array('type' => 'float', 'code' => 'd'),
+    'last_365_cop' => array('type' => 'float', 'code' => 'd'),
+    'last_365_since' => array('type' => 'int(11)', 'code' => 'i'),
+
+    // Last 30
+    'last_30_elec_kwh' => array('type' => 'float', 'code' => 'd'),
+    'last_30_heat_kwh' => array('type' => 'float', 'code' => 'd'),
+    'last_30_cop' => array('type' => 'float', 'code' => 'd'),
+    'last_30_since' => array('type' => 'int(11)', 'code' => 'i'),
 );

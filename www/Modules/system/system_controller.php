@@ -68,7 +68,13 @@ function system_controller() {
         $route->format = "json";
         if ($session['userid']) {
             $input = json_decode(file_get_contents('php://input'));
-            return $system->load_stats_from_url($input->url);
+            $stats = $system->load_stats_from_url($input->url);
+            if ($stats !== false) {
+                if ($system->has_access($session['userid'], $input->systemid)) {
+                    $system->save_stats($input->systemid, $stats); 
+                }
+            }
+            return $stats;
         }
     }
 

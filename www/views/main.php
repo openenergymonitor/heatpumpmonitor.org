@@ -38,9 +38,9 @@
         <!--<th @click="sort('emitters', 'asc')">Emitters</th>-->
         
         <!-- Performance -->
-        <th @click="sort('year_elec', 'desc')" class="lborder right">Electric</th>
-        <th @click="sort('year_heat', 'desc')" class="right">Heat</th>
-        <th @click="sort('year_cop', 'desc')" class="center">SCOP</th>
+        <th @click="sort('last_365_heat_kwh', 'desc')" class="lborder right">Electric</th>
+        <th @click="sort('last_365_heat_kwh', 'desc')" class="right">Heat</th>
+        <th @click="sort('last_365_cop', 'desc')" class="center">SCOP</th>
         <th class="nosort lborder">Charts</th>
       </tr>
     </thead>
@@ -66,13 +66,13 @@
         
         <!-- Performance -->
         <td v-bind:class="sinceClass(n) + ' nowrap  '" v-bind:title="sinceDate(n)" align="right">
-           {{unit_dp(n.year_elec, 'kWh')}}
+           {{unit_dp(n.last_365_elec_kwh, 'kWh')}}
         </td>
         <td v-bind:class="sinceClass(n) + ' nowrap'" v-bind:title="sinceDate(n)" align="right">
-           {{unit_dp(n.year_heat, 'kWh')}}
+           {{unit_dp(n.last_365_heat_kwh, 'kWh')}}
         </td>
         <td v-bind:class="sinceClass(n) + ' nowrap center'" v-bind:title="sinceDate(n)">
-           {{n.year_cop > 0 ? n.year_cop.toFixed(1) : '-'}}</td>
+           {{n.last_365_cop > 0 ? n.last_365_cop.toFixed(1) : '-'}}</td>
         <td><a v-bind:href="n.url" target="_blank">Link &raquo;</a></td>
       </tr>
       
@@ -103,4 +103,4 @@
   
 </div>
 <script>var userid = <?php echo $userid; ?>;</script>
-<script src="views/table.js?v=3.1"></script>
+<script src="views/table.js?v=3.2"></script>

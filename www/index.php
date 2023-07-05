@@ -23,22 +23,22 @@ switch ($route->controller) {
 
     case "stats":
         $route->format = "html";
-        $output = view("views/stats.html", array());
+        $output = view("views/stats.html", array("userid"=>$session['userid']));
         break;
         
     case "costs":
         $route->format = "html";
-        $output = view("views/costs.html", array());
+        $output = view("views/costs.html", array("userid"=>$session['userid']));
         break;
         
     case "graph":
         $route->format = "html";
-        $output = view("views/graph.html", array());
+        $output = view("views/graph.html", array("userid"=>$session['userid']));
         break;
 
     case "compare":
         $route->format = "html";
-        $output = view("views/compare.html", array());
+        $output = view("views/compare.html", array("userid"=>$session['userid']));
         break;
 
     case "user":

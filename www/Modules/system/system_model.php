@@ -255,24 +255,43 @@ class System
 
     public function save_stats($systemid,$stats) {
         $systemid = (int) $systemid;
-        
-        $stats = [
-            "month_elec" => $stats->last30->elec_kwh,
-            "month_heat" => $stats->last30->heat_kwh,
-            "month_cop"  => $stats->last30->cop,
-            "year_elec"  => $stats->last365->elec_kwh,
-            "year_heat"  => $stats->last365->heat_kwh,
-            "year_cop"   => $stats->last365->cop,
-            "since"      => $stats->last365->since,
-            "stats"      => $stats
-        ];
+
+        $stats = array(
+            'start' => $stats->start,
+            'end' => $stats->end,
+            // 'interval' => $stats->interval, // error here not needed for now
+            'datapoints' => $stats->datapoints,
+            'standby_threshold' => $stats->standby_threshold,
+            'full_period_elec_kwh' => $stats->full_period->elec_kwh,
+            'full_period_heat_kwh' => $stats->full_period->heat_kwh,
+            'full_period_cop' => $stats->full_period->cop,
+            'standby_kwh' => $stats->standby_kwh,
+            'when_running_elec_kwh' => $stats->when_running->elec_kwh,
+            'when_running_heat_kwh' => $stats->when_running->heat_kwh,
+            'when_running_cop' => $stats->when_running->cop,
+            'when_running_elec_W' => $stats->when_running->elec_W,
+            'when_running_heat_W' => $stats->when_running->heat_W,
+            'when_running_flowT' => $stats->when_running->flowT,
+            'when_running_returnT' => $stats->when_running->returnT,
+            'when_running_flow_minus_return' => $stats->when_running->flow_minus_return,
+            'when_running_outsideT' => $stats->when_running->outsideT,
+            'when_running_flow_minus_outside' => $stats->when_running->flow_minus_outside,
+            'when_running_carnot_prc' => $stats->when_running->carnot_prc,
+            'last_365_elec_kwh' => $stats->last365->elec_kwh,
+            'last_365_heat_kwh' => $stats->last365->heat_kwh,
+            'last_365_cop' => $stats->last365->cop,
+            'last_365_since' => $stats->last365->since,
+            'last_30_elec_kwh' => $stats->last30->elec_kwh,
+            'last_30_heat_kwh' => $stats->last30->heat_kwh,
+            'last_30_cop' => $stats->last30->cop,
+            'last_30_since' => $stats->last30->since
+        );
+
         $keys = array_keys($stats);
 
         $query = array();
         $codes = array();
         $values = array();
-
-        $stats['stats'] = json_encode($stats['stats']);
 
         foreach ($keys as $key) {
             if (isset($stats[$key])) {

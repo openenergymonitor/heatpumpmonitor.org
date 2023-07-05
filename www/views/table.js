@@ -5,7 +5,7 @@ var app = new Vue({
     nodes: [],
     filterKey: '',
     hiliteKey: userid,
-    currentSort:'year_cop',
+    currentSort:'last_365_cop',
     currentSortDir:'desc'
   },
 
@@ -87,7 +87,7 @@ var app = new Vue({
     },
     
     hasStats(row) {
-      return typeof row.stats !== 'undefined';
+      return row.datapoints !== 0;
     },
     
     // highlight row if id matches ?h in url

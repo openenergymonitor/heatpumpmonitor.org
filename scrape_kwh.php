@@ -17,7 +17,7 @@ foreach ($data as $row) {
         // print "$apikey_read\n";
         $stats = $system->load_stats_from_url($row->url);
         if ($stats !== false) {
-            $system->save_stats($userid, $stats);
+            $system->save_stats($row->id, $stats);
             print json_encode($stats) . "\n";        
         }
     }

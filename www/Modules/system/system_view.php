@@ -580,7 +580,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             },
             test_url: function() {
                 axios.post('loadstats', {
-                        url: this.$data.system.url
+                        url: this.$data.system.url,
+                        systemid: this.$data.system.id
                     })
                     .then(function(response) {
                         if (response.data) {
