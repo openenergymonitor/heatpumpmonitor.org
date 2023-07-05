@@ -31,7 +31,7 @@ $schema['system_meta'] = array(
     'wc_curve' => array('type' => 'float', 'code' => 'd', 'editable' => true, 'optional' => true),
 
     'heat_demand' => array('type' => 'int(11)', 'code' => 'i', 'editable' => true, 'optional' => false),
-    'notes' => array('type' => 'varchar(300)', 'code' => 's', 'editable' => true, 'optional' => true),
+    'notes' => array('type' => 'text', 'code' => 's', 'editable' => true, 'optional' => true),
     'property' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true, 'optional' => false),
     'floor_area' => array('type' => 'float', 'code' => 'd', 'editable' => true, 'optional' => false),
     'heat_loss' => array('type' => 'float', 'code' => 'd', 'editable' => true, 'optional' => false),
@@ -44,8 +44,10 @@ $schema['system_meta'] = array(
     'space_heat_control_type' => array('type' => 'varchar(32)', 'code' => 's', 'editable' => true, 'optional' => false),
     'space_heat_control_notes' => array('type' => 'varchar(128)', 'code' => 's', 'editable' => true, 'optional' => false),
     'refrigerant' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true, 'optional' => false),
-    'dhw' => array('type' => 'varchar(200)', 'code' => 's', 'editable' => true, 'optional' => false),
-    'legionella' => array('type' => 'varchar(64)', 'code' => 's', 'editable' => true, 'optional' => false),
+    'dhw_control_type' => array('type' => 'varchar(32)', 'code' => 's', 'editable' => true, 'optional' => false),
+    'dhw_target_temperature' => array('type' => 'float', 'code' => 'd', 'editable' => true, 'optional' => false),
+    'legionella_frequency' => array('type' => 'varchar(32)', 'code' => 's', 'editable' => true, 'optional' => false),
+    'legionella_target_temperature' => array('type' => 'float', 'code' => 'd', 'editable' => true, 'optional' => false),
 
     'url' => array('type' => 'varchar(128)', 'code' => 's', 'editable' => true, 'optional' => false),
     'electric_meter' => array('type' => 'varchar(128)', 'code' => 's', 'editable' => true, 'optional' => false),

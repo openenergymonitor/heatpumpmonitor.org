@@ -142,6 +142,9 @@ foreach ($data as $row) {
     $row->zone_notes = $row->zone;
     $row->space_heat_control_notes = $row->controls;
 
+    $row->notes .= " | DHW: ".$row->dhw;
+    $row->notes .= " | Legionella: ".$row->legionella;
+
     // Anti freeze protection
     // - Central heat pump water circulation
     // - Anti-freeze valves

@@ -148,6 +148,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             </div>
         </div>
 
+        <hr>
+
         <div class="row">
             <p><b>Weather compensation</b></p>
             <div class="col">
@@ -199,11 +201,6 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             </div>
         </div>
 
-        <p><b>Space heating control settings</b><br>e.g weather-compensation, 3rd party thermostat, heat pumps own controller, auto-adapt.<br>Please provide details.</p>
-        <div class="input-group mb-3">
-            <input type="text" class="form-control" v-model="system.controls" @change="update">
-        </div>
-
         <div class="row">
             <p><b>Space heating control settings</b></p>
             <div class="col">
@@ -226,14 +223,49 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             </div>
         </div>
 
-        <p><b>Water heating control settings</b><br>(e.g scheduled 2am heat up period or top-up if temperature drops by 5 degrees)</p>
-        <div class="input-group mb-3">
-            <input type="text" class="form-control" v-model="system.dhw" @change="update">
+        <div class="row">
+            <p><b>Water heating control settings</b></p>
+            <div class="col-8">
+                <p>Select control settings that best describes your system</p>
+                <div class="input-group mb-3">
+                    <select class="form-control" v-model="system.dhw_control_type" @change="update">
+                        <option value="schedule1">Daily scheduled heat up of tank</option>
+                        <option value="schedule2">Twice daily scheduled heat up of tank</option>
+                        <option value="topup5">Automatic top up of tank if temperature drops by 3-6C</option>
+                        <option value="topup10">Automatic top up of tank if temperature drops by 6-10C</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-4">
+                <p>Target water temperature</p>
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" v-model.number="system.dhw_target_temperature" @change="update">
+                    <span class="input-group-text">°C</span>
+                </div>
+            </div>
         </div>
 
-        <p><b>Legionella protection settings</b><br>e.g weekly immersion heater schedule 55°C</p>
-        <div class="input-group mb-3">
-            <input type="text" class="form-control" v-model="system.legionella" @change="update">
+        <div class="row">
+            <p><b>Legionella protection settings</b></p>
+            <div class="col-8">
+                <p>Legionella cycle frequency</p>
+                <div class="input-group mb-3">
+                    <select class="form-control" v-model="system.legionella_frequency" @change="update">
+                        <option>Daily</option>
+                        <option>Weekly</option>
+                        <option>Fornightly</option>
+                        <option>Monthly</option>
+                        <option>Other</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-4">
+                <p>Target water temperature</p>
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" v-model.number="system.legionella_target_temperature" @change="update">
+                    <span class="input-group-text">°C</span>
+                </div>
+            </div>
         </div>
 
         <div class="row">
