@@ -225,6 +225,46 @@ class System
         }
     }
 
+    public function get_system_config($userid, $systemid)
+    {
+        // get config if owned by user or public
+        $userid = (int) $userid;
+        $result = $this->mysqli->query("SELECT url FROM system_meta WHERE id='$systemid' AND ((share=1 AND published=1) OR userid='$userid')");
+        $row = $result->fetch_object();
+
+        $url_parts = parse_url($row->url);
+        $server = $url_parts['scheme'] . '://' . $url_parts['host'];
+        // check if url was to /app/view instead of username
+        if (preg_match('/^(.*)\/app\/view$/', $url_parts['path'], $matches)) {
+            $getconfig = "$server$matches[1]/app/getconfig";
+        } else {
+            $getconfig = $server . $url_parts['path'] . "/app/getconfig";
+        }
+        // if url has query string, pull out the readkey
+        $readkey = '';
+        if (isset($url_parts['query'])) {
+            parse_str($url_parts['query'], $url_args);
+            if (isset($url_args['readkey'])) {
+                $readkey = $url_args['readkey'];
+                $getconfig .= '?' . $url_parts['query'];
+            }
+        }
+
+        $config = json_decode(file_get_contents($getconfig));
+
+        $output = new stdClass();
+        $output->elec = (int) $config->config->heatpump_elec;
+        $output->heat = (int) $config->config->heatpump_heat;
+        $output->flowT = (int) $config->config->heatpump_flowT;
+        $output->returnT = (int) $config->config->heatpump_returnT;
+        $output->outsideT = (int) $config->config->heatpump_outsideT;
+
+        $output->server = $server;
+        $output->apikey = $readkey;
+
+        return $output;
+    }
+
     public function load_stats_from_url($url) {
         # decode the url to separate out any args
         $url_parts = parse_url($url);

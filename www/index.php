@@ -41,6 +41,11 @@ switch ($route->controller) {
         $output = view("views/compare.html", array("userid"=>$session['userid']));
         break;
 
+    case "histogram":
+        $route->format = "html";
+        $output = view("views/histogram.html", array("userid"=>$session['userid']));
+        break;
+
     case "user":
         require "Modules/user/user_controller.php";
         $output = user_controller();
@@ -59,77 +64,44 @@ switch ($route->controller) {
     case "api":
         $route->format = "json";
         
-        $data_obj = $system->list_public($session['userid']);
-
         if (isset($_GET['system'])) {
-            // Find ID
-            $system = false;
-            $id = (int) $_GET['system'];
-            foreach ($data_obj as $key=>$row) {
-                if ($row->id==$id) {
-                    $system = $row;
-                    break;
-                }
-            }
-            if ($system) {
-                if ($route->action=="data") {
-                    
-                    $url_parts = parse_url($system->url);
-                    $server = $url_parts['scheme'] . '://' . $url_parts['host'];
-                    # check if url was to /app/view instead of username
-                    if (preg_match('/^(.*)\/app\/view$/', $url_parts['path'], $matches)) {
-                      $getconfig = "$server$matches[1]/app/getconfig";
-                    } else {
-                      $getconfig = $server . $url_parts['path'] . "/app/getconfig";
-                    }        
-                    
-                    $apikeystr = "";     
-                    # if url has query string, pull out the readkey
-                    if (isset($url_parts['query'])) {
-                      parse_str($url_parts['query'], $url_args);
-                      if (isset($url_args['readkey'])) {
-                        $readkey = $url_args['readkey'];
-                        $getconfig .= '?' . $url_parts['query'];
-                        $apikeystr = "&apikey=".$readkey;
-                      }
-                    }
-                    
-                    $config = json_decode(file_get_contents($getconfig));
-                    
-                    $elec_feedid = (int) $config->config->heatpump_elec;
-                    $heat_feedid = (int) $config->config->heatpump_heat;
-                    $flowT_feedid = (int) $config->config->heatpump_flowT;
-                    $returnT_feedid = (int) $config->config->heatpump_returnT;
-                    $outsideT_feedid = (int) $config->config->heatpump_outsideT;
+            $config = $system->get_system_config($session['userid'], (int) $_GET['system']);
 
-                    $output = $config->config;
-
-                    $start = $_GET['start'];
-                    $end = $_GET['end'];
-                    $interval = $_GET['interval']; 
-                    
-                    if ($route->subaction=="all") {
-                    
-                        $result = json_decode(file_get_contents("$server/feed/data.json?ids=$elec_feedid,$heat_feedid,$outsideT_feedid,$flowT_feedid,$returnT_feedid&start=$start&end=$end&interval=$interval&average=1&skipmissing=0&timeformat=notime".$apikeystr));
-                        
-                        $output = array(
-                          "elec"=>$result[0]->data,
-                          "heat"=>$result[1]->data,
-                          "outsideT"=>$result[2]->data,
-                          "flowT"=>$result[3]->data,
-                          "returnT"=>$result[4]->data
-                        );   
-                    }
-                } else {
-                    $output = $system;
-                }
-            } else {
-                $output = array("success"=>false, "message"=>"invalid system id");
+            if ($route->action=="all") {
+                $start = $_GET['start'];
+                $end = $_GET['end'];
+                $interval = $_GET['interval']; 
+                $feeds = array($config->elec, $config->heat, $config->outsideT, $config->flowT, $config->returnT);
+                $apikeystr = "";
+                if ($config->apikey!="") $apikeystr = "&apikey=".$config->apikey;
+                $result = json_decode(file_get_contents("$config->server/feed/data.json?ids=".implode(",",$feeds)."&start=$start&end=$end&interval=$interval&average=1&skipmissing=0&timeformat=notime".$apikeystr));
+                
+                $output = array(
+                    "elec"=>$result[0]->data,
+                    "heat"=>$result[1]->data,
+                    "outsideT"=>$result[2]->data,
+                    "flowT"=>$result[3]->data,
+                    "returnT"=>$result[4]->data
+                );
             }
-        } else {
-            $output = $data_obj;
+
+            else if ($route->action=="histogram") {
+                // convert array of params into url string
+                $params = array(
+                    "elec"=>$config->elec,
+                    "heat"=>$config->heat,
+                    "start"=>$_GET['start'],
+                    "end"=>$_GET['end'],
+                    "div"=>0.1,
+                    "interval"=>300
+                );
+                if ($config->apikey!="") $params['apikey'] = $config->apikey;
+                $result = file_get_contents("$config->server/histogram/data/kwh_at_cop?".http_build_query($params));
+                $output = json_decode($result);
+                if ($output==null) $output = $result;
+            }
         }
-        
+            
         break;
 }
 

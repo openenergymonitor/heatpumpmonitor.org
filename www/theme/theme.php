@@ -129,7 +129,7 @@ $navigation = array(
         </nav>
     </header>
 
-    <div class="container-fluid flex-grow-1">
+    <div class="flex-grow-1">
         <?php echo $content; ?>
     </div>
 
