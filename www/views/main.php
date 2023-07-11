@@ -103,4 +103,4 @@
   
 </div>
 <script>var userid = <?php echo $userid; ?>;</script>
-<script src="views/table.js?v=3.3"></script>
+<script src="views/table.js?v=3.4"></script>

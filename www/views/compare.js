@@ -290,7 +290,7 @@ function load_system_data(idx) {
   var system = app.selected_systems[idx];
   $.ajax({
     dataType: "json", 
-    url: "api/data/all?system="+(system.id+1)+"&start="+date_str_to_time(system.start)+"&end="+date_str_to_time(system.end)+"&interval="+app.interval, 
+    url: "api/all?system="+(system.id+1)+"&start="+date_str_to_time(system.start)+"&end="+date_str_to_time(system.end)+"&interval="+app.interval, 
     async:false, 
     success: function(system_data) {
       app.selected_systems[idx].data = system_data;
