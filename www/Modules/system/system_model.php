@@ -257,8 +257,10 @@ class System
         $output->heat = (int) $config->config->heatpump_heat;
         $output->flowT = (int) $config->config->heatpump_flowT;
         $output->returnT = (int) $config->config->heatpump_returnT;
-        $output->outsideT = (int) $config->config->heatpump_outsideT;
 
+        if (isset($config->config->heatpump_outsideT)) {
+            $output->outsideT = (int) $config->config->heatpump_outsideT;
+        }
         $output->server = $server;
         $output->apikey = $readkey;
 

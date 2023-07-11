@@ -86,19 +86,50 @@ switch ($route->controller) {
             }
 
             else if ($route->action=="histogram") {
-                // convert array of params into url string
-                $params = array(
-                    "elec"=>$config->elec,
-                    "heat"=>$config->heat,
-                    "start"=>$_GET['start'],
-                    "end"=>$_GET['end'],
-                    "div"=>0.1,
-                    "interval"=>300
-                );
-                if ($config->apikey!="") $params['apikey'] = $config->apikey;
-                $result = file_get_contents("$config->server/histogram/data/kwh_at_cop?".http_build_query($params));
-                $output = json_decode($result);
-                if ($output==null) $output = $result;
+                if ($route->subaction=="kwh_at_cop") {
+                    // test
+                    //$config->elec = 192;
+                    //$config->heat = 163;
+                    //$config->apikey = "b33c4080a2b7f5ee3b041bec1201d5bb";
+                    //$config->server = "http://localhost/emoncms";
+                    // convert array of params into url string
+                    $params = array(
+                        "elec"=>$config->elec,
+                        "heat"=>$config->heat,
+                        "start"=>$_GET['start'],
+                        "end"=>$_GET['end'],
+                        "div"=>0.1,
+                        "interval"=>300,
+                        "x_min"=>$_GET['x_min'],
+                        "x_max"=>$_GET['x_max']
+                    );
+                    if ($config->apikey!="") $params['apikey'] = $config->apikey;
+                    $result = file_get_contents("$config->server/histogram/data/kwh_at_cop?".http_build_query($params));
+                    $output = json_decode($result);
+                    if ($output==null) $output = $result;
+
+                } else if ($route->subaction=="kwh_at_temperature") {
+                    // test
+                   // $config->heat = 163;
+                    //$config->flowT = 363;
+                    //$config->apikey = "b33c4080a2b7f5ee3b041bec1201d5bb";
+                    //$config->server = "http://localhost/emoncms";
+                    // convert array of params into url string
+                    $params = array(
+                        "power"=>$config->heat,
+                        "temperature"=>$config->flowT,
+                        "start"=>$_GET['start'],
+                        "end"=>$_GET['end'],
+                        "div"=>0.5,
+                        "interval"=>300,
+                        "x_min"=>$_GET['x_min'],
+                        "x_max"=>$_GET['x_max']
+                    );
+                    if ($config->apikey!="") $params['apikey'] = $config->apikey;
+                    $result = file_get_contents("$config->server/histogram/data/kwh_at_temperature?".http_build_query($params));
+                    $output = json_decode($result);
+                    if ($output==null) $output = $result;                    
+                }
             }
         }
             

@@ -14,6 +14,13 @@
     <div class="container-fluid" style="margin-top:20px">
         <div class="row">
             <div class="col-md-5">
+
+                <select class="form-control" v-model="histogram_type" @change="change_histogram_type">
+                    <option value="kwh_at_cop">COP vs kWh heat delivered</option>
+                    <option value="kwh_at_temperature">Flow temperature vs kWh heat delivered</option>
+                </select>
+                <br>
+
                 <p>Select systems...</p>
                 <!-- Add your table here -->
                 <table class="table">
@@ -50,12 +57,20 @@
 
                 <div class="input-group mb-3" style="max-width:400px">
                     <span class="input-group-text" style="width:200px">Plot type</span>
-                    <select class="form-control" v-model="plot_type" @change="update">
+                    <select class="form-control" v-model="plot_type" @change="update_plot_type">
                         <option value="lines">Lines</option>
                         <option value="points">Lines with points</option>
                         <option value="filled">Lines with fill</option>
                         <option value="bars">Bars</option>
                     </select>
+                </div>
+
+                <div class="input-group mb-3">
+                    <span class="input-group-text" style="width:200px">{{ xaxis_title }} range</span>
+                    <span class="input-group-text">Min</span>
+                    <input type="text" class="form-control" v-model="x_min" @change="update_min">
+                    <span class="input-group-text">Max</span>
+                    <input type="text" class="form-control" v-model="x_max" @change="update_max">
                 </div>
 
             </div>
@@ -79,6 +94,7 @@
     var app = new Vue({
         el: '#app',
         data: {
+            histogram_type: "kwh_at_cop",
             system_list: system_list,
             selected_systems: [
                 {id: 7, color: colours[0], start: default_start, end: default_end, time_changed: false, data: []},
@@ -87,9 +103,29 @@
             match_dates: true,
             interval: 600,
             plot_type: "points",
-            months: ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+            months: ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
+            xaxis_title: "COP",
+            x_min: 1.0,
+            x_max: 8.0
         },
         methods: {
+            change_histogram_type: function() {
+
+                if (this.histogram_type == "kwh_at_cop") {
+                    this.xaxis_title = "COP";
+                    this.x_min = 1.0;
+                    this.x_max = 8.0;
+                } else {
+                    this.xaxis_title = "Flow temperature";
+                    this.x_min = 20;
+                    this.x_max = 55;
+                }
+
+                for (var i=0; i<app.selected_systems.length; i++) {
+                    load_system_data(i);
+                }
+                draw();
+            },
             add_system: function () {
                 if (this.selected_systems.length == 0) {
                     // add empty system
@@ -139,10 +175,22 @@
                 this.selected_systems.splice(idx, 1);
                 draw();
             },
-            update: function() {
-                console.log(app.plot_type);
+            update_plot_type: function() {
+                draw();
+            },
+            update_min: function() {
+                for (var i=0; i<app.selected_systems.length; i++) {
+                    load_system_data(i);
+                }
+                draw();
+            },
+            update_max: function() {
+                for (var i=0; i<app.selected_systems.length; i++) {
+                    load_system_data(i);
+                }
                 draw();
             }
+
         }
     });
 
@@ -208,7 +256,14 @@
 
         $.ajax({
             dataType: "json", 
-            url: "api/histogram?system="+(system.id+1)+"&start="+date_str_to_time(system.start)+"&end="+date_str_to_time(system.end), 
+            url: "api/histogram/"+app.histogram_type,
+            data: {
+                'system': system.id+1, 
+                'start': date_str_to_time(system.start), 
+                'end': date_str_to_time(system.end),
+                'x_min': app.x_min,
+                'x_max': app.x_max,
+            },
             async: false, 
             success: function(result) {
                 if (result.success!=undefined && !result.success) {
@@ -223,7 +278,14 @@
                 }
                 app.selected_systems[idx].data = data;
 
-                options.series.bars.barWidth = result.div;  
+                options.series.bars.barWidth = result.div;
+
+                // changes x axis label
+                if (app.histogram_type=="kwh_at_cop") {
+                    options.xaxis.axisLabel = "COP";
+                } else if (app.histogram_type=="kwh_at_temperature") {
+                    options.xaxis.axisLabel = "Flow temperature (°C)";
+                }
             }
         });
 
