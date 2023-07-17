@@ -27,16 +27,22 @@ function system_controller() {
     if ($route->action=="list") {
         $route->format = "html";
         if ($session['userid']) {
-            $systems = $system->list_user($session['userid']);
-            return view("Modules/system/system_list.php",array("admin"=>false, "systems"=>$systems));
+            return view("Modules/system/system_list.php",array(
+                "admin"=>false, 
+                "systems"=>$system->list_user($session['userid']),
+                "columns"=>$system->get_columns()
+            ));
         }
     }
 
     if ($route->action=="admin") {
         $route->format = "html";
         if ($session['userid'] && $session['admin']) {
-            $systems = $system->list_admin();
-            return view("Modules/system/system_list.php",array("admin"=>true, "systems"=>$systems));
+            return view("Modules/system/system_list.php",array(
+                "admin"=>true, 
+                "systems"=>$system->list_admin(),
+                "columns"=>$system->get_columns()
+            ));
         }
     }
 

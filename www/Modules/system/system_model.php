@@ -17,6 +17,9 @@ class System
         require "Modules/system/system_schema.php";
         $this->schema_meta = $schema['system_meta'];
         $this->schema_stats = $schema['system_stats'];
+
+        $this->schema_meta = $this->populate_codes($this->schema_meta);
+        $this->schema_stats = $this->populate_codes($this->schema_stats);
     }
 
     // Returns a list of public systems
@@ -469,5 +472,33 @@ class System
             $row->stats = json_decode($row->stats);
         }
         return $row;
+    }
+
+    public function populate_codes($schema) {
+        // populate schema codes based on type
+        foreach ($schema as $key=>$value) {
+            if (strpos($schema[$key]['type'],'varchar')!==false) $schema[$key]['code'] = 's';
+            else if (strpos($schema[$key]['type'],'text')!==false) $schema[$key]['code'] = 's';
+            else if (strpos($schema[$key]['type'],'int')!==false) $schema[$key]['code'] = 'i';
+            else if (strpos($schema[$key]['type'],'float')!==false) $schema[$key]['code'] = 'd';
+            else if (strpos($schema[$key]['type'],'bool')!==false) $schema[$key]['code'] = 'b';
+        }
+        return $schema;
+    }
+
+    // get columns
+    public function get_columns() {
+        $columns = array();
+        foreach ($this->schema_meta as $key=>$row) {
+            // name and group for each key
+            if (!isset($row['group']) || !isset($row['name'])) continue;
+            $columns[$key] = array("name"=>$row['name'], "group"=>$row['group']);
+        }
+        foreach ($this->schema_stats as $key=>$row) {
+            // name and group for each key
+            if (!isset($row['group']) || !isset($row['name'])) continue;
+            $columns[$key] = array("name"=>$row['name'], "group"=>$row['group']);
+        }
+        return $columns;
     }
 }
