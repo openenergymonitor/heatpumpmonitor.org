@@ -84,3 +84,13 @@
   background: white;
   color: grey;
 }
+
+/*
+.table-striped tbody tr:nth-of-type(odd) {
+  background-color: #eef;
+}
+
+.table-striped tbody tr:nth-of-type(even) {
+  background-color: #efe;
+}
+*/

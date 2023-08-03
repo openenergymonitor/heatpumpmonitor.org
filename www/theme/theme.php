@@ -20,11 +20,12 @@ $navigation = array(
 <head>
     <meta charset="utf-8">
     <title>HeatpumpMonitor.org</title>
-    <link rel="stylesheet" href="<?php echo $path; ?>theme/style.css?v=12" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
     <link href="https://openenergymonitor.org/homepage/theme/favicon.ico" rel="shortcut icon">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css">
+    <link rel="stylesheet" href="<?php echo $path; ?>theme/style.css?v=13" />
+
 </head>
 
 <style>
@@ -109,13 +110,13 @@ $navigation = array(
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="avatarDropdown">
                                 <li><a class="dropdown-item" href="<?php echo $path; ?>user/view">My account</a></li>
-                                <li><a class="dropdown-item" href="<?php echo $path; ?>system/list">My systems</a></li>
+                                <li><a class="dropdown-item" href="<?php echo $path; ?>system/list/user">My systems</a></li>
                                 <?php if ($session['admin']) { ?>
                                 <li>
                                     <hr class="dropdown-divider">
                                 </li>
                                 <li><a class="dropdown-item" href="<?php echo $path; ?>user/admin">Admin users</a></li>
-                                <li><a class="dropdown-item" href="<?php echo $path; ?>system/admin">Admin systems</a></li>
+                                <li><a class="dropdown-item" href="<?php echo $path; ?>system/list/admin">Admin systems</a></li>
                                 <?php } ?>
                                 <li>
                                     <hr class="dropdown-divider">

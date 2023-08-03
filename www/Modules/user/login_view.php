@@ -86,7 +86,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 axios.post(path + "user/login.json", params)
                     .then(function(response) {
                         if (response.data.success) {
-                            window.location.href = path + "system/list";
+                            window.location.href = path + "system/list/user";
                         } else {
                             app.error = response.data.message;
                             app.success = false;
@@ -110,7 +110,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                 app.mode = 'login';
                                 app.success = "Registration successful, please check your email to verify your account";
                             } else {
-                                window.location.href = path + "system/list"
+                                window.location.href = path + "system/list/user"
                             }
                         } else {
                             app.error = response.data.message;

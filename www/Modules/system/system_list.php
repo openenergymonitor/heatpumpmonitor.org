@@ -74,7 +74,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 </div>
             </div>
             <div class="col-md-10">
-                <table class="table table-sm mt-3">
+                <table id="custom" class="table table-sm mt-3">
                     <tr>
                         <th v-if="mode=='admin'" @click="sort('name', 'asc')" style="cursor:pointer">User
                             <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='name'"></i>
@@ -132,6 +132,12 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         d.setMonth(d.getMonth() - 1);
     }
 
+    var mode = "<?php echo $mode; ?>";
+    var selected_columns = ['location', 'last_updated','cop'];
+    if (mode == 'public') {
+        selected_columns = ['location', 'hp_model', 'cop'];
+    }
+
     var app = new Vue({
         el: '#app',
         data: {
@@ -139,11 +145,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             mode: "<?php echo $mode; ?>",
             columns: columns,
             column_groups: column_groups,
-            selected_columns: ['location', 'last_updated','cop'],
+            selected_columns: selected_columns,
             currentSortColumn: 'cop',
             currentSortDir: 'desc',
             // stats time selection
-            stats_time_start: "last30",
+            stats_time_start: "last365",
             stats_time_end: "only",
             stats_time_range: false,
             available_months_start: months,
