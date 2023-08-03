@@ -20,7 +20,27 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             <h3 v-if="!admin">My Systems</h3>
             <h3 v-if="admin">Admin Systems</h3>
 
-            <button class="btn btn-primary btn-sm" @click="create" style="float:right; margin-right:30px">Add new system</button>
+            <button class="btn btn-primary" @click="create" style="float:right; margin-right:30px">Add new system</button>
+
+            <div style="float:right; margin-right:30px">
+                <div class="input-group">
+                    <span class="input-group-text">Stats time period</span>
+
+                    <select class="form-control" v-model="stats_time_start" @change="stats_time_start_change" style="width:120px">
+                        <option value="last30">Last 30 days</option>
+                        <option value="last365">Last 365 days</option>
+                        <option v-for="month in available_months_start">{{ month }}</option>
+                    </select>
+                    
+                    <span class="input-group-text" v-if="stats_time_end!='only'">to</span>
+
+                    <select class="form-control" v-model="stats_time_end" v-if="stats_time_start!='last30' && stats_time_start!='last365'" @change="stats_time_end_change" style="width:120px">
+                        <option value="only">Only</option>
+                        <option v-for="month in available_months_end">{{ month }}</option>
+                    </select>
+                </div>
+            </div>
+
             <p v-if="!admin">Add, edit and view systems associated with your account.</p>
             <p v-if="admin">Add, edit and view all systems.</p>
         </div>
@@ -53,9 +73,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 </div>
             </div>
             <div class="col-md-10">
-
-
-                <table class="table">
+                <table class="table table-sm mt-3">
                     <tr>
                         <th v-if="admin" @click="sort('name', 'asc')" style="cursor:pointer">User
                             <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='name'"></i>
@@ -82,7 +100,6 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         </td>
                     </tr>
                 </table>
-
             </div>
         </div>
 
@@ -92,12 +109,26 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 <script>
 
     var columns = <?php echo json_encode($columns); ?>;
+
+    columns['cop'] = {name: 'COP', group: 'Stats'};
+    columns['elec_kwh'] = {name: 'Electricity (kWh)', group: 'Stats'};
+    columns['heat_kwh'] = {name: 'Heat (kWh)', group: 'Stats'};
+
     // convert to column groups
     var column_groups = {};
     for (var key in columns) {
         var column = columns[key];
         if (column_groups[column.group] == undefined) column_groups[column.group] = [];
         column_groups[column.group].push({key: key, name: column.name});
+    }
+
+    // Available months
+    // Aug 2023, Jul 2023, Jun 2023 etc for 12 months
+    var months = [];
+    var d = new Date();
+    for (var i = 0; i < 12; i++) {
+        months.push(d.toLocaleString('default', { month: 'short' }) + ' ' + d.getFullYear());
+        d.setMonth(d.getMonth() - 1);
     }
 
     var app = new Vue({
@@ -107,9 +138,15 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             admin: <?php echo ($admin) ? 'true' : 'false'; ?>,
             columns: columns,
             column_groups: column_groups,
-            selected_columns: ['location', 'last_updated'],
-            currentSortColumn: 'location',
-            currentSortDir: 'desc'
+            selected_columns: ['location', 'last_updated','cop'],
+            currentSortColumn: 'cop',
+            currentSortDir: 'desc',
+            // stats time selection
+            stats_time_start: "last30",
+            stats_time_end: "only",
+            stats_time_range: false,
+            available_months_start: months,
+            available_months_end: months
         },
         methods: {
             create: function() {
@@ -153,7 +190,6 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 if (this.currentSortColumn != column) {
                     this.currentSortDir = starting_order;
                     this.currentSortColumn = column;
-
                 } else {
                     if (this.currentSortDir == 'desc') {
                         this.currentSortDir = 'asc';
@@ -161,7 +197,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         this.currentSortDir = 'desc';
                     }
                 }
-
+                this.sort_only(column);
+            },
+            sort_only: function(column) {
                 this.systems.sort((a, b) => {
                     let modifier = 1;
                     if (this.currentSortDir == 'desc') modifier = -1;
@@ -169,6 +207,80 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     if (a[column] > b[column]) return 1 * modifier;
                     return 0;
                 });
+            },
+            stats_time_start_change: function () {
+                // change available_months_end to only show months after start
+                if (this.stats_time_start=='last30' || this.stats_time_start=='last365') {
+                    this.stats_time_end = 'only';
+                } else {
+                    let start_index = this.available_months_start.indexOf(this.stats_time_start);
+                    this.available_months_end = this.available_months_start.slice(0,start_index); 
+
+                    if (this.stats_time_end!='only') {
+                        this.stats_time_end = this.available_months_end[0]; 
+                    }
+                }
+                this.load_system_stats();
+            },
+            stats_time_end_change: function () {
+                this.load_system_stats();
+            },
+            load_system_stats: function () {
+                
+                // Start
+                let start = this.stats_time_start;
+                if (start!='last30' && start!='last365') {
+                    // Convert e.g Mar 2023 to 2023-03-01
+                    let months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                    let month = start.split(' ')[0];
+                    let year = start.split(' ')[1];
+                    start = year + '-' + (months.indexOf(month)+1) + '-01';
+                }
+
+                // End
+                let end = this.stats_time_end;
+                if (end!='only') {
+                    // Convert e.g Mar 2023 to 2023-03-01
+                    let months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                    let month = end.split(' ')[0];
+                    let year = end.split(' ')[1];
+                    end = year + '-' + (months.indexOf(month)+1) + '-01';
+                } else {
+                    end = start;
+                }
+
+                var url = path+'system/stats';
+                var params = {
+                    start: start,
+                    end: end
+                };
+
+                if (start == 'last30' || start == 'last365') {
+                    url = path+'system/stats/'+start;
+                    params = {};
+                }
+
+                // Load system/stats data
+                axios.get(url, {
+                        params: params
+                    })
+                    .then(response => {
+                        var stats = response.data;
+                        for (var i = 0; i < app.systems.length; i++) {
+                            let id = app.systems[i].id;
+                            if (stats[id]) {
+                                // copy stats data to system
+                                for (var key in stats[id]) {
+                                    app.systems[i][key] = stats[id][key];
+                                }
+                            }
+                        }
+                        // sort
+                        app.sort_only(app.currentSortColumn);
+                    })
+                    .catch(error => {
+                        alert("Error loading data: " + error);
+                    });
             }
         },
         filters: {
@@ -190,7 +302,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             }
         }
     });
-    app.sort('last_updated', 'desc');
+    
+    app.load_system_stats();
+    app.sort_only('cop');
 
     function time_ago(val) {
         if (val == null || val == 0) {
@@ -225,4 +339,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             stickyCard.classList.remove("sticky");
         }
     });
+
+
+
 </script>

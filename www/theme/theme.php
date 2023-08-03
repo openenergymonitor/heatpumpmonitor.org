@@ -18,6 +18,7 @@ $navigation = array(
 <html lang="en">
 
 <head>
+    <meta charset="utf-8">
     <title>HeatpumpMonitor.org</title>
     <link rel="stylesheet" href="<?php echo $path; ?>theme/style.css?v=12" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">

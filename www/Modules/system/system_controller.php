@@ -5,7 +5,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 function system_controller() {
 
-    global $session, $route, $system;
+    global $session, $route, $system, $mysqli;
+
+    require ("Modules/system/system_stats_model.php");
+    $system_stats = new SystemStats($mysqli,$system);
 
     if ($route->action=="new") {
         $route->format = "html";
@@ -46,6 +49,27 @@ function system_controller() {
         }
     }
 
+    // Return system stats
+    if ($route->action=="stats") {
+        $route->format = "json";
+
+        // stats/last30
+        if ($route->subaction == "last30") { 
+            return $system_stats->get_last30();
+
+        // stats/last365
+        } else if ($route->subaction == "last365") {
+            return $system_stats->get_last365();
+
+        // stats?start=2016-01-01&end=2016-01-02
+        } else if ($route->subaction == "") {
+            return $system_stats->get_monthly(
+                get('start',true),
+                get('end',true)
+            );
+        }
+    }
+
     if ($route->action=="get") {
         $route->format = "json";
         if ($session['userid']) {
@@ -74,10 +98,11 @@ function system_controller() {
         $route->format = "json";
         if ($session['userid']) {
             $input = json_decode(file_get_contents('php://input'));
-            $stats = $system->load_stats_from_url($input->url);
+            $stats = $system_stats->load_from_url($input->url);
             if ($stats !== false) {
                 if ($system->has_access($session['userid'], $input->systemid)) {
-                    $system->save_stats($input->systemid, $stats); 
+                    $system_stats->save_last30($input->systemid, $stats); 
+                    $system_stats->save_last365($input->systemid, $stats);
                 }
             }
             return $stats;
