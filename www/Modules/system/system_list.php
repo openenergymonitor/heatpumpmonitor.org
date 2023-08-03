@@ -6,6 +6,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
 <style>
     .sticky {
@@ -44,6 +45,12 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             <p v-if="mode=='user'">Add, edit and view systems associated with your account.</p>
             <p v-if="mode=='admin'">Add, edit and view all systems.</p>
             <p v-if="mode=='public'">Here you can see a variety of installations monitored with OpenEnergyMonitor, and compare detailed statistic to see how performance can vary.</p>
+        </div>
+    </div>
+    <!-- apexcharts -->
+    <div class="container-fluid" style="background-color:#fff; border-bottom:1px solid #ccc">
+        <div class="row">
+            <div id="chart"></div>
         </div>
     </div>
 
@@ -284,6 +291,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         }
                         // sort
                         app.sort_only(app.currentSortColumn);
+
+                        draw_chart();
                     })
                     .catch(error => {
                         alert("Error loading data: " + error);
@@ -309,7 +318,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             }
         }
     });
-    
+
+    init_chart();
     app.load_system_stats();
     app.sort_only('cop');
 
@@ -347,6 +357,54 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         }
     });
 
+    function init_chart() {
+        chart_options = {
+            colors_style_guidlines: ['#29ABE2'],
+            colors: ['#29AAE3'],
+            chart: {
+                type: 'bar',
+                height: 500,
+                toolbar: {
+                    show: false
+                }
+            },
+            dataLabels: {
+                enabled: false
+            },
+            series: [ ],
+            xaxis: { 
+                categories: [],
+                title: {
+                    text: 'Location'
+                }
+            },
+            yaxis: { 
+                title: {
+                    text: 'COP / SCOP'
+                }
+            }
+        };
+        // y-axis label
 
+        chart = new ApexCharts(document.querySelector("#chart"), chart_options);
+        chart.render();
+    }
+
+    function draw_chart() {
+        var x = [];
+        var y = [];
+        for (var i = 0; i < app.systems.length; i++) {
+            x.push(app.systems[i].location);
+            y.push(app.systems[i].cop);
+        }
+
+        chart_options.xaxis.categories = x;
+        chart_options.series = [{
+            name: 'COP',
+            data: y
+        }];
+
+        chart.updateOptions(chart_options);
+    }
 
 </script>
