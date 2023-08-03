@@ -6,8 +6,8 @@ global $path;
 
 $navigation = array(
     array("controller" => "", "href" => ".", "title" => "Home", "icon" => "fa-home"),
-    array("controller" => "stats", "href" => "stats", "title" => "30 Day Stats", "icon" => "fa-table"),
-    array("controller" => "costs", "href" => "costs", "title" => "Running Costs", "icon" => "fa-coins"),
+    // array("controller" => "stats", "href" => "stats", "title" => "30 Day Stats", "icon" => "fa-table"),
+    // array("controller" => "costs", "href" => "costs", "title" => "Running Costs", "icon" => "fa-coins"),
     array("controller" => "graph", "href" => "graph", "title" => "Comparison Charts", "icon" => "fa-chart-line"),
     array("controller" => "compare", "href" => "compare", "title" => "Comparison Charts", "icon" => "fa-object-group"),
     array("controller" => "user", "href" => "user/login", "title" => "Login", "icon" => "fa-user")

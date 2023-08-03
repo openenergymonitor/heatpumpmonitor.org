@@ -29,23 +29,34 @@ function system_controller() {
 
     if ($route->action=="list") {
         $route->format = "html";
-        if ($session['userid']) {
-            return view("Modules/system/system_list.php",array(
-                "admin"=>false, 
-                "systems"=>$system->list_user($session['userid']),
-                "columns"=>$system->get_columns()
-            ));
-        }
-    }
 
-    if ($route->action=="admin") {
-        $route->format = "html";
-        if ($session['userid'] && $session['admin']) {
+        // Public list view
+        if ($route->subaction=="public") {
             return view("Modules/system/system_list.php",array(
-                "admin"=>true, 
-                "systems"=>$system->list_admin(),
+                "mode"=>"public",
+                "systems"=>$system->list_public($session['userid']),
                 "columns"=>$system->get_columns()
             ));
+
+        // User list view
+        } else if ($route->subaction=="user") {
+            if ($session['userid']) {
+                return view("Modules/system/system_list.php",array(
+                    "mode" => "user",
+                    "systems"=>$system->list_user($session['userid']),
+                    "columns"=>$system->get_columns()
+                ));
+            }
+
+        // Admin list view
+        } else if ($route->subaction=="admin") {
+            if ($session['userid'] && $session['admin']) {
+                return view("Modules/system/system_list.php",array(
+                    "mode" => "admin",
+                    "systems"=>$system->list_admin(),
+                    "columns"=>$system->get_columns()
+                ));
+            }
         }
     }
 

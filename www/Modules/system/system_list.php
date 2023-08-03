@@ -17,10 +17,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 <div id="app" class="bg-light">
     <div style=" background-color:#f0f0f0; padding-top:20px; padding-bottom:10px">
         <div class="container-fluid">
-            <h3 v-if="!admin">My Systems</h3>
-            <h3 v-if="admin">Admin Systems</h3>
+            <h3 v-if="mode=='user'">My Systems</h3>
+            <h3 v-if="mode=='admin'">Admin Systems</h3>
 
-            <button class="btn btn-primary" @click="create" style="float:right; margin-right:30px">Add new system</button>
+            <button v-if="mode!='public'" class="btn btn-primary" @click="create" style="float:right; margin-right:30px">Add new system</button>
 
             <div style="float:right; margin-right:30px">
                 <div class="input-group">
@@ -41,8 +41,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 </div>
             </div>
 
-            <p v-if="!admin">Add, edit and view systems associated with your account.</p>
-            <p v-if="admin">Add, edit and view all systems.</p>
+            <p v-if="mode=='user'">Add, edit and view systems associated with your account.</p>
+            <p v-if="mode=='admin'">Add, edit and view all systems.</p>
+            <p v-if="mode=='public'">Here you can see a variety of installations monitored with OpenEnergyMonitor, and compare detailed statistic to see how performance can vary.</p>
         </div>
     </div>
 
@@ -75,27 +76,27 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             <div class="col-md-10">
                 <table class="table table-sm mt-3">
                     <tr>
-                        <th v-if="admin" @click="sort('name', 'asc')" style="cursor:pointer">User
+                        <th v-if="mode=='admin'" @click="sort('name', 'asc')" style="cursor:pointer">User
                             <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='name'"></i>
                         </th>
                         <th v-for="column in selected_columns" @click="sort(column, 'desc')" style="cursor:pointer">{{ columns[column].name }}
                             <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn==column"></i>
                         </th>
-                        <th>Status</th>
+                        <th v-if="mode!='public'">Status</th>
                         <th style="width:150px">Actions</th>
                     </tr>
                     <tr v-for="(system,index) in systems">
-                        <td v-if="admin" :title="system.username+'\n'+system.email">{{ system.name }}</td>
+                        <td v-if="mode=='admin'" :title="system.username+'\n'+system.email">{{ system.name }}</td>
                         <td v-for="column in selected_columns">{{ system[column] | column_format(column) }}</td>
-                        <td>
+                        <td v-if="mode!='public'">
                             <span v-if="system.share" class="badge bg-success">Shared</span>
                             <span v-if="!system.share" class="badge bg-danger">Private</span>
                             <span v-if="system.published" class="badge bg-success">Published</span>
                             <span v-if="!system.published" class="badge bg-secondary">Waiting for review</span>
                         </td>
                         <td>
-                            <button class="btn btn-warning btn-sm" @click="edit(index)" title="Edit"><i class="fa fa-edit" style="color: #ffffff;"></i></button>
-                            <button class="btn btn-danger btn-sm" @click="remove(index)" title="Delete"><i class="fa fa-trash" style="color: #ffffff;"></i></button>
+                            <button v-if="mode!='public'" class="btn btn-warning btn-sm" @click="edit(index)" title="Edit"><i class="fa fa-edit" style="color: #ffffff;"></i></button>
+                            <button v-if="mode!='public'" class="btn btn-danger btn-sm" @click="remove(index)" title="Delete"><i class="fa fa-trash" style="color: #ffffff;"></i></button>
                             <button class="btn btn-primary btn-sm" @click="view(index)" title="View"><i class="fa fa-eye" style="color: #ffffff;"></i></button>
                         </td>
                     </tr>
@@ -135,7 +136,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         el: '#app',
         data: {
             systems: <?php echo json_encode($systems); ?>,
-            admin: <?php echo ($admin) ? 'true' : 'false'; ?>,
+            mode: "<?php echo $mode; ?>",
             columns: columns,
             column_groups: column_groups,
             selected_columns: ['location', 'last_updated','cop'],

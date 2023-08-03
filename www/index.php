@@ -14,23 +14,14 @@ $route = new Route(get('q'), server('DOCUMENT_ROOT'), server('REQUEST_METHOD'));
 
 $session = $user->emon_session_start();
 
+if ($route->controller=="") {
+    $route->controller = "system";
+    $route->action = "list";
+    $route->subaction = "public";
+}
+
 switch ($route->controller) {
 
-    case "":
-        $route->format = "html";
-        $output = view("views/main.php", array("userid"=>$session['userid']));
-        break;
-
-    case "stats":
-        $route->format = "html";
-        $output = view("views/stats.html", array("userid"=>$session['userid']));
-        break;
-        
-    case "costs":
-        $route->format = "html";
-        $output = view("views/costs.html", array("userid"=>$session['userid']));
-        break;
-        
     case "graph":
         $route->format = "html";
         $output = view("views/graph.html", array("userid"=>$session['userid']));
@@ -54,11 +45,6 @@ switch ($route->controller) {
     case "system":
         require "Modules/system/system_controller.php";
         $output = system_controller();
-        break;
-
-    case "data": 
-        $route->format = "json";
-        $output = $system->list_public($session['userid']);
         break;
         
     case "api":
