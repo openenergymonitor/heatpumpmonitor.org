@@ -361,4 +361,34 @@ class SystemStats
         }
         return $stats;
     }
+
+    public function system_get_monthly($systemid) {
+
+        $fields = array(
+            "timestamp", 
+            "elec_kwh",
+            "heat_kwh",
+            "cop",
+            "when_running_elec_kwh",
+            "when_running_heat_kwh",
+            "when_running_cop",
+            "when_running_flowT",
+            "when_running_returnT",
+            "when_running_flow_minus_return",
+            "when_running_outsideT",
+            "when_running_flow_minus_outside",
+            "when_running_carnot_prc",
+            "standby_threshold",
+            "standby_kwh"
+        );
+
+        $field_str = implode(",", $fields);
+
+        $monthly = array();
+        $result = $this->mysqli->query("SELECT $field_str FROM system_stats_monthly WHERE id=$systemid ORDER BY timestamp ASC");
+        while ($row = $result->fetch_object()) {
+            $monthly[] = $row;
+        }
+        return $monthly;
+    }
 }

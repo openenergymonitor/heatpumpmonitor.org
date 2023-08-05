@@ -27,6 +27,14 @@ function system_controller() {
         }
     }
 
+    if ($route->action=="view") {
+        $route->format = "html";
+        $systemid = get("id",false);
+        $system_data = $system->get($session['userid'],$systemid);
+        return view("Modules/system/system_view2.php", array("system_data"=>$system_data, 'admin'=>$session['admin']));
+
+    }
+
     if ($route->action=="list") {
         $route->format = "html";
 
@@ -79,6 +87,11 @@ function system_controller() {
                 get('end',true)
             );
         }
+    }
+
+    if ($route->action=="monthly") {
+        $route->format = "json";
+        return $system_stats->system_get_monthly(get('id',true));
     }
 
     if ($route->action=="get") {
