@@ -64,7 +64,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <h5>Select Fields</h5>
                     </div>
                     <ul class="list-group list-group-flush" style="overflow-x:hidden; height:600px">
-                    <template v-for="(group, group_name) in column_groups">
+                    <template v-for="(group, group_name) in column_groups" v-if="!(stats_time_start=='last365' && (group_name=='When Running' || group_name=='Standby'))">
                         <li class="list-group-item">
                             <b>{{ group_name }}</b>
                         </li>
@@ -122,12 +122,34 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     columns['elec_kwh'] = {name: 'Electricity (kWh)', group: 'Stats'};
     columns['heat_kwh'] = {name: 'Heat (kWh)', group: 'Stats'};
 
+    columns['when_running_elec_kwh'] = {name: 'Electricity (kWh)', group: 'When Running'};
+    columns['when_running_heat_kwh'] = {name: 'Heat (kWh)', group: 'When Running'};
+    columns['when_running_cop'] = {name: 'COP', group: 'When Running'};
+    columns['when_running_flowT'] = {name: 'Flow Temperature (°C)', group: 'When Running'};
+    columns['when_running_returnT'] = {name: 'Return Temperature (°C)', group: 'When Running'};
+    columns['when_running_flow_minus_return'] = {name: 'Flow - Return (°K)', group: 'When Running'};
+    columns['when_running_outsideT'] = {name: 'Outside Temperature (°C)', group: 'When Running'};
+    columns['when_running_flow_minus_outside'] = {name: 'Flow - Outside (°K)', group: 'When Running'};
+    columns['when_running_carnot_prc'] = {name: 'Carnot Efficiency (%)', group: 'When Running'};
+
+    columns['standby_threshold'] = {name: 'Standby Threshold (°C)', group: 'Standby'};
+    columns['standby_kwh'] = {name: 'Electricity (kWh)', group: 'Standby'};
+
     // convert to column groups
     var column_groups = {};
     for (var key in columns) {
         var column = columns[key];
         if (column_groups[column.group] == undefined) column_groups[column.group] = [];
         column_groups[column.group].push({key: key, name: column.name});
+    }
+
+    // create list of Stats, When Running, Standby columns
+    var stats_columns = [];
+    for (var key in columns) {
+        var column = columns[key];
+        if (column.group == 'Stats') stats_columns.push(key);
+        if (column.group == 'When Running') stats_columns.push(key);
+        if (column.group == 'Standby') stats_columns.push(key);
     }
 
     // Available months
@@ -164,14 +186,14 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         },
         methods: {
             create: function() {
-                window.location = "new";
+                window.location = path+"system/new";
             },
             view: function(index) {
                 window.location = this.systems[index].url;
             },
             edit: function(index) {
                 let systemid = this.systems[index].id;
-                window.location = "edit?id=" + systemid;
+                window.location = path+"system/edit?id=" + systemid;
             },
             remove: function(index) {
                 if (confirm("Are you sure you want to delete system: " + this.systems[index].location + "?")) {
@@ -286,6 +308,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                 // copy stats data to system
                                 for (var key in stats[id]) {
                                     app.systems[i][key] = stats[id][key];
+                                }
+                            } else {
+                                for (var col in stats_columns) {
+                                    app.systems[i][stats_columns[col]] = 0;
                                 }
                             }
                         }

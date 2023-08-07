@@ -14,7 +14,7 @@ function system_controller() {
         $route->format = "html";
         if ($session['userid']) {
             $system_data = $system->new();
-            return view("Modules/system/system_view.php", array("system_data"=>$system_data, 'admin'=>$session['admin']));
+            return view("Modules/system/system_edit.php", array("system_data"=>$system_data, 'admin'=>$session['admin']));
         }
     }
 
@@ -23,7 +23,7 @@ function system_controller() {
         if ($session['userid']) {
             $systemid = get("id",false);
             $system_data = $system->get($session['userid'],$systemid);
-            return view("Modules/system/system_view.php", array("system_data"=>$system_data, 'admin'=>$session['admin']));
+            return view("Modules/system/system_edit.php", array("system_data"=>$system_data, 'admin'=>$session['admin']));
         }
     }
 
@@ -31,7 +31,7 @@ function system_controller() {
         $route->format = "html";
         $systemid = get("id",false);
         $system_data = $system->get($session['userid'],$systemid);
-        return view("Modules/system/system_view2.php", array("system_data"=>$system_data, 'admin'=>$session['admin']));
+        return view("Modules/system/system_view.php", array("system_data"=>$system_data, 'admin'=>$session['admin'], 'schema'=>$system->schema_meta));
 
     }
 
@@ -71,20 +71,26 @@ function system_controller() {
     // Return system stats
     if ($route->action=="stats") {
         $route->format = "json";
+        
+        $system_id = false;
+        if (isset($_GET['id'])) {
+            $system_id = (int) $_GET['id'];
+        }
 
         // stats/last30
         if ($route->subaction == "last30") { 
-            return $system_stats->get_last30();
+            return $system_stats->get_last30($system_id);
 
         // stats/last365
         } else if ($route->subaction == "last365") {
-            return $system_stats->get_last365();
+            return $system_stats->get_last365($system_id);
 
         // stats?start=2016-01-01&end=2016-01-02
         } else if ($route->subaction == "") {
             return $system_stats->get_monthly(
                 get('start',true),
-                get('end',true)
+                get('end',true),
+                $system_id
             );
         }
     }

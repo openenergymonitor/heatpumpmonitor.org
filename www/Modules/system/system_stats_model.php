@@ -212,16 +212,16 @@ class SystemStats
         $stmt->close();
     }
 
-    public function get_monthly($start,$end) {
-        return $this->get('system_stats_monthly',$start,$end);
+    public function get_monthly($start,$end,$system_id = false) {
+        return $this->get('system_stats_monthly',$start,$end,$system_id);
     }
 
-    public function get_last30() {
-        return $this->get('system_stats_last30');
+    public function get_last30($system_id = false) {
+        return $this->get('system_stats_last30',false,false,$system_id);
     }
 
     // Get system stats
-    public function get($table_name, $start=false, $end=false)
+    public function get($table_name, $start=false, $end=false, $system_id = false)
     {
         $where = '';
         if ($start!==false && $end!==false) {
@@ -239,8 +239,13 @@ class SystemStats
             $where = "WHERE timestamp>=$start AND timestamp<$end";
         }
 
-
-        $systems = $this->system->list_admin();
+        if ($system_id!==false) {
+            if ($where=='') {
+                $where = "WHERE id=$system_id";
+            } else {
+                $where .= " AND id=$system_id";
+            }
+        }
 
         $fields = array(
             "elec_kwh" => array("average" => false, "dp" => 0),
@@ -282,82 +287,56 @@ class SystemStats
             $available_stats[$row->id]['count']++;
         }
 
+        $stats = array();
+        foreach ($available_stats as $id=>$system) {
 
-        // Average relevant fields
-        foreach ($available_stats as $id => $stats) {
-            if ($stats['count'] > 0) {
+            // Calculate averages
+            if ($system['count'] > 0) {
                 foreach ($fields as $key => $field) {
-                    if ($field['average'] && $stats['count'] > 0) {
-                        $available_stats[$id][$key] = $stats[$key] / $stats['count'];
+                    if ($field['average']) {
+                        $system[$key] = $system[$key] / $system['count'];
                     }
                 }
             }
-        }
 
-        $stats = array();
-        foreach ($systems as $system) {
-            if (isset($available_stats[$system->id])) {
-
-                // Calculate COP
-                $cop = 0;
-                if ($available_stats[$system->id]['elec_kwh'] > 0) {
-                    $cop = $available_stats[$system->id]['heat_kwh'] / $available_stats[$system->id]['elec_kwh'];
-                }
-                $when_running_cop = 0;
-                if ($available_stats[$system->id]['when_running_elec_kwh'] > 0) {
-                    $when_running_cop = $available_stats[$system->id]['when_running_heat_kwh'] / $available_stats[$system->id]['when_running_elec_kwh'];
-                }
-
-                // Round to required dp
-                $stats["" . $system->id] = array();
-                foreach ($fields as $key => $field) {
-                    $stats["" . $system->id][$key] = number_format($available_stats[$system->id][$key], $field['dp'], ".", "") * 1;
-                }
-                $stats["" . $system->id]["cop"] = number_format($cop, 2, ".", "") * 1;
-                $stats["" . $system->id]["when_running_cop"] = number_format($when_running_cop, 2, ".", "") * 1;
-            } else {
-                // Initialise if not set, zero all fields
-                $stats["" . $system->id] = array(
-                    "count" => 0
-                );
-                foreach ($fields as $key => $field) {
-                    $stats["" . $system->id][$key] = 0;
-                }
-                $stats["" . $system->id]["cop"] = 0;
-                $stats["" . $system->id]["when_running_cop"] = 0;
+            // Calculate COP
+            $cop = 0;
+            if ($system['elec_kwh'] > 0) {
+                $cop = $system['heat_kwh'] / $system['elec_kwh'];
             }
+            $when_running_cop = 0;
+            if ($system['when_running_elec_kwh'] > 0) {
+                $when_running_cop = $system['when_running_heat_kwh'] / $system['when_running_elec_kwh'];
+            }
+
+            // Round to required dp
+            $stats["" . $id] = array();
+            foreach ($fields as $key => $field) {
+                $stats["" . $id][$key] = number_format($system[$key], $field['dp'], ".", "") * 1;
+            }
+            $stats["" . $id]["cop"] = number_format($cop, 2, ".", "") * 1;
+            $stats["" . $id]["when_running_cop"] = number_format($when_running_cop, 2, ".", "") * 1;
         }
 
         return $stats;
     }
 
-    public function get_last365() {
+    public function get_last365($system_id = false) {
 
-        $systems = $this->system->list_admin();
-
-        $available_stats = array();
-        $result = $this->mysqli->query("SELECT id,elec_kwh,heat_kwh,cop,since FROM system_stats_last365");
-        while ($row = $result->fetch_object()) {
-            $available_stats[$row->id] = $row;
+        $where = '';
+        if ($system_id!==false) {
+            $where = "WHERE id=$system_id";
         }
 
         $stats = array();
-        foreach ($systems as $system) {
-            if (isset($available_stats[$system->id])) {
-                $stats["" . $system->id] = array(
-                    "elec_kwh" => number_format($available_stats[$system->id]->elec_kwh, 0, ".", "") * 1,
-                    "heat_kwh" => number_format($available_stats[$system->id]->heat_kwh, 0, ".", "") * 1,
-                    "cop" => number_format($available_stats[$system->id]->cop, 2, ".", "") * 1,
-                    "since" => $available_stats[$system->id]->since
-                );
-            } else {
-                $stats["" . $system->id] = array(
-                    "elec_kwh" => 0,
-                    "heat_kwh" => 0,
-                    "cop" => 0,
-                    "since" => 0
-                );
-            }
+        $result = $this->mysqli->query("SELECT id,elec_kwh,heat_kwh,cop,since FROM system_stats_last365 $where");
+        while ($row = $result->fetch_object()) {
+            $stats["" . $row->id] = array(
+                "elec_kwh" => number_format($row->elec_kwh, 0, ".", "") * 1,
+                "heat_kwh" => number_format($row->heat_kwh, 0, ".", "") * 1,
+                "cop" => number_format($row->cop, 2, ".", "") * 1,
+                "since" => $row->since
+            );
         }
         return $stats;
     }
