@@ -78,6 +78,12 @@ class System
         if (!$row = $result->fetch_object()) {
             return array("success"=>false, "message"=>"System does not exist");
         }
+
+        if ($userid===0) {
+            // Public access
+            return $this->typecast($row);
+        }
+
         if ($userid!=$row->userid && $this->is_admin($userid)==false) {
             return array("success"=>false, "message"=>"Invalid access");
         }

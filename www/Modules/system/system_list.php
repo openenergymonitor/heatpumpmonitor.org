@@ -27,7 +27,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 <div class="input-group">
                     <span class="input-group-text">Stats time period</span>
 
-                    <select class="form-control" v-model="stats_time_start" @change="stats_time_start_change" style="width:120px">
+                    <select class="form-control" v-model="stats_time_start" @change="stats_time_start_change" style="width:130px">
                         <option value="last30">Last 30 days</option>
                         <option value="last365">Last 365 days</option>
                         <option v-for="month in available_months_start">{{ month }}</option>
@@ -39,6 +39,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <option value="only">Only</option>
                         <option v-for="month in available_months_end">{{ month }}</option>
                     </select>
+
+                    <button class="btn btn-primary" @click="toggle_chart"><i class="fa fa-chart-bar"></i></button>
                 </div>
             </div>
 
@@ -47,15 +49,14 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             <p v-if="mode=='public'">Here you can see a variety of installations monitored with OpenEnergyMonitor, and compare detailed statistic to see how performance can vary.</p>
         </div>
     </div>
-    <!-- apexcharts -->
-    <div class="container-fluid" style="background-color:#fff; border-bottom:1px solid #ccc">
+
+    <div class="container-fluid" style="background-color:#fff; border-bottom:1px solid #ccc" v-show="chart_enable">
         <div class="row">
             <div id="chart"></div>
         </div>
     </div>
 
     <div class="container-fluid">
-
         <div class="row">
             <!-- Side bar with field selection -->
             <div class="col-md-2">
@@ -172,6 +173,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         data: {
             systems: <?php echo json_encode($systems); ?>,
             mode: "<?php echo $mode; ?>",
+            chart_enable: false,
             columns: columns,
             column_groups: column_groups,
             selected_columns: selected_columns,
@@ -189,7 +191,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 window.location = path+"system/new";
             },
             view: function(index) {
-                window.location = this.systems[index].url;
+                // window.location = this.systems[index].url;
+                let systemid = this.systems[index].id;
+                window.location = path+"system/view?id=" + systemid;
             },
             edit: function(index) {
                 let systemid = this.systems[index].id;
@@ -317,13 +321,22 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         }
                         // sort
                         app.sort_only(app.currentSortColumn);
-
-                        draw_chart();
+                        if (app.chart_enable) draw_chart();
+                        
                     })
                     .catch(error => {
                         alert("Error loading data: " + error);
                     });
-            }
+            },
+            toggle_chart: function() {
+                this.chart_enable = !this.chart_enable;
+                
+                if (this.chart_enable) {
+                    setTimeout(function() {
+                        draw_chart();
+                    }, 200);
+                }
+            },
         },
         filters: {
             column_format: function (val,key) {
@@ -346,6 +359,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     });
 
     init_chart();
+    
     app.load_system_stats();
     app.sort_only('cop');
 
