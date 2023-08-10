@@ -9,6 +9,9 @@ $user = new User($mysqli);
 require ("Modules/system/system_model.php");
 $system = new System($mysqli);
 
+require ("Modules/system/system_stats_model.php");
+$system_stats = new SystemStats($mysqli,$system);
+
 $path = get_application_path(false);
 $route = new Route(get('q'), server('DOCUMENT_ROOT'), server('REQUEST_METHOD'));
 
@@ -32,6 +35,14 @@ switch ($route->controller) {
         $output = view("views/compare.html", array("userid"=>$session['userid']));
         break;
 
+    case "monthly":
+        $route->format = "html";
+        $output = view("views/monthly.html", array(
+            "userid"=>$session['userid'],
+            'system_stats_monthly'=>$system_stats->schema['system_stats_monthly']
+        ));
+        break;
+
     case "histogram":
         $route->format = "html";
         $output = view("views/histogram.html", array("userid"=>$session['userid']));
@@ -51,7 +62,7 @@ switch ($route->controller) {
         $route->format = "json";
         
         if (isset($_GET['system'])) {
-            $config = $system->get_system_config($session['userid'], (int) $_GET['system']);
+            $config = $system_stats->get_system_config($session['userid'], (int) $_GET['system']);
 
             if ($route->action=="all") {
                 $start = $_GET['start'];

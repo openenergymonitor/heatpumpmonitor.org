@@ -8,8 +8,8 @@ $navigation = array(
     array("controller" => "", "href" => ".", "title" => "Home", "icon" => "fa-home"),
     // array("controller" => "stats", "href" => "stats", "title" => "30 Day Stats", "icon" => "fa-table"),
     // array("controller" => "costs", "href" => "costs", "title" => "Running Costs", "icon" => "fa-coins"),
-    array("controller" => "graph", "href" => "graph", "title" => "Comparison Charts", "icon" => "fa-chart-line"),
-    array("controller" => "compare", "href" => "compare", "title" => "Comparison Charts", "icon" => "fa-object-group"),
+    // array("controller" => "graph", "href" => "graph", "title" => "Comparison Charts", "icon" => "fa-chart-line"),
+    // array("controller" => "compare", "href" => "compare", "title" => "Comparison Charts", "icon" => "fa-object-group"),
     array("controller" => "user", "href" => "user/login", "title" => "Login", "icon" => "fa-user")
 );
 ?>
@@ -101,9 +101,23 @@ $navigation = array(
                         <?php }} ?>
                     </ul>
 
+                    <ul class="navbar-nav">
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="avatarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-chart-line"></i>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="avatarDropdown">
+                                <li><a class="dropdown-item" href="<?php echo $path; ?>graph">Graph</a></li>
+                                <li><a class="dropdown-item" href="<?php echo $path; ?>compare">Compare</a></li>
+                                <li><a class="dropdown-item" href="<?php echo $path; ?>monthly">Monthly</a></li>
+                                <li><a class="dropdown-item" href="<?php echo $path; ?>histogram">Histogram</a></li>
+                            
+                            </ul>
+                        </li>
+                    </ul>
+
                     <?php if ($session['userid']) { ?>
                     <ul class="navbar-nav">
-
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="avatarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 <img width="32" height="32" class="rounded-circle avatar-image">

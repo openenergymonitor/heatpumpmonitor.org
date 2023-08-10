@@ -2,8 +2,14 @@
 <script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
 <script src="https://cdn.plot.ly/plotly-2.18.1.min.js" charset="utf-8"></script>
 
-<div id="app" class="pad-top">
-<p>Compare hourly performance data over the last 30 days</p>
+<div id="app">
+  <div style=" background-color:#f0f0f0; padding-top:20px; padding-bottom:10px">
+      <div class="container-fluid">
+          <h3>Compare</h3>
+      </div>
+  </div>
+  
+  <p>Compare hourly performance data over the last 30 days</p>
   <label>Mode</label>
   <select v-model="mode" @change="change_mode">
     <option value="cop_vs_dt">COP vs Flow - Outside temperature</option>

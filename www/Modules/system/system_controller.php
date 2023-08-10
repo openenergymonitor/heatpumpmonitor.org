@@ -5,10 +5,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 function system_controller() {
 
-    global $session, $route, $system, $mysqli;
+    global $session, $route, $system, $mysqli, $system_stats;
 
-    require ("Modules/system/system_stats_model.php");
-    $system_stats = new SystemStats($mysqli,$system);
+
 
     if ($route->action=="new") {
         $route->format = "html";
@@ -48,34 +47,51 @@ function system_controller() {
     }
 
     if ($route->action=="list") {
-        $route->format = "html";
-
-        // Public list view
-        if ($route->subaction=="public") {
-            return view("Modules/system/system_list.php",array(
-                "mode"=>"public",
-                "systems"=>$system->list_public($session['userid']),
-                "columns"=>$system->get_columns()
-            ));
-
-        // User list view
-        } else if ($route->subaction=="user") {
-            if ($session['userid']) {
+        if ($route->format=="html") {
+            // Public list view
+            if ($route->subaction=="public") {
                 return view("Modules/system/system_list.php",array(
-                    "mode" => "user",
-                    "systems"=>$system->list_user($session['userid']),
+                    "mode"=>"public",
+                    "systems"=>$system->list_public($session['userid']),
                     "columns"=>$system->get_columns()
                 ));
+
+            // User list view
+            } else if ($route->subaction=="user") {
+                if ($session['userid']) {
+                    return view("Modules/system/system_list.php",array(
+                        "mode" => "user",
+                        "systems"=>$system->list_user($session['userid']),
+                        "columns"=>$system->get_columns()
+                    ));
+                }
+
+            // Admin list view
+            } else if ($route->subaction=="admin") {
+                if ($session['userid'] && $session['admin']) {
+                    return view("Modules/system/system_list.php",array(
+                        "mode" => "admin",
+                        "systems"=>$system->list_admin(),
+                        "columns"=>$system->get_columns()
+                    ));
+                }
             }
+        } else {
+            // Public list view
+            if ($route->subaction=="public") {
+                return $system->list_public($session['userid']);
 
-        // Admin list view
-        } else if ($route->subaction=="admin") {
-            if ($session['userid'] && $session['admin']) {
-                return view("Modules/system/system_list.php",array(
-                    "mode" => "admin",
-                    "systems"=>$system->list_admin(),
-                    "columns"=>$system->get_columns()
-                ));
+            // User list view
+            } else if ($route->subaction=="user") {
+                if ($session['userid']) {
+                    return $system->list_user($session['userid']);
+                }
+
+            // Admin list view
+            } else if ($route->subaction=="admin") {
+                if ($session['userid'] && $session['admin']) {
+                    return $system->list_admin();
+                }
             }
         }
     }
