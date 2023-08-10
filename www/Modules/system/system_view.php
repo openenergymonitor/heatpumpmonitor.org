@@ -109,28 +109,25 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 </div>      
             </div>
         </div>
-    </div>
 
-
-    <div class="container mt-3" style="max-width:800px">
-        <div class="row">
-            <h4>Monthly Data</h4>
-            <div class="input-group mb-3"> 
-            <span class="input-group-text">Chart mode</span>
-                <select class="form-control" v-model="chart_yaxis" @change="change_chart_mode">
-                    <option v-for="(field,key) in system_stats_monthly" v-if="field.name" :value="key"> {{ field.name }} </option>
-                </select>
+        <div class="card mt-3">
+            <h5 class="card-header">Monthly data</h5>
+            <div class="card-body">
+                <div class="input-group mb-3"> 
+                <span class="input-group-text">Chart mode</span>
+                    <select class="form-control" v-model="chart_yaxis" @change="change_chart_mode">
+                        <option v-for="(field,key) in system_stats_monthly" v-if="field.name" :value="key"> {{ field.name }} </option>
+                    </select>
+                </div>
+                <div id="chart"></div>
             </div>
+        </div>    
 
-            <div id="chart"></div>
-        </div>
-    </div>
-
-    <div class="container mt-3" style="max-width:800px">
-        <div class="row">
-            <h4>Data Quality</h4>
-            <p>100% is full data coverage, 0% is no data</p>
-            <div class="quality-bound">
+        <div class="card mt-3">
+            <h5 class="card-header">Data Quality</h5>
+            <div class="card-body">
+                <p>100% is full data coverage, 0% is no data</p>
+                <div class="quality-bound">
                 <table class="quality">
                     <tr>
                         <td></td>
@@ -171,7 +168,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 </tr>
                 </table>
             </div>
-        </div>
+            </div>
+        </div>   
+
     </div>
 
     <div class="container mt-3" style="max-width:800px">
