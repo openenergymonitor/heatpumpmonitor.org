@@ -26,61 +26,87 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 <div id="app" class="bg-light">
     <div style=" background-color:#f0f0f0; padding-top:20px; padding-bottom:10px">
         <div class="container" style="max-width:800px;">
+            <button class="btn btn-primary" style="float:right" @click="open_emoncms_dashboard">Open Emoncms Heat Pump Dashboard</button>
+
             <h3>{{ system.location }}</h3>
         </div>
     </div>
 
     <div class="container mt-3" style="max-width:800px">
-        <div class="row">
-            <p>Last 30  days</p>
 
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">Elec: {{ last30.elec_kwh }} kWh</h5>
-                        <h5 class="card-title">Heat: {{ last30.heat_kwh }} kWh</h5>
-                        <h5 class="card-title">SCOP: {{ last30.cop }}</h5>
+
+        <div class="card mt-3">
+            <h5 class="card-header">Last 365 days</h5>
+            <div class="card-body">
+                <div class="row" style="text-align:center">
+                    <div class="col">
+                        <h5>Electric</h5>
+                        <h4>{{ last365.elec_kwh }} kWh</h4>
                     </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-body">
-                        
+                    
+                    <div class="col">
+                        <h5>Heat Output</h5>
+                        <h4>{{ last365.heat_kwh }} kWh</h4>
                     </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-body">
-                        
-                    </div>
-                </div>
+                    
+                    <div class="col">
+                        <h5>SCOP</h5>
+                        <h4>{{ last365.cop }}</h4>            
+                    </div>    
+                </div>      
             </div>
         </div>
-        <div class="row">
-            <p>Last 365  days</p>
-            
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">Elec: {{ last365.elec_kwh }} kWh</h5>
+        <div class="card mt-3">
+            <h5 class="card-header">Last 30 days</h5>
+            <div class="card-body">
+                <div class="row" style="text-align:center">
+                    <div class="col">
+                        <h5>Electric</h5>
+                        <h4>{{ last30.elec_kwh }} kWh</h4>
                     </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">Heat: {{ last365.heat_kwh }} kWh</h5>
+                    
+                    <div class="col">
+                        <h5>Heat Output</h5>
+                        <h4>{{ last30.heat_kwh }} kWh</h4>
                     </div>
+                    
+                    <div class="col">
+                        <h5>SCOP</h5>
+                        <h4>{{ last30.cop }}</h4>            
+                    </div>    
                 </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">SCOP: {{ last365.cop }}</h5>
+                <hr>
+                <div class="row" style="text-align:center">
+                    <div class="col">
+                        Stats when running
+                    </div>  
+                </div>
+                <div class="row mt-2" style="text-align:center">
+                    <div class="col">
+                        <b>Electric</b><br>
+                        {{ last30.when_running_elec_kwh }} kWh
+                    </div>  
+                    <div class="col">
+                        <b>Heat</b><br>
+                        {{ last30.when_running_heat_kwh }} kWh
                     </div>
-                </div>
+                    <div class="col">
+                        <b>COP</b><br>
+                        {{ last30.when_running_cop }}
+                    </div>  
+                    <div class="col">
+                        <b>FlowT</b><br>
+                        {{ last30.when_running_flowT }} °C
+                    </div>  
+                    <div class="col">
+                        <b>OutsideT</b><br>
+                        {{ last30.when_running_outsideT }} °C
+                    </div> 
+                    <div class="col">
+                        <b>Carnot</b><br>
+                        {{ last30.when_running_carnot_prc }}%
+                    </div> 
+                </div>      
             </div>
         </div>
     </div>
@@ -136,7 +162,13 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             {{ month.quality_return }}
                         </td>
                     </tr>
+                    <tr>
+                        <td>Outside</td>
+                        <td v-for="month in monthly" :style="{ backgroundColor: qualityColor(month.quality_outside) }">
+                            {{ month.quality_outside }}
+                        </td>
                     </tr>
+                </tr>
                 </table>
             </div>
         </div>
@@ -331,6 +363,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             change_chart_mode: function() {
                 console.log(app.chart_yaxis);
                 draw_chart();
+            },
+            open_emoncms_dashboard: function() {
+                window.open(app.system.url);
             },
         },
     });
