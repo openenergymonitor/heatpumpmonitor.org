@@ -170,7 +170,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     var app = new Vue({
         el: '#app',
         data: {
-            mode: 'edit', // edit, view
+            mode: "<?php echo $mode; ?>", // edit, view
             system: <?php echo json_encode($system_data); ?>,
             monthly: [],
             last30: [],

@@ -14,7 +14,7 @@ function system_controller() {
         $route->format = "html";
         if ($session['userid']) {
             $system_data = $system->new();
-            return view("Modules/system/system_edit.php", array("system_data"=>$system_data, 'admin'=>$session['admin']));
+            return view("Modules/system/system_view.php", array("mode"=>"edit", "system_data"=>$system_data, 'admin'=>$session['admin'], 'schema'=>$system->schema_meta));
         }
     }
 
@@ -23,7 +23,7 @@ function system_controller() {
         if ($session['userid']) {
             $systemid = get("id",false);
             $system_data = $system->get($session['userid'],$systemid);
-            return view("Modules/system/system_edit.php", array("system_data"=>$system_data, 'admin'=>$session['admin']));
+            return view("Modules/system/system_view.php", array("mode"=>"edit", "system_data"=>$system_data, 'admin'=>$session['admin'], 'schema'=>$system->schema_meta));
         }
     }
 
@@ -31,7 +31,7 @@ function system_controller() {
         $route->format = "html";
         $systemid = get("id",false);
         $system_data = $system->get($session['userid'],$systemid);
-        return view("Modules/system/system_view.php", array("system_data"=>$system_data, 'admin'=>$session['admin'], 'schema'=>$system->schema_meta));
+        return view("Modules/system/system_view.php", array("mode"=>"view", "system_data"=>$system_data, 'admin'=>$session['admin'], 'schema'=>$system->schema_meta));
 
     }
 
