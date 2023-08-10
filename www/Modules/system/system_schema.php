@@ -516,7 +516,15 @@ $schema['system_stats_last30'] = array(
 
     // standby
     'standby_threshold' => array('type' => 'float'),
-    'standby_kwh' => array('type' => 'float')
+    'standby_kwh' => array('type' => 'float'),
+
+    // quality
+    'quality_elec' => array('type' => 'int(11)'),
+    'quality_heat' => array('type' => 'int(11)'),
+    'quality_flow' => array('type' => 'int(11)'),
+    'quality_return' => array('type' => 'int(11)'),
+    'quality_outside' => array('type' => 'int(11)'),
+    'data_start' => array('type' => 'int(11)')
 );
 
 // Monthly stats
@@ -547,7 +555,15 @@ $schema['system_stats_monthly'] = array(
 
     // standby
     'standby_threshold' => array('type' => 'float', 'name'=>'Standby threshold (W)', 'group'=>'Standby'),
-    'standby_kwh' => array('type' => 'float', 'name'=>'Standby (kWh)', 'group'=>'Standby')
+    'standby_kwh' => array('type' => 'float', 'name'=>'Standby (kWh)', 'group'=>'Standby'),
+
+    // quality
+    'quality_elec' => array('type' => 'int(11)'),
+    'quality_heat' => array('type' => 'int(11)'),
+    'quality_flow' => array('type' => 'int(11)'),
+    'quality_return' => array('type' => 'int(11)'),
+    'quality_outside' => array('type' => 'int(11)'),
+    'data_start' => array('type' => 'int(11)')
 );
 
 $schema['system_stats_last365'] = array(
@@ -555,5 +571,7 @@ $schema['system_stats_last365'] = array(
     'elec_kwh' => array('type' => 'float', 'name'=>'Last 365 days electricity consumption', 'group'=>'Stats'),
     'heat_kwh' => array('type' => 'float', 'name'=>'Last 365 days heat output', 'group'=>'Stats'),
     'cop' => array('type' => 'float', 'name'=>'Last 365 days COP', 'group'=>'Stats'),
-    'since' => array('type' => 'int(11)')
+    'since' => array('type' => 'int(11)'),
+    'data_start' => array('type' => 'int(11)')
+
 );

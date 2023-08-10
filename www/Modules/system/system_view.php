@@ -6,6 +6,22 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
+<style>
+    .quality-bound {
+        background-color: #ddd;
+        padding:5px;
+    }
+    .quality {
+        width: 100%;
+    }
+    .quality td {
+        padding: 5px;
+        text-align: center;
+        border: 1px solid #fff;
+        color: #fff;
+        font-size: 14px;
+    }
+</style>
 
 <div id="app" class="bg-light">
     <div style=" background-color:#f0f0f0; padding-top:20px; padding-bottom:10px">
@@ -22,20 +38,22 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 <div class="card">
                     <div class="card-body">
                         <h5 class="card-title">Elec: {{ last30.elec_kwh }} kWh</h5>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-body">
                         <h5 class="card-title">Heat: {{ last30.heat_kwh }} kWh</h5>
+                        <h5 class="card-title">SCOP: {{ last30.cop }}</h5>
                     </div>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="card">
                     <div class="card-body">
-                        <h5 class="card-title">SCOP: {{ last30.cop }}</h5>
+                        
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        
                     </div>
                 </div>
             </div>
@@ -76,6 +94,55 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
     <div class="container mt-3" style="max-width:800px">
         <div class="row">
+            <h4>Data Quality</h4>
+            <p>100% is full data coverage, 0% is no data</p>
+            <div class="quality-bound">
+                <table class="quality">
+                    <tr>
+                        <td></td>
+                        <td v-for="month in monthly">
+                        {{ month.timestamp | monthName }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Elec</td>
+                        <td v-for="month in monthly" :style="{ backgroundColor: qualityColor(month.quality_elec) }">
+                        {{ month.quality_elec }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Heat</td>
+                        <td v-for="month in monthly" :style="{ backgroundColor: qualityColor(month.quality_heat) }">
+                            {{ month.quality_heat }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Flow</td>
+                        <td v-for="month in monthly" :style="{ backgroundColor: qualityColor(month.quality_flow) }">
+                            {{ month.quality_flow }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Return</td>
+                        <td v-for="month in monthly" :style="{ backgroundColor: qualityColor(month.quality_return) }">
+                            {{ month.quality_return }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Outside</td>
+                        <td v-for="month in monthly" :style="{ backgroundColor: qualityColor(month.quality_outside) }">
+                            {{ month.quality_outside }}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mt-3" style="max-width:800px">
+        <div class="row">
+            <h4>Form data</h4>
+            <p>Information about this system...</p>
             <table class="table">
                 <tbody v-for="group,group_name in schema_groups">
                     <tr>
@@ -181,6 +248,21 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             show_success: false,
             message: '',
             admin: <?php echo $admin ? 'true' : 'false'; ?>,
+        },
+        computed: {
+            qualityColor() {
+                return function(score) {
+                    const hue = (score / 100) * 120; // Map score to hue value (0-120)
+                    return `hsl(${hue}, 100%, 50%)`; // Convert hue value to HSL color
+                }
+            }
+        },
+        filters: {
+            monthName: function(timestamp) {
+                var date = new Date(timestamp * 1000);
+                var month = date.toLocaleString('default', { month: 'short' });
+                return month;
+            }
         },
         methods: {
             save: function() {

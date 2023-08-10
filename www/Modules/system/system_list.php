@@ -122,6 +122,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     columns['cop'] = {name: 'COP', group: 'Stats'};
     columns['elec_kwh'] = {name: 'Electricity (kWh)', group: 'Stats'};
     columns['heat_kwh'] = {name: 'Heat (kWh)', group: 'Stats'};
+    columns['data_start'] = {name: 'Data Start', group: 'Stats'};
 
     columns['when_running_elec_kwh'] = {name: 'Electricity (kWh)', group: 'When Running'};
     columns['when_running_heat_kwh'] = {name: 'Heat (kWh)', group: 'When Running'};
@@ -135,6 +136,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
     columns['standby_threshold'] = {name: 'Standby Threshold (°C)', group: 'Standby'};
     columns['standby_kwh'] = {name: 'Electricity (kWh)', group: 'Standby'};
+
+    columns['quality_elec'] = {name: 'Electricity (kWh)', group: 'Quality'};
 
     // convert to column groups
     var column_groups = {};
@@ -299,7 +302,6 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     url = path+'system/stats/'+start;
                     params = {};
                 }
-
                 // Load system/stats data
                 axios.get(url, {
                         params: params
@@ -340,7 +342,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         },
         filters: {
             column_format: function (val,key) {
-                if (key=='last_updated') {
+                if (key=='last_updated' || key=='data_start') {
                     return time_ago(val);
                 }
                 return val;
@@ -383,7 +385,18 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         min = (min < 10) ? "0" + min : min;
         sec = (sec < 10) ? "0" + sec : sec;
         // return formatted date time
-        return year + "-" + month + "-" + day + " " + hour + ":" + min + ":" + sec; 
+
+        let months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+
+        // work out as 10 days ago
+        let now = new Date();
+        let diff = now - date;
+        let days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+        return days + " days ago";
+
+        return day + " " + months[month-1] + " " + year;
     }
 
     window.addEventListener("scroll", function() {

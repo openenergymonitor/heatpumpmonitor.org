@@ -121,7 +121,13 @@ class SystemStats
             'when_running_flow_minus_outside' => $stats->when_running->flow_minus_outside,
             'when_running_carnot_prc' => $stats->when_running->carnot_prc,
             'standby_threshold' => $stats->standby_threshold,
-            'standby_kwh' => $stats->standby_kwh
+            'standby_kwh' => $stats->standby_kwh,
+            "quality_elec" => $stats->quality_elec,
+            "quality_heat" => $stats->quality_heat,
+            "quality_flow" => $stats->quality_flow,
+            "quality_return" => $stats->quality_return,
+            "quality_outside" => $stats->quality_outside,
+            'data_start' => $stats->data_start
         );
 
         $id = $stats['id'];
@@ -142,7 +148,8 @@ class SystemStats
             'elec_kwh' => $stats->last365->elec_kwh,
             'heat_kwh' => $stats->last365->heat_kwh,
             'cop' => $stats->last365->cop,
-            'since' => $stats->last365->since
+            'since' => $stats->last365->since,
+            'data_start' => $stats->data_start
         );
 
         $id = $stats['id'];
@@ -159,6 +166,11 @@ class SystemStats
 
         // Translate the stats into the schema
         // consider changing API structure to match schema
+
+        if (!isset($stats->data_start)) {
+            return false;
+        }
+
         $stats = array(
             'id' => $systemid,
             'timestamp' => $start,
@@ -177,7 +189,13 @@ class SystemStats
             'when_running_flow_minus_outside' => $stats->when_running->flow_minus_outside,
             'when_running_carnot_prc' => $stats->when_running->carnot_prc,
             'standby_threshold' => $stats->standby_threshold,
-            'standby_kwh' => $stats->standby_kwh
+            'standby_kwh' => $stats->standby_kwh,
+            "quality_elec" => $stats->quality_elec,
+            "quality_heat" => $stats->quality_heat,
+            "quality_flow" => $stats->quality_flow,
+            "quality_return" => $stats->quality_return,
+            "quality_outside" => $stats->quality_outside,
+            'data_start' => $stats->data_start
         );
 
         $id = $stats['id'];
@@ -261,7 +279,15 @@ class SystemStats
             "when_running_carnot_prc" => array("average" => true, "dp" => 1),
 
             "standby_threshold" => array("average" => true, "dp" => 0),
-            "standby_kwh" => array("average" => false, "dp" => 0)
+            "standby_kwh" => array("average" => false, "dp" => 0),
+
+            "quality_elec" => array("average" => true, "dp" => 0),
+            "quality_heat" => array("average" => true, "dp" => 0),
+            "quality_flow" => array("average" => true, "dp" => 0),
+            "quality_return" => array("average" => true, "dp" => 0),
+            "quality_outside" => array("average" => true, "dp" => 0),
+
+            "data_start" => array("average" => false, "dp" => 0)
         );
 
         $field_str = implode(",", array_keys($fields));
@@ -329,13 +355,14 @@ class SystemStats
         }
 
         $stats = array();
-        $result = $this->mysqli->query("SELECT id,elec_kwh,heat_kwh,cop,since FROM system_stats_last365 $where");
+        $result = $this->mysqli->query("SELECT id,elec_kwh,heat_kwh,cop,since,data_start FROM system_stats_last365 $where");
         while ($row = $result->fetch_object()) {
             $stats["" . $row->id] = array(
                 "elec_kwh" => number_format($row->elec_kwh, 0, ".", "") * 1,
                 "heat_kwh" => number_format($row->heat_kwh, 0, ".", "") * 1,
                 "cop" => number_format($row->cop, 2, ".", "") * 1,
-                "since" => $row->since
+                "since" => $row->since*1,
+                "data_start" => $row->data_start*1
             );
         }
         return $stats;
@@ -358,7 +385,13 @@ class SystemStats
             "when_running_flow_minus_outside",
             "when_running_carnot_prc",
             "standby_threshold",
-            "standby_kwh"
+            "standby_kwh",
+            "quality_elec",
+            "quality_heat",
+            "quality_flow",
+            "quality_return",
+            "quality_outside",
+            "data_start"
         );
 
         $field_str = implode(",", $fields);
