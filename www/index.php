@@ -30,6 +30,19 @@ switch ($route->controller) {
         $output = view("views/graph.html", array("userid"=>$session['userid']));
         break;
 
+    case "graph2":
+        $route->format = "html";
+        // $output = view("views/graph2.php", array("userid"=>$session['userid']));
+
+        $output = view("views/graph2.php",array(
+            "mode"=>"public",
+            "systems"=>$system->list_public($session['userid']),
+            "columns"=>$system->get_columns()
+        ));
+
+
+        break;
+
     case "compare":
         $route->format = "html";
         $output = view("views/compare.html", array("userid"=>$session['userid']));
@@ -37,7 +50,7 @@ switch ($route->controller) {
 
     case "monthly":
         $route->format = "html";
-        $output = view("views/monthly.html", array(
+        $output = view("views/monthly.php", array(
             "userid"=>$session['userid'],
             'system_stats_monthly'=>$system_stats->schema['system_stats_monthly']
         ));
