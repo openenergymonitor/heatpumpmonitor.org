@@ -1,6 +1,6 @@
 
 var system_list = [];
-$.ajax({dataType: "json", url: "data.json", async: false, success: function(result) { system_list = result; }});
+$.ajax({dataType: "json", url: path+"system/list/public.json", async: false, success: function(result) { system_list = result; }});
 
 var app = new Vue({
   el: '#app',
