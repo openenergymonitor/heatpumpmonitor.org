@@ -88,6 +88,14 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
     <div class="container mt-3" style="max-width:800px">
         <div class="row">
+            <h4>Monthly Data</h4>
+            <div class="input-group mb-3"> 
+            <span class="input-group-text">Chart mode</span>
+                <select class="form-control" v-model="chart_yaxis" @change="change_chart_mode">
+                    <option v-for="(field,key) in system_stats_monthly" v-if="field.name" :value="key"> {{ field.name }} </option>
+                </select>
+            </div>
+
             <div id="chart"></div>
         </div>
     </div>
@@ -128,11 +136,6 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             {{ month.quality_return }}
                         </td>
                     </tr>
-                    <tr>
-                        <td>Outside</td>
-                        <td v-for="month in monthly" :style="{ backgroundColor: qualityColor(month.quality_outside) }">
-                            {{ month.quality_outside }}
-                        </td>
                     </tr>
                 </table>
             </div>
@@ -248,6 +251,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             show_success: false,
             message: '',
             admin: <?php echo $admin ? 'true' : 'false'; ?>,
+
+            chart_yaxis: 'cop',
+            system_stats_monthly: <?php echo json_encode($system_stats_monthly); ?>
         },
         computed: {
             qualityColor() {
@@ -321,7 +327,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             },
             cancel: function() {
                 window.location.href = path + 'system';
-            }
+            },
+            change_chart_mode: function() {
+                console.log(app.chart_yaxis);
+                draw_chart();
+            },
         },
     });
 
@@ -388,12 +398,12 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         // 12 months of dummy data peak in winter
         for (var i = 0; i < app.monthly.length; i++) {
             x.push(app.monthly[i]['timestamp'] * 1000);
-            y.push(app.monthly[i]['cop']);
+            y.push(app.monthly[i][app.chart_yaxis]);
         }
 
         chart_options.xaxis.categories = x;
         chart_options.series = [{
-            name: 'COP',
+            name: app.system_stats_monthly[app.chart_yaxis].name,
             data: y
         }];
 

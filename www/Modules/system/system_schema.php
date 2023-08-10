@@ -558,12 +558,12 @@ $schema['system_stats_monthly'] = array(
     'standby_kwh' => array('type' => 'float', 'name'=>'Standby (kWh)', 'group'=>'Standby'),
 
     // quality
-    'quality_elec' => array('type' => 'int(11)'),
-    'quality_heat' => array('type' => 'int(11)'),
-    'quality_flow' => array('type' => 'int(11)'),
-    'quality_return' => array('type' => 'int(11)'),
-    'quality_outside' => array('type' => 'int(11)'),
-    'data_start' => array('type' => 'int(11)')
+    'quality_elec' => array('type' => 'int(11)', 'name'=>'Electricity data quality', 'group'=>'Quality'),
+    'quality_heat' => array('type' => 'int(11)', 'name'=>'Heat data quality', 'group'=>'Quality'),
+    'quality_flow' => array('type' => 'int(11)', 'name'=>'Flow temperature data quality', 'group'=>'Quality'),
+    'quality_return' => array('type' => 'int(11)', 'name'=>'Return temperature data quality', 'group'=>'Quality'),
+    'quality_outside' => array('type' => 'int(11)', 'name'=>'Outside temperature data quality', 'group'=>'Quality'),
+    'data_start' => array('type' => 'int(11)', 'name'=>'Data start', 'group'=>'Stats')
 );
 
 $schema['system_stats_last365'] = array(

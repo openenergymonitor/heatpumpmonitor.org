@@ -31,7 +31,13 @@ function system_controller() {
         $route->format = "html";
         $systemid = get("id",false);
         $system_data = $system->get($session['userid'],$systemid);
-        return view("Modules/system/system_view.php", array("mode"=>"view", "system_data"=>$system_data, 'admin'=>$session['admin'], 'schema'=>$system->schema_meta));
+        return view("Modules/system/system_view.php", array(
+            "mode"=>"view", 
+            "system_data"=>$system_data, 
+            'admin'=>$session['admin'], 
+            'schema'=>$system->schema_meta,
+            'system_stats_monthly'=>$system_stats->schema['system_stats_monthly']
+        ));
 
     }
 
