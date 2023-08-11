@@ -27,20 +27,11 @@ switch ($route->controller) {
 
     case "graph":
         $route->format = "html";
-        $output = view("views/graph.html", array("userid"=>$session['userid']));
-        break;
-
-    case "graph2":
-        $route->format = "html";
-        // $output = view("views/graph2.php", array("userid"=>$session['userid']));
-
         $output = view("views/graph2.php",array(
             "mode"=>"public",
             "systems"=>$system->list_public($session['userid']),
             "columns"=>$system->get_columns()
-        ));
-
-
+        ));        
         break;
 
     case "compare":

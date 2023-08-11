@@ -54,9 +54,9 @@ $navigation = array(
     }
 
     .footer {
-      
-      padding: 20px;
-      text-align: center;
+
+        padding: 20px;
+        text-align: center;
     }
 
     @media (min-width: 992px) {
@@ -77,7 +77,7 @@ $navigation = array(
 </script>
 
 <body class="d-flex flex-column min-vh-100">
-        <header>
+    <header>
         <nav class="navbar navbar-expand-lg navbar-dark bg-custom">
             <div class="container-fluid">
                 <a class="navbar-brand" href="#"><b>HeatpumpMonitor</b>.org</a>
@@ -87,18 +87,7 @@ $navigation = array(
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <span class="navbar-text navbar-text-desktop">An open source initiative to share and compare heat pump performance data.</span>
                     <ul class="navbar-nav ms-auto">
-                        <?php foreach ($navigation as $nav) {
-                            $active = "";
-                            if ($route->controller == $nav['controller']) $active = 'active';
-
-                            $show = true;
-
-                            if ($nav['href']=='user/login' && $session['userid']) $show = false;
-
-                            if ($show) {
-                        ?>
-                            <li class="nav-item"><a class="nav-link <?php echo $active; ?>" href="<?php echo $path; ?><?php echo $nav['href']; ?>" title="<?php echo $nav['title']; ?>"><i class="fas <?php echo $nav['icon']; ?>"></i> <span class="nav-item-text"><?php echo $nav['title']; ?></span></a></li>
-                        <?php }} ?>
+                        <li class="nav-item"><a class="nav-link " href="<?php echo $path; ?>" title="Home"><i class="fas fa-home"></i> <span class="nav-item-text">Home</span></a></li>
                     </ul>
 
                     <ul class="navbar-nav">
@@ -111,34 +100,37 @@ $navigation = array(
                                 <li><a class="dropdown-item" href="<?php echo $path; ?>compare">Compare</a></li>
                                 <li><a class="dropdown-item" href="<?php echo $path; ?>monthly">Monthly</a></li>
                                 <li><a class="dropdown-item" href="<?php echo $path; ?>histogram">Histogram</a></li>
-                            
-                            </ul>
-                        </li>
-                    </ul>
 
-                    <?php if ($session['userid']) { ?>
-                    <ul class="navbar-nav">
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="avatarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <img width="32" height="32" class="rounded-circle avatar-image">
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="avatarDropdown">
-                                <li><a class="dropdown-item" href="<?php echo $path; ?>user/view">My account</a></li>
-                                <li><a class="dropdown-item" href="<?php echo $path; ?>system/list/user">My systems</a></li>
-                                <?php if ($session['admin']) { ?>
-                                <li>
-                                    <hr class="dropdown-divider">
-                                </li>
-                                <li><a class="dropdown-item" href="<?php echo $path; ?>user/admin">Admin users</a></li>
-                                <li><a class="dropdown-item" href="<?php echo $path; ?>system/list/admin">Admin systems</a></li>
-                                <?php } ?>
-                                <li>
-                                    <hr class="dropdown-divider">
-                                </li>
-                                <li><a class="dropdown-item" href="<?php echo $path; ?>user/logout">Logout</a></li>
                             </ul>
                         </li>
                     </ul>
+                    <?php if (!$session['userid']) { ?>
+                        <ul class="navbar-nav">
+                            <li class="nav-item"><a class="nav-link " href="<?php echo $path; ?>user/login" title="Login"><i class="fas fa-user"></i> <span class="nav-item-text">Login</span></a></li>
+                        </ul>
+                    <?php } else { ?>
+                        <ul class="navbar-nav">
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="avatarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <img width="32" height="32" class="rounded-circle avatar-image">
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="avatarDropdown">
+                                    <li><a class="dropdown-item" href="<?php echo $path; ?>user/view">My account</a></li>
+                                    <li><a class="dropdown-item" href="<?php echo $path; ?>system/list/user">My systems</a></li>
+                                    <?php if ($session['admin']) { ?>
+                                        <li>
+                                            <hr class="dropdown-divider">
+                                        </li>
+                                        <li><a class="dropdown-item" href="<?php echo $path; ?>user/admin">Admin users</a></li>
+                                        <li><a class="dropdown-item" href="<?php echo $path; ?>system/list/admin">Admin systems</a></li>
+                                    <?php } ?>
+                                    <li>
+                                        <hr class="dropdown-divider">
+                                    </li>
+                                    <li><a class="dropdown-item" href="<?php echo $path; ?>user/logout">Logout</a></li>
+                                </ul>
+                            </li>
+                        </ul>
                     <?php } ?>
                 </div>
             </div>
