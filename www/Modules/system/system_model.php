@@ -223,6 +223,7 @@ class System
                 "message"=>"Saved",
                 "change_log"=>$change_log,
                 "warning_log"=>$validate_result["warning_log"],
+                "systemid"=>$systemid,
                 "new_system"=>$new_system
             );
         }

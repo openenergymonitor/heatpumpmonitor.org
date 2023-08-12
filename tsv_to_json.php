@@ -12,7 +12,7 @@ foreach ($data as $row) {
     $values = explode("\t",$row);
     $user = array();
     for ($i=0; $i<count($keys); $i++) {
-        $user[$keys[$i]] = $values[$i];
+        $user[trim($keys[$i])] = trim($values[$i]);
     }
     $users[] = $user;
 }
@@ -21,4 +21,4 @@ foreach ($data as $row) {
 file_put_contents("data.json",json_encode($users,JSON_PRETTY_PRINT));
 
 
-print json_encode($users,JSON_PRETTY_PRINT);
+// print json_encode($users,JSON_PRETTY_PRINT);

@@ -88,7 +88,7 @@ $schema['system_meta'] = array(
         'optional' => false, 
         'name' => 'Refrigerant', 
         'group' => 'Heat pump', 
-        'options'=>array('R290','R32','CO2','R410A','R134A','R407C')
+        'options'=>array('R290','R32','CO2','R410A','R210A','R134A','R407C')
     ),
 
     /* --------------------------- Hot water cylinders -------------------------- */
