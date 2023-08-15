@@ -91,10 +91,12 @@ class SystemStats
             }
         }
 
-        if (!$stats = json_decode(file_get_contents($getstats))) {
-            return false;
+        $stats_rx = file_get_contents($getstats);
+
+        if (!$stats = json_decode($stats_rx)) {
+            return array("success" => false, "message" => $stats_rx);
         } else {
-            return $stats;
+            return array("success" => true, "stats" => $stats);
         }
     }
 
@@ -340,8 +342,8 @@ class SystemStats
             foreach ($fields as $key => $field) {
                 $stats["" . $id][$key] = number_format($system[$key], $field['dp'], ".", "") * 1;
             }
-            $stats["" . $id]["cop"] = number_format($cop, 2, ".", "") * 1;
-            $stats["" . $id]["when_running_cop"] = number_format($when_running_cop, 2, ".", "") * 1;
+            $stats["" . $id]["cop"] = number_format($cop, 1, ".", "") * 1;
+            $stats["" . $id]["when_running_cop"] = number_format($when_running_cop, 1, ".", "") * 1;
         }
 
         return $stats;
@@ -360,7 +362,7 @@ class SystemStats
             $stats["" . $row->id] = array(
                 "elec_kwh" => number_format($row->elec_kwh, 0, ".", "") * 1,
                 "heat_kwh" => number_format($row->heat_kwh, 0, ".", "") * 1,
-                "cop" => number_format($row->cop, 2, ".", "") * 1,
+                "cop" => number_format($row->cop, 1, ".", "") * 1,
                 "since" => $row->since*1,
                 "data_start" => $row->data_start*1
             );

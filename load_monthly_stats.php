@@ -15,10 +15,10 @@ $system_stats = new SystemStats($mysqli,$system);
 $data = $system->list_admin();
 foreach ($data as $row) {
     $userid = (int) $row->userid;
-    if ($userid!=13) continue;
+    // if ($userid<40) continue;
 
     if ($user_data = $user->get($userid)) {
-        print json_encode($user_data) . "\n\n";
+        print json_encode($user_data) . " ".$row->url."\n\n";
 
         // timestamp start of July
         $date = new DateTime();
@@ -35,17 +35,18 @@ foreach ($data as $row) {
             // +1 month
             $date->modify('+1 month');
             $end = $date->getTimestamp();
-            if ($end>time()) break;
 
             // print "start: $start end: $end\n";
             $stats = $system_stats->load_from_url($row->url,$start,$end);
-            if ($stats===false) {
-                print "Failed to load stats\n";
-                continue;
+            if (isset($stats['success']) && !$stats['success']) {
+                print "ERROR: ".$stats['message']."\n";
+                break;
             }
-            $system_stats->save_monthly($row->id,$start,$stats);
+            $system_stats->save_monthly($row->id,$start,$stats['stats']);
 
             print json_encode($stats,JSON_PRETTY_PRINT) . "\n";
+
+            if ($end>time()) break;
 
             $start = $end;
         }

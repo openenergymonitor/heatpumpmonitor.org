@@ -38,7 +38,6 @@ foreach ($data as $row) {
     } else {
         $userid = $result['userid'];
     }
-    
 
     // ---------------------------------------
     // Translate existing format to new format

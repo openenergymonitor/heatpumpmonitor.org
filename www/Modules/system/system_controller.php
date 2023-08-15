@@ -75,6 +75,9 @@ function system_controller() {
                         "columns"=>$system->get_columns()
                     ));
                 }
+            // Original
+            } else if ($route->subaction=="original") {
+                return view("Modules/system/original/main.php",array());
             }
         } else {
             // Public list view
