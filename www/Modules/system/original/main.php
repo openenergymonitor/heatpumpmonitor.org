@@ -45,6 +45,7 @@
 					<th v-if="!show_kwh_m2" class="header" colspan="6">Property</th>
 					<th v-if="show_kwh_m2" class="header" colspan="4">Property</th>
 					<th class="header" colspan="4">Heating system</th>
+					<th class="header" colspan="6" v-if="show_when_running">Average stats when running</th>
 					<th class="header" colspan="3">Annual Performance</th>
 					<th class="header">&nbsp;</td>
 				</tr>
@@ -66,10 +67,18 @@
 					<th @click="sort('hp_type', 'asc')">Source</th>
 					<th @click="sort('emitters', 'asc')">Emitters</th>
 
+					<!-- Stats when running -->
+					<th @click="sort('standby_kwh', 'desc')" class="border right" v-if="show_when_running">Standby</th>
+					<th @click="sort('when_running.elec_W', 'desc')" class="right" v-if="show_when_running">Electric</th>
+					<th @click="sort('when_running.heat_W', 'desc')" class="right" v-if="show_when_running">Heat</th>
+					<th @click="sort('when_running.flowT', 'desc')" class="center" v-if="show_when_running">Flow</th>
+					<th @click="sort('when_running.flow_minus_return', 'desc')" class="center" v-if="show_when_running">Delta</th>
+					<th @click="sort('when_running.outsideT', 'desc')" class="center" v-if="show_when_running">Outside</th>
+
 					<!-- Performance -->
-					<th @click="sort('year_elec', 'desc')" class="border right">Electric</th>
-					<th @click="sort('year_heat', 'desc')" class="right">Heat</th>
-					<th @click="sort('year_cop', 'desc')" class="center">SCOP</th>
+					<th @click="sort('elec_kwh', 'desc')" class="border right">Electric</th>
+					<th @click="sort('heat_kwh', 'desc')" class="right">Heat</th>
+					<th @click="sort('cop', 'desc')" class="center">SCOP</th>
 					<th class="nosort border">Charts</th>
 				</tr>
 			</thead>
@@ -93,6 +102,20 @@
 						<td class="nowrap" align="right">{{unit_dp(n.hp_output, 'kW')}}</td>
 						<td class="nowrap">{{n.hp_type.split(' ')[0]}}</td>
 						<td v-bind:title="n.new_radiators"></td>
+
+						<!-- Stats when running -->
+						<td v-bind:class="monthClass(n) + ' nowrap border'" align="right" v-if="show_when_running">
+						{{unit_dp(n.standby_kwh, 'kWh', 1)}}</td>
+						<td v-bind:class="monthClass(n) + ' nowrap'" align="right" v-if="show_when_running">
+						{{unit_dp(n.when_running_elec_kwh, 'kWh', 0)}}</td>
+						<td v-bind:class="monthClass(n) + ' nowrap'" align="right" v-if="show_when_running">
+						{{unit_dp(n.when_running_heat_kwh, 'kWh', 0)}}</td>
+						<td v-bind:class="monthClass(n) + ' nowrap center'" v-if="show_when_running">
+						{{unit_dp(n.when_running_flowT, '&#8451;', 0)}}</td>
+						<td v-bind:class="monthClass(n) + ' nowrap center'" v-if="show_when_running">
+						+{{unit_dp(n.when_running_flow_minus_return, '&#8451;', 1)}}</td>
+						<td v-bind:class="monthClass(n) + ' nowrap center'" v-if="show_when_running">
+						{{unit_dp(n.when_running_outsideT, '&#8451;', 1)}}</td>
 
 						<!-- Performance -->
 						<td v-bind:class="sinceClass(n) + ' nowrap border'" v-bind:title="sinceDate(n)" align="right">

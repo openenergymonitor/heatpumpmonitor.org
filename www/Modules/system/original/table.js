@@ -23,7 +23,8 @@ var app = new Vue({
         stats_time_end: "only",
         stats_time_range: false,
         available_months_start: months,
-        available_months_end: months
+        available_months_end: months,
+        show_when_running: false,
     },
 
     created() {
@@ -195,6 +196,16 @@ var app = new Vue({
                         app.nodes[i]['elec_kwh'] = 0;
                         app.nodes[i]['heat_kwh'] = 0;
                         app.nodes[i]['cop'] = 0;
+
+                        app.nodes[i]['when_running_elec_kwh'] = 0;
+                        app.nodes[i]['when_running_heat_kwh'] = 0;
+                        app.nodes[i]['when_running_cop'] = 0;
+
+                        app.nodes[i]['when_running_flowT'] = 0;
+                        app.nodes[i]['when_running_flow_minus_return'] = 0;
+                        app.nodes[i]['when_running_outsideT'] = 0;
+                        app.nodes[i]['standby_kwh'] = 0;
+
                     }
                 }
                 // force re-render
