@@ -123,6 +123,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     columns['elec_kwh'] = {name: 'Electricity (kWh)', group: 'Stats'};
     columns['heat_kwh'] = {name: 'Heat (kWh)', group: 'Stats'};
     columns['data_start'] = {name: 'Data Start', group: 'Stats'};
+    columns['since'] = {name: 'Data length', group: 'Stats'};
 
     columns['when_running_elec_kwh'] = {name: 'Electricity (kWh)', group: 'When Running'};
     columns['when_running_heat_kwh'] = {name: 'Heat (kWh)', group: 'When Running'};
@@ -343,6 +344,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         filters: {
             column_format: function (val,key) {
                 if (key=='last_updated' || key=='data_start') {
+                    return time_ago(val,' ago');
+                }
+                if (key=='since') {
                     return time_ago(val);
                 }
                 return val;
@@ -365,7 +369,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     app.load_system_stats();
     app.sort_only('cop');
 
-    function time_ago(val) {
+    function time_ago(val,ago='') {
         if (val == null || val == 0) {
             return '';
         }
@@ -394,7 +398,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         let diff = now - date;
         let days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
-        return days + " days ago";
+        return days + " days"+ago;
 
         return day + " " + months[month-1] + " " + year;
     }
