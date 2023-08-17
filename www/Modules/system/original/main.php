@@ -139,7 +139,8 @@
 						<td v-bind:class="sinceClass(n) + ' nowrap center'" v-bind:title="sinceDate(n)">
 							{{n.cop > 0 ? n.cop.toFixed(1) : '-'}}
 						</td>
-						<td class="lborder"><a v-bind:href="n.url" target="_blank">Link &raquo;</a></td>
+						<td class="lborder"><a href="#" @click="view(n)">View &raquo;</a></td>
+						
 					</tr>
 
 					<tr class="extra" style="display: none">

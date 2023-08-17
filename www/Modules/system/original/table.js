@@ -218,7 +218,10 @@ var app = new Vue({
             .catch(error => {
                 alert("Error loading data: " + error);
             });
-        }
+        },
+        view: function(n) {
+            window.location = path+"system/view?id=" + n.id;
+        },
     },
 
     computed: {
