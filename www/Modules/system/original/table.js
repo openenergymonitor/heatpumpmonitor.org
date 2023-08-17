@@ -25,6 +25,7 @@ var app = new Vue({
         available_months_start: months,
         available_months_end: months,
         show_when_running: false,
+        show_when_running_option: false
     },
 
     created() {
@@ -178,6 +179,9 @@ var app = new Vue({
             if (start == 'last30' || start == 'last365') {
                 url = path + 'system/stats/' + start;
                 params = {};
+                app.show_when_running_option = false;
+            } else {
+                app.show_when_running_option = true;
             }
             // Load system/stats data
             axios.get(url, {
