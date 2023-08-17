@@ -35,8 +35,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     <div class="container mt-3" style="max-width:800px">
 
 
-        <div class="card mt-3">
-            <h5 class="card-header">Last 365 days</h5>
+        <div class="card mt-3" v-if="last30.since!=last365.since">
+            <h5 class="card-header">Last {{last365.since | formatDays }} days</h5>
             <div class="card-body">
                 <div class="row" style="text-align:center">
                     <div class="col">
@@ -57,7 +57,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             </div>
         </div>
         <div class="card mt-3">
-            <h5 class="card-header">Last 30 days</h5>
+        <h5 class="card-header">Last {{last30.since | formatDays }} days</h5>
             <div class="card-body">
                 <div class="row" style="text-align:center">
                     <div class="col">
@@ -290,6 +290,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             qualityColor() {
                 return function(score) {
                     const hue = (score / 100) * 120; // Map score to hue value (0-120)
+                    // if score = 0 grey
+                    if (score == 0) return '#ccc';
                     return `hsl(${hue}, 100%, 50%)`; // Convert hue value to HSL color
                 }
             }
@@ -299,6 +301,14 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 var date = new Date(timestamp * 1000);
                 var month = date.toLocaleString('default', { month: 'short' });
                 return month;
+            },
+            formatDays: function(timestamp) {
+                // days ago
+                var date = new Date(timestamp * 1000);
+                var today = new Date();
+                var diff = today - date;
+                var days = diff / (1000 * 60 * 60 * 24);
+                return Math.round(days);
             }
         },
         methods: {

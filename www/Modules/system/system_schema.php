@@ -499,7 +499,7 @@ $schema['system_stats_last30'] = array(
     'elec_kwh' => array('type' => 'float', 'name'=>'Last 30 days electricity consumption', 'group'=>'Stats'),
     'heat_kwh' => array('type' => 'float', 'name'=>'Last 30 days heat output', 'group'=>'Stats'),
     'cop' => array('type' => 'float', 'name'=>'Last 30 days COP', 'group'=>'Stats'),
-    // 'since' => array('type' => 'int(11)'),
+    'since' => array('type' => 'int(11)'),
 
     // when running
     'when_running_elec_kwh' => array('type' => 'float'),
@@ -538,7 +538,7 @@ $schema['system_stats_monthly'] = array(
     'elec_kwh' => array('type' => 'float', 'name'=>'Electricity (kWh)', 'group'=>'Stats'),
     'heat_kwh' => array('type' => 'float', 'name'=>'Heat (kWh)', 'group'=>'Stats'),
     'cop' => array('type' => 'float', 'name'=>'COP', 'group'=>'Stats'),
-    // 'since' => array('type' => 'int(11)'),
+    'since' => array('type' => 'int(11)'),
 
     // when running
     'when_running_elec_kwh' => array('type' => 'float', 'name'=>'Electricity running (kWh)', 'group'=>'When Running'),

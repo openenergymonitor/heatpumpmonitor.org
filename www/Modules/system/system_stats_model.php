@@ -108,9 +108,10 @@ class SystemStats
         // consider changing API structure to match schema
         $stats = array(
             'id' => $systemid,
-            'elec_kwh' => $stats->full_period->elec_kwh,
-            'heat_kwh' => $stats->full_period->heat_kwh,
-            'cop' => $stats->full_period->cop,
+            'elec_kwh' => $stats->last30->elec_kwh,
+            'heat_kwh' => $stats->last30->heat_kwh,
+            'cop' => $stats->last30->cop,
+            'since' => $stats->last30->since,
             'when_running_elec_kwh' => $stats->when_running->elec_kwh,
             'when_running_heat_kwh' => $stats->when_running->heat_kwh,
             'when_running_cop' => $stats->when_running->cop,
@@ -123,13 +124,13 @@ class SystemStats
             'when_running_flow_minus_outside' => $stats->when_running->flow_minus_outside,
             'when_running_carnot_prc' => $stats->when_running->carnot_prc,
             'standby_threshold' => $stats->standby_threshold,
-            'standby_kwh' => $stats->standby_kwh,
-            "quality_elec" => $stats->quality_elec,
-            "quality_heat" => $stats->quality_heat,
-            "quality_flow" => $stats->quality_flow,
-            "quality_return" => $stats->quality_return,
-            "quality_outside" => $stats->quality_outside,
-            'data_start' => $stats->data_start
+            'standby_kwh' => isset($stats->standby_kwh) ? $stats->standby_kwh : 0,
+            "quality_elec" => isset($stats->quality_elec) ? $stats->quality_elec : 0,
+            "quality_heat" => isset($stats->quality_heat) ? $stats->quality_heat : 0,
+            "quality_flow" => isset($stats->quality_flow) ? $stats->quality_flow : 0,
+            "quality_return" => isset($stats->quality_return) ? $stats->quality_return : 0,
+            "quality_outside" => isset($stats->quality_outside) ? $stats->quality_outside : 0,
+            'data_start' => isset($stats->data_start) ? $stats->data_start : 0
         );
 
         $id = $stats['id'];
@@ -145,13 +146,14 @@ class SystemStats
 
         // Translate the stats into the schema
         // consider changing API structure to match schema
+
         $stats = array(
             'id' => $systemid,
             'elec_kwh' => $stats->last365->elec_kwh,
             'heat_kwh' => $stats->last365->heat_kwh,
             'cop' => $stats->last365->cop,
             'since' => $stats->last365->since,
-            'data_start' => $stats->data_start
+            'data_start' => isset($stats->data_start) ? $stats->data_start : 0
         );
 
         $id = $stats['id'];
@@ -179,6 +181,7 @@ class SystemStats
             'elec_kwh' => $stats->full_period->elec_kwh,
             'heat_kwh' => $stats->full_period->heat_kwh,
             'cop' => $stats->full_period->cop,
+            'since' => $stats->data_start,
             'when_running_elec_kwh' => $stats->when_running->elec_kwh,
             'when_running_heat_kwh' => $stats->when_running->heat_kwh,
             'when_running_cop' => $stats->when_running->cop,
@@ -289,7 +292,8 @@ class SystemStats
             "quality_return" => array("average" => true, "dp" => 0),
             "quality_outside" => array("average" => true, "dp" => 0),
 
-            "data_start" => array("average" => false, "dp" => 0)
+            "data_start" => array("average" => false, "dp" => 0),
+            "since" => array("average" => false, "dp" => 0)
         );
 
         $field_str = implode(",", array_keys($fields));
@@ -344,6 +348,7 @@ class SystemStats
             }
             $stats["" . $id]["cop"] = number_format($cop, 1, ".", "") * 1;
             $stats["" . $id]["when_running_cop"] = number_format($when_running_cop, 1, ".", "") * 1;
+            $stats["" . $id]["since"] = $system['since'];
         }
 
         return $stats;

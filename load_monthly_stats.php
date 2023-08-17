@@ -15,7 +15,7 @@ $system_stats = new SystemStats($mysqli,$system);
 $data = $system->list_admin();
 foreach ($data as $row) {
     $userid = (int) $row->userid;
-    // if ($userid<40) continue;
+    //if ($row->id!=53) continue;
 
     if ($user_data = $user->get($userid)) {
         print json_encode($user_data) . " ".$row->url."\n\n";
@@ -42,6 +42,9 @@ foreach ($data as $row) {
                 print "ERROR: ".$stats['message']."\n";
                 break;
             }
+
+            print json_encode($stats['stats'])."\n";
+
             $system_stats->save_monthly($row->id,$start,$stats['stats']);
 
             print json_encode($stats,JSON_PRETTY_PRINT) . "\n";

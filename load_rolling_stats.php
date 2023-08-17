@@ -14,15 +14,15 @@ $system_stats = new SystemStats($mysqli,$system);
 
 $data = $system->list_admin();
 foreach ($data as $row) {
+    // if ($row->id!=53) continue;
     $userid = (int) $row->userid;
     if ($user_data = $user->get($userid)) {
-        // $apikey_read = $user_data->apikey_read;
-        // print "$apikey_read\n";
-        $stats = $system_stats->load_from_url($row->url);
-        if ($stats !== false) {
-            $system_stats->save_last30($row->id, $stats);
-            $system_stats->save_last365($row->id, $stats);
-            print json_encode($stats) . "\n";        
+
+        $result = $system_stats->load_from_url($row->url);
+        if (isset($result['success']) && $result['success']) {
+            $system_stats->save_last30($row->id, $result['stats']);
+            $system_stats->save_last365($row->id, $result['stats']);
+            print json_encode($result['stats']) . "\n";        
         }
     }
 }
