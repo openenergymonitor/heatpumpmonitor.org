@@ -32,9 +32,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             <button class="btn btn-warning" v-if="email_changed">Verify</button>
         </div>
         <hr>
-
+        <!--
         <button class="btn btn-primary" v-if="!account.emoncmsorg_link">Change password</button>
-        <button class="btn btn-danger" style="float:right">Delete account</button>
+        <button class="btn btn-danger" style="float:right">Delete account</button>-->
         <br>
         <br>
         

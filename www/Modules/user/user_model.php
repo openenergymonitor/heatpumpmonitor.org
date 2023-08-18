@@ -317,7 +317,7 @@ class User
                 "to" => $email,
                 "subject" => "Your HeatpumpMonitor.org login",
                 "text" => "Hello $name, to login to HeatpumpMonitor.org please use your emoncms.org account details for username: $username\n\nRegards\nHeatpumpMonitor.org",
-                "html" => "<h4>Hello $name,</h4><p>To login to HeatpumpMonitor.org please use your emoncms.org account details for username: $username</p><p>Please login at <a href='https://heatpumpmonitor.org'>https://heatpumpmonitor.org</a></p><p>Regards<br>HeatpumpMonitor.org</p>"
+                "html" => "<h4>Hello $name,</h4><p>To login to HeatpumpMonitor.org please use your emoncms.org account details for username: $username</p><p>Please login at <a href='https://dev.heatpumpmonitor.org'>https://dev.heatpumpmonitor.org</a></p><p>Regards<br>HeatpumpMonitor.org</p>"
             ));
             return array('success'=>true, 'message'=>"Welcome email sent");
         } else {
@@ -339,8 +339,8 @@ class User
             $email_class->send(array(
                 "to" => $email,
                 "subject" => "Your HeatpumpMonitor.org login",
-                "text" => "Hello $name, your HeatpumpMonitor.org login details are:\nUsername: $username\nPassword: $newpass\nPlease login at https://heatpumpmonitor.org\nRegards\nHeatpumpMonitor.org",
-                "html" => "<h4>Hello $name</h4><p>Your HeatpumpMonitor.org login details are:</p><p>Username: $username</p><p>Password: $newpass</p><p>Please login at <a href='https://heatpumpmonitor.org'>https://heatpumpmonitor.org</a></p><p>Regards</p><p>HeatpumpMonitor.org</p>"
+                "text" => "Hello $name, your HeatpumpMonitor.org login details are:\nUsername: $username\nPassword: $newpass\nPlease login at https://dev.heatpumpmonitor.org\nRegards\nHeatpumpMonitor.org",
+                "html" => "<h4>Hello $name</h4><p>Your HeatpumpMonitor.org login details are:</p><p>Username: $username</p><p>Password: $newpass</p><p>Please login at <a href='https://dev.heatpumpmonitor.org'>https://dev.heatpumpmonitor.org</a></p><p>Regards</p><p>HeatpumpMonitor.org</p>"
             ));
             return array('success'=>true, 'message'=>"Welcome email sent");
         }
@@ -405,9 +405,12 @@ class User
     }
 
     public function admin_user_list() {
-        $result = $this->mysqli->query("SELECT id,username,name,email FROM users");
+
+        $result = $this->mysqli->query("SELECT id,username,name,email,admin FROM users");
         $users = array();
         while ($row = $result->fetch_object()) {
+            $row->emoncmsorg_link = $this->emoncmsorg_link_exists($row->id) ? 'Yes' : '';
+            $row->admin = $row->admin ? 'Yes' : '';
             $users[] = $row;
         }
         return $users;

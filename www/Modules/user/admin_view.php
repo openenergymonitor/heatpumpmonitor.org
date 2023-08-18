@@ -21,6 +21,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     <th scope="col">Username</th>
                     <th scope="col">Name</th>   
                     <th scope="col">Email</th>
+                    <th scope="col">Emoncms.org</th>
+                    <th scope="col">Admin</th>
                     <th scope="col">Created</th>
                     <th scope="col">Last login</th>
                     <th scope="col">Actions</th>
@@ -33,6 +35,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     <td>{{ user.username }}</td>       
                     <td>{{ user.name }}</td>
                     <td>{{ user.email }}</td>
+                    <td>{{ user.emoncmsorg_link }}</td>
+                    <td>{{ user.admin }}</td>
                     <td>{{ user.created }}</td>
                     <td>{{ user.lastlogin }}</td>
                     <td>

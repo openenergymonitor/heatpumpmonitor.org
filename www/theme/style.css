@@ -49,8 +49,8 @@
   color: #44b3e2;
   cursor: pointer;
 }
-.table-hpmon tbody td.partial {
-  color: silver;
+.partial {
+  color: silver !important;
 }
 .center {
   text-align: center !important;

@@ -15,7 +15,7 @@ $system_stats = new SystemStats($mysqli,$system);
 $data = $system->list_admin();
 foreach ($data as $row) {
     $userid = (int) $row->userid;
-    //if ($row->id!=53) continue;
+    if ($row->id!=36) continue;
 
     if ($user_data = $user->get($userid)) {
         print json_encode($user_data) . " ".$row->url."\n\n";

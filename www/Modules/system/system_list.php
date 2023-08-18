@@ -91,11 +91,14 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn==column"></i>
                         </th>
                         <th v-if="mode!='public'">Status</th>
-                        <th style="width:150px">Actions</th>
+                        <th style="width:150px">
+                            <span v-if="mode!='public'">Actions</span>
+                            <span v-else>View</span>
+                        </th>
                     </tr>
                     <tr v-for="(system,index) in systems">
                         <td v-if="mode=='admin'" :title="system.username+'\n'+system.email">{{ system.name }}</td>
-                        <td v-for="column in selected_columns">{{ system[column] | column_format(column) }}</td>
+                        <td v-for="column in selected_columns" v-html="column_format(system,column)" v-bind:class="sinceClass(system,column)"></td>
                         <td v-if="mode!='public'">
                             <span v-if="system.share" class="badge bg-success">Shared</span>
                             <span v-if="!system.share" class="badge bg-danger">Private</span>
@@ -119,7 +122,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
     var columns = <?php echo json_encode($columns); ?>;
 
-    columns['cop'] = {name: 'COP', group: 'Stats'};
+    columns['cop'] = {name: 'SCOP', group: 'Stats'};
     columns['elec_kwh'] = {name: 'Electricity (kWh)', group: 'Stats'};
     columns['heat_kwh'] = {name: 'Heat (kWh)', group: 'Stats'};
     columns['data_start'] = {name: 'Data Start', group: 'Stats'};
@@ -169,7 +172,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     var mode = "<?php echo $mode; ?>";
     var selected_columns = ['location', 'last_updated','cop'];
     if (mode == 'public') {
-        selected_columns = ['location', 'hp_model', 'cop'];
+        selected_columns = ['location', 'installer_name', 'hp_model', 'hp_output', 'since', 'cop', 'mid_metering'];
     }
 
     var app = new Vue({
@@ -340,17 +343,52 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     }, 200);
                 }
             },
-        },
-        filters: {
-            column_format: function (val,key) {
+            column_format: function (system,key) {
+                var val = system[key];
+
                 if (key=='last_updated' || key=='data_start') {
                     return time_ago(val,' ago');
                 }
                 if (key=='since') {
                     return time_ago(val);
                 }
+                if (key=='installer_name') {
+                    if (val!=null && val!='') {
+                        return "<a href='"+system['installer_url']+"'>"+val+"</a>";
+                    } else {
+                        return '';
+                    }
+                }
+                if (key=='hp_output') {
+                    return val + ' kW';
+                }
+                if (key=='cop') {
+                    return val.toFixed(1);
+                }
+                if (key=='mid_metering') {
+                    if (val==1) {
+                        return 'Yes';
+                    } else {
+                        return '';
+                    }
+                }
                 return val;
             },
+            // grey if start date is less that 1 year ago
+            sinceClass: function(system,column) {
+                // return node.since > 0 ? 'partial ' : '';
+                // node.since is unix time in seconds
+                if (column=='cop' || column=='since') {
+                    if (this.stats_time_start=='last365') {
+                        return (system.since + 360 * 24 * 3600) * 1000 > Date.now() ? 'partial ' : '';
+                    } else {
+                        return (system.since + 30 * 24 * 3600) * 1000 > Date.now() ? 'partial ' : '';
+                    }
+                }
+                return '';
+            }
+        },
+        filters: {
             toFixed: function(val, dp) {
                 if (isNaN(val) || val == null) {
                     return val;

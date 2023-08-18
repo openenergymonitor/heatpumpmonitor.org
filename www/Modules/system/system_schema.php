@@ -23,7 +23,7 @@ $schema['system_meta'] = array(
         'type' => 'varchar(64)', 
         'editable' => true, 
         'optional' => true, 
-        'name' => 'Installer name', 
+        'name' => 'Installer', 
         'group' => 'Overview',
         'helper' => 'Optional. If you are not the installer we recommend asking the installer if they are happy with their name being displayed. Self install is also an option..'
     ),
@@ -177,8 +177,9 @@ $schema['system_meta'] = array(
         'editable' => true, 
         'optional' => false, 
         'name' => 'Flow temperature', 
-        'group' => 'Heat pump controls', 
-        'unit' => '°C'
+        'group' => 'Heat pump controls',
+        'helper' => "Design flow temperature (e.g 45°C at -3°C)",
+        'unit' => '°C @ -3°C'
     ),
 
     'flow_temp_typical' => array(
@@ -187,8 +188,9 @@ $schema['system_meta'] = array(
         'optional' => false, 
         'name' => 
         'Typical flow temperature', 
+        'helper' => "Typical flow temperature (e.g 35°C at 6°C)",
         'group' => 'Heat pump controls', 
-        'unit' => '°C'
+        'unit' => '°C @ 6°C'
     ),
 
     'wc_curve' => array(
@@ -226,9 +228,11 @@ $schema['system_meta'] = array(
         'options'=>array(
             'Pure weather compensation, no room influence', 
             'Weather compensation with a little room influence', 
-            'Weather compensation with significant room influence', 
+            'Weather compensation with significant room influence',
+            'Weather compensation with simple set point control',
             'Room influence only (e.g Auto adapt)', 
-            'Manual flow temperature control'
+            'Manual flow temperature control',
+            'Custom controller'
         )
     ),
 
@@ -243,7 +247,8 @@ $schema['system_meta'] = array(
             'Twice daily scheduled heat up of tank', 
             'Automatic top up of tank if temperature drops by 3-6C', 
             'Automatic top up of tank if temperature drops by 6-10C', 
-            'Manual control of tank temperature'
+            'Manual control of tank temperature',
+            'Not applicable'
         )
     ),
 
@@ -262,7 +267,7 @@ $schema['system_meta'] = array(
         'optional' => false, 
         'name' => 'Legionella frequency', 
         'group' => 'Heat pump controls',
-        'options' => array('Daily', 'Weekly', 'Fornightly', 'Monthly', 'Other', 'Never')
+        'options' => array('Daily', 'Weekly', 'Fornightly', 'Monthly', 'Other', 'Never', 'No cylinder')
     ),
 
     'legionella_target_temperature' => array(
@@ -329,7 +334,7 @@ $schema['system_meta'] = array(
         'optional' => false, 
         'name' => 'Insulation level', 
         'group' => 'Property',
-        'options' => array('Passivhaus', 'Fully insulated walls, floors and loft', 'Some insulation in walls and loft', 'Cavity wall, plus some loft insulation', 'Solid walls')
+        'options' => array('Passivhaus', 'Fully insulated walls, floors and loft', 'Some insulation in walls and loft', 'Cavity wall, plus some loft insulation', 'Non-insulated cavity wall', 'Solid walls')
     ),
 
     /* ----------------------------- Electricity tariff ----------------------------- */
@@ -409,6 +414,15 @@ $schema['system_meta'] = array(
     ),
 
     /* --------------------------------- Monitoring --------------------------------- */
+
+    'mid_metering' => array(
+        'type' => 'tinyint(1)', 
+        'editable' => true, 
+        'optional' => false, 
+        'name' => 'MID Metering', 
+        'helper' => 'Tick if electric meter is class 1 and heat meter at least class 2',
+        'group' => 'Metering'
+    ),
 
     'electric_meter' => array(
         'type' => 'varchar(128)', 
@@ -537,7 +551,7 @@ $schema['system_stats_monthly'] = array(
     // Full period stats
     'elec_kwh' => array('type' => 'float', 'name'=>'Electricity (kWh)', 'group'=>'Stats'),
     'heat_kwh' => array('type' => 'float', 'name'=>'Heat (kWh)', 'group'=>'Stats'),
-    'cop' => array('type' => 'float', 'name'=>'COP', 'group'=>'Stats'),
+    'cop' => array('type' => 'float', 'name'=>'SCOP', 'group'=>'Stats'),
     'since' => array('type' => 'int(11)'),
 
     // when running

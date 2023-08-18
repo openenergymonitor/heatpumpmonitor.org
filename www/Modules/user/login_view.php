@@ -51,7 +51,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 <button type="button" class="btn btn-primary" @click="login" v-if="mode!='register'">Login</button>
                 <button type="button" class="btn btn-primary" @click="register" v-if="mode=='register'">Register</button>
                 <button type="button" class="btn btn-light" @click="mode=false">Cancel</button>
-                <a href="#" v-if="mode=='other'">Forgot password</a>
+                <!--<a href="#" v-if="mode=='other'">Forgot password</a>-->
             </div>
 
             <div class="alert alert-danger" style="margin-top:20px; margin-bottom: 5px;" v-if="error" v-html="error"></div>

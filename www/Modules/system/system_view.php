@@ -27,7 +27,6 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     <div style=" background-color:#f0f0f0; padding-top:20px; padding-bottom:10px">
         <div class="container" style="max-width:800px;">
             <button class="btn btn-primary" style="float:right" @click="open_emoncms_dashboard">Open Emoncms Heat Pump Dashboard</button>
-
             <h3>{{ system.location }}</h3>
         </div>
     </div>
@@ -186,7 +185,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     </tr>
                     <tr v-for="(field,key) in group" v-if="field.editable && key!='share'">
                         <td>
-                            <span>{{ field.name }}</span>
+                            <span>{{ field.name }}</span> <span v-if="!field.optional && mode=='edit'" style="color:#aa0000">*</span>
                         </td>
                         <td>
                             <span v-if="field.helper" data-bs-toggle="tooltip" data-bs-placement="top" :title="field.helper">
@@ -367,7 +366,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     });
             },
             cancel: function() {
-                window.location.href = path + 'system';
+                window.location.href = path + 'system/list/public';
             },
             change_chart_mode: function() {
                 console.log(app.chart_yaxis);

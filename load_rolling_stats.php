@@ -14,7 +14,7 @@ $system_stats = new SystemStats($mysqli,$system);
 
 $data = $system->list_admin();
 foreach ($data as $row) {
-    // if ($row->id!=53) continue;
+    if ($row->id!=36) continue;
     $userid = (int) $row->userid;
     if ($user_data = $user->get($userid)) {
 
@@ -23,6 +23,8 @@ foreach ($data as $row) {
             $system_stats->save_last30($row->id, $result['stats']);
             $system_stats->save_last365($row->id, $result['stats']);
             print json_encode($result['stats']) . "\n";        
+        } else {
+            print "ERROR: ".$result['message']."\n";
         }
     }
 }
