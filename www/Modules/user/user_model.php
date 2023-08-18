@@ -134,6 +134,7 @@ class User
         $_SESSION['email'] = $email;
         $_SESSION['admin'] = $admin;
 
+        $this->update_last_login($userid);
         return array('success' => true, 'message' => _("Login successful"));
     }
 
@@ -168,8 +169,19 @@ class User
             $_SESSION['username'] = $username;
             $_SESSION['admin'] = $userData->admin;
             $_SESSION['email'] = $userData->email;
+
+            $this->update_last_login($userData->id);
             return array('success' => true, 'message' => _("Login successful"));
         }
+    }
+
+    public function update_last_login($userid) {
+        $userid = (int) $userid;
+        $last_login = time();
+        $stmt = $this->mysqli->prepare("UPDATE users SET last_login=? WHERE id=?");
+        $stmt->bind_param("ii", $last_login, $userid);
+        $stmt->execute();
+        $stmt->close();
     }
 
     public function register($username, $password, $email)
@@ -188,8 +200,9 @@ class User
         $salt = generate_secure_key(16);
         $hash = hash('sha256', $salt . $hash);
 
-        $stmt = $this->mysqli->prepare("INSERT INTO users ( username, hash, email, salt, admin) VALUES (?,?,?,?,0)");
-        $stmt->bind_param("ssss", $username, $hash, $email, $salt);
+        $created = time();
+        $stmt = $this->mysqli->prepare("INSERT INTO users ( username, hash, email, salt, created, admin) VALUES (?,?,?,?,?,0)");
+        $stmt->bind_param("ssssi", $username, $hash, $email, $salt, $created);
         $stmt->execute();
         $userid = (int) $stmt->insert_id;
         $stmt->close();
@@ -203,6 +216,7 @@ class User
             $_SESSION['username'] = $username;
             $_SESSION['admin'] = 0;
             $_SESSION['email'] = $email; 
+            $this->update_last_login($userid);
             return array('success'=>true, 'verifyemail'=>false, 'userid'=>$userid, 'message'=>"User account created");
         }
     }
@@ -406,7 +420,7 @@ class User
 
     public function admin_user_list() {
 
-        $result = $this->mysqli->query("SELECT id,username,name,email,admin FROM users");
+        $result = $this->mysqli->query("SELECT id,username,`name`,email,created,last_login,`admin` FROM users");
         $users = array();
         while ($row = $result->fetch_object()) {
             $row->emoncmsorg_link = $this->emoncmsorg_link_exists($row->id) ? 'Yes' : '';

@@ -267,7 +267,7 @@ $schema['system_meta'] = array(
         'optional' => false, 
         'name' => 'Legionella frequency', 
         'group' => 'Heat pump controls',
-        'options' => array('Daily', 'Weekly', 'Fornightly', 'Monthly', 'Other', 'Never', 'No cylinder')
+        'options' => array('Daily', 'Weekly', 'Fornightly', 'Monthly', 'Other', 'Flexible', 'Disabled', 'No cylinder')
     ),
 
     'legionella_target_temperature' => array(
@@ -514,6 +514,7 @@ $schema['system_stats_last30'] = array(
     'heat_kwh' => array('type' => 'float', 'name'=>'Last 30 days heat output', 'group'=>'Stats'),
     'cop' => array('type' => 'float', 'name'=>'Last 30 days COP', 'group'=>'Stats'),
     'since' => array('type' => 'int(11)'),
+    'data_length' => array('type' => 'int(11)'),
 
     // when running
     'when_running_elec_kwh' => array('type' => 'float'),
@@ -553,6 +554,7 @@ $schema['system_stats_monthly'] = array(
     'heat_kwh' => array('type' => 'float', 'name'=>'Heat (kWh)', 'group'=>'Stats'),
     'cop' => array('type' => 'float', 'name'=>'SCOP', 'group'=>'Stats'),
     'since' => array('type' => 'int(11)'),
+    'data_length' => array('type' => 'int(11)'),
 
     // when running
     'when_running_elec_kwh' => array('type' => 'float', 'name'=>'Electricity running (kWh)', 'group'=>'When Running'),
@@ -586,6 +588,7 @@ $schema['system_stats_last365'] = array(
     'heat_kwh' => array('type' => 'float', 'name'=>'Last 365 days heat output', 'group'=>'Stats'),
     'cop' => array('type' => 'float', 'name'=>'Last 365 days COP', 'group'=>'Stats'),
     'since' => array('type' => 'int(11)'),
+    'data_length' => array('type' => 'int(11)'),
     'data_start' => array('type' => 'int(11)')
 
 );

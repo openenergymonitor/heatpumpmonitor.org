@@ -9,7 +9,9 @@ $schema['users'] = array(
     'salt' => array('type' => 'varchar(32)'),
     'admin' => array('type' => 'int(11)', 'Null'=>false),
     'email_verified' => array('type' => 'int(11)', 'default'=>0),
-    'verification_key' => array('type' => 'varchar(64)', 'default'=>'')
+    'verification_key' => array('type' => 'varchar(64)', 'default'=>''),
+    'created' => array('type' => 'int(11)', 'default'=>0),
+    'last_login' => array('type' => 'int(11)', 'default'=>0)
 );
 
 $schema['emoncmsorg_link'] = array(

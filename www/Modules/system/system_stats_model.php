@@ -112,6 +112,7 @@ class SystemStats
             'heat_kwh' => $stats->last30->heat_kwh,
             'cop' => $stats->last30->cop,
             'since' => $stats->last30->since,
+            'data_length' => isset($stats->last30->data_length) ? $stats->last30->data_length : 0,
             'when_running_elec_kwh' => $stats->when_running->elec_kwh,
             'when_running_heat_kwh' => $stats->when_running->heat_kwh,
             'when_running_cop' => $stats->when_running->cop,
@@ -153,6 +154,7 @@ class SystemStats
             'heat_kwh' => $stats->last365->heat_kwh,
             'cop' => $stats->last365->cop,
             'since' => $stats->last365->since,
+            'data_length' => isset($stats->last365->data_length) ? $stats->last365->data_length : 0,
             'data_start' => isset($stats->data_start) ? $stats->data_start : 0
         );
 
@@ -167,14 +169,7 @@ class SystemStats
     {    
         $systemid = (int) $systemid;
         $start = (int) $start;
-
-        // Translate the stats into the schema
-        // consider changing API structure to match schema
-
-        if (!isset($stats->data_start)) {
-            return false;
-        }
-
+        
         $stats = array(
             'id' => $systemid,
             'timestamp' => $start,
@@ -182,6 +177,7 @@ class SystemStats
             'heat_kwh' => $stats->full_period->heat_kwh,
             'cop' => $stats->full_period->cop,
             'since' => $stats->data_start,
+            'data_length' => isset($stats->full_period->data_length) ? $stats->full_period->data_length : 0,
             'when_running_elec_kwh' => $stats->when_running->elec_kwh,
             'when_running_heat_kwh' => $stats->when_running->heat_kwh,
             'when_running_cop' => $stats->when_running->cop,
@@ -200,7 +196,7 @@ class SystemStats
             "quality_flow" => $stats->quality_flow,
             "quality_return" => $stats->quality_return,
             "quality_outside" => $stats->quality_outside,
-            'data_start' => $stats->data_start
+            'data_start' => isset($stats->data_start) ? $stats->data_start : 0
         );
 
         $id = $stats['id'];
@@ -293,6 +289,7 @@ class SystemStats
             "quality_outside" => array("average" => true, "dp" => 0),
 
             "data_start" => array("average" => false, "dp" => 0),
+            "data_length" => array("average" => false, "dp" => 0),
             "since" => array("average" => false, "dp" => 0)
         );
 
@@ -349,6 +346,7 @@ class SystemStats
             $stats["" . $id]["cop"] = number_format($cop, 1, ".", "") * 1;
             $stats["" . $id]["when_running_cop"] = number_format($when_running_cop, 1, ".", "") * 1;
             $stats["" . $id]["since"] = $system['since'];
+            $stats["" . $id]["data_length"] = $system['data_length'];
         }
 
         return $stats;
@@ -362,14 +360,15 @@ class SystemStats
         }
 
         $stats = array();
-        $result = $this->mysqli->query("SELECT id,elec_kwh,heat_kwh,cop,since,data_start FROM system_stats_last365 $where");
+        $result = $this->mysqli->query("SELECT id,elec_kwh,heat_kwh,cop,since,data_start,data_length FROM system_stats_last365 $where");
         while ($row = $result->fetch_object()) {
             $stats["" . $row->id] = array(
                 "elec_kwh" => number_format($row->elec_kwh, 0, ".", "") * 1,
                 "heat_kwh" => number_format($row->heat_kwh, 0, ".", "") * 1,
                 "cop" => number_format($row->cop, 1, ".", "") * 1,
                 "since" => $row->since*1,
-                "data_start" => $row->data_start*1
+                "data_start" => $row->data_start*1,
+                "data_length" => $row->data_length*1
             );
         }
         return $stats;
@@ -398,7 +397,8 @@ class SystemStats
             "quality_flow",
             "quality_return",
             "quality_outside",
-            "data_start"
+            "data_start",
+            "data_length"
         );
 
         $field_str = implode(",", $fields);

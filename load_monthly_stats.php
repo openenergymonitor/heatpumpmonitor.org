@@ -15,6 +15,7 @@ $system_stats = new SystemStats($mysqli,$system);
 $data = $system->list_admin();
 foreach ($data as $row) {
     $userid = (int) $row->userid;
+    //if ($user->emoncmsorg_link_exists($userid)) continue;
     if ($row->id!=36) continue;
 
     if ($user_data = $user->get($userid)) {

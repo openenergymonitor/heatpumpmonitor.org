@@ -96,7 +96,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             <span v-else>View</span>
                         </th>
                     </tr>
-                    <tr v-for="(system,index) in systems">
+                    <tr v-for="(system,index) in systems" v-if="mode!='public' || (mode=='public' && system.data_length!=0)">
                         <td v-if="mode=='admin'" :title="system.username+'\n'+system.email">{{ system.name }}</td>
                         <td v-for="column in selected_columns" v-html="column_format(system,column)" v-bind:class="sinceClass(system,column)"></td>
                         <td v-if="mode!='public'">
@@ -126,7 +126,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     columns['elec_kwh'] = {name: 'Electricity (kWh)', group: 'Stats'};
     columns['heat_kwh'] = {name: 'Heat (kWh)', group: 'Stats'};
     columns['data_start'] = {name: 'Data Start', group: 'Stats'};
-    columns['since'] = {name: 'Data length', group: 'Stats'};
+    columns['data_length'] = {name: 'Data length', group: 'Stats'};
 
     columns['when_running_elec_kwh'] = {name: 'Electricity (kWh)', group: 'When Running'};
     columns['when_running_heat_kwh'] = {name: 'Heat (kWh)', group: 'When Running'};
@@ -172,7 +172,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     var mode = "<?php echo $mode; ?>";
     var selected_columns = ['location', 'last_updated','cop'];
     if (mode == 'public') {
-        selected_columns = ['location', 'installer_name', 'hp_model', 'hp_output', 'since', 'cop', 'mid_metering'];
+        selected_columns = ['location', 'installer_name', 'hp_model', 'hp_output', 'data_length', 'cop', 'mid_metering'];
     }
 
     var app = new Vue({
@@ -352,6 +352,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 if (key=='since') {
                     return time_ago(val);
                 }
+                if (key=='data_length') {
+                    return (val/(24*3600)).toFixed(0)+" days";
+                }                
                 if (key=='installer_name') {
                     if (val!=null && val!='') {
                         return "<a href='"+system['installer_url']+"'>"+val+"</a>";
@@ -378,13 +381,16 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             sinceClass: function(system,column) {
                 // return node.since > 0 ? 'partial ' : '';
                 // node.since is unix time in seconds
-                if (column=='cop' || column=='since') {
+                if (column=='cop' || column=='since' || column=='data_length') {
+                    var days = system.data_length / (24 * 3600)
                     if (this.stats_time_start=='last365') {
-                        return (system.since + 360 * 24 * 3600) * 1000 > Date.now() ? 'partial ' : '';
+                        
+                        return (days<=360) ? 'partial ' : '';
                     } else {
-                        return (system.since + 30 * 24 * 3600) * 1000 > Date.now() ? 'partial ' : '';
+                        return (days<=27) ? 'partial ' : '';
                     }
                 }
+                
                 return '';
             }
         },

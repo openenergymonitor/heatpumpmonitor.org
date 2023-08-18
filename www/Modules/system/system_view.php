@@ -26,8 +26,12 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 <div id="app" class="bg-light">
     <div style=" background-color:#f0f0f0; padding-top:20px; padding-bottom:10px">
         <div class="container" style="max-width:800px;">
+            <button class="btn btn-warning" style="float:right; margin-left:10px" v-if="admin && mode=='view'" @click="mode='edit'">Edit</button>
+            <button class="btn btn-light" style="float:right; margin-left:10px" v-if="admin && mode=='edit'" @click="mode='view'">Cancel</button>
             <button class="btn btn-primary" style="float:right" @click="open_emoncms_dashboard">Open Emoncms Heat Pump Dashboard</button>
-            <h3>{{ system.location }}</h3>
+
+            <h3>{{ system.hp_output }} kW, {{ system.hp_model }}</h3>
+            <p>{{ system.location }}, <span v-if="system.installer_name"><a :href="system.installer_url">{{ system.installer_name }}</a></span></p>
         </div>
     </div>
 

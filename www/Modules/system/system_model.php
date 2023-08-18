@@ -90,7 +90,7 @@ class System
         return $this->typecast($row);
     }
 
-    public function validate($form_data) {
+    public function validate($userid,$form_data) {
         $error_log = array();
         $warning_log = array();
 
@@ -98,7 +98,7 @@ class System
             if ($this->schema_meta[$key]['editable']) {
                 if (isset($form_data->$key) || $form_data->$key===null) {
                     if ($form_data->$key===null || $form_data->$key==='') {
-                        if (!$this->schema_meta[$key]['optional']) {
+                        if (!$this->schema_meta[$key]['optional'] && $this->is_admin($userid)==false) {
                             $error_log[] = array("key"=>$key,"message"=>"required");
                         }
                     }
@@ -122,7 +122,7 @@ class System
         $systemid = (int) $systemid;
 
         if ($validate) {
-            $validate_result = $this->validate($form_data);
+            $validate_result = $this->validate($userid,$form_data);
             if ($validate_result['success']==false) {
                 return $validate_result;
             }

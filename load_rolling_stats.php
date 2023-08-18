@@ -14,7 +14,7 @@ $system_stats = new SystemStats($mysqli,$system);
 
 $data = $system->list_admin();
 foreach ($data as $row) {
-    if ($row->id!=36) continue;
+    if ($row->id!=1) continue;
     $userid = (int) $row->userid;
     if ($user_data = $user->get($userid)) {
 
