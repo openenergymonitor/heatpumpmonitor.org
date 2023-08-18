@@ -366,7 +366,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     return val + ' kW';
                 }
                 if (key=='cop') {
-                    return val.toFixed(1);
+                    if (isNaN(val) || val == null) {
+                        return val;
+                    } else {
+                        return val.toFixed(1);
+                    }
                 }
                 if (key=='mid_metering') {
                     if (val==1) {
@@ -444,7 +448,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
         return days + " days"+ago;
 
-        return day + " " + months[month-1] + " " + year;
+        // return day + " " + months[month-1] + " " + year;
     }
 
     window.addEventListener("scroll", function() {
