@@ -215,6 +215,8 @@ class System
         }  else {
             $this->send_change_notification($userid,$systemid,$change_log);
 
+            $this->computed_fields($systemid);
+
             // Update last updated time
             $now = time();
             $this->mysqli->query("UPDATE system_meta SET last_updated='$now' WHERE id='$systemid'");
@@ -228,6 +230,22 @@ class System
             );
         }
     }
+
+    public function computed_fields($systemid=false) {
+        $systemid = (int) $systemid;
+        $where = "";
+        if ($systemid) $where = "WHERE id='$systemid'";        
+        
+        // kwh_m2
+        $result = $this->mysqli->query("SELECT id,heat_demand,floor_area FROM system_meta $where");
+        while ($row = $result->fetch_object()) {
+            $kwh_m2 = 0;
+            if ($row->floor_area>0) $kwh_m2 = round($row->heat_demand / $row->floor_area);
+            $this->mysqli->query("UPDATE system_meta SET kwh_m2='$kwh_m2' WHERE id='$row->id'");
+        }
+    }
+
+    
 
     public function delete($userid,$systemid) {
         $userid = (int) $userid;
@@ -340,7 +358,9 @@ class System
         foreach ($this->schema_meta as $key=>$row) {
             // name and group for each key
             if (!isset($row['group']) || !isset($row['name'])) continue;
-            $columns[$key] = array("name"=>$row['name'], "group"=>$row['group']);
+            $helper = "";
+            if (isset($row['helper'])) $helper = $row['helper'];
+            $columns[$key] = array("name"=>$row['name'], "group"=>$row['group'], "helper"=>$helper);
         }
         /*
         foreach ($this->schema_stats_monthly as $key=>$row) {

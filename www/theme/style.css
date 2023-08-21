@@ -85,6 +85,16 @@
   color: grey;
 }
 
+.installer_link {
+  color: #888 !important;
+  text-decoration: none !important;
+}
+
+.installer_link:hover {
+  color: #44b3e2 !important;
+  text-decoration: none !important;
+}
+
 /*
 .table-striped tbody tr:nth-of-type(odd) {
   background-color: #eef;

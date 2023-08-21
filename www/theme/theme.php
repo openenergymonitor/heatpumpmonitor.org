@@ -24,7 +24,7 @@ $navigation = array(
     <link href="https://openenergymonitor.org/homepage/theme/favicon.ico" rel="shortcut icon">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css">
-    <link rel="stylesheet" href="<?php echo $path; ?>theme/style.css?v=15" />
+    <link rel="stylesheet" href="<?php echo $path; ?>theme/style.css?v=24" />
 
 </head>
 
@@ -80,7 +80,7 @@ $navigation = array(
     <header>
         <nav class="navbar navbar-expand-lg navbar-dark bg-custom">
             <div class="container-fluid">
-                <a class="navbar-brand" href="#"><b>HeatpumpMonitor</b>.org</a>
+                <a class="navbar-brand" href="<?php echo $path; ?>"><b>HeatpumpMonitor</b>.org</a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>

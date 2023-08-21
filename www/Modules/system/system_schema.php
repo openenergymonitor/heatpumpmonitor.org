@@ -305,7 +305,7 @@ $schema['system_meta'] = array(
         'optional' => false, 
         'name' => 'Annual heat demand', 
         'group' => 'Property', 
-        'helper' => 'E.g as given on the EPC for the property',
+        'helper' => 'E.g as given on the EPC or heat loss calculation, should include space heating and hot water',
         'unit' => 'kWh'
     ),
 
@@ -335,6 +335,16 @@ $schema['system_meta'] = array(
         'name' => 'Insulation level', 
         'group' => 'Property',
         'options' => array('Passivhaus', 'Fully insulated walls, floors and loft', 'Some insulation in walls and loft', 'Cavity wall, plus some loft insulation', 'Non-insulated cavity wall', 'Solid walls')
+    ),
+
+    'kwh_m2' => array(
+        'type' => 'float', 
+        'editable' => false, 
+        'optional' => true, 
+        'name' => 'kWh/m²', 
+        'group' => 'Property', 
+        'helper' => 'Annual space and water heating demand per m2',
+        'unit' => 'kWh/m²/yr'
     ),
 
     /* ----------------------------- Electricity tariff ----------------------------- */

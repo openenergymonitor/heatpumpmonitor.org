@@ -87,7 +87,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <th v-if="mode=='admin'" @click="sort('name', 'asc')" style="cursor:pointer">User
                             <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='name'"></i>
                         </th>
-                        <th v-for="column in selected_columns" @click="sort(column, 'desc')" style="cursor:pointer">{{ columns[column].name }}
+                        <th v-for="column in selected_columns" @click="sort(column, 'desc')" style="cursor:pointer" :title="columns[column].helper">{{ columns[column].name }}
                             <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn==column"></i>
                         </th>
                         <th v-if="mode!='public'">Status</th>
@@ -141,14 +141,14 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     columns['standby_threshold'] = {name: 'Standby Threshold (°C)', group: 'Standby'};
     columns['standby_kwh'] = {name: 'Electricity (kWh)', group: 'Standby'};
 
-    columns['quality_elec'] = {name: 'Electricity (kWh)', group: 'Quality'};
+    columns['quality_elec'] = {name: 'Quality', group: 'Quality'};
 
     // convert to column groups
     var column_groups = {};
     for (var key in columns) {
         var column = columns[key];
         if (column_groups[column.group] == undefined) column_groups[column.group] = [];
-        column_groups[column.group].push({key: key, name: column.name});
+        column_groups[column.group].push({key: key, name: column.name, helper: column.helper});
     }
 
     // create list of Stats, When Running, Standby columns
@@ -172,7 +172,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     var mode = "<?php echo $mode; ?>";
     var selected_columns = ['location', 'last_updated','cop'];
     if (mode == 'public') {
-        selected_columns = ['location', 'installer_name', 'hp_model', 'hp_output', 'data_length', 'cop', 'mid_metering'];
+        selected_columns = ['location', 'installer_name', 'hp_model', 'hp_output', 'kwh_m2', 'data_length', 'cop', 'mid_metering'];
     }
 
     var app = new Vue({
@@ -357,7 +357,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 }                
                 if (key=='installer_name') {
                     if (val!=null && val!='') {
-                        return "<a href='"+system['installer_url']+"'>"+val+"</a>";
+                        return "<a class='installer_link' href='"+system['installer_url']+"'>"+val+"</a>";
                     } else {
                         return '';
                     }
@@ -379,14 +379,21 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         return '';
                     }
                 }
+                if (key=='quality_elec') {
+                    if (val==undefined) return '';
+                    return val + '%';
+                }
                 return val;
             },
             // grey if start date is less that 1 year ago
             sinceClass: function(system,column) {
                 // return node.since > 0 ? 'partial ' : '';
                 // node.since is unix time in seconds
-                if (column=='cop' || column=='since' || column=='data_length') {
+                if (column=='cop' || column=='since' || column=='data_length' || column=='quality_elec') {
                     var days = system.data_length / (24 * 3600)
+                    if (system.cop==0) {
+                        return 'partial ';
+                    }
                     if (this.stats_time_start=='last365') {
                         
                         return (days<=360) ? 'partial ' : '';
