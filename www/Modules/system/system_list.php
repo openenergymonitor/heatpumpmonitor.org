@@ -216,7 +216,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 if (confirm("Are you sure you want to delete system: " + this.systems[index].location + "?")) {
                     // axios delete 
                     let systemid = this.systems[index].id;
-                    axios.get('delete?id=' + systemid)
+                    axios.get(path+'system/delete?id=' + systemid)
                         .then(response => {
                             if (response.data.success) {
                                 this.systems.splice(index, 1);

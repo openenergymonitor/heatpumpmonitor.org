@@ -13,7 +13,13 @@ function system_controller() {
         $route->format = "html";
         if ($session['userid']) {
             $system_data = $system->new();
-            return view("Modules/system/system_view.php", array("mode"=>"edit", "system_data"=>$system_data, 'admin'=>$session['admin'], 'schema'=>$system->schema_meta));
+            return view("Modules/system/system_view.php", array(
+                "mode"=>"edit", 
+                "system_data"=>$system_data, 
+                'admin'=>$session['admin'], 
+                'schema'=>$system->schema_meta,
+                'system_stats_monthly'=>$system_stats->schema['system_stats_monthly']
+            ));
         }
     }
 

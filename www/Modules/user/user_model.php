@@ -418,12 +418,29 @@ class User
         }
     }
 
+    // Get emoncmsorg userid
+    public function get_emoncmsorg_userid($userid) {
+        $userid = (int) $userid;
+        $result = $this->mysqli->query("SELECT emoncmsorg_userid FROM emoncmsorg_link WHERE userid='$userid'");
+        if ($result->num_rows > 0) {
+            $row = $result->fetch_object();
+            return $row->emoncmsorg_userid;
+        } else {
+            return false;
+        }
+    }
+
     public function admin_user_list() {
 
         $result = $this->mysqli->query("SELECT id,username,`name`,email,created,last_login,`admin` FROM users");
         $users = array();
         while ($row = $result->fetch_object()) {
-            $row->emoncmsorg_link = $this->emoncmsorg_link_exists($row->id) ? 'Yes' : '';
+            if ($emoncmsorg_userid = $this->get_emoncmsorg_userid($row->id)) {
+                $row->emoncmsorg_link = $emoncmsorg_userid;
+            } else {
+                $row->emoncmsorg_link = '';
+            }
+
             $row->admin = $row->admin ? 'Yes' : '';
             $users[] = $row;
         }

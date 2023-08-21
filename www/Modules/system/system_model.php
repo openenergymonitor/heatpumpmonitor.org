@@ -20,6 +20,7 @@ class System
 
     // Returns a list of public systems
     public function list_public($userid=false) {
+        $userid = (int) $userid;
         $result = $this->mysqli->query("SELECT * FROM system_meta WHERE share=1 AND published=1 OR userid='$userid'");
         $list = array();
         while ($row = $result->fetch_object()) {
@@ -33,6 +34,7 @@ class System
         $result = $this->mysqli->query("SELECT system_meta.*,users.name,users.username,users.email FROM system_meta JOIN users ON system_meta.userid = users.id");
         $list = array();
         while ($row = $result->fetch_object()) {
+            
             $list[] = $this->typecast($row);
         }
         return $list;
@@ -40,6 +42,7 @@ class System
 
     // User systems
     public function list_user($userid=false) {
+        $userid = (int) $userid;
         $result = $this->mysqli->query("SELECT * FROM system_meta WHERE userid='$userid'");
         $list = array();
         while ($row = $result->fetch_object()) {
