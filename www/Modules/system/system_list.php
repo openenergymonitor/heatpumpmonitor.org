@@ -44,6 +44,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 </div>
             </div>
 
+			<div class="input-group" style="width:250px; float:right; margin-right:10px">
+				<div class="input-group-text">Filter</div>
+				<input class="form-control" name="query" v-model="filterKey">
+			</div>
+
             <p v-if="mode=='user'">Add, edit and view systems associated with your account.</p>
             <p v-if="mode=='admin'">Add, edit and view all systems.</p>
             <p v-if="mode=='public'">Here you can see a variety of installations monitored with OpenEnergyMonitor, and compare detailed statistic to see how performance can vary.</p>
@@ -191,7 +196,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             stats_time_end: "only",
             stats_time_range: false,
             available_months_start: months,
-            available_months_end: months
+            available_months_end: months,
+            filterKey: ''
         },
         methods: {
             create: function() {
