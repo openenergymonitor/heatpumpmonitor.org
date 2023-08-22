@@ -34,10 +34,23 @@ class System
         $result = $this->mysqli->query("SELECT system_meta.*,users.name,users.username,users.email FROM system_meta JOIN users ON system_meta.userid = users.id");
         $list = array();
         while ($row = $result->fetch_object()) {
-            
+            $row->emoncmsorg_userid = $this->get_emoncmsorg_userid($row->userid);
+            if ($row->emoncmsorg_userid) $row->emoncmsorg_userid = (int) $row->emoncmsorg_userid;
             $list[] = $this->typecast($row);
         }
         return $list;
+    }
+
+    // Get emoncmsorg userid
+    public function get_emoncmsorg_userid($userid) {
+        $userid = (int) $userid;
+        $result = $this->mysqli->query("SELECT emoncmsorg_userid FROM emoncmsorg_link WHERE userid='$userid'");
+        if ($result->num_rows > 0) {
+            $row = $result->fetch_object();
+            return $row->emoncmsorg_userid;
+        } else {
+            return false;
+        }
     }
 
     // User systems

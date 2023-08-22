@@ -39,15 +39,15 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <option value="only">Only</option>
                         <option v-for="month in available_months_end">{{ month }}</option>
                     </select>
-
                     <button class="btn btn-primary" @click="toggle_chart"><i class="fa fa-chart-bar"></i></button>
                 </div>
             </div>
-
+            <!--
 			<div class="input-group" style="width:250px; float:right; margin-right:10px">
 				<div class="input-group-text">Filter</div>
 				<input class="form-control" name="query" v-model="filterKey">
 			</div>
+            -->
 
             <p v-if="mode=='user'">Add, edit and view systems associated with your account.</p>
             <p v-if="mode=='admin'">Add, edit and view all systems.</p>
@@ -89,9 +89,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             <div class="col-md-10">
                 <table id="custom" class="table table-sm mt-3">
                     <tr>
+                        <th v-if="mode=='admin'">ID</th>
                         <th v-if="mode=='admin'" @click="sort('name', 'asc')" style="cursor:pointer">User
                             <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='name'"></i>
                         </th>
+                        <th v-if="mode=='admin'">LINK</th>
                         <th v-for="column in selected_columns" @click="sort(column, 'desc')" style="cursor:pointer" :title="columns[column].helper">{{ columns[column].name }}
                             <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn==column"></i>
                         </th>
@@ -102,7 +104,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         </th>
                     </tr>
                     <tr v-for="(system,index) in systems" v-if="mode!='public' || (mode=='public' && system.data_length!=0)">
+                        <td v-if="mode=='admin'">{{ system.id }}</td>
                         <td v-if="mode=='admin'" :title="system.username+'\n'+system.email">{{ system.name }}</td>
+                        <td v-if="mode=='admin'"><a v-if="system.emoncmsorg_userid" :href="'https://emoncms.org/admin/setuser?id='+system.emoncmsorg_userid" target="_blank">{{ system.emoncmsorg_userid }}</a></td>
                         <td v-for="column in selected_columns" v-html="column_format(system,column)" v-bind:class="sinceClass(system,column)"></td>
                         <td v-if="mode!='public'">
                             <span v-if="system.share" class="badge bg-success">Shared</span>
@@ -113,7 +117,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <td>
                             <button v-if="mode!='public'" class="btn btn-warning btn-sm" @click="edit(index)" title="Edit"><i class="fa fa-edit" style="color: #ffffff;"></i></button>
                             <button v-if="mode!='public'" class="btn btn-danger btn-sm" @click="remove(index)" title="Delete"><i class="fa fa-trash" style="color: #ffffff;"></i></button>
-                            <button class="btn btn-primary btn-sm" @click="view(index)" title="View"><i class="fa fa-eye" style="color: #ffffff;"></i></button>
+                            
+                            <a :href="'<?php echo $path;?>system/view?id='+system.id">
+                                <button class="btn btn-primary btn-sm" title="View"><i class="fa fa-eye" style="color: #ffffff;"></i></button>
+                            </a>
                         </td>
                     </tr>
                 </table>

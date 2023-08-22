@@ -179,7 +179,17 @@ $schema['system_meta'] = array(
         'name' => 'Flow temperature', 
         'group' => 'Heat pump controls',
         'helper' => "Design flow temperature (e.g 45°C at -3°C)",
-        'unit' => '°C @ -3°C'
+        'unit' => '°C'
+    ),
+
+    'design_temp' => array(
+        'type' => 'float', 
+        'editable' => true, 
+        'optional' => false, 
+        'name' => 'Outside design temperature', 
+        'group' => 'Heat pump controls',
+        'helper' => "E.g -3°C",
+        'unit' => '°C'
     ),
 
     'flow_temp_typical' => array(
@@ -375,7 +385,7 @@ $schema['system_meta'] = array(
         'group' => 'Tariff & Generation', 
         'unit' => 'p/kWh'
     ),
-
+    /*
     'electricity_tariff_unit_rate_hp' => array(
         'type' => 'float', 
         'editable' => true, 
@@ -384,7 +394,7 @@ $schema['system_meta'] = array(
         'helper' => 'If known, based on time of use monitoring',
         'group' => 'Tariff & Generation', 
         'unit' => 'p/kWh'
-    ),
+    ),*/
 
     'solar_pv_generation' => array(
         'type' => 'int(11)', 
