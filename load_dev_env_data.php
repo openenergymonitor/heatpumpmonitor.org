@@ -113,3 +113,21 @@ foreach ($stats as $id=>$system_stats) {
     $system_stats_class->save_stats_table('system_stats_last30',$system_stats);
 }
 print "- Loaded 30 day data\n";
+
+// Load monthly data
+foreach ($systems as $system) {
+    $data = file_get_contents("https://heatpumpmonitor.org/system/monthly?id=".$system->id);
+    $monthly = json_decode($data);
+    foreach ($monthly as $month=>$stats) {
+        $stats->id = $system->id;
+        $stats->when_running_elec_W = 0;
+        $stats->when_running_heat_W = 0;
+        $stats->since = 0;
+        // convert to array
+        $stats = (array) $stats;
+        $timestamp = $stats['timestamp'];
+        $mysqli->query("DELETE FROM system_stats_monthly WHERE id=$system->id AND timestamp=$timestamp");
+        $system_stats_class->save_stats_table('system_stats_monthly',$stats);
+    }
+    print "- Loaded monthly data for system $system->id\n";
+}
