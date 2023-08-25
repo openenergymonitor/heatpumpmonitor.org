@@ -87,9 +87,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 </div>
             </div>
             <div class="col-md-10">
-                <table id="custom" class="table table-sm mt-3">
+                <table id="custom" class="table table-striped table-sm mt-3">
                     <tr>
-                        <th v-if="mode=='admin'">ID</th>
+                        <th v-if="mode=='admin'" @click="sort('id', 'asc')" style="cursor:pointer">ID</th>
                         <th v-if="mode=='admin'" @click="sort('name', 'asc')" style="cursor:pointer">User
                             <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='name'"></i>
                         </th>

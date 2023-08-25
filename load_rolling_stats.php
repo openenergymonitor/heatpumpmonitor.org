@@ -22,7 +22,7 @@ foreach ($data as $row) {
         if (isset($result['success']) && $result['success']) {
             $system_stats->save_last30($row->id, $result['stats']);
             $system_stats->save_last365($row->id, $result['stats']);
-            print json_encode($result['stats']) . "\n";        
+            // print json_encode($result['stats']) . "\n";        
         } else {
             print "ERROR: ".$result['message']."\n";
         }
