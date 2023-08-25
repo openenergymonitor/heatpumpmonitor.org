@@ -3,7 +3,7 @@ var tend = date.getTime()*0.001;
 var tstart = tend - (3600*24*30);
 
 var system_list = [];
-$.ajax({dataType: "json", url: "data.json", async: false, success: function(result) { system_list = result; }});
+$.ajax({dataType: "json", url: path+"system/list/public.json", async: false, success: function(result) { system_list = result; }});
 
 var app = new Vue({
   el: '#app',
@@ -317,7 +317,7 @@ function load_system_data(idx) {
   var system = app.selected_systems[idx];
   $.ajax({
     dataType: "json", 
-    url: "api/data/all?system="+(system.id+1)+"&start="+date_str_to_time(system.start)+"&end="+date_str_to_time(system.end)+"&interval="+app.interval, 
+    url: "api/all?system="+(system.id+1)+"&start="+date_str_to_time(system.start)+"&end="+date_str_to_time(system.end)+"&interval="+app.interval, 
     async:false, 
     success: function(system_data) {
       app.selected_systems[idx].data = system_data;

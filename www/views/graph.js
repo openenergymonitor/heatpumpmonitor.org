@@ -86,28 +86,28 @@ function plot() {
     var c = [];
     var tooltips = [];
     for (var z in nodes) {
-      if (nodes[z].stats!=undefined) {
+      if (nodes[z].datapoints>0) {
         var x_val = null;
         if (x_axis_select=="flowT") {
-          x_val = nodes[z].stats.when_running.flowT;
+          x_val = nodes[z].when_running_flowT;
         } else if (x_axis_select=="returnT") {
-          x_val = nodes[z].stats.when_running.returnT;
+          x_val = nodes[z].when_running_returnT;
         } else if (x_axis_select=="outsideT") {
-          x_val = nodes[z].stats.when_running.outsideT;
+          x_val = nodes[z].when_running_outsideT;
         } else if (x_axis_select=="flow_minus_outside") {
-          x_val = nodes[z].stats.when_running.flow_minus_outside;
+          x_val = nodes[z].when_running_flow_minus_outside;
         } else if (x_axis_select=="flow_minus_return") {
-          x_val = nodes[z].stats.when_running.flow_minus_return;
+          x_val = nodes[z].when_running_flow_minus_return;
         } else if (x_axis_select=="elec_W") {
-          x_val = nodes[z].stats.when_running.elec_W;
+          x_val = nodes[z].when_running_elec_W;
         } else if (x_axis_select=="heat_W") {
-          x_val = nodes[z].stats.when_running.heat_W;
+          x_val = nodes[z].when_running_heat_W;
         } else if (x_axis_select=="elec_kwh") {
-          x_val = nodes[z].month_elec;
+          x_val = nodes[z].full_period_elec_kwh;
         } else if (x_axis_select=="heat_kwh") {
-          x_val = nodes[z].month_heat;
+          x_val = nodes[z].full_period_heat_kwh;
         } else if (x_axis_select=="carnot_prc") {
-          x_val = nodes[z].stats.when_running.carnot_prc;
+          x_val = nodes[z].when_running_carnot_prc;
           if (x_val==0) x_val = null;
         } else if (x_axis_select=="floor_area") {
           x_val = nodes[z].floor_area*1;
@@ -116,22 +116,22 @@ function plot() {
         } else if (x_axis_select=="calc_heat_demand_m2") {
           x_val = nodes[z].heat_demand*1 / nodes[z].floor_area*1;
         } else if (x_axis_select=="monthly_heat_demand_m2") {
-          x_val = nodes[z].stats.when_running.heat_kwh / nodes[z].floor_area*1;
+          x_val = nodes[z].when_running_heat_kwh / nodes[z].floor_area*1;
         }
         
         if (x_val===false) x_val = null;  
       
         var y_val = null;
         if (y_axis_select=="monthly_cop") {
-          if (nodes[z].month_cop>0) {
-            y_val = nodes[z].month_cop;
+          if (nodes[z].last_30_cop>0) {
+            y_val = nodes[z].last_30_cop;
           }
         } else if (y_axis_select=="when_running_cop") {
-          if (nodes[z].stats.when_running.cop>0) y_val = nodes[z].stats.when_running.cop;
+          if (nodes[z].when_running_cop>0) y_val = nodes[z].when_running_cop;
         } else if (y_axis_select=="elec_kwh") {
-          y_val = nodes[z].month_elec;
+          y_val = nodes[z].last_30_elec_kwh;
         } else if (y_axis_select=="heat_kwh") {
-          y_val = nodes[z].month_heat;
+          y_val = nodes[z].last_30_heat_kwh;
         }
         
         var c_val = null;

@@ -1,58 +1,11 @@
-body {
-  font-family: sans-serif 
+.pad-top {
+  margin-top:20px;
 }
-div#header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  margin: 0;
-  padding: 8px;
-  background: #44b3e2;
-  color: white;
-  width: 100%;
-  height: 1cm;
-}
-div#header div#title {
-  float: left;
-}
-div#header div#title span.big {
-  font-size: 32px;
-}
-div#header div#tagline {
-  margin-top: 12px;
-  text-align: center;
-  font-style: italic;
-  font-size: large;
-}
-div#header div#navigation {
-  font-size: 32px;
-  font-weight: bold;
-  float: right;
-  margin-right: 16px;
-}
-div#header div#navigation i {
-  vertical-align: middle;
-  font-size: 32px;
-  padding-right: 12px;
-}
-div#header a {
-  color: white;
-  padding: 10px 0 10px 12px;
-  text-decoration: none;
-}
-div#header a.active {
-  background: #368fb4;
-}
-form#search {
-  float: right;
-}
-div#app {
-  margin-top: 4em;
-}
-table {
+
+.table-hpmon {
   border-collapse: collapse;
 }
-table th {
+.table-hpmon th {
   font-size: 90%;
   text-align: left;
   background: #44b3e2;
@@ -60,44 +13,44 @@ table th {
   padding: 2px 8px;
   cursor: ns-resize;
 }
-table th.header {
+.table-hpmon th.header {
   border-left: white 2px solid;
   background: #e3f7ff;
   color: #44b3e2;
   text-align: center;
   cursor: default;
 }
-table th.header a {
+.table-hpmon th.header a {
   color: #44b3e2;
   font-weight: normal;
 }
-table th.header a:visited {
+.table-hpmon th.header a:visited {
   color: #44b3e2;
   font-weight: normal;
 }
-table th.border {
+.table-hpmon th.lborder {
   border-left: white 2px solid;
 }
-table th.nosort {
+.table-hpmon th.nosort {
   cursor: default;
 }
-tbody td {
+.table-hpmon tbody td {
   font-size: 90%;
   border-top: silver solid 1px;
   padding: 2px 8px;
 }
-tbody td.border {
+.table-hpmon tbody td.lborder {
   border-left: white 2px solid;
 }
-tbody td.nowrap {
+.table-hpmon tbody td.nowrap {
   white-space: nowrap;
 }
-tbody td.toggle {
+.table-hpmon tbody td.toggle {
   color: #44b3e2;
   cursor: pointer;
 }
-tbody td.partial {
-  color: silver;
+.partial {
+  color: silver !important;
 }
 .center {
   text-align: center !important;
@@ -105,37 +58,49 @@ tbody td.partial {
 .right {
   text-align: right !important;
 }
-tbody td.extra {
+.table-hpmon tbody td.extra {
   border-top: none;
   background: white;
   color: grey;
 }
-tbody tr:nth-child(4n+1) td {
+.table-hpmon tbody tr:nth-child(4n+1) td {
   background: #efe;
 }
-tbody tr:nth-child(4n+2) td {
+.table-hpmon tbody tr:nth-child(4n+2) td {
   background: #efe;
 }
-tbody tr:nth-child(4n+3) td {
+.table-hpmon tbody tr:nth-child(4n+3) td {
   background: #eef;
 }
-tbody tr:nth-child(4n+4) td {
+.table-hpmon tbody tr:nth-child(4n+4) td {
   background: #eef;
 }
-tbody tr.hilite td {
+.table-hpmon tbody tr.hilite td {
   background: #fee;
 }
-tfoot td {
+.table-hpmon tfoot td {
   border-top: silver solid 1px;
   text-align: center;
   background: white;
   color: grey;
 }
-div.footer {
-  padding: 4px;
-  margin-top: 32px;
-  border-top: solid 1px silver;
-  text-align: center;
-  color: gray;
+
+.installer_link {
+  color: #888 !important;
+  text-decoration: none !important;
 }
 
+.installer_link:hover {
+  color: #44b3e2 !important;
+  text-decoration: none !important;
+}
+
+/*
+.table-striped tbody tr:nth-of-type(odd) {
+  background-color: #eef;
+}
+
+.table-striped tbody tr:nth-of-type(even) {
+  background-color: #efe;
+}
+*/
