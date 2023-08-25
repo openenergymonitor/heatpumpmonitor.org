@@ -55,8 +55,17 @@ services:
       options:
         max-size: "10m"
     healthcheck:
-      test: [ "CMD", "mariadb-admin", "ping", "-h", "localhost" ]
-      timeout: 20s
+      test:
+        [
+          "CMD",
+          "/usr/local/bin/healthcheck.sh",
+          "--su-mysql",
+          "--connect",
+          "--innodb_initialized"
+        ]
+      interval: 1s
+      start_period: 60s
+      timeout: 2s
       retries: 10
 volumes:
   emon-db-data:
