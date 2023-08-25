@@ -6,8 +6,20 @@ An open source initiative to share and compare heat pump performance data.
 
 Install public site content in /var/www
 
-    sudo ln -s /home/oem/heatpumpmonitor.org/www/ /var/www/hpmon
+    sudo ln -s /home/USERNAME/heatpumpmonitor.org/www/ /var/www/heatpumpmonitororg
     
-Setup crontab  to pull in list (e.g once an hour):
+Create a mariadb/mysql database:
 
-    0 * * * * /home/oem/heatpumpmonitor.org/update.sh >> /home/oem/hpmon.log
+    CREATE DATABASE heatpumpmonitor;
+    
+Copy example.settings.php:
+
+    cp www/example.settings.php settings.php
+    
+Modify database credentials to match your system
+
+Load public data from heatpumpmonitor.org to create functioning development environment
+
+    php load_dev_env_data.php 
+
+
