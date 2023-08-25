@@ -22,4 +22,4 @@ Load public data from heatpumpmonitor.org to create functioning development envi
 
     php load_dev_env_data.php 
 
-
+Login using 'Use another account' and username and password: admin:admin
