@@ -9,5 +9,5 @@ COPY config/heatpumpmonitororg.conf /etc/apache2/sites-available/heatpumpmonitor
 RUN a2dissite 000-default.conf
 RUN a2ensite heatpumpmonitororg
 
-# COPY load_dev_env_data.php load_dev_env_data.php
+COPY load_dev_env_data.php /var/
 # CMD [ "php", "load_dev_env_data.php" ]

@@ -1,13 +1,22 @@
 <?php
 
-// confirm that we want to clear all data and rebuild the database
-echo "This script will clear all data and rebuild the database\n";
-echo "Are you sure you want to continue? (y/n): ";
-$handle = fopen ("php://stdin","r");
-$line = fgets($handle);
-if(trim($line) != 'y'){
-    echo "ABORTING!\n";
-    exit;
+if ($_ENV["LOAD_DATA"]=="1" || $_ENV["LOAD_DATA"]==1){
+    echo "Forcing load of data\n";
+}else{
+    if ($_ENV["LOAD_DATA"]=="0" || $_ENV["LOAD_DATA"]==0){
+        echo "Not loading data\n";
+        exit(0);
+    }else{
+        // confirm that we want to clear all data and rebuild the database
+        echo "This script will clear all data and rebuild the database\n";
+        echo "Are you sure you want to continue? (y/n): ";
+        $handle = fopen ("php://stdin","r");
+        $line = fgets($handle);
+        if(trim($line) != 'y'){
+            echo "ABORTING!\n";
+            exit (1);
+        }   
+    }
 }
 
 // This script pulls in public data from heatpumpmonitor.org and loads it into the database
