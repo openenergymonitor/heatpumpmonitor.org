@@ -18,8 +18,8 @@ $systems = json_decode($data);
 if ($systems==null) die("Error: could not load data from heatpumpmonitor.org");
 
 chdir("/var/www/heatpumpmonitororg");
-require "www/Lib/load_database.php";
-require "www/core.php";
+require "Lib/load_database.php";
+require "core.php";
 
 // Clear all existing data
 $result = $mysqli->query("SHOW TABLES");
@@ -28,10 +28,10 @@ while ($row = $result->fetch_row()) {
 }
 
 // Rebuid database
-require "www/Lib/dbschemasetup.php";
+require "Lib/dbschemasetup.php";
 $schema = array();
-require "www/Modules/user/user_schema.php";
-require "www/Modules/system/system_schema.php";
+require "Modules/user/user_schema.php";
+require "Modules/system/system_schema.php";
 db_schema_setup($mysqli, $schema, true);
 
 require ("Modules/system/system_model.php");
