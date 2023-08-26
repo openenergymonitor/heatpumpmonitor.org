@@ -1,13 +1,22 @@
 <?php
 
-// confirm that we want to clear all data and rebuild the database
-echo "This script will clear all data and rebuild the database\n";
-echo "Are you sure you want to continue? (y/n): ";
-$handle = fopen ("php://stdin","r");
-$line = fgets($handle);
-if(trim($line) != 'y'){
-    echo "ABORTING!\n";
-    exit;
+if ($_ENV["LOAD_DATA"]=="1" || $_ENV["LOAD_DATA"]==1){
+    echo "Forcing load of data\n";
+}else{
+    if ($_ENV["LOAD_DATA"]=="0" || $_ENV["LOAD_DATA"]==0){
+        echo "Not loading data\n";
+        exit(0);
+    }else{
+        // confirm that we want to clear all data and rebuild the database
+        echo "This script will clear all data and rebuild the database\n";
+        echo "Are you sure you want to continue? (y/n): ";
+        $handle = fopen ("php://stdin","r");
+        $line = fgets($handle);
+        if(trim($line) != 'y'){
+            echo "ABORTING!\n";
+            exit (1);
+        }   
+    }
 }
 
 // This script pulls in public data from heatpumpmonitor.org and loads it into the database
@@ -18,8 +27,8 @@ $systems = json_decode($data);
 if ($systems==null) die("Error: could not load data from heatpumpmonitor.org");
 
 chdir("/var/www/heatpumpmonitororg");
-require "www/Lib/load_database.php";
-require "www/core.php";
+require "Lib/load_database.php";
+require "core.php";
 
 // Clear all existing data
 $result = $mysqli->query("SHOW TABLES");
@@ -28,10 +37,10 @@ while ($row = $result->fetch_row()) {
 }
 
 // Rebuid database
-require "www/Lib/dbschemasetup.php";
+require "Lib/dbschemasetup.php";
 $schema = array();
-require "www/Modules/user/user_schema.php";
-require "www/Modules/system/system_schema.php";
+require "Modules/user/user_schema.php";
+require "Modules/system/system_schema.php";
 db_schema_setup($mysqli, $schema, true);
 
 require ("Modules/system/system_model.php");
