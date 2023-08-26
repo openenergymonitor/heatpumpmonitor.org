@@ -1,0 +1,72 @@
+# Base docker compose, added to by docker-compose.override or docker-compose.prod. See Readme.md
+
+version: '2'
+
+services:
+  # PHP & apache container using offical Docker PHP iamge
+  web:
+    build: .
+    links:
+      - db
+    ports:
+      # Expose Emoncms on localhost port 8080
+      - 8080:80
+    volumes:
+      # Mount emoncms files from local FS for dev
+      - ./www:/var/www/heatpumpmonitororg
+    env_file:
+      # Use default enviroment variables file for dev
+      - 'default.docker-env'
+    depends_on:
+      load_dev_env_data:
+        condition: service_completed_successfully
+
+  # This container will load the data (if requested) and then stop
+  load_dev_env_data:
+    build: .
+    links:
+      - db
+    volumes:
+      # Mount emoncms files from local FS for dev
+      - ./www:/var/www/heatpumpmonitororg
+    env_file:
+      # Use default enviroment variables file for dev
+      - 'default.docker-env'
+    environment:
+      # Use this to control if the data should be refreshed. Set it to 0 if you don't want it to refresh
+      - "LOAD_DATA=1"
+    entrypoint: "php /var/load_dev_env_data.php"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mariadb:11.0
+    environment:
+      - "MYSQL_HOST=localhost"
+      - "MARIADB_AUTO_UPGRADE=1"
+      - "MARIADB_INITDB_SKIP_TZINFO=1"
+    env_file:
+      - 'default.docker-env'
+    volumes:
+      - emon-db-data:/var/lib/mysql
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "/usr/local/bin/healthcheck.sh",
+          "--su-mysql",
+          "--connect",
+          "--innodb_initialized"
+        ]
+      interval: 1s
+      start_period: 60s
+      timeout: 2s
+      retries: 10
+volumes:
+  emon-db-data:
+    driver: local
