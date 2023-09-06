@@ -176,7 +176,7 @@ $schema['system_meta'] = array(
         'type' => 'float', 
         'editable' => true, 
         'optional' => false, 
-        'name' => 'Flow temperature', 
+        'name' => 'Design flow temperature', 
         'group' => 'Heat pump controls',
         'helper' => "Design flow temperature (e.g 45°C at -3°C)",
         'unit' => '°C'
@@ -313,10 +313,40 @@ $schema['system_meta'] = array(
         'type' => 'int(11)', 
         'editable' => true, 
         'optional' => false, 
-        'name' => 'Annual heat demand', 
+        'name' => 'Detailed assessment space heat demand',
         'group' => 'Property', 
-        'helper' => 'E.g as given on the EPC or heat loss calculation, should include space heating and hot water',
-        'unit' => 'kWh'
+        'helper' => 'E.g as given in detailed installer assessment',
+        'unit' => 'kWh/year'
+    ),
+
+    'water_heat_demand' => array(
+        'type' => 'int(11)', 
+        'editable' => true, 
+        'optional' => false, 
+        'name' => 'Detailed assessment water heat demand',
+        'group' => 'Property', 
+        'helper' => 'E.g as given in detailed installer assessment',
+        'unit' => 'kWh/year'
+    ),
+
+    'EPC_spaceheat_demand' => array(
+        'type' => 'int(11)', 
+        'editable' => true, 
+        'optional' => true, 
+        'name' => 'EPC space heating demand', 
+        'group' => 'Property', 
+        'helper' => 'As given on the EPC',
+        'unit' => 'kWh/year'
+    ),
+
+    'EPC_waterheat_demand' => array(
+        'type' => 'int(11)', 
+        'editable' => true, 
+        'optional' => true, 
+        'name' => 'EPC water heating demand', 
+        'group' => 'Property', 
+        'helper' => 'As given on the EPC',
+        'unit' => 'kWh/year'
     ),
 
     'heat_loss' => array(
@@ -325,7 +355,7 @@ $schema['system_meta'] = array(
         'optional' => false, 
         'name' => 'Heat loss at design temperature', 
         'group' => 'Property',
-        'helper' => 'Usually available on heat pump quote', 
+        'helper' => 'E.g as given in detailed installer assessment', 
         'unit' => 'kW @ -3°C'
     ),
 
