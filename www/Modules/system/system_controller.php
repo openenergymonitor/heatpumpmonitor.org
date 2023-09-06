@@ -49,7 +49,6 @@ function system_controller() {
             'schema'=>$system->schema_meta,
             'system_stats_monthly'=>$system_stats->schema['system_stats_monthly']
         ));
-
     }
 
     if ($route->action=="list") {
@@ -164,15 +163,61 @@ function system_controller() {
     if ($route->action=="loadstats") {
         $route->format = "json";
         if ($session['userid']) {
-            $input = json_decode(file_get_contents('php://input'));
-            $stats = $system_stats->load_from_url($input->url);
-            if ($stats !== false) {
-                if ($system->has_access($session['userid'], $input->systemid)) {
-                    $system_stats->save_last30($input->systemid, $stats); 
-                    $system_stats->save_last365($input->systemid, $stats);
+
+            $systemid = get("id",false);
+            $system_data = $system->get($session['userid'],$systemid);
+
+            $result = $system_stats->load_from_url($system_data->url);
+            if (isset($result['success']) && $result['success']) {
+                if ($system->has_access($session['userid'], $systemid)) {
+                    $system_stats->save_last30($systemid, $result['stats']); 
+                    $system_stats->save_last365($systemid, $result['stats']);
+                    return array('success'=>true, 'message'=>'stats loaded');
+                } else {
+                    return array('success'=>false, 'message'=>'access denied');
                 }
+            } else {
+                return array('success'=>false, 'message'=>'error loading stats');
             }
-            return $stats;
+        }
+    }
+
+    if ($route->action=="loadmonthlystats") {
+        $route->format = "json";
+        if ($session['userid']) {
+
+            $systemid = get("id",false);
+
+            if ($system->has_access($session['userid'], $systemid)) {
+
+                $system_data = $system->get($session['userid'],$systemid);
+
+                // timestamp start of July
+                $date = new DateTime();
+                // set timezone Europe/London
+                $date->setTimezone(new DateTimeZone('Europe/London'));
+                $date->setDate(2022, 6, 1);
+                $date->setTime(0, 0, 0);
+                $start = $date->getTimestamp();
+
+                while (true) {
+                    // +1 month
+                    $date->modify('+1 month');
+                    $end = $date->getTimestamp();
+
+                    $stats = $system_stats->load_from_url($system_data->url,$start,$end);
+                    if (isset($stats['success']) && !$stats['success']) {
+                        break;
+                    }
+                    $system_stats->save_monthly($systemid,$start,$stats['stats']);
+                    if ($end>time()) break;
+
+                    $start = $end;
+                }
+                return array('success'=>true, 'message'=>'monthly stats loaded');
+            } else {
+                return array('success'=>false, 'message'=>'access denied');
+            }
         }
     }
 
