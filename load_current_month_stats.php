@@ -42,7 +42,7 @@ foreach ($data as $row) {
         $stats = $system_stats->load_from_url($row->url,$start,$end);
         if (isset($stats['success']) && !$stats['success']) {
             print "ERROR: ".$stats['message']."\n";
-            break;
+            continue;
         }
 
         print json_encode($stats['stats'])."\n";
