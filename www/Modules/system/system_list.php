@@ -522,7 +522,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         var y = [];
         for (var i = 0; i < app.systems.length; i++) {
             x.push(app.systems[i].location);
-            y.push(app.systems[i].cop);
+            let cop = app.systems[i].cop;
+            if (cop<0) cop = 0;
+            y.push(cop);
         }
 
         chart_options.xaxis.categories = x;

@@ -130,6 +130,30 @@ switch ($route->controller) {
                     $result = file_get_contents("$config->server/histogram/data/kwh_at_temperature?".http_build_query($params));
                     $output = json_decode($result);
                     if ($output==null) $output = $result;                    
+                } else if ($route->subaction=="flow_temp_curve") {
+                    // test
+                   // $config->heat = 163;
+                    //$config->flowT = 363;
+                    //$config->apikey = "b33c4080a2b7f5ee3b041bec1201d5bb";
+                    //$config->server = "http://localhost/emoncms";
+                    // convert array of params into url string
+                    $params = array(
+                        "outsideT"=>$config->outsideT,
+                        "flowT"=>$config->flowT,
+                        "heat"=>$config->heat,
+                        "start"=>$_GET['start'],
+                        "end"=>$_GET['end'],
+                        "div"=>0.5,
+                        "interval"=>300,
+                        "x_min"=>$_GET['x_min'],
+                        "x_max"=>$_GET['x_max']
+                    );
+                    if ($config->apikey!="") $params['apikey'] = $config->apikey;
+                    $result = file_get_contents("$config->server/histogram/data/flow_temp_curve?".http_build_query($params));
+                    // $output = json_decode($result);
+                    // if ($output==null) $output = $result;
+                    $route->format = "text";
+                    $output = $result;                  
                 }
             }
         }
@@ -147,4 +171,9 @@ switch ($route->format) {
         header('Content-Type: application/json');
         echo json_encode($output);   
         break; 
+        
+    case "text":
+        header('Content-Type: text/plain');
+        echo $output;
+        break;
 }

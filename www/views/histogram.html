@@ -18,6 +18,7 @@
                 <select class="form-control" v-model="histogram_type" @change="change_histogram_type">
                     <option value="kwh_at_cop">COP vs kWh heat delivered</option>
                     <option value="kwh_at_temperature">Flow temperature vs kWh heat delivered</option>
+                    <!--<option value="flow_temp_curve">Flow temperature curve</option>-->
                 </select>
                 <br>
 
@@ -285,6 +286,8 @@
                     options.xaxis.axisLabel = "COP";
                 } else if (app.histogram_type=="kwh_at_temperature") {
                     options.xaxis.axisLabel = "Flow temperature (°C)";
+                } else if (app.histogram_type=="flow_temp_curve") {
+                    options.xaxis.axisLabel = "Outside temperature (°C)";
                 }
             }
         });
