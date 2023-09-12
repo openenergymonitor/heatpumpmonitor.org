@@ -38,6 +38,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 </div>
             </div>
 
+            <!--
             <div class="input-group" style="width:300px; float:right; margin-right:20px">
                 <div class="input-group-text">Colour</div>
                 <select class="form-control" v-model="colour_property" @change="axis_change">
@@ -46,16 +47,18 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     <option value="old_radiators">Old Radiators</option>
                 </select>
             </div>
-
+            -->
+            
             <div class="input-group" style="width:300px; float:right; margin-right:20px">
                 <div class="input-group-text">Y-axis</div>
                 <select class="form-control" v-model="yaxis_property" @change="axis_change">
-                    <optgroup v-for="(group, group_name) in column_groups" :label="group_name" v-if="group_name=='Stats' || group_name=='When Running' || group_name=='Standby'">
+                    <optgroup v-for="(group, group_name) in column_groups" :label="group_name" v-if="group_name=='Stats' || (stats_time_start!='last365' && (group_name=='When Running' || group_name=='Standby'))">
                         <option v-for="(row,key) in group" :value="row.key">{{ row.name }}</option>
                     </optgroup>
                 </select>
             </div>
 
+            <!--
             <div class="input-group" style="width:300px; float:right; margin-right:20px">
                 <div class="input-group-text">X-axis</div>
                 <select class="form-control" v-model="xaxis_property" @change="axis_change">
@@ -63,6 +66,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     <option value="elec_kwh">Electricity (kWh)</option>
                 </select>
             </div>
+            -->
 
             <h3>Graph</h3>
         </div>
@@ -308,16 +312,35 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         var y = [];
         var colors = [];
         var xy = [];
+        
+        var time = (new Date()).getTime()*0.001;
 
         for (var i = 0; i < app.systems.length; i++) {
             let yvalue = app.systems[i][app.yaxis_property];
             let xvalue = app.systems[i][app.xaxis_property];
+
+
+            if (app.yaxis_property == 'cop' || app.yaxis_property == 'when_running_cop' || app.yaxis_property == 'when_running_carnot_prc' || app.yaxis_property == 'elec_kwh' ) {
+                if (yvalue<0) yvalue = null;
+            }
+            
+            if (app.yaxis_property == 'data_start') {
+                if (yvalue!=0) {
+                    yvalue = Math.round((time - yvalue) / (24*3600));
+                } else {
+                    yvalue = 0;
+                }
+            }
+
             if (yvalue) {
+
+                /*
                 if (app.systems[i][app.colour_property] == 1) {
                     colors.push('#E2AB29');
                 } else {
                     colors.push('#29ABE2');
-                }
+                }*/
+                colors.push('#29ABE2');
                 x.push(xvalue);
                 y.push(yvalue);
                 xy.push([xvalue, yvalue]);

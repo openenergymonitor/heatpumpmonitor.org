@@ -225,7 +225,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                     <option v-for="option in field.options">{{ option }}</option>
                                 </select>
                                 <!-- View mode text -->
-                                <span v-if="mode=='view'">{{ system[key] }}</span>
+                                <span v-if="mode=='view'">{{ system[key] }}</span> <span v-if="mode=='view'" style="color:#666; font-size:14px">{{ field.unit }}</span>
                             </span>
                         </td>
                     </tr>
