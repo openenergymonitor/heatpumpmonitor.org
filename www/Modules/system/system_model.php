@@ -323,7 +323,13 @@ class System
             $emails[] = array("email"=>$row->email);
         }
 
-        $html = "<h3>System $systemid has been updated</h3>";
+        // Get system owner username and name
+        $result = $this->mysqli->query("SELECT username,name FROM users WHERE id='$userid'");
+        $row = $result->fetch_object();
+        $username = $row->username;
+        $name = $row->name;
+
+        $html = "<h3>System $systemid user $name ($username) has been updated</h3>";
         $html .= "<p>$change_count fields updated</p>";
         $html .= "<ul>";
         foreach ($change_log as $change) {
@@ -337,7 +343,7 @@ class System
         $email_class = new Email();
         $email_class->send(array(
             "to" => $emails,
-            "subject" => "System $systemid has been updated",
+            "subject" => "System $systemid user $name ($username) has been updated",
             "text" => "System $systemid has been updated, $change_count fields updated",
             "html" => $html
         ));

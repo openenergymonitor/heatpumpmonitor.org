@@ -177,6 +177,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         </div>   
 
 
+
+
+    </div>
+
+    <div class="container mt-3" style="max-width:800px">
         <div class="card mt-3" v-if="mode=='edit' && system.url!=''">
             <h5 class="card-header">Reload system data</h5>
             <div class="card-body">
@@ -185,10 +190,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 <button type="button" class="btn btn-primary" @click="loadmonthly" :disabled="disable_loadstats">Load monthly data</button>
             </div>
         </div>
-
     </div>
-
-
 
     <div class="container mt-3" style="max-width:800px">
         <div class="row">

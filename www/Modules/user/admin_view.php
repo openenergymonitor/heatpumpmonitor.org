@@ -8,11 +8,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 <div id="app" class="bg-light">
     <div style=" background-color:#f0f0f0; padding-top:20px; padding-bottom:10px">
-        <div class="container">
+        <div class="container-fluid">
             <h3>Admin users</h3>
         </div>
     </div>
-    <div class="container">
+    <div class="container-fluid">
         <br>
         <table class="table table-striped">
             <thead>
@@ -25,6 +25,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     <th scope="col">Admin</th>
                     <th scope="col">Created</th>
                     <th scope="col">Last login</th>
+                    <th scope="col">Welcome email</th>
                     <th scope="col">Actions</th>
                     <th scope="col">Welcome</th>
                 </tr>
@@ -37,8 +38,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     <td>{{ user.email }}</td>
                     <td>{{ user.emoncmsorg_link }}</td>
                     <td>{{ user.admin }}</td>
-                    <td>{{ user.created | formatTime }}</td>
-                    <td>{{ user.last_login | formatTime }}</td>
+                    <td style="font-size:14px">{{ user.created | formatTime }}</td>
+                    <td style="font-size:14px">{{ user.last_login | formatTime }}</td>
+                    <td style="font-size:14px">{{ user.welcome_email_sent | formatTime }}</td>
                     <td>
                         <button class="btn btn-primary btn-sm" v-on:click="switch_user(user.id)">Switch</button>
                     </td>
@@ -70,6 +72,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     .then(function (response) {
                         if (response.data.success) {
                             alert("Welcome email sent");
+                            // reload page
+                            window.location.href = "<?php echo $path; ?>user/admin";
                         } else {
                             alert("Error sending welcome email");
                         }
@@ -89,8 +93,14 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     var day = date.getDate();
                     var month = date.getMonth();
                     var year = date.getFullYear();
+                    year = year.toString().substr(-2);
+                    
                     var hour = date.getHours();
+                    if (hour<10) hour = "0"+hour;
+
                     var min = date.getMinutes();
+                    if (min<10) min = "0"+min;
+
                     var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
                     return day+" "+months[month]+" "+year+", "+hour+":"+min;
                 }

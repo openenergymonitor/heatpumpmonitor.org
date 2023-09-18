@@ -331,12 +331,19 @@ class User
                 "to" => $email,
                 "subject" => "Your HeatpumpMonitor.org login",
                 "text" => "Hello $name, to login to HeatpumpMonitor.org please use your emoncms.org account details for username: $username\n\nRegards\nHeatpumpMonitor.org",
-                "html" => "<h4>Hello $name,</h4><p>To login to HeatpumpMonitor.org please use your emoncms.org account details for username: $username</p><p>Please login at <a href='https://heatpumpmonitor.org'>https://heatpumpmonitor.org</a></p><p>Regards<br>HeatpumpMonitor.org</p>"
+                // "html" => "<h4>Hello $name,</h4><p>To login to HeatpumpMonitor.org please use your emoncms.org account details for username: $username</p><p>Please login at <a href='https://heatpumpmonitor.org'>https://heatpumpmonitor.org</a></p><p>Regards<br>HeatpumpMonitor.org</p>"
+                "html" => view("Modules/user/email_templates/welcome_emoncmsorg.php",array(
+                    "name" => $name,
+                    "username"=>$username,
+                ))
             ));
+            // update welcome_email_sent
+            $this->mysqli->query("UPDATE users SET welcome_email_sent=UNIX_TIMESTAMP() WHERE id='$userid'");
+
             return array('success'=>true, 'message'=>"Welcome email sent");
         } else {
             // Generate new random password
-            $newpass = hash('sha256',generate_secure_key(32));
+            $newpass = hash('sha256',generate_secure_key(16));
             // Hash and salt
             $hash = hash('sha256', $newpass);
             $salt = generate_secure_key(16);
@@ -354,8 +361,17 @@ class User
                 "to" => $email,
                 "subject" => "Your HeatpumpMonitor.org login",
                 "text" => "Hello $name, your HeatpumpMonitor.org login details are:\nUsername: $username\nPassword: $newpass\nPlease login at https://heatpumpmonitor.org\nRegards\nHeatpumpMonitor.org",
-                "html" => "<h4>Hello $name</h4><p>Your HeatpumpMonitor.org login details are:</p><p>Username: $username</p><p>Password: $newpass</p><p>Please login at <a href='https://heatpumpmonitor.org'>https://heatpumpmonitor.org</a></p><p>Regards</p><p>HeatpumpMonitor.org</p>"
+                // "html" => "<h4>Hello $name</h4><p>Your HeatpumpMonitor.org login details are:</p><p>Username: $username</p><p>Password: $newpass</p><p>Please login at <a href='https://heatpumpmonitor.org'>https://heatpumpmonitor.org</a></p><p>Regards</p><p>HeatpumpMonitor.org</p>"
+                "html" => view("Modules/user/email_templates/welcome_selfinstall.php",array(
+                    "name" => $name,
+                    "username"=>$username,
+                    "password"=>$newpass
+                ))    
             ));
+
+            // update welcome_email_sent
+            $this->mysqli->query("UPDATE users SET welcome_email_sent=UNIX_TIMESTAMP() WHERE id='$userid'");
+
             return array('success'=>true, 'message'=>"Welcome email sent");
         }
     }
@@ -432,7 +448,7 @@ class User
 
     public function admin_user_list() {
 
-        $result = $this->mysqli->query("SELECT id,username,`name`,email,created,last_login,`admin` FROM users");
+        $result = $this->mysqli->query("SELECT id,username,`name`,email,created,last_login,welcome_email_sent,`admin` FROM users");
         $users = array();
         while ($row = $result->fetch_object()) {
             if ($emoncmsorg_userid = $this->get_emoncmsorg_userid($row->id)) {
