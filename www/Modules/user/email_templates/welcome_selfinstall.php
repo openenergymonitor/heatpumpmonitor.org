@@ -14,7 +14,7 @@ We have extended the form to include a number of additional items including:</p>
 <li>Optional information on electricity costs and generation</li>
 </ul>
 
-<p>Your HeatpumpMonitor.org login details are:</p><p>Username: <?php echo $username; ?></p><p>Password: <?php echo $newpass; ?></p>
+<p>Your HeatpumpMonitor.org login details are:</p><p>Username: <?php echo $username; ?></p><p>Password: <?php echo $password; ?></p>
 
 <p>Please login at https://heatpumpmonitor.org</p>
 

@@ -323,6 +323,15 @@ class System
             $emails[] = array("email"=>$row->email);
         }
 
+        // Is system published
+        $result = $this->mysqli->query("SELECT published FROM system_meta WHERE id='$systemid'");
+        $row = $result->fetch_object();
+        if ($row->published) {
+            $published_str = "";
+        } else {
+            $published_str = " (unpublished, admin review required)";
+        }
+
         // Get system owner username and name
         $result = $this->mysqli->query("SELECT username,name FROM users WHERE id='$userid'");
         $row = $result->fetch_object();
@@ -343,7 +352,7 @@ class System
         $email_class = new Email();
         $email_class->send(array(
             "to" => $emails,
-            "subject" => "System $systemid user $name ($username) has been updated",
+            "subject" => "System $systemid user $name ($username) has been updated $published_str",
             "text" => "System $systemid has been updated, $change_count fields updated",
             "html" => $html
         ));
