@@ -27,7 +27,6 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     <th scope="col">Last login</th>
                     <th scope="col">Welcome email</th>
                     <th scope="col">Actions</th>
-                    <th scope="col">Welcome</th>
                 </tr>
             </thead>
             <tbody>
@@ -43,9 +42,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     <td style="font-size:14px">{{ user.welcome_email_sent | formatTime }}</td>
                     <td>
                         <button class="btn btn-primary btn-sm" v-on:click="switch_user(user.id)">Switch</button>
-                    </td>
-                    <td>
+
                         <button class="btn btn-warning btn-sm" v-on:click="send_welcome_email(user.id,user.name)"><i class="fa fa-envelope" style="color: #ffffff;"></i></button>
+
+                        <button class="btn btn-danger btn-sm" v-on:click="delete_user(user.id)"><i class="fa fa-trash" style="color: #ffffff;"></i></button>
                     </td>
                 </tr>
             </tbody>
@@ -83,6 +83,23 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     });
                 }
 
+            },
+            delete_user: function(userid) {
+                if (confirm("Delete user?")) {
+                    axios.get("<?php echo $path; ?>user/delete?userid="+userid)
+                    .then(function (response) {
+                        if (response.data.success) {
+                            alert("User deleted");
+                            // reload page
+                            window.location.href = "<?php echo $path; ?>user/admin";
+                        } else {
+                            alert(response.data.message);
+                        }
+                    })
+                    .catch(function (error) {
+                        console.log(error);
+                    });
+                }
             }
         },
         filters: {

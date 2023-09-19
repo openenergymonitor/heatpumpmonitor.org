@@ -51,6 +51,12 @@ function user_controller() {
         exit();
     }
 
+    if ($route->action=="delete" && $session['admin']) {
+        $route->format = "json";
+        $userid = get('userid');
+        return $user->admin_delete_user($userid);
+    }
+
     if ($route->action=="welcome" && $session['admin']) {
         $route->format = "json";
         $userid = get('userid');

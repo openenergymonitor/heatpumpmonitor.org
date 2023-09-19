@@ -478,4 +478,24 @@ class User
             return true;
         }
     }
+
+    public function admin_delete_user($userid) {
+        $userid = (int) $userid;
+
+        // check if the user has system first and if so return error
+        $result = $this->mysqli->query("SELECT id FROM system_meta WHERE userid='$userid'");
+        if ($result->num_rows > 0) {
+            return array('success'=>false, 'message'=>"User has $result->num_rows systems, cannot delete");
+        }
+
+        $result = $this->mysqli->query("SELECT id,username,email FROM users WHERE id='$userid'");
+        if ($result->num_rows == 0) {
+            return array('success'=>false, 'message'=>"User does not exist");
+        } else {
+            $row = $result->fetch_object();
+            $this->mysqli->query("DELETE FROM users WHERE id='$userid'");
+            $this->mysqli->query("DELETE FROM emoncmsorg_link WHERE userid='$userid'");
+            return array('success'=>true, 'message'=>"User deleted");
+        }
+    }
 }
