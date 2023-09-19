@@ -302,6 +302,24 @@ class System
         }
     }
 
+    public function get_system_userid($systemid) {
+        $systemid = (int) $systemid;
+        $result = $this->mysqli->query("SELECT userid FROM system_meta WHERE id='$systemid'");
+        if (!$row = $result->fetch_object()) {
+            return false;
+        }
+        return $row->userid;
+    }
+
+    public function get_user_name($userid) {
+        $userid = (int) $userid;
+        $result = $this->mysqli->query("SELECT name,username FROM users WHERE id='$userid'");
+        if (!$row = $result->fetch_object()) {
+            return false;
+        }
+        return $row;
+    }
+
     public function send_change_notification($userid,$systemid,$change_log) {
         $userid = (int) $userid;
         $systemid = (int) $systemid;
@@ -333,12 +351,18 @@ class System
         }
 
         // Get system owner username and name
-        $result = $this->mysqli->query("SELECT username,name FROM users WHERE id='$userid'");
-        $row = $result->fetch_object();
-        $username = $row->username;
-        $name = $row->name;
+        $system_userid = $this->get_system_userid($systemid);
+        $result = $this->get_user_name($system_userid);
+        $system_username = $result->username;
+        $system_name = $result->name;
 
-        $html = "<h3>System $systemid user $name ($username) has been updated</h3>";
+        $by = "";
+        if ($userid!=$system_userid) {
+            $result = $this->get_user_name($userid);
+            $by = "by $result->name";
+        }
+
+        $html = "<h3>System $systemid user $system_name ($system_username) has been updated $by</h3>";
         $html .= "<p>$change_count fields updated</p>";
         $html .= "<ul>";
         foreach ($change_log as $change) {
@@ -352,7 +376,7 @@ class System
         $email_class = new Email();
         $email_class->send(array(
             "to" => $emails,
-            "subject" => "System $systemid user $name ($username) has been updated $published_str",
+            "subject" => "System $systemid user $system_name ($system_username) has been updated $by $published_str",
             "text" => "System $systemid has been updated, $change_count fields updated",
             "html" => $html
         ));

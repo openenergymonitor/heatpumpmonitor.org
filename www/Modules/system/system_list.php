@@ -107,7 +107,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     </tr>
                     <tr v-for="(system,index) in systems" v-if="mode!='public' || (mode=='public' && system.data_length!=0)">
                         <td v-if="mode=='admin'">{{ system.id }}</td>
-                        <td v-if="mode=='admin'" :title="system.username+'\n'+system.email">{{ system.name }}</td>
+                        <td v-if="mode=='admin'" :title="system.username+'\n'+system.email"><span v-if="system.name">{{ system.name }}</span><span v-if="!system.name" style="color:#888">{{ system.username }}</span></td>
                         <td v-if="mode=='admin'"><a v-if="system.emoncmsorg_userid" :href="'https://emoncms.org/admin/setuser?id='+system.emoncmsorg_userid" target="_blank">{{ system.emoncmsorg_userid }}</a></td>
                         <td v-for="column in selected_columns" v-html="column_format(system,column)" v-bind:class="sinceClass(system,column)"></td>
                         <td v-if="mode!='public'">
