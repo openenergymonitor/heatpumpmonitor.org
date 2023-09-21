@@ -328,13 +328,15 @@ class SystemStats
                 }
             }
 
+            $min_energy = 0.5;
+
             // Calculate COP
             $cop = 0;
-            if ($system['elec_kwh'] > 0) {
+            if ($system['elec_kwh'] > $min_energy && $system['heat_kwh'] > $min_energy) {
                 $cop = $system['heat_kwh'] / $system['elec_kwh'];
             }
             $when_running_cop = 0;
-            if ($system['when_running_elec_kwh'] > 0) {
+            if ($system['when_running_elec_kwh'] > $min_energy && $system['when_running_heat_kwh'] > $min_energy) {
                 $when_running_cop = $system['when_running_heat_kwh'] / $system['when_running_elec_kwh'];
             }
 
@@ -406,6 +408,14 @@ class SystemStats
         $monthly = array();
         $result = $this->mysqli->query("SELECT $field_str FROM system_stats_monthly WHERE id=$systemid ORDER BY timestamp ASC");
         while ($row = $result->fetch_object()) {
+          
+            $min_energy = 0.5;
+            $cop = 0;
+            if ($row->elec_kwh > $min_energy && $row->heat_kwh > $min_energy) {
+                $cop = $row->heat_kwh / $row->elec_kwh;
+            }
+            $row->cop = number_format($cop,2);
+        
             $monthly[] = $row;
         }
         return $monthly;
