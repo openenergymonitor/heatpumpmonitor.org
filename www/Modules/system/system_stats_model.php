@@ -415,6 +415,12 @@ class SystemStats
                 $cop = $row->heat_kwh / $row->elec_kwh;
             }
             $row->cop = number_format($cop,2);
+
+            $cop = 0;
+            if ($row->when_running_elec_kwh > $min_energy && $row->when_running_heat_kwh > $min_energy) {
+                $cop = $row->when_running_heat_kwh / $row->when_running_elec_kwh;
+            }
+            $row->when_running_cop = number_format($cop,2);
         
             $monthly[] = $row;
         }
