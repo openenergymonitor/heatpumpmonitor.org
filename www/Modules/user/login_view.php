@@ -13,13 +13,12 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
             <div v-if="!mode">
                 <button type="button" class="btn btn-primary btn-lg" style="width:100%" @click="mode='emoncmsorg'">Login with emoncms.org</button>
-                <button type="button" class="btn btn-outline-primary btn-lg" style="width:100%; margin-top:10px" @click="mode='other'">Use another account</button>
-                <button type="button" class="btn btn-outline-secondary btn-lg" style="width:100%; margin-top:10px" @click="mode='register'">Sign up</button>
+                <button type="button" class="btn btn-outline-primary btn-lg" style="width:100%; margin-top:10px" @click="mode='other'">Self hosted data</button>
             </div>
 
             <div v-else>
                 <div v-if="mode!='register'">
-                    <h1 class="h3 mb-3 fw-normal">Login <span v-if="mode=='emoncmsorg'">with emoncms.org</span></h1>
+                    <h1 class="h3 mb-3 fw-normal">Login <span v-if="mode=='emoncmsorg'">with emoncms.org</span><span style="color:#888" v-else>Self hosted data</span></h1>
                 </div>
                 <div v-if="mode=='register'">
                     <h1 class="h3 mb-3 fw-normal">Register</h1>
@@ -51,6 +50,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 <button type="button" class="btn btn-primary" @click="login" v-if="mode!='register'">Login</button>
                 <button type="button" class="btn btn-primary" @click="register" v-if="mode=='register'">Register</button>
                 <button type="button" class="btn btn-light" @click="mode=false">Cancel</button>
+                <button type="button" class="btn btn-light" v-if="mode!='emoncmsorg' && mode!='register'" @click="mode='register'">Register</button>
                 <!--<a href="#" v-if="mode=='other'">Forgot password</a>-->
             </div>
 
@@ -86,6 +86,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 axios.post(path + "user/login.json", params)
                     .then(function(response) {
                         if (response.data.success) {
+                            app.error = false;
                             window.location.href = path + "system/list/user";
                         } else {
                             app.error = response.data.message;
@@ -106,6 +107,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 axios.post(path + "user/register.json", params)
                     .then(function(response) {
                         if (response.data.success) {
+                            app.error = false;
                             if (response.data.verifyemail!=undefined && response.data.verifyemail) {
                                 app.mode = 'login';
                                 app.success = "Registration successful, please check your email to verify your account";
