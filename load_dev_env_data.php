@@ -1,9 +1,11 @@
 <?php
 
-if ($_ENV["LOAD_DATA"]=="1" || $_ENV["LOAD_DATA"]==1){
+
+
+if (isset($_ENV["LOAD_DATA"]) && ($_ENV["LOAD_DATA"]=="1" || $_ENV["LOAD_DATA"]==1)){
     echo "Forcing load of data\n";
 }else{
-    if ($_ENV["LOAD_DATA"]=="0" || $_ENV["LOAD_DATA"]==0){
+    if (isset($_ENV["LOAD_DATA"]) && ($_ENV["LOAD_DATA"]=="0" || $_ENV["LOAD_DATA"]==0)){
         echo "Not loading data\n";
         exit(0);
     }else{

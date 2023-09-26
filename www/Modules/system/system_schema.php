@@ -36,6 +36,14 @@ $schema['system_meta'] = array(
         'group' => 'Overview'
     ),
 
+    'heatgeek' => array(
+        'type' => 'tinyint(1)', 
+        'editable' => true, 
+        'optional' => true, 
+        'name' => 'Heat Geek', 
+        'group' => 'Overview'
+    ),
+
     'url' => array(
         'type' => 'varchar(128)', 
         'editable' => true, 

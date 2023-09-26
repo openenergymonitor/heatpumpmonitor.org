@@ -372,7 +372,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 }                
                 if (key=='installer_name') {
                     if (val!=null && val!='') {
-                        return "<a class='installer_link' href='"+system['installer_url']+"'>"+val+"</a>";
+                        var heatgeek = "";
+                        if (system['heatgeek']==1) heatgeek = "<img class='heatgeeklogo' src='theme/img/HeatGeekLogo.png' title='HeatGeek'/>";
+                        return heatgeek+"<a class='installer_link' href='"+system['installer_url']+"'>"+val+"</a>";
                     } else {
                         return '';
                     }

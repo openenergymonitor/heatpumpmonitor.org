@@ -94,6 +94,11 @@
   color: #44b3e2 !important;
   text-decoration: none !important;
 }
+.heatgeeklogo { 
+  width:20px;
+  margin-top:-3px;
+  padding-right:10px;
+}
 
 /*
 .table-striped tbody tr:nth-of-type(odd) {
