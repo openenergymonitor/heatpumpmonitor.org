@@ -126,7 +126,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <td v-if="mode=='admin'">{{ system.id }}</td>
                         <td v-if="mode=='admin'" :title="system.username+'\n'+system.email"><span v-if="system.name">{{ system.name }}</span><span v-if="!system.name" style="color:#888">{{ system.username }}</span></td>
                         <td v-if="mode=='admin'"><a v-if="system.emoncmsorg_userid" :href="'https://emoncms.org/admin/setuser?id='+system.emoncmsorg_userid" target="_blank">{{ system.emoncmsorg_userid }}</a></td>
-                        <td v-for="column in selected_columns" v-html="column_format(system,column)" v-bind:class="sinceClass(system,column)"></td>
+                        <td v-for="column in selected_columns" v-html="column_format(system,column)" v-bind:class="sinceClass(system,column)" style="white-space: nowrap"></td>
                         <td v-if="mode!='public'">
                             <span v-if="system.share" class="badge bg-success">Shared</span>
                             <span v-if="!system.share" class="badge bg-danger">Private</span>
@@ -200,10 +200,20 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         d.setMonth(d.getMonth() - 1);
     }
 
+    // get screen size
+    var width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+    var showContent = true;
+
     var mode = "<?php echo $mode; ?>";
     var selected_columns = ['location', 'last_updated','cop'];
     if (mode == 'public') {
-        selected_columns = ['location', 'installer_name', 'hp_model', 'hp_output', 'kwh_m2', 'data_length', 'cop', 'mid_metering'];
+        if (width>800) {
+            showContent = true;
+            selected_columns = ['location', 'installer_name', 'hp_model', 'hp_output', 'kwh_m2', 'data_length', 'cop', 'mid_metering'];
+        } else {
+            showContent = false;
+            selected_columns = ['installer_name', 'hp_model', 'hp_output', 'cop']; 
+        }
     }
 
     var app = new Vue({
@@ -224,7 +234,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             available_months_start: months,
             available_months_end: months,
             filterKey: '',
-            showContent: true
+            showContent: showContent
         },
         methods: {
             create: function() {
