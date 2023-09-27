@@ -117,7 +117,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn==column"></i>
                         </th>
                         <th v-if="mode!='public'">Status</th>
-                        <th style="width:150px">
+                        <th>
                             <span v-if="mode!='public'">Actions</span>
                             <span v-else>View</span>
                         </th>
