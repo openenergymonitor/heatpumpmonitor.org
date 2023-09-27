@@ -18,43 +18,55 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 <div id="app" class="bg-light">
     <div style=" background-color:#f0f0f0; padding-top:20px; padding-bottom:10px">
         <div class="container-fluid">
-            <h3 v-if="mode=='user'">My Systems</h3>
-            <h3 v-if="mode=='admin'">Admin Systems</h3>
 
-            <button v-if="mode!='public'" class="btn btn-primary" @click="create" style="float:right; margin-right:30px">Add new system</button>
-
-            <div style="float:right; margin-right:30px">
-                <div class="input-group">
-                    <span class="input-group-text">Stats time period</span>
-
-                    <select class="form-control" v-model="stats_time_start" @change="stats_time_start_change" style="width:130px">
-                        <option value="last30">Last 30 days</option>
-                        <option value="last365">Last 365 days</option>
-                        <option v-for="month in available_months_start">{{ month }}</option>
-                    </select>
-                    
-                    <span class="input-group-text" v-if="stats_time_end!='only'">to</span>
-
-                    <select class="form-control" v-model="stats_time_end" v-if="stats_time_start!='last30' && stats_time_start!='last365'" @change="stats_time_end_change" style="width:120px">
-                        <option value="only">Only</option>
-                        <option v-for="month in available_months_end">{{ month }}</option>
-                    </select>
-                    <button class="btn btn-primary" @click="toggle_chart"><i class="fa fa-chart-bar"></i></button>
-                </div>
-            </div>
+        
             <!--
 			<div class="input-group" style="width:250px; float:right; margin-right:10px">
 				<div class="input-group-text">Filter</div>
 				<input class="form-control" name="query" v-model="filterKey">
 			</div>
             -->
+            <div class="row">
+                <div class="col-12 col-sm-12 col-md-6 col-lg-6 col-xl-8">
 
-            <p v-if="mode=='user'">Add, edit and view systems associated with your account.</p>
-            <p v-if="mode=='admin'">Add, edit and view all systems.</p>
-            <p v-if="mode=='public'">Here you can see a variety of installations monitored with OpenEnergyMonitor, and compare detailed statistic to see how performance can vary.</p>
-            <p v-if="mode=='public'">If you're monitoring a heat pump with <b>emoncms</b> and the My Heat Pump app, <a href="<?php echo $path; ?>/user/login">login</a> to add your details.</p>
-            <p v-if="mode=='public'">To join in with discussion of the results, or for support please use the <a href="https://community.openenergymonitor.org/tag/heatpumpmonitor">OpenEnergyMonitor forums.</a></p>
+                    <h3 v-if="mode=='user'">My Systems</h3>
+                    <h3 v-if="mode=='admin'">Admin Systems</h3>
+
+                    <button v-if="mode!='public'" class="btn btn-primary" @click="create" style="float:right; margin-right:30px">Add new system</button>
+
+
+                    <p v-if="mode=='user'">Add, edit and view systems associated with your account.</p>
+                    <p v-if="mode=='admin'">Add, edit and view all systems.</p>
+                    <p v-if="mode=='public'">Here you can see a variety of installations monitored with OpenEnergyMonitor, and compare detailed statistic to see how performance can vary.</p>
+                    <p v-if="mode=='public'">If you're monitoring a heat pump with <b>emoncms</b> and the My Heat Pump app, <a href="<?php echo $path; ?>/user/login">login</a> to add your details.</p>
+                    <p v-if="mode=='public'">To join in with discussion of the results, or for support please use the <a href="https://community.openenergymonitor.org/tag/heatpumpmonitor">OpenEnergyMonitor forums.</a></p>                
+                </div>
+
+                        
+                <div class="col-12 col-sm-12 col-md-6 col-lg-6 col-xl-auto ms-auto">
+                    <div class="input-group">
+                        <span class="input-group-text">Stats time period</span>
+
+                        <select class="form-control" v-model="stats_time_start" @change="stats_time_start_change" style="width:130px">
+                            <option value="last30">Last 30 days</option>
+                            <option value="last365">Last 365 days</option>
+                            <option v-for="month in available_months_start">{{ month }}</option>
+                        </select>
+                        
+                        <span class="input-group-text" v-if="stats_time_end!='only'">to</span>
+
+                        <select class="form-control" v-model="stats_time_end" v-if="stats_time_start!='last30' && stats_time_start!='last365'" @change="stats_time_end_change" style="width:120px">
+                            <option value="only">Only</option>
+                            <option v-for="month in available_months_end">{{ month }}</option>
+                        </select>
+                        <button class="btn btn-primary" @click="toggle_chart"><i class="fa fa-chart-bar"></i></button>
+                    </div>
+                </div>
+            </div>
+
         </div>
+
+
     </div>
 
     <div class="container-fluid" style="background-color:#fff; border-bottom:1px solid #ccc" v-show="chart_enable">
@@ -66,29 +78,34 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     <div class="container-fluid">
         <div class="row">
             <!-- Side bar with field selection -->
-            <div class="col-md-2">
+            <div class="col-12 col-sm-12 col-md-12 col-lg-12 col-xl-2">
                 <div class="card mt-3 sticky-card">
                     <div class="card-header">
-                        <h5>Select Fields</h5>
+                    <button class="btn btn-primary d-md-none" style="float:right" @click="showContent = !showContent">
+                        <i :class="{'fas fa-chevron-up': showContent, 'fas fa-chevron-down': !showContent}"></i>
+                    </button>                        
+                    <h5>Select Fields</h5>
                     </div>
-                    <ul class="list-group list-group-flush" style="overflow-x:hidden; height:600px">
-                    <template v-for="(group, group_name) in column_groups" v-if="!(stats_time_start=='last365' && (group_name=='When Running' || group_name=='Standby'))">
-                        <li class="list-group-item">
-                            <b>{{ group_name }}</b>
-                        </li>
-                        <li v-for="column in group" class="list-group-item">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault" @click="select_column(column.key)" :checked="selected_columns.includes(column.key)">
-                            <label class="form-check-label" for="flexCheckDefault">
-                            {{ column.name }}
-                            </label>
-                        </div>
-                        </li>
-                    </template>
-                    </ul>
+                    <div class="collapse show" :class="{ 'd-none': !showContent, 'd-md-block': showContent }">
+                        <ul class="list-group list-group-flush" style="overflow-x:hidden; height:600px">
+                        <template v-for="(group, group_name) in column_groups" v-if="!(stats_time_start=='last365' && (group_name=='When Running' || group_name=='Standby'))">
+                            <li class="list-group-item">
+                                <b>{{ group_name }}</b>
+                            </li>
+                            <li v-for="column in group" class="list-group-item">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault" @click="select_column(column.key)" :checked="selected_columns.includes(column.key)">
+                                <label class="form-check-label" for="flexCheckDefault">
+                                {{ column.name }}
+                                </label>
+                            </div>
+                            </li>
+                        </template>
+                        </ul>
+                    </div>
                 </div>
             </div>
-            <div class="col-md-10">
+            <div class="col-12 col-sm-12 col-md-12 col-lg-12 col-xl-10">
                 <table id="custom" class="table table-striped table-sm mt-3">
                     <tr>
                         <th v-if="mode=='admin'" @click="sort('id', 'asc')" style="cursor:pointer">ID</th>
@@ -206,7 +223,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             stats_time_range: false,
             available_months_start: months,
             available_months_end: months,
-            filterKey: ''
+            filterKey: '',
+            showContent: true
         },
         methods: {
             create: function() {
