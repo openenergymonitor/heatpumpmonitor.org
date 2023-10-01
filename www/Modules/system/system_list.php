@@ -19,13 +19,6 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     <div style=" background-color:#f0f0f0; padding-top:20px; padding-bottom:10px">
         <div class="container-fluid">
 
-        
-            <!--
-			<div class="input-group" style="width:250px; float:right; margin-right:10px">
-				<div class="input-group-text">Filter</div>
-				<input class="form-control" name="query" v-model="filterKey">
-			</div>
-            -->
             <div class="row">
                 <div class="col-12 col-sm-12 col-md-6 col-lg-6 col-xl-8">
 
@@ -61,7 +54,12 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         </select>
                         <button class="btn btn-primary" @click="toggle_chart"><i class="fa fa-chart-bar"></i></button>
                     </div>
-                </div>
+
+                    <div v-if="mode!='user'" class="input-group" style="margin-top: 12px">
+                        <div class="input-group-text">Filter</div>
+                            <input class="form-control" name="query" v-model="filterKey">
+                        </div>
+                    </div>
             </div>
 
         </div>
@@ -122,7 +120,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             <span v-else>View</span>
                         </th>
                     </tr>
-                    <tr v-for="(system,index) in systems" v-if="mode!='public' || (mode=='public' && system.data_length!=0)">
+                    <tr v-for="(system,index) in fSystems" v-if="mode!='public' || (mode=='public' && system.data_length!=0)">
                         <td v-if="mode=='admin'">{{ system.id }}</td>
                         <td v-if="mode=='admin'" :title="system.username+'\n'+system.email"><span v-if="system.name">{{ system.name }}</span><span v-if="!system.name" style="color:#888">{{ system.username }}</span></td>
                         <td v-if="mode=='admin'"><a v-if="system.emoncmsorg_userid" :href="'https://emoncms.org/admin/setuser?id='+system.emoncmsorg_userid" target="_blank">{{ system.emoncmsorg_userid }}</a></td>
@@ -233,7 +231,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             stats_time_range: false,
             available_months_start: months,
             available_months_end: months,
-            filterKey: '',
+            filterKey: window.location.hash.replace(/^#/, ''),
             showContent: showContent
         },
         methods: {
@@ -448,8 +446,17 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 }
                 
                 return '';
+            },
+ 
+            filterNodes(row) {
+                if (this.filterKey != '') {
+                    return Object.keys(row).some((key) => {
+                        return String(row[key]).toLowerCase().indexOf(this.filterKey.toLowerCase()) > -1
+                    })
+                }
+                return true;
             }
-        },
+       },
         filters: {
             toFixed: function(val, dp) {
                 if (isNaN(val) || val == null) {
@@ -460,6 +467,12 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             },
             time_ago: function(val) {
                 return time_ago(val);
+            }
+        },
+
+        computed: {
+            fSystems: function () {
+                return this.systems.filter(this.filterNodes);
             }
         }
     });
