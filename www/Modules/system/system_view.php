@@ -415,7 +415,6 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         },
     });
 
-
     // CHART
 
     chart_options = {
@@ -434,7 +433,14 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         series: [],
         xaxis: {
             categories: [],
-            type: 'datetime'
+            type: 'datetime',
+            labels: {
+                datetimeUTC: false,
+                // format month and year
+                formatter: function(value, timestamp, opts) {
+                    return new Date(timestamp).toLocaleDateString('default', { month: 'short', year: 'numeric' });
+                }
+            }
         },
         yaxis: {
             title: {
@@ -486,6 +492,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             name: app.system_stats_monthly[app.chart_yaxis].name,
             data: y
         }];
+
 
         chart.updateOptions(chart_options);
     }

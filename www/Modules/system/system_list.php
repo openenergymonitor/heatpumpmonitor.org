@@ -319,7 +319,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 let start = this.stats_time_start;
                 if (start!='last30' && start!='last365') {
                     // Convert e.g Mar 2023 to 2023-03-01
-                    let months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                    let months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sept','Oct','Nov','Dec'];
                     let month = start.split(' ')[0];
                     let year = start.split(' ')[1];
                     start = year + '-' + (months.indexOf(month)+1) + '-01';
@@ -329,7 +329,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 let end = this.stats_time_end;
                 if (end!='only') {
                     // Convert e.g Mar 2023 to 2023-03-01
-                    let months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                    let months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sept','Oct','Nov','Dec'];
                     let month = end.split(' ')[0];
                     let year = end.split(' ')[1];
                     end = year + '-' + (months.indexOf(month)+1) + '-01';
