@@ -453,10 +453,18 @@ defined('EMONCMS_EXEC') or die('Restricted access');
  
             filterNodes(row) {
                 if (this.filterKey != '') {
-                    return Object.keys(row).some((key) => {
-                        return String(row[key]).toLowerCase().indexOf(this.filterKey.toLowerCase()) > -1
-                    })
+                    if (this.filterKey === 'MID') {
+                        return row.mid_metering === 1;
+                    } else {
+                        return Object.keys(row).some((key) => {
+                            return String(row[key]).toLowerCase().indexOf(this.filterKey.toLowerCase()) > -1
+                        })
+                    }
                 }
+                return true;
+            },
+
+            filterDays(row) {
                 if (this.minDays != null) {
                     let minDays = parseInt(this.minDays)-1;
                     if (minDays<0) minDays = 0;
@@ -480,7 +488,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
         computed: {
             fSystems: function () {
-                return this.systems.filter(this.filterNodes);
+                return this.systems.filter(this.filterNodes).filter(this.filterDays);
             }
         }
     });
