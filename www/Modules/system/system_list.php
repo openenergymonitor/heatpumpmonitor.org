@@ -57,8 +57,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
                     <div v-if="mode!='user'" class="input-group" style="margin-top: 12px">
                         <div class="input-group-text">Filter</div>
-                            <input class="form-control" name="query" v-model="filterKey">
-                        </div>
+                        <input class="form-control" name="query" v-model="filterKey" style="width:100px">
+
+                        <div class="input-group-text">Min days</div>
+                        <input class="form-control" name="query" v-model="minDays" style="width:100px">  
                     </div>
             </div>
 
@@ -232,6 +234,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             available_months_start: months,
             available_months_end: months,
             filterKey: window.location.hash.replace(/^#/, ''),
+            minDays: 0,
             showContent: showContent
         },
         methods: {
@@ -453,6 +456,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     return Object.keys(row).some((key) => {
                         return String(row[key]).toLowerCase().indexOf(this.filterKey.toLowerCase()) > -1
                     })
+                }
+                if (this.minDays != null) {
+                    let minDays = parseInt(this.minDays)-1;
+                    if (minDays<0) minDays = 0;
+                    return (row.data_length/ (24 * 3600)) >= minDays;
                 }
                 return true;
             }
