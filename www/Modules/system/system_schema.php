@@ -553,6 +553,14 @@ $schema['system_meta'] = array(
         'name' => 'Includes indoor controller or other controls', 
         'group' => 'Metering'
     ),
+    
+    'indoor_temperature' => array(
+        'type' => 'tinyint(1)',
+        'editable' => true, 
+        'optional' => false, 
+        'name' => 'Includes indoor temperature sensing', 
+        'group' => 'Metering'
+    ),
 
     'notes' => array(
         'type' => 'text', 
