@@ -455,6 +455,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 if (this.filterKey != '') {
                     if (this.filterKey === 'MID') {
                         return row.mid_metering === 1;
+                    } else if (this.filterKey === 'HG' || this.filterKey === 'HeatGeek') {
+                        return row.heatgeek === 1;
                     } else {
                         return Object.keys(row).some((key) => {
                             return String(row[key]).toLowerCase().indexOf(this.filterKey.toLowerCase()) > -1
@@ -465,12 +467,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             },
 
             filterDays(row) {
-                if (this.minDays != null) {
-                    let minDays = parseInt(this.minDays)-1;
-                    if (minDays<0) minDays = 0;
-                    return (row.data_length/ (24 * 3600)) >= minDays;
-                }
-                return true;
+                if (this.minDays==null || this.minDays=='' || isNaN(this.minDays)) this.minDays = 0;
+                this.minDays = parseInt(this.minDays);
+                let minDays = this.minDays-1;
+                if (minDays<0) minDays = 0;
+                return (row.data_length/ (24 * 3600)) >= minDays;
             }
        },
         filters: {
