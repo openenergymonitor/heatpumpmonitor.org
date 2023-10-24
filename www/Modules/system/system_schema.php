@@ -43,6 +43,14 @@ $schema['system_meta'] = array(
         'name' => 'Heat Geek', 
         'group' => 'Overview'
     ),
+    
+    'betateach' => array(
+        'type' => 'tinyint(1)', 
+        'editable' => true, 
+        'optional' => true, 
+        'name' => 'Beta Teach', 
+        'group' => 'Overview'
+    ),
 
     'url' => array(
         'type' => 'varchar(128)', 

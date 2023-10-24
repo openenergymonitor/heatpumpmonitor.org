@@ -99,6 +99,12 @@
   margin-top:-3px;
   padding-right:10px;
 }
+.betateachlogo { 
+  width:18px;
+  margin-top:-2px;
+  margin-right:8px;
+  border-radius: 50%;
+}
 
 /*
 .table-striped tbody tr:nth-of-type(odd) {
