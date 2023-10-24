@@ -25,7 +25,7 @@ $navigation = array(
     <link href="https://openenergymonitor.org/homepage/theme/favicon.ico" rel="shortcut icon">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css">
-    <link rel="stylesheet" href="<?php echo $path; ?>theme/style.css?v=34" />
+    <link rel="stylesheet" href="<?php echo $path; ?>theme/style.css?v=40" />
 
 </head>
 
