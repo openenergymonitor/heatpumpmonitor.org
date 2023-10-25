@@ -9,5 +9,6 @@ $settings = array(
         "port"=>3306
     ),
     "mailersend_api_key"=>"",
-    "change_notifications_enabled"=>false
+    "change_notifications_enabled"=>false,
+    "public_mode_enabled"=>true
 );

@@ -18,9 +18,21 @@ $route = new Route(get('q'), server('DOCUMENT_ROOT'), server('REQUEST_METHOD'));
 $session = $user->emon_session_start();
 
 if ($route->controller=="") {
-    $route->controller = "system";
-    $route->action = "list";
-    $route->subaction = "public";
+    if ($settings['public_mode_enabled']) {
+        $route->controller = "system";
+        $route->action = "list";
+        $route->subaction = "public";
+    } else {
+        if (!$session['userid']) {
+            $route->controller = "user";
+            $route->action = "login";
+        } else {
+            $route->controller = "system";
+            $route->action = "list";
+            $route->subaction = "user";
+        }
+    }
+
 }
 
 switch ($route->controller) {

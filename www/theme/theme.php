@@ -2,7 +2,7 @@
 // no direct access
 defined('EMONCMS_EXEC') or die('Restricted access');
 
-global $path;
+global $path, $settings;
 
 $navigation = array(
     array("controller" => "", "href" => ".", "title" => "Home", "icon" => "fa-home"),
@@ -75,6 +75,7 @@ $navigation = array(
 
 <script>
     var path = "<?php echo $path; ?>";
+    var public_mode_enabled = <?php echo (int) $settings['public_mode_enabled']; ?>;
 </script>
 
 <body class="d-flex flex-column min-vh-100">
@@ -87,6 +88,8 @@ $navigation = array(
                 </button>
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <span class="navbar-text navbar-text-desktop">An open source initiative to share and compare heat pump performance data.</span>
+ 
+                    <?php if ($settings['public_mode_enabled'] || $session['userid']) { ?>
                     <ul class="navbar-nav ms-auto">
                         <li class="nav-item"><a class="nav-link " href="<?php echo $path; ?>" title="Home"><i class="fas fa-home"></i> <span class="nav-item-text">Home</span></a></li>
                     </ul>
@@ -97,7 +100,9 @@ $navigation = array(
                                 <i class="fas fa-chart-line"></i>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="avatarDropdown">
+                                <?php if ($settings['public_mode_enabled']) { ?>
                                 <li><a class="dropdown-item" href="<?php echo $path; ?>system/list/original">Original</a></li>
+                                <?php } ?>
                                 <li><a class="dropdown-item" href="<?php echo $path; ?>graph">Graph</a></li>
                                 <li><a class="dropdown-item" href="<?php echo $path; ?>compare">Compare</a></li>
                                 <li><a class="dropdown-item" href="<?php echo $path; ?>monthly">Monthly</a></li>
@@ -105,8 +110,10 @@ $navigation = array(
                             </ul>
                         </li>
                     </ul>
+                    <?php } ?>
+
                     <?php if (!$session['userid']) { ?>
-                        <ul class="navbar-nav">
+                        <ul class="navbar-nav <?php if (!$settings['public_mode_enabled']) echo "ms-auto"; ?>">
                             <li class="nav-item"><a class="nav-link " href="<?php echo $path; ?>user/login" title="Login"><i class="fas fa-user"></i> <span class="nav-item-text">Login</span></a></li>
                         </ul>
                     <?php } else { ?>

@@ -5,7 +5,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 function system_controller() {
 
-    global $session, $route, $system, $mysqli, $system_stats;
+    global $session, $route, $system, $mysqli, $system_stats, $settings;
 
 
 
@@ -54,7 +54,7 @@ function system_controller() {
     if ($route->action=="list") {
         if ($route->format=="html") {
             // Public list view
-            if ($route->subaction=="public") {
+            if ($route->subaction=="public" && $settings['public_mode_enabled']) {
                 return view("Modules/system/system_list.php",array(
                     "mode"=>"public",
                     "systems"=>$system->list_public($session['userid']),
@@ -81,7 +81,7 @@ function system_controller() {
                     ));
                 }
             // Original
-            } else if ($route->subaction=="original") {
+            } else if ($route->subaction=="original" && $settings['public_mode_enabled']) {
                 return view("Modules/system/original/main.php",array());
             }
         } else {

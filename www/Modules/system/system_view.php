@@ -1,6 +1,7 @@
 <?php
 // no direct access
 defined('EMONCMS_EXEC') or die('Restricted access');
+global $settings;
 ?>
 <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
@@ -239,6 +240,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     </div>
     <div style=" background-color:#eee; padding-top:20px; padding-bottom:10px" v-if="mode=='edit'">
         <div class="container" style="max-width:800px;">
+            <?php if ($settings['public_mode_enabled']) { ?>
             <div class="row">
                 <div class="col">
                     <p><b>Agree to share this information publicly</b></p>
@@ -261,6 +263,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     </div>
                 </div>
             </div>
+            <?php } ?>
 
             <button type="button" class="btn btn-primary" @click="save">Save</button>
             <button type="button" class="btn btn-light" @click="cancel" style="margin-left:10px">Cancel</button>

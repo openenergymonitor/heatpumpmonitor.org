@@ -13,12 +13,12 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
             <div v-if="!mode">
                 <button type="button" class="btn btn-primary btn-lg" style="width:100%" @click="mode='emoncmsorg'">Login with emoncms.org</button>
-                <button type="button" class="btn btn-outline-primary btn-lg" style="width:100%; margin-top:10px" @click="mode='other'">Self hosted data</button>
+                <button type="button" class="btn btn-outline-primary btn-lg" style="width:100%; margin-top:10px" @click="mode='selfhost'">Self hosted data</button>
             </div>
 
             <div v-else>
                 <div v-if="mode!='register'">
-                    <h1 class="h3 mb-3 fw-normal">Login <span v-if="mode=='emoncmsorg'">with emoncms.org</span><span style="color:#888" v-else>Self hosted data</span></h1>
+                    <h1 class="h3 mb-3 fw-normal">Login <span v-if="mode=='emoncmsorg'">with emoncms.org</span><span style="color:#888" v-if="mode=='selfhost'">Self hosted data</span></h1>
                 </div>
                 <div v-if="mode=='register'">
                     <h1 class="h3 mb-3 fw-normal">Register</h1>
@@ -49,9 +49,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
                 <button type="button" class="btn btn-primary" @click="login" v-if="mode!='register'">Login</button>
                 <button type="button" class="btn btn-primary" @click="register" v-if="mode=='register'">Register</button>
-                <button type="button" class="btn btn-light" @click="mode=false">Cancel</button>
-                <button type="button" class="btn btn-light" v-if="mode!='emoncmsorg' && mode!='register'" @click="mode='register'">Register</button>
-                <!--<a href="#" v-if="mode=='other'">Forgot password</a>-->
+                <button type="button" class="btn btn-light" @click="mode=false" v-if="public_mode_enabled">Cancel</button>
+                <button type="button" class="btn btn-light" v-if="mode!='emoncmsorg' && mode!='register' && public_mode_enabled" @click="mode='register'">Register</button>
+                <!--<a href="#" v-if="mode=='selfhost'">Forgot password</a>-->
             </div>
 
             <div class="alert alert-danger" style="margin-top:20px; margin-bottom: 5px;" v-if="error" v-html="error"></div>
@@ -63,6 +63,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 </div>
 
 <script>
+
     document.body.style.backgroundColor = "#1d8dbc";
 
     var app = new Vue({
@@ -74,7 +75,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             email: "",
             error: false,
             success: false,
-            mode: false
+            mode: false,
+            public_mode_enabled: public_mode_enabled
         },
         methods: {
             login: function() {
@@ -125,6 +127,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             }
         }
     });
+    
+    if (!public_mode_enabled) {
+        app.mode = 'standard';
+    }
 
     var result = <?php echo json_encode($result); ?>;
     if (result.success!=undefined) {

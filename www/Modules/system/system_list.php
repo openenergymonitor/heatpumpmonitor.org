@@ -1,6 +1,7 @@
 <?php
 // no direct access
 defined('EMONCMS_EXEC') or die('Restricted access');
+
 ?>
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -25,14 +26,13 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     <h3 v-if="mode=='user'">My Systems</h3>
                     <h3 v-if="mode=='admin'">Admin Systems</h3>
 
-                    <button v-if="mode!='public'" class="btn btn-primary" @click="create" style="float:right; margin-right:30px">Add new system</button>
-
-
                     <p v-if="mode=='user'">Add, edit and view systems associated with your account.</p>
                     <p v-if="mode=='admin'">Add, edit and view all systems.</p>
                     <p v-if="mode=='public'">Here you can see a variety of installations monitored with OpenEnergyMonitor, and compare detailed statistic to see how performance can vary.</p>
                     <p v-if="mode=='public'">If you're monitoring a heat pump with <b>emoncms</b> and the My Heat Pump app, <a href="<?php echo $path; ?>/user/login">login</a> to add your details.</p>
-                    <p v-if="mode=='public'">To join in with discussion of the results, or for support please use the <a href="https://community.openenergymonitor.org/tag/heatpumpmonitor">OpenEnergyMonitor forums.</a></p>                
+                    <p v-if="mode=='public'">To join in with discussion of the results, or for support please use the <a href="https://community.openenergymonitor.org/tag/heatpumpmonitor">OpenEnergyMonitor forums.</a></p> 
+                    
+                    <button v-if="mode!='public'" class="btn btn-primary" @click="create">Add new system</button>            
                 </div>
 
                         
@@ -55,7 +55,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <button class="btn btn-primary" @click="toggle_chart"><i class="fa fa-chart-bar"></i></button>
                     </div>
 
-                    <div v-if="mode!='user'" class="input-group" style="margin-top: 12px">
+                    <div class="input-group" style="margin-top: 12px">
                         <div class="input-group-text">Filter</div>
                         <input class="form-control" name="query" v-model="filterKey" style="width:100px">
 
@@ -116,30 +116,32 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <th v-for="column in selected_columns" @click="sort(column, 'desc')" style="cursor:pointer" :title="columns[column].helper">{{ columns[column].name }}
                             <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn==column"></i>
                         </th>
-                        <th v-if="mode!='public'">Status</th>
-                        <th>
-                            <span v-if="mode!='public'">Actions</span>
-                            <span v-else>View</span>
-                        </th>
+                        <th v-if="mode!='public' && public_mode_enabled">Status</th>
+                        <th v-if="mode!='public'">Actions</th>
+                        <th>View</th>
                     </tr>
                     <tr v-for="(system,index) in fSystems" v-if="mode!='public' || (mode=='public' && system.data_length!=0)">
                         <td v-if="mode=='admin'">{{ system.id }}</td>
                         <td v-if="mode=='admin'" :title="system.username+'\n'+system.email"><span v-if="system.name">{{ system.name }}</span><span v-if="!system.name" style="color:#888">{{ system.username }}</span></td>
                         <td v-if="mode=='admin'"><a v-if="system.emoncmsorg_userid" :href="'https://emoncms.org/admin/setuser?id='+system.emoncmsorg_userid" target="_blank">{{ system.emoncmsorg_userid }}</a></td>
                         <td v-for="column in selected_columns" v-html="column_format(system,column)" v-bind:class="sinceClass(system,column)" style=""></td>
-                        <td v-if="mode!='public'">
+                        <td v-if="mode!='public' && public_mode_enabled">
                             <span v-if="system.share" class="badge bg-success">Shared</span>
                             <span v-if="!system.share" class="badge bg-danger">Private</span>
                             <span v-if="system.published" class="badge bg-success">Published</span>
                             <span v-if="!system.published" class="badge bg-secondary">Waiting for review</span>
                         </td>
+                        <td v-if="mode!='public'">
+                            <button class="btn btn-warning btn-sm" @click="edit(index)" title="Edit"><i class="fa fa-edit" style="color: #ffffff;"></i></button>
+                            <button class="btn btn-danger btn-sm" @click="remove(index)" title="Delete"><i class="fa fa-trash" style="color: #ffffff;"></i></button>
+                        </td>
                         <td>
-                            <button v-if="mode!='public'" class="btn btn-warning btn-sm" @click="edit(index)" title="Edit"><i class="fa fa-edit" style="color: #ffffff;"></i></button>
-                            <button v-if="mode!='public'" class="btn btn-danger btn-sm" @click="remove(index)" title="Delete"><i class="fa fa-trash" style="color: #ffffff;"></i></button>
-                            
                             <a :href="'<?php echo $path;?>system/view?id='+system.id">
-                                <button class="btn btn-primary btn-sm" title="View"><i class="fa fa-eye" style="color: #ffffff;"></i></button>
+                                <button class="btn btn-primary btn-sm" title="Summary"><i class="fa fa-list-alt" style="color: #ffffff;"></i></button>
                             </a>
+                            <a :href="system.url">
+                                <button class="btn btn-secondary btn-sm" title="Dashboard"><i class="fa fa-chart-bar" style="color: #ffffff;"></i></button>
+                            </a> 
                         </td>
                     </tr>
                 </table>
@@ -205,14 +207,21 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     var showContent = true;
 
     var mode = "<?php echo $mode; ?>";
-    var selected_columns = ['location', 'last_updated','cop'];
-    if (mode == 'public') {
-        if (width>800) {
-            showContent = true;
+    var selected_columns = [];
+    
+    if (width>800) {
+        showContent = true;
+        if (mode == 'public') {
             selected_columns = ['location', 'installer_name', 'hp_model', 'hp_output', 'kwh_m2', 'data_length', 'cop', 'mid_metering'];
         } else {
-            showContent = false;
+            selected_columns = ['location','hp_model','data_length','cop','mid_metering'];
+        }
+    } else {
+        showContent = false;
+        if (mode == 'public') {
             selected_columns = ['installer_name', 'hp_model', 'hp_output', 'cop']; 
+        } else {
+            selected_columns = ['location','hp_model','cop'];
         }
     }
 
@@ -235,7 +244,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             available_months_end: months,
             filterKey: window.location.hash.replace(/^#/, ''),
             minDays: 0,
-            showContent: showContent
+            showContent: showContent,
+            public_mode_enabled: public_mode_enabled
         },
         methods: {
             create: function() {
