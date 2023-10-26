@@ -118,7 +118,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         </th>
                         <th v-if="mode!='public' && public_mode_enabled">Status</th>
                         <th v-if="mode!='public'">Actions</th>
-                        <th>View</th>
+                        <th style="width:80px">View</th>
                     </tr>
                     <tr v-for="(system,index) in fSystems" v-if="mode!='public' || (mode=='public' && system.data_length!=0)">
                         <td v-if="mode=='admin'">{{ system.id }}</td>
