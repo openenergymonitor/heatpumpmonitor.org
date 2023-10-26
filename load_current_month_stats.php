@@ -1,7 +1,8 @@
 <?php
+$dir = dirname(__FILE__);
+chdir("$dir/www");
 
-chdir("/var/www/heatpumpmonitororg");
-require "www/Lib/load_database.php";
+require "Lib/load_database.php";
 
 require("Modules/user/user_model.php");
 $user = new User($mysqli);

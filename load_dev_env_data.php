@@ -1,6 +1,6 @@
 <?php
-
-
+$dir = dirname(__FILE__);
+chdir("$dir/www");
 
 if (isset($_ENV["LOAD_DATA"]) && ($_ENV["LOAD_DATA"]=="1" || $_ENV["LOAD_DATA"]==1)){
     echo "Forcing load of data\n";
@@ -28,7 +28,6 @@ $data = file_get_contents("https://heatpumpmonitor.org/system/list/public.json")
 $systems = json_decode($data);
 if ($systems==null) die("Error: could not load data from heatpumpmonitor.org");
 
-chdir("/var/www/heatpumpmonitororg");
 require "Lib/load_database.php";
 require "core.php";
 

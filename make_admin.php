@@ -1,12 +1,13 @@
 <?php
+$dir = dirname(__FILE__);
+chdir("$dir/www");
 
 // Just a small script to make a user an admin
 // set username here:
 $username = "midterrace";
 
 // Load database
-chdir("/var/www/heatpumpmonitororg");
-require "www/Lib/load_database.php";
+require "Lib/load_database.php";
 
 // Load user model
 require("Modules/user/user_model.php");

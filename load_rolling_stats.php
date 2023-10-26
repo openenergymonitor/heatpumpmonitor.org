@@ -1,7 +1,8 @@
 <?php
+$dir = dirname(__FILE__);
+chdir("$dir/www");
 
-chdir("/var/www/heatpumpmonitororg");
-require "www/Lib/load_database.php";
+require "Lib/load_database.php";
 
 require("Modules/user/user_model.php");
 $user = new User($mysqli);
@@ -12,6 +13,10 @@ $system = new System($mysqli);
 require ("Modules/system/system_stats_model.php");
 $system_stats = new SystemStats($mysqli,$system);
 
+print "Updating rolling stats: ".date("Y-m-d H:i:s")."\n";
+print "- directory: $dir\n";
+
+$start = microtime(true);
 $data = $system->list_admin();
 foreach ($data as $row) {
    // if ($row->id!=1) continue;
@@ -28,3 +33,7 @@ foreach ($data as $row) {
         }
     }
 }
+$end = microtime(true);
+$duration = $end - $start;
+print "- systems: ".count($data)."\n";
+print "- duration: ".number_format($duration,1,'.',',')."s\n";
