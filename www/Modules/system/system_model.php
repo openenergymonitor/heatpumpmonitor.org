@@ -34,8 +34,10 @@ class System
         $result = $this->mysqli->query("SELECT system_meta.*,users.name,users.username,users.email FROM system_meta JOIN users ON system_meta.userid = users.id");
         $list = array();
         while ($row = $result->fetch_object()) {
-            $row->emoncmsorg_userid = $this->get_emoncmsorg_userid($row->userid);
-            if ($row->emoncmsorg_userid) $row->emoncmsorg_userid = (int) $row->emoncmsorg_userid;
+            if (!isset($row->emoncmsorg_userid)) {
+                $row->emoncmsorg_userid = $this->get_emoncmsorg_userid($row->userid);
+                if ($row->emoncmsorg_userid) $row->emoncmsorg_userid = (int) $row->emoncmsorg_userid;
+            }
             $list[] = $this->typecast($row);
         }
         return $list;
