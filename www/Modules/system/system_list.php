@@ -166,7 +166,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
     var columns = <?php echo json_encode($columns); ?>;
 
-    columns['cop'] = {name: 'SCOP', group: 'Stats'};
+    columns['hp_type'].name = "Type";
+    columns['hp_model'].name = "Make & Model";
+    columns['hp_output'].name = "Rating";
+
+    columns['cop'] = {name: 'COP', group: 'Stats'};
     columns['elec_kwh'] = {name: 'Electricity (kWh)', group: 'Stats'};
     columns['heat_kwh'] = {name: 'Heat (kWh)', group: 'Stats'};
     columns['data_start'] = {name: 'Data Start', group: 'Stats'};
@@ -223,7 +227,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     if (width>800) {
         showContent = true;
         if (mode == 'public') {
-            selected_columns = ['location', 'installer_name', 'hp_model', 'hp_output', 'kwh_m2', 'data_length', 'cop', 'mid_metering'];
+            selected_columns = ['location', 'installer_name', 'hp_type', 'hp_model', 'hp_output', 'kwh_m2', 'data_length', 'cop', 'mid_metering'];
         } else {
             selected_columns = ['location','hp_model','data_length','cop','mid_metering'];
         }
@@ -335,10 +339,13 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 
                 if (this.stats_time_start=='last365') {
                     this.minDays = 365;
+                    columns['cop'].name = 'SCOP';
                 } else if (this.stats_time_start=='last30') {
                     this.minDays = 30;
+                    columns['cop'].name = 'COP';
                 } else {
                     this.minDays = 0;
+                    columns['cop'].name = 'COP';
                 }
                 
                 this.load_system_stats();
@@ -443,6 +450,14 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         return betateach+heatgeek+"<a class='installer_link' href='"+system['installer_url']+"'>"+val+"</a>";
                     } else {
                         return '';
+                    }
+                }
+                if (key=='hp_type') {
+                    if (val=="Air Source") {
+                        return "<span style='color:#4f8baa'>Air</span>";
+                    }
+                    if (val=="Ground Source") {
+                        return "<span style='color:#938e03'>Ground</span>";
                     }
                 }
                 if (key=='hp_output') {
