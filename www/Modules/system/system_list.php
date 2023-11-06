@@ -106,6 +106,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 </div>
             </div>
             <div class="col-12 col-sm-12 col-md-12 col-lg-12 col-xl-10">
+
                 <table id="custom" class="table table-striped table-sm mt-3">
                     <tr>
                         <th v-if="mode=='admin'" @click="sort('id', 'asc')" style="cursor:pointer">ID</th>
@@ -145,6 +146,15 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         </td>
                     </tr>
                 </table>
+                
+                <div class="card">
+                  <h5 class="card-header">Totals</h5>
+                  <div class="card-body">
+                    <p class="card-text">Number of systems in selection: <b>{{ totals.count }}</b></p>
+                    <p class="card-text">Average of system COP values: <b>{{ totals.average_cop | toFixed(1) }}</b></p>
+                    <p class="card-text">Average COP based on total sum of heat and electric values: <b>{{ totals.average_cop_kwh | toFixed(1) }}</p>
+                  </div>
+                </div>
             </div>
         </div>
 
@@ -502,6 +512,29 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         computed: {
             fSystems: function () {
                 return this.systems.filter(this.filterNodes).filter(this.filterDays);
+            },
+            // calculate total scop of fSystems
+            totals: function () {
+                var totals = {
+                    average_cop: 0,
+                    elec_kwh: 0,
+                    heat_kwh: 0,
+                    average_cop_kwh: 0,
+                    count: 0
+                };
+                var count = 0;
+                for (var i = 0; i < this.fSystems.length; i++) {
+                    if (this.fSystems[i].elec_kwh>0 && this.fSystems[i].heat_kwh>0 && this.fSystems[i].heat_kwh>this.fSystems[i].elec_kwh) {
+                        totals.average_cop += this.fSystems[i].cop*1;
+                        totals.elec_kwh += this.fSystems[i].elec_kwh;
+                        totals.heat_kwh += this.fSystems[i].heat_kwh;
+                        totals.count++;
+                    }
+                }
+                totals.average_cop = totals.average_cop / totals.count;
+                totals.average_cop_kwh = totals.heat_kwh / totals.elec_kwh;
+
+                return totals;
             }
         }
     });
