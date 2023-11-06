@@ -166,7 +166,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
     var columns = <?php echo json_encode($columns); ?>;
 
-    columns['hp_type'].name = "Type";
+    columns['hp_type'].name = "Source";
     columns['hp_model'].name = "Make & Model";
     columns['hp_output'].name = "Rating";
 
