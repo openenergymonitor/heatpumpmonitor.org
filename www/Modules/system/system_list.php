@@ -41,6 +41,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <span class="input-group-text">Stats time period</span>
 
                         <select class="form-control" v-model="stats_time_start" @change="stats_time_start_change" style="width:130px">
+                            <option value="all">All</option>
                             <option value="last30">Last 30 days</option>
                             <option value="last365">Last 365 days</option>
                             <option v-for="month in available_months_start">{{ month }}</option>
@@ -48,7 +49,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         
                         <span class="input-group-text" v-if="stats_time_end!='only'">to</span>
 
-                        <select class="form-control" v-model="stats_time_end" v-if="stats_time_start!='last30' && stats_time_start!='last365'" @change="stats_time_end_change" style="width:120px">
+                        <select class="form-control" v-model="stats_time_end" v-if="stats_time_start!='all' && stats_time_start!='last30' && stats_time_start!='last365'" @change="stats_time_end_change" style="width:120px">
                             <option value="only">Only</option>
                             <option v-for="month in available_months_end">{{ month }}</option>
                         </select>
@@ -88,7 +89,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     </div>
                     <div class="collapse show" :class="{ 'd-none': !showContent, 'd-md-block': showContent }">
                         <ul class="list-group list-group-flush" style="overflow-x:hidden; height:600px">
-                        <template v-for="(group, group_name) in column_groups" v-if="!(stats_time_start=='last365' && (group_name=='When Running' || group_name=='Standby'))">
+                        <template v-for="(group, group_name) in column_groups" v-if="!((stats_time_start=='last365' || stats_time_start=='all') && (group_name=='When Running' || group_name=='Standby'))">
                             <li class="list-group-item">
                                 <b>{{ group_name }}</b>
                             </li>
@@ -151,7 +152,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                   <h5 class="card-header">Totals</h5>
                   <div class="card-body">
                     <p class="card-text">Number of systems in selection: <b>{{ totals.count }}</b></p>
-                    <p class="card-text">Average of system COP values: <b>{{ totals.average_cop | toFixed(1) }}</b></p>
+                    <p class="card-text">Average of individual system COP values: <b>{{ totals.average_cop | toFixed(1) }}</b></p>
                     <p class="card-text">Average COP based on total sum of heat and electric values: <b>{{ totals.average_cop_kwh | toFixed(1) }}</p>
                   </div>
                 </div>
@@ -247,13 +248,13 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             currentSortColumn: 'cop',
             currentSortDir: 'desc',
             // stats time selection
-            stats_time_start: "last365",
+            stats_time_start: "last30",
             stats_time_end: "only",
             stats_time_range: false,
             available_months_start: months,
             available_months_end: months,
             filterKey: window.location.hash.replace(/^#/, ''),
-            minDays: 0,
+            minDays: 30,
             showContent: showContent,
             public_mode_enabled: public_mode_enabled
         },
@@ -321,7 +322,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             },
             stats_time_start_change: function () {
                 // change available_months_end to only show months after start
-                if (this.stats_time_start=='last30' || this.stats_time_start=='last365') {
+                if (this.stats_time_start=='last30' || this.stats_time_start=='last365' || this.stats_time_start=='all') {
                     this.stats_time_end = 'only';
                 } else {
                     let start_index = this.available_months_start.indexOf(this.stats_time_start);
@@ -331,6 +332,15 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         this.stats_time_end = this.available_months_end[0]; 
                     }
                 }
+                
+                if (this.stats_time_start=='last365') {
+                    this.minDays = 365;
+                } else if (this.stats_time_start=='last30') {
+                    this.minDays = 30;
+                } else {
+                    this.minDays = 0;
+                }
+                
                 this.load_system_stats();
             },
             stats_time_end_change: function () {
@@ -340,7 +350,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 
                 // Start
                 let start = this.stats_time_start;
-                if (start!='last30' && start!='last365') {
+                if (start!='last30' && start!='last365' && start!='all') {
                     // Convert e.g Mar 2023 to 2023-03-01
                     let months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sept','Oct','Nov','Dec'];
                     let month = start.split(' ')[0];
@@ -366,8 +376,13 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     end: end
                 };
 
-                if (start == 'last30' || start == 'last365') {
-                    url = path+'system/stats/'+start;
+                if (start == 'last30' || start == 'last365' || start == 'all') {
+                    
+                    if (start == 'all') {
+                        url = path+'system/stats/last365';
+                    } else {
+                        url = path+'system/stats/'+start;
+                    }
                     params = {};
                 }
                 // Load system/stats data
@@ -462,7 +477,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     if (system.cop==0) {
                         return 'partial ';
                     }
-                    if (this.stats_time_start=='last365') {
+                    if (this.stats_time_start=='last365' || this.stats_time_start=='all') {
                         
                         return (days<=360) ? 'partial ' : '';
                     } else {
