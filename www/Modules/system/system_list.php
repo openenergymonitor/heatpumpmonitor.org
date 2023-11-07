@@ -224,10 +224,15 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     var mode = "<?php echo $mode; ?>";
     var selected_columns = [];
     
+    var default_minDays = 0;
+    var default_stats_time_start = "all";
+    
     if (width>800) {
         showContent = true;
         if (mode == 'public') {
             selected_columns = ['location', 'installer_name', 'hp_type', 'hp_model', 'hp_output', 'kwh_m2', 'data_length', 'cop', 'mid_metering'];
+            default_minDays = 30;
+            default_stats_time_start = "last30";
         } else {
             selected_columns = ['location','hp_model','data_length','cop','mid_metering'];
         }
@@ -235,6 +240,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         showContent = false;
         if (mode == 'public') {
             selected_columns = ['installer_name', 'hp_model', 'hp_output', 'cop']; 
+            default_minDays = 30;
+            default_stats_time_start = "last30";
         } else {
             selected_columns = ['location','hp_model','cop'];
         }
@@ -252,13 +259,13 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             currentSortColumn: 'cop',
             currentSortDir: 'desc',
             // stats time selection
-            stats_time_start: "last30",
+            stats_time_start: default_stats_time_start,
             stats_time_end: "only",
             stats_time_range: false,
             available_months_start: months,
             available_months_end: months,
             filterKey: window.location.hash.replace(/^#/, ''),
-            minDays: 30,
+            minDays: default_minDays,
             showContent: showContent,
             public_mode_enabled: public_mode_enabled
         },
