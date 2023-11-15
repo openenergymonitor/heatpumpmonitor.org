@@ -18,8 +18,8 @@ var app = new Vue({
     interval: 3600,
     match_dates: true,
     selected_systems: [
-      {color:"#0000ff", id:0, start: start_date, end: end_date, time_changed: false, data: false},
-      {color:"#ff0000", id:1, start: start_date, end: end_date, time_changed: false, data: false}
+      {color:"#0000ff", id:1, start: start_date, end: end_date, time_changed: false, data: false},
+      {color:"#ff0000", id:2, start: start_date, end: end_date, time_changed: false, data: false}
    ],
     system_list: system_list
   },
@@ -296,7 +296,7 @@ function load_system_data(idx) {
   var system = app.selected_systems[idx];
   $.ajax({
     dataType: "json", 
-    url: "api/all?system="+(system.id+1)+"&start="+date_str_to_time(system.start)+"&end="+date_str_to_time(system.end)+"&interval="+app.interval, 
+    url: "api/all?system="+system.id+"&start="+date_str_to_time(system.start)+"&end="+date_str_to_time(system.end)+"&interval="+app.interval, 
     async:false, 
     success: function(system_data) {
       app.selected_systems[idx].data = system_data;
