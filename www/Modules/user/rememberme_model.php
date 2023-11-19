@@ -71,7 +71,12 @@ class RememberMe
         $hash_validator = password_hash($validator, PASSWORD_DEFAULT);
     
         if ($this->insert_user_token($userid, $selector, $hash_validator, $expiry)) {
-            setcookie('remember_me', $token, $expiry);
+            // get domain
+            $domain = $_SERVER['HTTP_HOST'];
+            // create a secure cookie for this domain
+            // args: name, value, expiry, path, domain, secure, httponly
+            setcookie('remember_me', $token, $expiry, '/', $domain, true, true);
+            
         }
     }
 
