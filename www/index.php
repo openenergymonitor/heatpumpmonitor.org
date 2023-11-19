@@ -4,8 +4,12 @@ require "Lib/load_database.php";
 
 require "core.php";
 require "route.php";
+
+require("Modules/user/rememberme_model.php");
+$rememberme = new RememberMe($mysqli);
 require("Modules/user/user_model.php");
-$user = new User($mysqli);
+$user = new User($mysqli,$rememberme);
+
 require ("Modules/system/system_model.php");
 $system = new System($mysqli);
 
