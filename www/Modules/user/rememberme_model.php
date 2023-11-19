@@ -71,18 +71,10 @@ class RememberMe
         $hash_validator = password_hash($validator, PASSWORD_DEFAULT);
     
         if ($this->insert_user_token($userid, $selector, $hash_validator, $expiry)) {
-            // get domain
-            $domain = $_SERVER['HTTP_HOST'];
-            if (strpos($domain, 'www') === 0) {
-                $domain = substr($domain, 3);
-            }
-            // remove leading dot (host-only cookie)
-            $domain = ltrim($domain, '.');
-
             setcookie('remember_me', $token, [
                 'expires' => $expiry,
                 'path' => '/',
-                'domain' => $domain,
+                'domain' => '',
                 'secure' => true,
                 'httponly' => true,
                 'samesite' => 'Strict'
