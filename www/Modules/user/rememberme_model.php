@@ -73,9 +73,20 @@ class RememberMe
         if ($this->insert_user_token($userid, $selector, $hash_validator, $expiry)) {
             // get domain
             $domain = $_SERVER['HTTP_HOST'];
-            // create a secure cookie for this domain
-            // args: name, value, expiry, path, domain, secure, httponly
-            setcookie('remember_me', $token, $expiry, '/', $domain, true, true);
+            if (strpos($domain, 'www') === 0) {
+                $domain = substr($domain, 3);
+            }
+            // remove leading dot (host-only cookie)
+            $domain = ltrim($domain, '.');
+
+            setcookie('remember_me', $token, [
+                'expires' => $expiry,
+                'path' => '/',
+                'domain' => $domain,
+                'secure' => true,
+                'httponly' => true,
+                'samesite' => 'Strict'
+            ]);
             
         }
     }
