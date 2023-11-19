@@ -92,7 +92,14 @@ class RememberMe
         // remove the remember_me cookie
         if (isset($_COOKIE['remember_me'])) {
             unset($_COOKIE['remember_me']);
-            setcookie('remember_me', null, -1);
+            setcookie('remember_me', '', [
+                'expires' => time() - 3600,
+                'path' => '/',
+                'domain' => '',
+                'secure' => true,
+                'httponly' => true,
+                'samesite' => 'Strict'
+            ]);
         }
     }
 
