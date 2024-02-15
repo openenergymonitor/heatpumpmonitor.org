@@ -52,56 +52,25 @@ foreach ($data as $row) {
         // modify to start of month
         $date->modify("midnight first day of this month");
         $start = $date->getTimestamp();
-        $start_str = $date->format("Y-m-d H:i:s");
+        $start_str = $date->format("Y-m-d");
         $date->modify("+1 month");
         $end = $date->getTimestamp();
-        $end_str = $date->format("Y-m-d H:i:s");
+        $end_str = $date->format("Y-m-d");
+
+        $cw = 16;
+
+        // print header use padding to make it line up
+        print str_pad("id",$cw).str_pad("start",$cw).str_pad("end",$cw).str_pad("elec_kwh",$cw).str_pad("heat_kwh",$cw).str_pad("cop",$cw).str_pad("flowT_mean",$cw)."\n";
 
         // for each month
         while ($start < $data_end) {
 
-            $query = "";
-            $query .= "SUM(combined_elec_kwh) AS total_combined_elec_kwh,";
-            $query .= "SUM(combined_heat_kwh) AS total_combined_heat_kwh,";
-            $query .= "SUM(combined_data_length) AS total_combined_data_length,";
-            $query .= "SUM(running_elec_kwh) AS total_running_elec_kwh,";
-            $query .= "SUM(running_heat_kwh) AS total_running_heat_kwh,";
-            $query .= "SUM(running_data_length) AS total_running_data_length";
-            
-            $result = $mysqli->query("SELECT $query FROM system_stats_daily WHERE timestamp >= $start AND timestamp < $end AND id = $systemid");
-            $row = $result->fetch_object();
-            
-            $stats = array(
-                'id' => $systemid,
-                'timestamp' => $start,
-                'elec_kwh' => number_format($row->total_combined_elec_kwh,3,'.',''),
-                'heat_kwh' => number_format($row->total_combined_heat_kwh,3,'.',''),
-                'cop' => number_format($row->total_combined_heat_kwh / $row->total_combined_elec_kwh,2,'.',''),
-                'since' => $start,
-                'data_length' => $row->total_combined_data_length,
-                'when_running_elec_kwh' => number_format($row->total_running_elec_kwh,3,'.',''),
-                'when_running_heat_kwh' => number_format($row->total_running_heat_kwh,3,'.',''),
-                'when_running_cop' => number_format($row->total_running_heat_kwh / $row->total_running_elec_kwh,2,'.',''),
-                'when_running_elec_W' => null,
-                'when_running_heat_W' => null,
-                'when_running_flowT' => 0,
-                'when_running_returnT' => 0,
-                'when_running_flow_minus_return' => 0,
-                'when_running_outsideT' => 0,
-                'when_running_flow_minus_outside' => 0,
-                'when_running_carnot_prc' => null,
-                'standby_threshold' => null,
-                'standby_kwh' => null,
-                "quality_elec" => 0,
-                "quality_heat" => 0,
-                "quality_flow" => 0,
-                "quality_return" => 0,
-                "quality_outside" => 0,
-                'data_start' => null
-            );
+            $stats = $system_stats->process_from_daily($systemid,$start,$end);
 
-            print "systemid: $systemid, start: $start_str, end: $end_str, elec_kwh: ".$stats['elec_kwh'].", heat_kwh: ".$stats['heat_kwh'].", cop: ".$stats['cop']."\n";
-
+            // print all values
+            // print "-----------------------------------------------------------\n";
+            print str_pad($systemid,$cw).str_pad($start_str,$cw).str_pad($end_str,$cw).str_pad($stats['elec_kwh'],$cw).str_pad($stats['heat_kwh'],$cw).str_pad($stats['cop'],$cw).str_pad($stats['when_running_flowT'],$cw).str_pad($stats['data_length'],$cw)."\n";
+            // print "-----------------------------------------------------------\n";
             
             // print json_encode($stats)."\n";
             $mysqli->query("DELETE FROM system_stats_monthly WHERE id=$systemid AND timestamp=$start");
@@ -111,7 +80,7 @@ foreach ($data as $row) {
             $date->modify("+1 month");
             $end = $date->getTimestamp();
             $start_str = $end_str;
-            $end_str = $date->format("Y-m-d H:i:s");
+            $end_str = $date->format("Y-m-d");
 
         }
     }

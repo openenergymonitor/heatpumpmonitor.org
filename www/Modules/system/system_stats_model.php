@@ -379,4 +379,107 @@ class SystemStats
         }
         return $monthly;
     }
+
+    public function process_from_daily($systemid, $start, $end) {
+
+        $systemid = (int) $systemid;
+        $start = (int) $start;
+        $end = (int) $end;
+
+        $total_combined_elec_kwh = 0;
+        $total_combined_heat_kwh = 0;
+        $total_combined_data_length = 0;
+        $total_running_elec_kwh = 0;
+        $total_running_heat_kwh = 0;
+        $total_running_data_length = 0;
+
+        $sum_running_flowT_mean = 0;
+        $sum_running_returnT_mean = 0;
+        $sum_running_outsideT_mean = 0;
+        
+        $sum_quality_elec = 0;
+        $sum_quality_heat = 0;
+        $sum_quality_flowT = 0;
+        $sum_quality_returnT = 0;
+        $sum_quality_outsideT = 0;
+        
+        $days = 0;
+
+        $result = $this->mysqli->query("SELECT * FROM system_stats_daily WHERE timestamp >= $start AND timestamp < $end AND id = $systemid");
+        while ($row = $result->fetch_object()) {
+            $total_combined_elec_kwh += $row->combined_elec_kwh;
+            $total_combined_heat_kwh += $row->combined_heat_kwh;
+            $total_combined_data_length += $row->combined_data_length;
+            $total_running_elec_kwh += $row->running_elec_kwh;
+            $total_running_heat_kwh += $row->running_heat_kwh;
+            $total_running_data_length += $row->running_data_length;
+
+            $sum_running_flowT_mean += $row->running_flowT_mean * $row->running_data_length;
+            $sum_running_returnT_mean += $row->running_returnT_mean * $row->running_data_length;
+            $sum_running_outsideT_mean += $row->running_outsideT_mean * $row->running_data_length;
+            
+            $sum_quality_elec += $row->quality_elec;
+            $sum_quality_heat += $row->quality_heat;
+            $sum_quality_flowT += $row->quality_flowT;
+            $sum_quality_returnT += $row->quality_returnT;
+            $sum_quality_outsideT += $row->quality_outsideT;
+            
+            $days++;
+        }
+
+        $running_flowT_mean = null;
+        $running_returnT_mean = null;
+        $running_outsideT_mean = null;
+        if ($total_running_data_length > 0) {
+            $running_flowT_mean = $sum_running_flowT_mean / $total_running_data_length;
+            $running_returnT_mean = $sum_running_returnT_mean / $total_running_data_length;
+            $running_outsideT_mean = $sum_running_outsideT_mean / $total_running_data_length;
+        }
+
+        // Quality
+        $quality_elec = 0;
+        $quality_heat = 0;
+        $quality_flowT = 0;
+        $quality_returnT = 0;
+        $quality_outsideT = 0;
+
+        if ($days>0) {
+            $quality_elec = $sum_quality_elec / $days;
+            $quality_heat = $sum_quality_heat / $days;
+            $quality_flowT = $sum_quality_flowT / $days;
+            $quality_returnT = $sum_quality_returnT / $days;
+            $quality_outsideT = $sum_quality_outsideT / $days;
+        }
+        
+        $stats = array(
+            'id' => $systemid,
+            'timestamp' => $start,
+            'elec_kwh' => number_format($total_combined_elec_kwh,3,'.',''),
+            'heat_kwh' => number_format($total_combined_heat_kwh,3,'.',''),
+            'cop' => number_format($total_combined_heat_kwh / $total_combined_elec_kwh,2,'.',''),
+            'since' => $start,
+            'data_length' => $total_combined_data_length,
+            'when_running_elec_kwh' => number_format($total_running_elec_kwh,3,'.',''),
+            'when_running_heat_kwh' => number_format($total_running_heat_kwh,3,'.',''),
+            'when_running_cop' => number_format($total_running_heat_kwh / $total_running_elec_kwh,2,'.',''),
+            'when_running_elec_W' => null,
+            'when_running_heat_W' => null,
+            'when_running_flowT' => number_format($running_flowT_mean,2,'.',''),
+            'when_running_returnT' => number_format($running_returnT_mean,2,'.',''),
+            'when_running_flow_minus_return' => number_format($running_flowT_mean - $running_returnT_mean,2,'.',''),
+            'when_running_outsideT' => number_format($running_outsideT_mean,2,'.',''),
+            'when_running_flow_minus_outside' => number_format($running_flowT_mean - $running_outsideT_mean,2,'.',''),
+            'when_running_carnot_prc' => null,
+            'standby_threshold' => null,
+            'standby_kwh' => null,
+            "quality_elec" => $quality_elec,
+            "quality_heat" => $quality_heat,
+            "quality_flow" => $quality_flowT,
+            "quality_return" => $quality_returnT,
+            "quality_outside" => $quality_outsideT,
+            'data_start' => null
+        );
+
+        return $stats;
+    }
 }
