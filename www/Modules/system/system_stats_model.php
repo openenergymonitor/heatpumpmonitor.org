@@ -181,6 +181,10 @@ class SystemStats
         return $this->get('system_stats_last30',false,false,$system_id);
     }
 
+    public function get_last365($system_id = false) {
+        return $this->get('system_stats_last365',false,false,$system_id);
+    }
+
     // Get system stats
     public function get($table_name, $start=false, $end=false, $system_id = false)
     {
@@ -208,112 +212,14 @@ class SystemStats
             }
         }
 
-        $fields = array(
-            "elec_kwh" => array("average" => false, "dp" => 0),
-            "heat_kwh" => array("average" => false, "dp" => 0),
-            "when_running_elec_kwh" => array("average" => false, "dp" => 0),
-            "when_running_heat_kwh" => array("average" => false, "dp" => 0),
-
-            "when_running_flowT" => array("average" => true, "dp" => 1),
-            "when_running_returnT" => array("average" => true, "dp" => 1),
-            "when_running_flow_minus_return" => array("average" => true, "dp" => 1),
-            "when_running_outsideT" => array("average" => true, "dp" => 1),
-            "when_running_flow_minus_outside" => array("average" => true, "dp" => 1),
-            "when_running_carnot_prc" => array("average" => true, "dp" => 1),
-
-            "standby_threshold" => array("average" => true, "dp" => 0),
-            "standby_kwh" => array("average" => false, "dp" => 0),
-
-            "quality_elec" => array("average" => true, "dp" => 0),
-            "quality_heat" => array("average" => true, "dp" => 0),
-            "quality_flow" => array("average" => true, "dp" => 0),
-            "quality_return" => array("average" => true, "dp" => 0),
-            "quality_outside" => array("average" => true, "dp" => 0),
-
-            "data_start" => array("average" => false, "dp" => 0),
-            "data_length" => array("average" => false, "dp" => 0),
-            "since" => array("average" => false, "dp" => 0)
-        );
-
-        $field_str = implode(",", array_keys($fields));
-
-        $available_stats = array();
-        $result = $this->mysqli->query("SELECT id,$field_str FROM $table_name $where");
-        while ($row = $result->fetch_object()) {
-
-            // Initialise if not set, zero all fields
-            if (!isset($available_stats[$row->id])) {
-                $available_stats[$row->id] = array(
-                    "count" => 0
-                );
-                foreach ($fields as $key => $field) {
-                    $available_stats[$row->id][$key] = 0;
-                }
-            }
-
-            // Sum across all months
-            foreach ($fields as $key => $field) {
-                $available_stats[$row->id][$key] += $row->$key * 1;
-            }
-            $available_stats[$row->id]['count']++;
-        }
-
         $stats = array();
-        foreach ($available_stats as $id=>$system) {
-
-            // Calculate averages
-            if ($system['count'] > 0) {
-                foreach ($fields as $key => $field) {
-                    if ($field['average']) {
-                        $system[$key] = $system[$key] / $system['count'];
-                    }
-                }
-            }
-
-            $min_energy = 0.5;
-
-            // Calculate COP
-            $cop = 0;
-            if ($system['elec_kwh'] > $min_energy && $system['heat_kwh'] > $min_energy) {
-                $cop = $system['heat_kwh'] / $system['elec_kwh'];
-            }
-            $when_running_cop = 0;
-            if ($system['when_running_elec_kwh'] > $min_energy && $system['when_running_heat_kwh'] > $min_energy) {
-                $when_running_cop = $system['when_running_heat_kwh'] / $system['when_running_elec_kwh'];
-            }
-
-            // Round to required dp
-            $stats["" . $id] = array();
-            foreach ($fields as $key => $field) {
-                $stats["" . $id][$key] = number_format($system[$key], $field['dp'], ".", "") * 1;
-            }
-            $stats["" . $id]["cop"] = number_format($cop, 1, ".", "") * 1;
-            $stats["" . $id]["when_running_cop"] = number_format($when_running_cop, 1, ".", "") * 1;
-            $stats["" . $id]["since"] = $system['since'];
-            $stats["" . $id]["data_length"] = $system['data_length'];
-        }
-
-        return $stats;
-    }
-
-    public function get_last365($system_id = false) {
-
-        $where = '';
-        if ($system_id!==false) {
-            $where = "WHERE id=$system_id";
-        }
-
-        $stats = array();
-        $result = $this->mysqli->query("SELECT id,elec_kwh,heat_kwh,cop,since,data_start,data_length FROM system_stats_last365 $where");
+        $result = $this->mysqli->query("SELECT * FROM $table_name $where");
         while ($row = $result->fetch_object()) {
-            $stats["" . $row->id] = array(
-                "elec_kwh" => number_format($row->elec_kwh, 0, ".", "") * 1,
-                "heat_kwh" => number_format($row->heat_kwh, 0, ".", "") * 1,
-                "cop" => number_format($row->cop, 1, ".", "") * 1,
-                "since" => $row->since*1,
-                "data_start" => $row->data_start*1,
-                "data_length" => $row->data_length*1
-            );
+            // convert to numbers
+            foreach ($row as $key => $value) {
+                if ($value!==null) $row->$key = $value * 1;
+            }
+            $stats["" . $row->id] = $row;
         }
         return $stats;
     }
@@ -331,50 +237,9 @@ class SystemStats
             $start = $date->getTimestamp();        
         }
 
-        $fields = array(
-            "timestamp", 
-            "elec_kwh",
-            "heat_kwh",
-            "cop",
-            "when_running_elec_kwh",
-            "when_running_heat_kwh",
-            "when_running_cop",
-            "when_running_flowT",
-            "when_running_returnT",
-            "when_running_flow_minus_return",
-            "when_running_outsideT",
-            "when_running_flow_minus_outside",
-            "when_running_carnot_prc",
-            "standby_threshold",
-            "standby_kwh",
-            "quality_elec",
-            "quality_heat",
-            "quality_flow",
-            "quality_return",
-            "quality_outside",
-            "data_start",
-            "data_length"
-        );
-
-        $field_str = implode(",", $fields);
-
         $monthly = array();
-        $result = $this->mysqli->query("SELECT $field_str FROM system_stats_monthly WHERE timestamp BETWEEN $start AND $end AND id = $systemid ORDER BY timestamp ASC");
+        $result = $this->mysqli->query("SELECT * FROM system_stats_monthly WHERE timestamp BETWEEN $start AND $end AND id = $systemid ORDER BY timestamp ASC");
         while ($row = $result->fetch_object()) {
-          
-            $min_energy = 0.5;
-            $cop = 0;
-            if ($row->elec_kwh > $min_energy && $row->heat_kwh > $min_energy) {
-                $cop = $row->heat_kwh / $row->elec_kwh;
-            }
-            $row->cop = number_format($cop,2);
-
-            $cop = 0;
-            if ($row->when_running_elec_kwh > $min_energy && $row->when_running_heat_kwh > $min_energy) {
-                $cop = $row->when_running_heat_kwh / $row->when_running_elec_kwh;
-            }
-            $row->when_running_cop = number_format($cop,2);
-        
             $monthly[] = $row;
         }
         return $monthly;
@@ -386,43 +251,52 @@ class SystemStats
         $start = (int) $start;
         $end = (int) $end;
 
-        $total_combined_elec_kwh = 0;
-        $total_combined_heat_kwh = 0;
-        $total_combined_data_length = 0;
-        $total_running_elec_kwh = 0;
-        $total_running_heat_kwh = 0;
-        $total_running_data_length = 0;
+        $categories = array('combined','running','space','water');
 
-        $sum_running_flowT_mean = 0;
-        $sum_running_returnT_mean = 0;
-        $sum_running_outsideT_mean = 0;
+        // Totals only
+        $totals = array();
+        $total_fields = array('elec_kwh','heat_kwh','data_length');
+        foreach ($categories as $category) {
+            foreach ($total_fields as $field) {
+                $totals[$category][$field] = 0;
+            }
+        }
+
+        // sum x data_length
+        $sum = array();
+        $sum_fields = array('flowT_mean','returnT_mean','outsideT_mean');
+        foreach ($categories as $category) {
+            foreach ($sum_fields as $field) {
+                $sum[$category][$field] = 0;
+            }
+        }
+
+        // Quality
+        $quality_fields = array('elec','heat','flowT','returnT','outsideT');
+        $quality_totals = array();
+        foreach ($quality_fields as $field) {
+            $quality_totals[$field] = 0;
+        }
         
-        $sum_quality_elec = 0;
-        $sum_quality_heat = 0;
-        $sum_quality_flowT = 0;
-        $sum_quality_returnT = 0;
-        $sum_quality_outsideT = 0;
-        
+        // Count days
         $days = 0;
 
+        // Get daily data from system_stats_daily table for this system and time period
         $result = $this->mysqli->query("SELECT * FROM system_stats_daily WHERE timestamp >= $start AND timestamp < $end AND id = $systemid");
         while ($row = $result->fetch_object()) {
-            $total_combined_elec_kwh += $row->combined_elec_kwh;
-            $total_combined_heat_kwh += $row->combined_heat_kwh;
-            $total_combined_data_length += $row->combined_data_length;
-            $total_running_elec_kwh += $row->running_elec_kwh;
-            $total_running_heat_kwh += $row->running_heat_kwh;
-            $total_running_data_length += $row->running_data_length;
 
-            $sum_running_flowT_mean += $row->running_flowT_mean * $row->running_data_length;
-            $sum_running_returnT_mean += $row->running_returnT_mean * $row->running_data_length;
-            $sum_running_outsideT_mean += $row->running_outsideT_mean * $row->running_data_length;
-            
-            $sum_quality_elec += $row->quality_elec;
-            $sum_quality_heat += $row->quality_heat;
-            $sum_quality_flowT += $row->quality_flowT;
-            $sum_quality_returnT += $row->quality_returnT;
-            $sum_quality_outsideT += $row->quality_outsideT;
+            foreach ($categories as $category) {
+                foreach ($total_fields as $field) {
+                    $totals[$category][$field] += $row->{$category."_".$field};
+                }
+                foreach ($sum_fields as $field) {
+                    $sum[$category][$field] += $row->{$category."_".$field} * $row->{$category."_data_length"};
+                }
+            }
+
+            foreach ($quality_fields as $field) {
+                $quality_totals[$field] += $row->{"quality_".$field};
+            }
             
             $days++;
         }
@@ -431,58 +305,60 @@ class SystemStats
             return false;
         }
 
-        $running_flowT_mean = null;
-        $running_returnT_mean = null;
-        $running_outsideT_mean = null;
-        if ($total_running_data_length > 0) {
-            $running_flowT_mean = $sum_running_flowT_mean / $total_running_data_length;
-            $running_returnT_mean = $sum_running_returnT_mean / $total_running_data_length;
-            $running_outsideT_mean = $sum_running_outsideT_mean / $total_running_data_length;
+        // Calculate mean from sum
+        $mean = array();
+        foreach ($categories as $category) {
+            foreach ($sum_fields as $field) {
+                $mean[$category][$field] = null;
+                if ($totals[$category]['data_length'] > 0) {
+                    $mean[$category][$field] = $sum[$category][$field] / $totals[$category]['data_length'];
+                }
+            }
         }
 
-        // Quality
-        $quality_elec = 0;
-        $quality_heat = 0;
-        $quality_flowT = 0;
-        $quality_returnT = 0;
-        $quality_outsideT = 0;
-
-        if ($days>0) {
-            $quality_elec = $sum_quality_elec / $days;
-            $quality_heat = $sum_quality_heat / $days;
-            $quality_flowT = $sum_quality_flowT / $days;
-            $quality_returnT = $sum_quality_returnT / $days;
-            $quality_outsideT = $sum_quality_outsideT / $days;
+        // Calculate quality
+        $quality = array();
+        foreach ($quality_fields as $field) {
+            $quality[$field] = 0;
+            if ($days > 0) {
+                $quality[$field] = $quality_totals[$field] / $days;
+            }
         }
-        
+
         $stats = array(
             'id' => $systemid,
-            'timestamp' => $start,
-            'elec_kwh' => number_format($total_combined_elec_kwh,3,'.',''),
-            'heat_kwh' => number_format($total_combined_heat_kwh,3,'.',''),
-            'cop' => number_format($total_combined_heat_kwh / $total_combined_elec_kwh,2,'.',''),
-            'since' => $start,
-            'data_length' => $total_combined_data_length,
-            'when_running_elec_kwh' => number_format($total_running_elec_kwh,3,'.',''),
-            'when_running_heat_kwh' => number_format($total_running_heat_kwh,3,'.',''),
-            'when_running_cop' => number_format($total_running_heat_kwh / $total_running_elec_kwh,2,'.',''),
-            'when_running_elec_W' => null,
-            'when_running_heat_W' => null,
-            'when_running_flowT' => number_format($running_flowT_mean,2,'.',''),
-            'when_running_returnT' => number_format($running_returnT_mean,2,'.',''),
-            'when_running_flow_minus_return' => number_format($running_flowT_mean - $running_returnT_mean,2,'.',''),
-            'when_running_outsideT' => number_format($running_outsideT_mean,2,'.',''),
-            'when_running_flow_minus_outside' => number_format($running_flowT_mean - $running_outsideT_mean,2,'.',''),
-            'when_running_carnot_prc' => null,
-            'standby_threshold' => null,
-            'standby_kwh' => null,
-            "quality_elec" => $quality_elec,
-            "quality_heat" => $quality_heat,
-            "quality_flow" => $quality_flowT,
-            "quality_return" => $quality_returnT,
-            "quality_outside" => $quality_outsideT,
-            'data_start' => null
+            'timestamp' => $start   
         );
+
+        foreach ($categories as $category) {
+            $stats[$category.'_elec_kwh'] = number_format($totals[$category]['elec_kwh'],3,'.','');
+            $stats[$category.'_heat_kwh'] = number_format($totals[$category]['heat_kwh'],3,'.','');
+            if ($totals[$category]['elec_kwh'] > 0) {
+                $stats[$category.'_cop'] = number_format($totals[$category]['heat_kwh'] / $totals[$category]['elec_kwh'],2,'.','');
+            } else {
+                $stats[$category.'_cop'] = 0;
+            }
+            $stats[$category.'_data_length'] = $totals[$category]['data_length'];
+
+            $stats[$category.'_flowT_mean'] = null;
+            if ($mean[$category]['flowT_mean'] !== null) {
+                $stats[$category.'_flowT_mean'] = number_format($mean[$category]['flowT_mean'],2,'.','');
+            }
+
+            $stats[$category.'_returnT_mean'] = null;
+            if ($mean[$category]['returnT_mean'] !== null) {
+                $stats[$category.'_returnT_mean'] = number_format($mean[$category]['returnT_mean'],2,'.','');
+            }
+
+            $stats[$category.'_outsideT_mean'] = null;
+            if ($mean[$category]['outsideT_mean'] !== null) {
+                $stats[$category.'_outsideT_mean'] = number_format($mean[$category]['outsideT_mean'],2,'.','');
+            }
+        }
+
+        foreach ($quality_fields as $field) {
+            $stats['quality_'.$field] = number_format($quality[$field],2,'.','');
+        }
 
         return $stats;
     }

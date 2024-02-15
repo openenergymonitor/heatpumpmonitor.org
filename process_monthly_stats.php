@@ -61,11 +61,6 @@ foreach ($data as $row) {
         $end = $date->getTimestamp();
         $end_str = $date->format("Y-m-d");
 
-        $cw = 16;
-
-        // print header use padding to make it line up
-        print str_pad("id",$cw).str_pad("start",$cw).str_pad("end",$cw).str_pad("elec_kwh",$cw).str_pad("heat_kwh",$cw).str_pad("cop",$cw).str_pad("flowT_mean",$cw)."\n";
-
         // for each month
         while ($start < $data_end) {
 
@@ -75,11 +70,6 @@ foreach ($data as $row) {
                 break;
             }
 
-            // print all values
-            // print "-----------------------------------------------------------\n";
-            print str_pad($systemid,$cw).str_pad($start_str,$cw).str_pad($end_str,$cw).str_pad($stats['elec_kwh'],$cw).str_pad($stats['heat_kwh'],$cw).str_pad($stats['cop'],$cw).str_pad($stats['when_running_flowT'],$cw).str_pad($stats['data_length'],$cw)."\n";
-            // print "-----------------------------------------------------------\n";
-            
             // print json_encode($stats)."\n";
             $mysqli->query("DELETE FROM system_stats_monthly WHERE id=$systemid AND timestamp=$start");
             $system_stats->save_stats_table('system_stats_monthly',$stats);

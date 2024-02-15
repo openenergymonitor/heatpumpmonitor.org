@@ -58,7 +58,8 @@ function system_controller() {
                 return view("Modules/system/system_list.php",array(
                     "mode"=>"public",
                     "systems"=>$system->list_public($session['userid']),
-                    "columns"=>$system->get_columns()
+                    "columns"=>$system->get_columns(),
+                    "stats_columns"=>$system_stats->schema['system_stats_monthly']
                 ));
 
             // User list view
@@ -67,7 +68,8 @@ function system_controller() {
                     return view("Modules/system/system_list.php",array(
                         "mode" => "user",
                         "systems"=>$system->list_user($session['userid']),
-                        "columns"=>$system->get_columns()
+                        "columns"=>$system->get_columns(),
+                        "stats_columns"=>$system_stats->schema['system_stats_monthly']
                     ));
                 }
 
@@ -77,7 +79,8 @@ function system_controller() {
                     return view("Modules/system/system_list.php",array(
                         "mode" => "admin",
                         "systems"=>$system->list_admin(),
-                        "columns"=>$system->get_columns()
+                        "columns"=>$system->get_columns(),
+                        "stats_columns"=>$system_stats->schema['system_stats_monthly']
                     ));
                 }
             // Original
