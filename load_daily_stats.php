@@ -33,7 +33,7 @@ $start_last365 = $date->getTimestamp();
 $data = $system->list_admin();
 foreach ($data as $meta) {
     $systemid = $meta->id;
-    if ($meta->id!=2) continue;
+    if ($meta->id!=46) continue;
     $userid = (int) $meta->userid;
     if ($user_data = $user->get($userid)) {
     

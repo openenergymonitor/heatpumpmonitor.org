@@ -427,6 +427,10 @@ class SystemStats
             $days++;
         }
 
+        if ($days == 0) {
+            return false;
+        }
+
         $running_flowT_mean = null;
         $running_returnT_mean = null;
         $running_outsideT_mean = null;

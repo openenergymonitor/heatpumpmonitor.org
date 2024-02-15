@@ -29,27 +29,24 @@ $date->setTimestamp($end);
 $date->modify("-365 days");
 $start_last365 = $date->getTimestamp();
 
-//$start = microtime(true);
 $data = $system->list_admin();
 foreach ($data as $row) {
     $systemid = $row->id;
-    if ($row->id!=2) continue;
     $userid = (int) $row->userid;
     if ($user_data = $user->get($userid)) {
     
         // Last 365 days
         $stats = $system_stats->process_from_daily($systemid,$start_last365,$end);
+        if ($stats == false) continue;
         $mysqli->query("DELETE FROM system_stats_last365 WHERE id=$systemid");
         $system_stats->save_stats_table('system_stats_last365',$stats);
 
         // Last 30 days
         $stats = $system_stats->process_from_daily($systemid,$start_last30,$end);
+        if ($stats == false) continue;
         $mysqli->query("DELETE FROM system_stats_last30 WHERE id=$systemid");
         $system_stats->save_stats_table('system_stats_last30',$stats);
         
     }
 }
-//$end = microtime(true);
-//$duration = $end - $start;
 print "- systems: ".count($data)."\n";
-//print "- duration: ".number_format($duration,1,'.',',')."s\n";

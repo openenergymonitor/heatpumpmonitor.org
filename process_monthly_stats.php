@@ -29,11 +29,9 @@ $date->setTimestamp($end);
 $date->modify("-365 days");
 $start_last365 = $date->getTimestamp();
 
-//$start = microtime(true);
 $data = $system->list_admin();
 foreach ($data as $row) {
     $systemid = $row->id;
-    if ($row->id!=2) continue;
     $userid = (int) $row->userid;
     if ($user_data = $user->get($userid)) {
     
@@ -42,11 +40,17 @@ foreach ($data as $row) {
         $result = $mysqli->query("SELECT MIN(timestamp) AS start FROM system_stats_daily WHERE id = $systemid");
         $row = $result->fetch_object();
         $data_start = $row->start;
+        if ($data_start == null) {
+            continue;
+        }
 
         // Get last day of data for this system
         $result = $mysqli->query("SELECT MAX(timestamp) AS end FROM system_stats_daily WHERE id = $systemid");
         $row = $result->fetch_object();
         $data_end = $row->end;
+        if ($data_end == null) {
+            continue;
+        }
 
         $date->setTimestamp($data_start);
         // modify to start of month
@@ -66,6 +70,10 @@ foreach ($data as $row) {
         while ($start < $data_end) {
 
             $stats = $system_stats->process_from_daily($systemid,$start,$end);
+            if ($stats == false) {
+                print "No data for system $systemid\n";
+                break;
+            }
 
             // print all values
             // print "-----------------------------------------------------------\n";
@@ -85,7 +93,4 @@ foreach ($data as $row) {
         }
     }
 }
-//$end = microtime(true);
-//$duration = $end - $start;
 print "- systems: ".count($data)."\n";
-//print "- duration: ".number_format($duration,1,'.',',')."s\n";
