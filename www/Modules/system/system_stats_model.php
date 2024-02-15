@@ -20,6 +20,8 @@ class SystemStats
         $this->schema['system_stats_monthly'] = $this->system->populate_codes($schema['system_stats_monthly']);
         $this->schema['system_stats_last30'] = $this->system->populate_codes($schema['system_stats_last30']);
         $this->schema['system_stats_last365'] = $this->system->populate_codes($schema['system_stats_last365']);
+        $this->schema['system_stats_daily'] = $this->system->populate_codes($schema['system_stats_daily']);
+
     }
 
     public function get_system_config($userid, $systemid)
@@ -64,7 +66,7 @@ class SystemStats
         return $output;
     }
 
-    public function load_from_url($url, $start = false, $end = false)
+    public function load_from_url($url, $start = false, $end = false, $api = 'getstats2')
     {
         # decode the url to separate out any args
         $url_parts = parse_url($url);
@@ -77,9 +79,41 @@ class SystemStats
 
         # check if url was to /app/view instead of username
         if (preg_match('/^(.*)\/app\/view$/', $url_parts['path'], $matches)) {
-            $getstats = "$server$matches[1]/app/getstats" . $time_range_query;
+            $getstats = "$server$matches[1]/app/" . $api . $time_range_query;
         } else {
-            $getstats = $server . $url_parts['path'] . "/app/getstats" . $time_range_query;
+            $getstats = $server . $url_parts['path'] . "/app/" . $api . $time_range_query;
+        }
+
+        # if url has query string, pull out the readkey
+        if (isset($url_parts['query'])) {
+            parse_str($url_parts['query'], $url_args);
+            if (isset($url_args['readkey'])) {
+                // $readkey = $url_args['readkey'];
+                $getstats .= '?' . $url_parts['query'];
+            }
+        }
+
+        $stats_rx = file_get_contents($getstats);
+        return $stats_rx;
+
+        if (!$stats = json_decode($stats_rx)) {
+            return array("success" => false, "message" => $stats_rx);
+        } else {
+            return array("success" => true, "stats" => $stats);
+        }
+    }
+
+    public function get_data_period($url)
+    {
+        # decode the url to separate out any args
+        $url_parts = parse_url($url);
+        $server = $url_parts['scheme'] . '://' . $url_parts['host'];
+
+        # check if url was to /app/view instead of username
+        if (preg_match('/^(.*)\/app\/view$/', $url_parts['path'], $matches)) {
+            $getstats = "$server$matches[1]/app/datastart";
+        } else {
+            $getstats = $server . $url_parts['path'] . "/app/datastart";
         }
 
         # if url has query string, pull out the readkey
@@ -93,118 +127,26 @@ class SystemStats
 
         $stats_rx = file_get_contents($getstats);
 
-        if (!$stats = json_decode($stats_rx)) {
+        if (!$period = json_decode($stats_rx)) {
             return array("success" => false, "message" => $stats_rx);
         } else {
-            return array("success" => true, "stats" => $stats);
+            return array("success" => true, "period" => $period);
         }
     }
 
-    public function save_last30($systemid, $stats)
+
+    // Save day
+    public function save_day($systemid, $row) 
     {
         $systemid = (int) $systemid;
+        $timestamp = (int) $row['timestamp'];
+        $row['id'] = $systemid;
 
-        // Translate the stats into the schema
-        // consider changing API structure to match schema
-        $stats = array(
-            'id' => $systemid,
-            'elec_kwh' => $stats->last30->elec_kwh,
-            'heat_kwh' => $stats->last30->heat_kwh,
-            'cop' => $stats->last30->cop,
-            'since' => $stats->last30->since,
-            'data_length' => isset($stats->last30->data_length) ? $stats->last30->data_length : 0,
-            'when_running_elec_kwh' => $stats->when_running->elec_kwh,
-            'when_running_heat_kwh' => $stats->when_running->heat_kwh,
-            'when_running_cop' => $stats->when_running->cop,
-            'when_running_elec_W' => $stats->when_running->elec_W,
-            'when_running_heat_W' => $stats->when_running->heat_W,
-            'when_running_flowT' => $stats->when_running->flowT,
-            'when_running_returnT' => $stats->when_running->returnT,
-            'when_running_flow_minus_return' => $stats->when_running->flow_minus_return,
-            'when_running_outsideT' => $stats->when_running->outsideT,
-            'when_running_flow_minus_outside' => $stats->when_running->flow_minus_outside,
-            'when_running_carnot_prc' => $stats->when_running->carnot_prc,
-            'standby_threshold' => $stats->standby_threshold,
-            'standby_kwh' => isset($stats->standby_kwh) ? $stats->standby_kwh : 0,
-            "quality_elec" => isset($stats->quality_elec) ? $stats->quality_elec : 0,
-            "quality_heat" => isset($stats->quality_heat) ? $stats->quality_heat : 0,
-            "quality_flow" => isset($stats->quality_flow) ? $stats->quality_flow : 0,
-            "quality_return" => isset($stats->quality_return) ? $stats->quality_return : 0,
-            "quality_outside" => isset($stats->quality_outside) ? $stats->quality_outside : 0,
-            'data_start' => isset($stats->data_start) ? $stats->data_start : 0
-        );
+        // Delete existing stats
+        $this->mysqli->query("DELETE FROM system_stats_daily WHERE `id`='$systemid' AND `timestamp`='$timestamp'");
 
-        $id = $stats['id'];
-        $this->mysqli->query("DELETE FROM system_stats_last30 WHERE id=$id");
-        $this->save_stats_table('system_stats_last30',$stats);
-
-        return array("success" => true, "message" => "Saved");
-    }
-
-    public function save_last365($systemid, $stats)
-    {
-        $systemid = (int) $systemid;
-
-        // Translate the stats into the schema
-        // consider changing API structure to match schema
-
-        $stats = array(
-            'id' => $systemid,
-            'elec_kwh' => $stats->last365->elec_kwh,
-            'heat_kwh' => $stats->last365->heat_kwh,
-            'cop' => $stats->last365->cop,
-            'since' => $stats->last365->since,
-            'data_length' => isset($stats->last365->data_length) ? $stats->last365->data_length : 0,
-            'data_start' => isset($stats->data_start) ? $stats->data_start : 0
-        );
-
-        $id = $stats['id'];
-        $this->mysqli->query("DELETE FROM system_stats_last365 WHERE id=$id");
-        $this->save_stats_table('system_stats_last365',$stats);
-
-        return array("success" => true, "message" => "Saved");
-    }
-
-    public function save_monthly($systemid,$start,$stats) 
-    {    
-        $systemid = (int) $systemid;
-        $start = (int) $start;
-        
-        $stats = array(
-            'id' => $systemid,
-            'timestamp' => $start,
-            'elec_kwh' => $stats->full_period->elec_kwh,
-            'heat_kwh' => $stats->full_period->heat_kwh,
-            'cop' => $stats->full_period->cop,
-            'since' => $stats->data_start,
-            'data_length' => isset($stats->full_period->data_length) ? $stats->full_period->data_length : 0,
-            'when_running_elec_kwh' => $stats->when_running->elec_kwh,
-            'when_running_heat_kwh' => $stats->when_running->heat_kwh,
-            'when_running_cop' => $stats->when_running->cop,
-            'when_running_elec_W' => $stats->when_running->elec_W,
-            'when_running_heat_W' => $stats->when_running->heat_W,
-            'when_running_flowT' => $stats->when_running->flowT,
-            'when_running_returnT' => $stats->when_running->returnT,
-            'when_running_flow_minus_return' => $stats->when_running->flow_minus_return,
-            'when_running_outsideT' => $stats->when_running->outsideT,
-            'when_running_flow_minus_outside' => $stats->when_running->flow_minus_outside,
-            'when_running_carnot_prc' => $stats->when_running->carnot_prc,
-            'standby_threshold' => $stats->standby_threshold,
-            'standby_kwh' => $stats->standby_kwh,
-            "quality_elec" => $stats->quality_elec,
-            "quality_heat" => $stats->quality_heat,
-            "quality_flow" => $stats->quality_flow,
-            "quality_return" => $stats->quality_return,
-            "quality_outside" => $stats->quality_outside,
-            'data_start' => isset($stats->data_start) ? $stats->data_start : 0
-        );
-
-        $id = $stats['id'];
-        $timestamp = $stats['timestamp'];
-
-        // Save stats to system_stats_monthly table
-        $this->mysqli->query("DELETE FROM system_stats_monthly WHERE id=$id AND timestamp=$timestamp");
-        $this->save_stats_table('system_stats_monthly',$stats);
+        // Insert new
+        $this->save_stats_table('system_stats_daily',$row);
 
         return array("success" => true, "message" => "Saved");
     }
@@ -376,7 +318,18 @@ class SystemStats
         return $stats;
     }
 
-    public function system_get_monthly($systemid) {
+    public function system_get_monthly($systemid, $start = false, $end = false) {
+
+        $systemid = (int) $systemid;
+
+        if ($start === false || $end === false) {
+            $date = new DateTime();
+            $date->setTimezone(new DateTimeZone('Europe/London'));
+            $date->setTime(0, 0, 0);
+            $end = $date->getTimestamp();
+            $date->modify("-1 year");
+            $start = $date->getTimestamp();        
+        }
 
         $fields = array(
             "timestamp", 
@@ -406,7 +359,7 @@ class SystemStats
         $field_str = implode(",", $fields);
 
         $monthly = array();
-        $result = $this->mysqli->query("SELECT $field_str FROM system_stats_monthly WHERE id=$systemid ORDER BY timestamp ASC");
+        $result = $this->mysqli->query("SELECT $field_str FROM system_stats_monthly WHERE timestamp BETWEEN $start AND $end AND id = $systemid ORDER BY timestamp ASC");
         while ($row = $result->fetch_object()) {
           
             $min_energy = 0.5;

@@ -580,6 +580,56 @@ $schema['system_meta'] = array(
     ),
 );
 
+$schema['system_stats_daily'] = array(
+    // System ID
+    'id' => array('type' => 'int(11)'),
+    
+    // Start of day timestamp
+    'timestamp' => array('type' => 'int(11)'),
+    
+    // Full period stats
+    'combined_elec_kwh' => array('type' => 'float', 'name'=>'Electricity consumption', 'group'=>'Stats'),
+    'combined_heat_kwh' => array('type' => 'float', 'name'=>'Heat output', 'group'=>'Stats'),
+    'combined_cop' => array('type' => 'float', 'name'=>'COP', 'group'=>'Stats'),
+    'combined_data_length' => array('type' => 'float', 'name'=>'Data length', 'group'=>'Stats'),
+    'combined_flowT_mean' => array('type' => 'float', 'name'=>'FlowT mean', 'group'=>'Stats'),
+    'combined_returnT_mean' => array('type' => 'float', 'name'=>'ReturnT mean', 'group'=>'Stats'),
+    'combined_outsideT_mean' => array('type' => 'float', 'name'=>'OutsideT mean', 'group'=>'Stats'),
+    
+    // When Running
+    'running_elec_kwh' => array('type' => 'float', 'name'=>'Electricity consumption', 'group'=>'Stats'),
+    'running_heat_kwh' => array('type' => 'float', 'name'=>'Heat output', 'group'=>'Stats'),
+    'running_cop' => array('type' => 'float', 'name'=>'COP', 'group'=>'Stats'),
+    'running_data_length' => array('type' => 'float', 'name'=>'Data length', 'group'=>'Stats'),
+    'running_flowT_mean' => array('type' => 'float', 'name'=>'FlowT mean', 'group'=>'Stats'),
+    'running_returnT_mean' => array('type' => 'float', 'name'=>'ReturnT mean', 'group'=>'Stats'),
+    'running_outsideT_mean' => array('type' => 'float', 'name'=>'OutsideT mean', 'group'=>'Stats'),
+    
+    // Space heating
+    'space_elec_kwh' => array('type' => 'float', 'name'=>'Electricity consumption', 'group'=>'Stats'),
+    'space_heat_kwh' => array('type' => 'float', 'name'=>'Heat output', 'group'=>'Stats'),
+    'space_cop' => array('type' => 'float', 'name'=>'COP', 'group'=>'Stats'),
+    'space_data_length' => array('type' => 'float', 'name'=>'Data length', 'group'=>'Stats'),
+    'space_flowT_mean' => array('type' => 'float', 'name'=>'FlowT mean', 'group'=>'Stats'),
+    'space_returnT_mean' => array('type' => 'float', 'name'=>'ReturnT mean', 'group'=>'Stats'),
+    'space_outsideT_mean' => array('type' => 'float', 'name'=>'OutsideT mean', 'group'=>'Stats'),
+    
+    // Water heating
+    'water_elec_kwh' => array('type' => 'float', 'name'=>'Electricity consumption', 'group'=>'Stats'),
+    'water_heat_kwh' => array('type' => 'float', 'name'=>'Heat output', 'group'=>'Stats'),
+    'water_cop' => array('type' => 'float', 'name'=>'COP', 'group'=>'Stats'),
+    'water_data_length' => array('type' => 'float', 'name'=>'Data length', 'group'=>'Stats'),
+    'water_flowT_mean' => array('type' => 'float', 'name'=>'FlowT mean', 'group'=>'Stats'),
+    'water_returnT_mean' => array('type' => 'float', 'name'=>'ReturnT mean', 'group'=>'Stats'),
+    'water_outsideT_mean' => array('type' => 'float', 'name'=>'OutsideT mean', 'group'=>'Stats'),
+    
+    'quality_elec' => array('type' => 'float', 'name'=>'Quality elec', 'group'=>'Stats'),
+    'quality_heat' => array('type' => 'float', 'name'=>'Quality heat', 'group'=>'Stats'),
+    'quality_flowT' => array('type' => 'float', 'name'=>'Quality flowT', 'group'=>'Stats'),
+    'quality_returnT' => array('type' => 'float', 'name'=>'Quality returnT', 'group'=>'Stats'),
+    'quality_outsideT' => array('type' => 'float', 'name'=>'Quality outsideT', 'group'=>'Stats')
+);
+
 $schema['system_stats_last30'] = array(
     // System ID
     'id' => array('type' => 'int(11)'),
