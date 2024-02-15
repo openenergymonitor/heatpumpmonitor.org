@@ -41,44 +41,44 @@ global $settings;
     <div class="container mt-3" style="max-width:800px" v-if="last365!=undefined && last30!=undefined">
 
 
-        <div class="card mt-3" v-if="last30.since!=last365.since">
-            <h5 class="card-header">Last {{last365.since | formatDays }} days</h5>
+        <div class="card mt-3" v-if="last30.combined_data_length!=last365.combined_data_length">
+            <h5 class="card-header">Last {{last365.combined_data_length | formatDays }} days</h5>
             <div class="card-body">
                 <div class="row" style="text-align:center">
                     <div class="col">
                         <h5>Electric</h5>
-                        <h4>{{ last365.elec_kwh }} kWh</h4>
+                        <h4>{{ last365.combined_elec_kwh | toFixed(0) }} kWh</h4>
                     </div>
                     
                     <div class="col">
                         <h5>Heat Output</h5>
-                        <h4>{{ last365.heat_kwh }} kWh</h4>
+                        <h4>{{ last365.combined_heat_kwh | toFixed(0) }} kWh</h4>
                     </div>
                     
                     <div class="col">
                         <h5>SCOP</h5>
-                        <h4>{{ last365.cop }}</h4>            
+                        <h4>{{ last365.combined_cop | toFixed(1) }}</h4>            
                     </div>    
                 </div>      
             </div>
         </div>
         <div class="card mt-3">
-        <h5 class="card-header">Last {{last30.since | formatDays }} days</h5>
+        <h5 class="card-header">Last {{last30.combined_data_length | formatDays }} days</h5>
             <div class="card-body">
                 <div class="row" style="text-align:center">
                     <div class="col">
                         <h5>Electric</h5>
-                        <h4>{{ last30.elec_kwh }} kWh</h4>
+                        <h4>{{ last30.combined_elec_kwh | toFixed(0) }} kWh</h4>
                     </div>
                     
                     <div class="col">
                         <h5>Heat Output</h5>
-                        <h4>{{ last30.heat_kwh }} kWh</h4>
+                        <h4>{{ last30.combined_heat_kwh | toFixed(0) }} kWh</h4>
                     </div>
                     
                     <div class="col">
                         <h5>SCOP</h5>
-                        <h4>{{ last30.cop }}</h4>            
+                        <h4>{{ last30.combined_cop | toFixed(1) }}</h4>            
                     </div>    
                 </div>
                 <hr>
@@ -90,28 +90,34 @@ global $settings;
                 <div class="row mt-2" style="text-align:center">
                     <div class="col">
                         <b>Electric</b><br>
-                        {{ last30.when_running_elec_kwh }} kWh
+                        {{ last30.running_elec_kwh | toFixed(0) }} kWh
                     </div>  
                     <div class="col">
                         <b>Heat</b><br>
-                        {{ last30.when_running_heat_kwh }} kWh
+                        {{ last30.running_heat_kwh | toFixed(0) }} kWh
                     </div>
                     <div class="col">
                         <b>COP</b><br>
-                        {{ last30.when_running_cop }}
+                        {{ last30.running_cop | toFixed(1) }}
                     </div>  
                     <div class="col">
                         <b>FlowT</b><br>
-                        {{ last30.when_running_flowT }} °C
+                        {{ last30.running_flowT_mean | toFixed(1) }} °C
                     </div>  
                     <div class="col">
-                        <b>OutsideT</b><br>
-                        {{ last30.when_running_outsideT }} °C
+                        <b>ReturnT</b><br>
+                        {{ last30.running_returnT_mean | toFixed(1) }} °C
                     </div> 
+                    <div class="col">
+                        <b>OutsideT</b><br>
+                        {{ last30.running_outsideT_mean | toFixed(1) }} °C
+                    </div>
+                    <!-- 
                     <div class="col">
                         <b>Carnot</b><br>
                         {{ last30.when_running_carnot_prc }}%
-                    </div> 
+                    </div>
+                    --> 
                 </div>      
             </div>
         </div>
@@ -121,8 +127,8 @@ global $settings;
             <div class="card-body">
                 <div class="input-group mb-3"> 
                 <span class="input-group-text">Chart mode</span>
-                    <select class="form-control" v-model="chart_yaxis" @change="change_chart_mode">
-                        <option v-for="(field,key) in system_stats_monthly" v-if="field.name" :value="key"> {{ field.name }} </option>
+                    <select class="form-control" v-model="chart_yaxis" @change="change_chart_mode">s
+                        <option v-for="(field,key) in system_stats_monthly" v-if="field.name" :value="key"> {{ field.group }}, {{ field.name }} </option>
                     </select>
                 </div>
                 <div id="chart"></div>
@@ -144,31 +150,31 @@ global $settings;
                     <tr>
                         <td>Elec</td>
                         <td v-for="month in monthly" :style="{ backgroundColor: qualityColor(month.quality_elec) }">
-                        {{ month.quality_elec }}
+                        {{ month.quality_elec | toFixed(0) }}
                         </td>
                     </tr>
                     <tr>
                         <td>Heat</td>
                         <td v-for="month in monthly" :style="{ backgroundColor: qualityColor(month.quality_heat) }">
-                            {{ month.quality_heat }}
+                            {{ month.quality_heat | toFixed(0) }}
                         </td>
                     </tr>
                     <tr>
                         <td>Flow</td>
-                        <td v-for="month in monthly" :style="{ backgroundColor: qualityColor(month.quality_flow) }">
-                            {{ month.quality_flow }}
+                        <td v-for="month in monthly" :style="{ backgroundColor: qualityColor(month.quality_flowT) }">
+                            {{ month.quality_flowT | toFixed(0) }}
                         </td>
                     </tr>
                     <tr>
                         <td>Return</td>
-                        <td v-for="month in monthly" :style="{ backgroundColor: qualityColor(month.quality_return) }">
-                            {{ month.quality_return }}
+                        <td v-for="month in monthly" :style="{ backgroundColor: qualityColor(month.quality_returnT) }">
+                            {{ month.quality_returnT | toFixed(0) }}
                         </td>
                     </tr>
                     <tr>
                         <td>Outside</td>
-                        <td v-for="month in monthly" :style="{ backgroundColor: qualityColor(month.quality_outside) }">
-                            {{ month.quality_outside }}
+                        <td v-for="month in monthly" :style="{ backgroundColor: qualityColor(month.quality_outsideT) }">
+                            {{ month.quality_outsideT | toFixed(0) }}
                         </td>
                     </tr>
                 </tr>
@@ -305,7 +311,7 @@ global $settings;
             message: '',
             admin: <?php echo $admin ? 'true' : 'false'; ?>,
 
-            chart_yaxis: 'cop',
+            chart_yaxis: 'combined_cop',
             system_stats_monthly: <?php echo json_encode($system_stats_monthly); ?>,
             disable_loadstats: false
         },
@@ -332,6 +338,11 @@ global $settings;
                 var diff = today - date;
                 var days = diff / (1000 * 60 * 60 * 24);
                 return Math.round(days);
+            },
+            toFixed: function(value, decimals) {
+                if (value == undefined) return '';
+                value = parseFloat(value);
+                return value.toFixed(decimals);
             }
         },
         methods: {
