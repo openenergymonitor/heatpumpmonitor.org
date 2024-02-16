@@ -42,7 +42,7 @@ global $settings;
 
 
         <div class="card mt-3" v-if="last30.combined_data_length!=last365.combined_data_length">
-            <h5 class="card-header">Last {{last365.combined_data_length | formatDays }} days</h5>
+            <h5 class="card-header">Last 365 days</h5>
             <div class="card-body">
                 <div class="row" style="text-align:center">
                     <div class="col">
@@ -63,7 +63,7 @@ global $settings;
             </div>
         </div>
         <div class="card mt-3">
-        <h5 class="card-header">Last {{last30.combined_data_length | formatDays }} days</h5>
+        <h5 class="card-header">Last 30 days</h5>
             <div class="card-body">
                 <div class="row" style="text-align:center">
                     <div class="col">
@@ -103,21 +103,15 @@ global $settings;
                     <div class="col">
                         <b>FlowT</b><br>
                         {{ last30.running_flowT_mean | toFixed(1) }} °C
-                    </div>  
-                    <div class="col">
-                        <b>ReturnT</b><br>
-                        {{ last30.running_returnT_mean | toFixed(1) }} °C
-                    </div> 
+                    </div>
                     <div class="col">
                         <b>OutsideT</b><br>
                         {{ last30.running_outsideT_mean | toFixed(1) }} °C
                     </div>
-                    <!-- 
                     <div class="col">
                         <b>Carnot</b><br>
-                        {{ last30.when_running_carnot_prc }}%
+                        {{ last30.running_prc_carnot }}%
                     </div>
-                    --> 
                 </div>      
             </div>
         </div>
@@ -126,9 +120,11 @@ global $settings;
             <h5 class="card-header">Monthly data</h5>
             <div class="card-body">
                 <div class="input-group mb-3"> 
-                <span class="input-group-text">Chart mode</span>
-                    <select class="form-control" v-model="chart_yaxis" @change="change_chart_mode">s
-                        <option v-for="(field,key) in system_stats_monthly" v-if="field.name" :value="key"> {{ field.group }}, {{ field.name }} </option>
+                    <span class="input-group-text">Chart mode</span>
+                    <select class="form-control" v-model="chart_yaxis" @change="change_chart_mode">
+                        <optgroup v-for="(group, group_name) in system_stats_monthly_by_group" :label="group_name">
+                            <option v-for="(row,key) in group" :value="key">{{ row.name }}</option>
+                        </optgroup>
                     </select>
                 </div>
                 <div id="chart"></div>
@@ -296,6 +292,19 @@ global $settings;
         }
     }
 
+    let system_stats_monthly = <?php echo json_encode($system_stats_monthly); ?>;
+    // covert to by group
+    let system_stats_monthly_by_group = {};
+    for (var key in system_stats_monthly) {
+        let row = system_stats_monthly[key];
+        if (row.group) {
+            if (system_stats_monthly_by_group[row.group]==undefined) {
+                system_stats_monthly_by_group[row.group] = {};
+            }
+            system_stats_monthly_by_group[row.group][key] = row;
+        }
+    }
+
     var app = new Vue({
         el: '#app',
         data: {
@@ -312,7 +321,7 @@ global $settings;
             admin: <?php echo $admin ? 'true' : 'false'; ?>,
 
             chart_yaxis: 'combined_cop',
-            system_stats_monthly: <?php echo json_encode($system_stats_monthly); ?>,
+            system_stats_monthly_by_group: system_stats_monthly_by_group,
             disable_loadstats: false
         },
         computed: {
@@ -331,12 +340,9 @@ global $settings;
                 var month = date.toLocaleString('default', { month: 'short' });
                 return month;
             },
-            formatDays: function(timestamp) {
+            formatDays: function(data_length) {
                 // days ago
-                var date = new Date(timestamp * 1000);
-                var today = new Date();
-                var diff = today - date;
-                var days = diff / (1000 * 60 * 60 * 24);
+                var days = data_length / (3600 * 24);
                 return Math.round(days);
             },
             toFixed: function(value, decimals) {
@@ -404,7 +410,6 @@ global $settings;
                 window.location.href = path + 'system/list/public';
             },
             change_chart_mode: function() {
-                console.log(app.chart_yaxis);
                 draw_chart();
             },
             open_emoncms_dashboard: function() {
@@ -492,6 +497,7 @@ global $settings;
         });
 
     function draw_chart() {
+
         var x = [];
         var y = [];
 
@@ -503,10 +509,15 @@ global $settings;
 
         chart_options.xaxis.categories = x;
         chart_options.series = [{
-            name: app.system_stats_monthly[app.chart_yaxis].name,
+            name: system_stats_monthly[app.chart_yaxis].name,
             data: y
         }];
 
+        chart_options.yaxis = {
+            title: {
+                text: system_stats_monthly[app.chart_yaxis].name
+            }
+        }
 
         chart.updateOptions(chart_options);
     }

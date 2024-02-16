@@ -76,7 +76,7 @@
             selected_systems: [
                 {id: 2, color: colours[0], monthly: []}
             ],
-            chart_yaxis: 'cop',
+            chart_yaxis: 'combined_cop',
         },
         methods: {
             change_chart_mode: function() {

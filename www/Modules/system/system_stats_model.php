@@ -213,8 +213,8 @@ class SystemStats
         }
 
         $categories = array('combined','running','space','water');
-        $fields_to_sum = array('elec_kwh','heat_kwh','data_length','flowT_mean','returnT_mean','outsideT_mean');
-        $fields_to_mean = array('flowT_mean','returnT_mean','outsideT_mean');
+        $fields_to_sum = array('elec_kwh','heat_kwh','data_length','elec_mean','heat_mean','flowT_mean','returnT_mean','outsideT_mean','roomT_mean','prc_carnot');
+        $fields_to_mean = array('elec_mean','heat_mean','flowT_mean','returnT_mean','outsideT_mean','roomT_mean','prc_carnot');
 
         $stats = array();
         $result = $this->mysqli->query("SELECT * FROM $table_name $where");
@@ -317,7 +317,7 @@ class SystemStats
 
         // sum x data_length
         $sum = array();
-        $sum_fields = array('flowT_mean','returnT_mean','outsideT_mean');
+        $sum_fields = array('elec_mean','heat_mean','flowT_mean','returnT_mean','outsideT_mean','roomT_mean','prc_carnot');
         foreach ($categories as $category) {
             foreach ($sum_fields as $field) {
                 $sum[$category][$field] = 0;
@@ -325,7 +325,7 @@ class SystemStats
         }
 
         // Quality
-        $quality_fields = array('elec','heat','flowT','returnT','outsideT');
+        $quality_fields = array('elec','heat','flowT','returnT','outsideT','roomT');
         $quality_totals = array();
         foreach ($quality_fields as $field) {
             $quality_totals[$field] = 0;
@@ -383,37 +383,6 @@ class SystemStats
             'timestamp' => $start   
         );
 
-        /*
-        foreach ($categories as $category) {
-            $stats[$category.'_elec_kwh'] = number_format($totals[$category]['elec_kwh'],3,'.','');
-            $stats[$category.'_heat_kwh'] = number_format($totals[$category]['heat_kwh'],3,'.','');
-            if ($totals[$category]['elec_kwh'] > 0) {
-                $stats[$category.'_cop'] = number_format($totals[$category]['heat_kwh'] / $totals[$category]['elec_kwh'],2,'.','');
-            } else {
-                $stats[$category.'_cop'] = 0;
-            }
-            $stats[$category.'_data_length'] = $totals[$category]['data_length'];
-
-            $stats[$category.'_flowT_mean'] = null;
-            if ($mean[$category]['flowT_mean'] !== null) {
-                $stats[$category.'_flowT_mean'] = number_format($mean[$category]['flowT_mean'],2,'.','');
-            }
-
-            $stats[$category.'_returnT_mean'] = null;
-            if ($mean[$category]['returnT_mean'] !== null) {
-                $stats[$category.'_returnT_mean'] = number_format($mean[$category]['returnT_mean'],2,'.','');
-            }
-
-            $stats[$category.'_outsideT_mean'] = null;
-            if ($mean[$category]['outsideT_mean'] !== null) {
-                $stats[$category.'_outsideT_mean'] = number_format($mean[$category]['outsideT_mean'],2,'.','');
-            }
-        }
-
-        foreach ($quality_fields as $field) {
-            $stats['quality_'.$field] = number_format($quality[$field],2,'.','');
-        }*/
-
         // As above but without number formatting
         foreach ($categories as $category) {
             $stats[$category.'_elec_kwh'] = $totals[$category]['elec_kwh'];
@@ -425,9 +394,17 @@ class SystemStats
             }
             $stats[$category.'_data_length'] = $totals[$category]['data_length'];
 
+            $stats[$category.'_elec_mean'] = $mean[$category]['elec_mean'];
+            $stats[$category.'_heat_mean'] = $mean[$category]['heat_mean'];
             $stats[$category.'_flowT_mean'] = $mean[$category]['flowT_mean'];
             $stats[$category.'_returnT_mean'] = $mean[$category]['returnT_mean'];
             $stats[$category.'_outsideT_mean'] = $mean[$category]['outsideT_mean'];
+            $stats[$category.'_roomT_mean'] = $mean[$category]['roomT_mean'];
+            $stats[$category.'_prc_carnot'] = $mean[$category]['prc_carnot'];
+        }
+
+        foreach ($quality_fields as $field) {
+            $stats['quality_'.$field] = $quality[$field];
         }
 
         return $stats;

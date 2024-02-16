@@ -28,6 +28,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
                     <p v-if="mode=='user'">Add, edit and view systems associated with your account.</p>
                     <p v-if="mode=='admin'">Add, edit and view all systems.</p>
+                    
                     <p v-if="mode=='public'">Here you can see a variety of installations monitored with OpenEnergyMonitor, and compare detailed statistics to see how performance can vary.</p>
                     <p v-if="mode=='public'">If you're monitoring a heat pump with <b>emoncms</b> and the My Heat Pump app, <a href="<?php echo $path; ?>/user/login">login</a> to add your details.</p>
                     <p v-if="mode=='public'">To join in with discussion of the results, or for support please use the <a href="https://community.openenergymonitor.org/tag/heatpumpmonitor">OpenEnergyMonitor forums.</a></p> 
@@ -219,7 +220,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     if (width>800) {
         showContent = true;
         if (mode == 'public') {
-            selected_columns = ['location', 'installer_name', 'hp_type', 'hp_model', 'hp_output', 'kwh_m2', 'combined_data_length', 'combined_cop', 'mid_metering'];
+            selected_columns = ['location', 'installer_name', 'hp_type', 'hp_model', 'hp_output', 'combined_data_length', 'combined_cop'];
             default_minDays = 30;
             default_stats_time_start = "last30";
         } else {
