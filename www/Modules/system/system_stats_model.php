@@ -212,15 +212,68 @@ class SystemStats
             }
         }
 
+        $categories = array('combined','running','space','water');
+        $fields_to_sum = array('elec_kwh','heat_kwh','data_length','flowT_mean','returnT_mean','outsideT_mean');
+        $fields_to_mean = array('flowT_mean','returnT_mean','outsideT_mean');
+
         $stats = array();
         $result = $this->mysqli->query("SELECT * FROM $table_name $where");
         while ($row = $result->fetch_object()) {
+            $systemid = "".$row->id;
+            unset($row->id);
+            unset($row->timestamp);
+
             // convert to numbers
             foreach ($row as $key => $value) {
                 if ($value!==null) $row->$key = $value * 1;
             }
-            $stats["" . $row->id] = $row;
+
+            // If no entry for this system, add it
+            if (!isset($stats[$systemid])) {
+                $stats[$systemid] = new stdClass();
+            }
+
+            foreach ($categories as $category) {
+                foreach ($fields_to_sum as $field) {
+                    if (!isset($stats[$systemid]->{$category."_".$field})) {
+                        $stats[$systemid]->{$category."_".$field} = 0;
+                    }
+                    // if in fields_to_mean multiply by data_length
+                    if (in_array($field,$fields_to_mean)) {
+                        $stats[$systemid]->{$category."_".$field} += $row->{$category."_".$field} * $row->{$category."_data_length"};
+                    } else {
+                        $stats[$systemid]->{$category."_".$field} += $row->{$category."_".$field};
+                    }
+                }
+            }
         }
+
+        // Calculate mean from sum
+        foreach ($stats as $systemid => $stat) {
+            foreach ($categories as $category) {
+                foreach ($fields_to_mean as $field) {
+                    if ($stats[$systemid]->{$category."_data_length"} > 0) {
+                        $stats[$systemid]->{$category."_".$field} = $stats[$systemid]->{$category."_".$field} / $stats[$systemid]->{$category."_data_length"};
+                        // number format 1 decimal place
+                        $stats[$systemid]->{$category."_".$field} = number_format($stats[$systemid]->{$category."_".$field},1,'.','');
+                    }
+                }
+            }
+        }
+
+        // Calculate COP
+        foreach ($stats as $systemid => $stat) {
+            foreach ($categories as $category) {
+                if ($stats[$systemid]->{$category."_elec_kwh"} > 0) {
+                    $stats[$systemid]->{$category."_cop"} = $stats[$systemid]->{$category."_heat_kwh"} / $stats[$systemid]->{$category."_elec_kwh"};
+                    // number format 1 decimal place
+                    $stats[$systemid]->{$category."_cop"} = number_format($stats[$systemid]->{$category."_cop"},1,'.','');
+                } else {
+                    $stats[$systemid]->{$category."_cop"} = 0;
+                }
+            }
+        }
+
         return $stats;
     }
 
@@ -330,6 +383,7 @@ class SystemStats
             'timestamp' => $start   
         );
 
+        /*
         foreach ($categories as $category) {
             $stats[$category.'_elec_kwh'] = number_format($totals[$category]['elec_kwh'],3,'.','');
             $stats[$category.'_heat_kwh'] = number_format($totals[$category]['heat_kwh'],3,'.','');
@@ -358,6 +412,22 @@ class SystemStats
 
         foreach ($quality_fields as $field) {
             $stats['quality_'.$field] = number_format($quality[$field],2,'.','');
+        }*/
+
+        // As above but without number formatting
+        foreach ($categories as $category) {
+            $stats[$category.'_elec_kwh'] = $totals[$category]['elec_kwh'];
+            $stats[$category.'_heat_kwh'] = $totals[$category]['heat_kwh'];
+            if ($totals[$category]['elec_kwh'] > 0) {
+                $stats[$category.'_cop'] = $totals[$category]['heat_kwh'] / $totals[$category]['elec_kwh'];
+            } else {
+                $stats[$category.'_cop'] = 0;
+            }
+            $stats[$category.'_data_length'] = $totals[$category]['data_length'];
+
+            $stats[$category.'_flowT_mean'] = $mean[$category]['flowT_mean'];
+            $stats[$category.'_returnT_mean'] = $mean[$category]['returnT_mean'];
+            $stats[$category.'_outsideT_mean'] = $mean[$category]['outsideT_mean'];
         }
 
         return $stats;
