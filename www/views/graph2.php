@@ -52,7 +52,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             <div class="input-group" style="width:300px; float:right; margin-right:20px">
                 <div class="input-group-text">Y-axis</div>
                 <select class="form-control" v-model="yaxis_property" @change="axis_change">
-                    <optgroup v-for="(group, group_name) in column_groups" :label="group_name" v-if="group_name=='Stats' || (stats_time_start!='last365' && (group_name=='When Running' || group_name=='Standby'))">
+                    <optgroup v-for="(group, group_name) in column_groups" :label="group_name" v-if="group_name=='Stats: Combined' || group_name=='Stats: When Running' || group_name=='Stats: Space heating' || group_name=='Stats: Water heating'">
                         <option v-for="(row,key) in group" :value="row.key">{{ row.name }}</option>
                     </optgroup>
                 </select>
@@ -83,24 +83,15 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 <script>
 
     var columns = <?php echo json_encode($columns); ?>;
+    var stats_columns = <?php echo json_encode($stats_columns); ?>;
+    // remove stats_columns id & timestmap
+    delete stats_columns.id;
+    delete stats_columns.timestamp;
 
-    columns['cop'] = {name: 'COP', group: 'Stats'};
-    columns['elec_kwh'] = {name: 'Electricity (kWh)', group: 'Stats'};
-    columns['heat_kwh'] = {name: 'Heat (kWh)', group: 'Stats'};
-    columns['data_start'] = {name: 'Data Start', group: 'Stats'};
-
-    columns['when_running_elec_kwh'] = {name: 'Electricity (kWh)', group: 'When Running'};
-    columns['when_running_heat_kwh'] = {name: 'Heat (kWh)', group: 'When Running'};
-    columns['when_running_cop'] = {name: 'COP', group: 'When Running'};
-    columns['when_running_flowT'] = {name: 'Flow Temperature (°C)', group: 'When Running'};
-    columns['when_running_returnT'] = {name: 'Return Temperature (°C)', group: 'When Running'};
-    columns['when_running_flow_minus_return'] = {name: 'Flow - Return (°K)', group: 'When Running'};
-    columns['when_running_outsideT'] = {name: 'Outside Temperature (°C)', group: 'When Running'};
-    columns['when_running_flow_minus_outside'] = {name: 'Flow - Outside (°K)', group: 'When Running'};
-    columns['when_running_carnot_prc'] = {name: 'Carnot Efficiency (%)', group: 'When Running'};
-
-    columns['standby_threshold'] = {name: 'Standby Threshold (°C)', group: 'Standby'};
-    columns['standby_kwh'] = {name: 'Electricity (kWh)', group: 'Standby'};
+    // add stats_columns to columns
+    for (var key in stats_columns) {
+        columns[key] = stats_columns[key];
+    }
 
     // convert to column groups
     var column_groups = {};
@@ -108,15 +99,6 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         var column = columns[key];
         if (column_groups[column.group] == undefined) column_groups[column.group] = [];
         column_groups[column.group].push({key: key, name: column.name});
-    }
-
-    // create list of Stats, When Running, Standby columns
-    var stats_columns = [];
-    for (var key in columns) {
-        var column = columns[key];
-        if (column.group == 'Stats') stats_columns.push(key);
-        if (column.group == 'When Running') stats_columns.push(key);
-        if (column.group == 'Standby') stats_columns.push(key);
     }
 
     // Available months
@@ -138,7 +120,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             chart_enable: true,
             columns: columns,
             column_groups: column_groups,
-            currentSortColumn: 'cop',
+            currentSortColumn: 'combined_cop',
             currentSortDir: 'desc',
             stats_columns: stats_columns,
             // stats time selection
@@ -149,7 +131,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             available_months_end: months,
 
             colour_property: 'UFH',
-            yaxis_property: 'cop',
+            yaxis_property: 'combined_cop',
             xaxis_property: 'location'
         },
         methods: {
@@ -320,7 +302,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             let xvalue = app.systems[i][app.xaxis_property];
 
 
-            if (app.yaxis_property == 'cop' || app.yaxis_property == 'when_running_cop' || app.yaxis_property == 'when_running_carnot_prc' || app.yaxis_property == 'elec_kwh' ) {
+            if (app.yaxis_property == 'combined_cop' || app.yaxis_property == 'when_running_cop' || app.yaxis_property == 'when_running_carnot_prc' || app.yaxis_property == 'elec_kwh' ) {
                 if (yvalue<0) yvalue = null;
             }
             

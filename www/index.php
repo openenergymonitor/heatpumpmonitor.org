@@ -46,7 +46,9 @@ switch ($route->controller) {
         $output = view("views/graph2.php",array(
             "mode"=>"public",
             "systems"=>$system->list_public($session['userid']),
-            "columns"=>$system->get_columns()
+            "columns"=>$system->get_columns(),
+            "stats_columns"=>$system_stats->schema['system_stats_monthly']
+
         ));        
         break;
 
