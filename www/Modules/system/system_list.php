@@ -172,7 +172,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     columns['hp_type'].name = "Source";
     columns['hp_model'].name = "Make & Model";
     columns['hp_output'].name = "Rating";
-                    
+    columns['heatgeek'].name = "Training";
     // remove stats_columns id & timestmap
     delete stats_columns.id;
     delete stats_columns.timestamp;
@@ -221,7 +221,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     if (width>800) {
         showContent = true;
         if (mode == 'public') {
-            selected_columns = ['location', 'installer_name', 'hp_type', 'hp_model', 'hp_output', 'combined_data_length', 'combined_cop'];
+            selected_columns = ['location', 'installer_name', 'heatgeek', 'hp_type', 'hp_model', 'hp_output', 'combined_data_length', 'combined_cop'];
             default_minDays = 24;
             default_stats_time_start = "last30";
         } else {
@@ -230,7 +230,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     } else {
         showContent = false;
         if (mode == 'public') {
-            selected_columns = ['installer_name', 'hp_model', 'hp_output', 'combined_cop']; 
+            selected_columns = ['installer_name', 'heatgeek', 'hp_model', 'hp_output', 'combined_cop']; 
             default_minDays = 24;
             default_stats_time_start = "last30";
         } else {
@@ -442,13 +442,24 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 }                
                 if (key=='installer_name') {
                     if (val!=null && val!='') {
-                        var heatgeek = "";
-                        if (system['heatgeek']==1) heatgeek = "<img class='heatgeeklogo' src='theme/img/HeatGeekLogo.png' title='HeatGeek Trained'/>";
-                        var betateach = "";
-                        if (system['betateach']==1) betateach = "<img class='betateachlogo' src='theme/img/beta-teach.jpg' title='BetaTeach Heat Architect'/>";
-                        return betateach+heatgeek+"<a class='installer_link' href='"+system['installer_url']+"'>"+val+"</a>";
+                       
+                        return "<a class='installer_link' href='"+system['installer_url']+"'>"+val+"</a>";
                     } else {
                         return '';
+                    }
+                }
+                if (key=='heatgeek') {
+                    if (val==1) {
+                        return "<img class='heatgeeklogo' src='theme/img/HeatGeekLogo.png' title='HeatGeek Trained'/>";
+                    } else {
+                        return "";
+                    }
+                }
+                if (key=='betateach') {
+                    if (val==1) {
+                        return "<img class='betateachlogo' src='theme/img/beta-teach.jpg' title='BetaTeach Heat Architect'/>";
+                    } else {
+                        return "";
                     }
                 }
                 if (key=='hp_type') {
