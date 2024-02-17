@@ -599,6 +599,7 @@ $schema['system_stats_daily'] = array(
     'combined_outsideT_mean' => array('type' => 'float', 'name'=>'OutsideT mean', 'group'=>'Stats: Combined'),
     'combined_roomT_mean' => array('type' => 'float', 'name'=>'RoomT mean', 'group'=>'Stats: Combined'),
     'combined_prc_carnot' => array('type' => 'float', 'name'=>'% Carnot', 'group'=>'Stats: Combined'),
+    'combined_cooling_kwh' => array('type' => 'float', 'name'=>'Cooling energy', 'group'=>'Stats: Combined'),
     
     // When Running
     'running_elec_kwh' => array('type' => 'float', 'name'=>'Electricity consumption', 'group'=>'Stats: When Running'),
@@ -638,7 +639,13 @@ $schema['system_stats_daily'] = array(
     'water_outsideT_mean' => array('type' => 'float', 'name'=>'OutsideT mean', 'group'=>'Stats: Water heating'),
     'water_roomT_mean' => array('type' => 'float', 'name'=>'RoomT mean', 'group'=>'Stats: Water heating'),
     'water_prc_carnot' => array('type' => 'float', 'name'=>'% Carnot', 'group'=>'Stats: Water heating'),
+
+    // from energy feeds
+    'from_energy_feeds_elec_kwh' => array('type' => 'float', 'name'=>'Electricity consumption', 'group'=>'From energy feeds'),
+    'from_energy_feeds_heat_kwh' => array('type' => 'float', 'name'=>'Heat output', 'group'=>'From energy feeds'),
+    'from_energy_feeds_cop' => array('type' => 'float', 'name'=>'COP', 'group'=>'From energy feeds'),
     
+    // Quality
     'quality_elec' => array('type' => 'float', 'name'=>'Quality elec', 'group'=>'Quality'),
     'quality_heat' => array('type' => 'float', 'name'=>'Quality heat', 'group'=>'Quality'),
     'quality_flowT' => array('type' => 'float', 'name'=>'Quality flowT', 'group'=>'Quality'),

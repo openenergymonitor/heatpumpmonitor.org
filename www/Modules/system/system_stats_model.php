@@ -246,6 +246,14 @@ class SystemStats
                     }
                 }
             }
+
+            // Custom fields
+            if (!isset($stats[$systemid]->combined_cooling_kwh)) $stats[$systemid]->combined_cooling_kwh = 0;
+            $stats[$systemid]->combined_cooling_kwh += $row->combined_cooling_kwh;
+            if (!isset($stats[$systemid]->from_energy_feeds_elec_kwh)) $stats[$systemid]->from_energy_feeds_elec_kwh = 0;
+            $stats[$systemid]->from_energy_feeds_elec_kwh += $row->from_energy_feeds_elec_kwh;
+            if (!isset($stats[$systemid]->from_energy_feeds_heat_kwh)) $stats[$systemid]->from_energy_feeds_heat_kwh = 0;
+            $stats[$systemid]->from_energy_feeds_heat_kwh += $row->from_energy_feeds_heat_kwh;
         }
 
         // Calculate mean from sum
@@ -272,6 +280,12 @@ class SystemStats
                     $stats[$systemid]->{$category."_cop"} = 0;
                 }
             }
+        }
+
+        $stats[$systemid]->from_energy_feeds_cop = 0;
+        if ($stats[$systemid]->from_energy_feeds_elec_kwh > 0) {
+            $stats[$systemid]->from_energy_feeds_cop = $stats[$systemid]->from_energy_feeds_heat_kwh / $stats[$systemid]->from_energy_feeds_elec_kwh;
+            $stats[$systemid]->from_energy_feeds_cop = number_format($stats[$systemid]->from_energy_feeds_cop,1,'.','');
         }
 
         return $stats;
@@ -324,6 +338,10 @@ class SystemStats
             }
         }
 
+        // Custom fields
+        $totals['combined']['cooling_kwh'] = 0;
+        $totals['from_energy_feeds'] = array('elec_kwh'=>0,'heat_kwh'=>0);
+
         // Quality
         $quality_fields = array('elec','heat','flowT','returnT','outsideT','roomT');
         $quality_totals = array();
@@ -350,6 +368,10 @@ class SystemStats
             foreach ($quality_fields as $field) {
                 $quality_totals[$field] += $row->{"quality_".$field};
             }
+
+            $totals['combined']['cooling_kwh'] += $row->combined_cooling_kwh;
+            $totals['from_energy_feeds']['elec_kwh'] += $row->from_energy_feeds_elec_kwh;
+            $totals['from_energy_feeds']['heat_kwh'] += $row->from_energy_feeds_heat_kwh;
             
             $days++;
         }
@@ -401,6 +423,14 @@ class SystemStats
             $stats[$category.'_outsideT_mean'] = $mean[$category]['outsideT_mean'];
             $stats[$category.'_roomT_mean'] = $mean[$category]['roomT_mean'];
             $stats[$category.'_prc_carnot'] = $mean[$category]['prc_carnot'];
+        }
+
+        $stats['combined_cooling_kwh'] = $totals['combined']['cooling_kwh'];
+        $stats['from_energy_feeds_elec_kwh'] = $totals['from_energy_feeds']['elec_kwh'];
+        $stats['from_energy_feeds_heat_kwh'] = $totals['from_energy_feeds']['heat_kwh'];
+        $stats['from_energy_feeds_cop'] = 0;
+        if ($totals['from_energy_feeds']['elec_kwh'] > 0) {
+            $stats['from_energy_feeds_cop'] = $totals['from_energy_feeds']['heat_kwh'] / $totals['from_energy_feeds']['elec_kwh'];
         }
 
         foreach ($quality_fields as $field) {

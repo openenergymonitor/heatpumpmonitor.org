@@ -33,7 +33,7 @@ $start_last365 = $date->getTimestamp();
 $data = $system->list_admin();
 foreach ($data as $meta) {
     $systemid = $meta->id;
-    if ($meta->id!=2) continue;
+    if ($meta->id!=116) continue;
     $userid = (int) $meta->userid;
     if ($user_data = $user->get($userid)) {
     
@@ -46,14 +46,16 @@ foreach ($data as $meta) {
 
         $data_start = $result['period']->start;
         $data_end = $result['period']->end;
+        $start = $data_start;
 
         for ($x=0; $x<50; $x++) {
 
             // get most recent entry in db
             $result = $mysqli->query("SELECT MAX(timestamp) AS timestamp FROM system_stats_daily WHERE `id`='$systemid'");
-            $row = $result->fetch_assoc();
-            if ($row['timestamp']>$data_start) {
-                $start = $row['timestamp'];
+            if ($row = $result->fetch_assoc()) {
+                if ($row['timestamp']>$data_start) {
+                    $start = $row['timestamp'];
+                }
             }
             
 
