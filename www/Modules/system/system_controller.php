@@ -116,13 +116,21 @@ function system_controller() {
             $system_id = (int) $_GET['id'];
         }
 
+        // stats/last7
+        if ($route->subaction == "last7") { 
+            return $system_stats->get_last7($system_id);
+
         // stats/last30
-        if ($route->subaction == "last30") { 
+        } else if ($route->subaction == "last30") { 
             return $system_stats->get_last30($system_id);
 
         // stats/last365
         } else if ($route->subaction == "last365") {
             return $system_stats->get_last365($system_id);
+
+        // stats/all
+        } else if ($route->subaction == "all") {
+            return $system_stats->get_all($system_id);
 
         // stats?start=2016-01-01&end=2016-01-02
         } else if ($route->subaction == "") {

@@ -656,9 +656,13 @@ $schema['system_stats_daily'] = array(
 
 // Copy the same structure for aggregated stats
 $schema['system_stats_monthly_v2'] = $schema['system_stats_daily'];
+$schema['system_stats_last7_v2'] = $schema['system_stats_daily'];
 $schema['system_stats_last30_v2'] = $schema['system_stats_daily'];
 $schema['system_stats_last365_v2'] = $schema['system_stats_daily'];
+$schema['system_stats_all_v2'] = $schema['system_stats_daily'];
 
 // Remove the timestamp field from the aggregated stats
+unset($schema['system_stats_last7_v2']['timestamp']);
 unset($schema['system_stats_last30_v2']['timestamp']);
 unset($schema['system_stats_last365_v2']['timestamp']);
+unset($schema['system_stats_all_v2']['timestamp']);

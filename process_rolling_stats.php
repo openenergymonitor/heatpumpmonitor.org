@@ -22,6 +22,10 @@ $date->setTimezone(new DateTimeZone('Europe/London'));
 $date->modify("midnight");
 $end = $date->getTimestamp();
 
+$date->modify("-7 days");
+$start_last7 = $date->getTimestamp();
+
+$date->setTimestamp($end);
 $date->modify("-30 days");
 $start_last30 = $date->getTimestamp();
 
@@ -34,6 +38,13 @@ foreach ($data as $row) {
     $systemid = $row->id;
     $userid = (int) $row->userid;
     if ($user_data = $user->get($userid)) {
+
+
+        // ALL
+        $stats = $system_stats->process_from_daily($systemid,false,false);
+        if ($stats == false) continue;
+        $mysqli->query("DELETE FROM system_stats_all_v2 WHERE id=$systemid");
+        $system_stats->save_stats_table('system_stats_all_v2',$stats);
     
         // Last 365 days
         $stats = $system_stats->process_from_daily($systemid,$start_last365,$end);
@@ -46,6 +57,12 @@ foreach ($data as $row) {
         if ($stats == false) continue;
         $mysqli->query("DELETE FROM system_stats_last30_v2 WHERE id=$systemid");
         $system_stats->save_stats_table('system_stats_last30_v2',$stats);
+
+        // Last 7 days
+        $stats = $system_stats->process_from_daily($systemid,$start_last7,$end);
+        if ($stats == false) continue;
+        $mysqli->query("DELETE FROM system_stats_last7_v2 WHERE id=$systemid");
+        $system_stats->save_stats_table('system_stats_last7_v2',$stats);
         
     }
 }

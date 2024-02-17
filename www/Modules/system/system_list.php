@@ -43,6 +43,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
                         <select class="form-control" v-model="stats_time_start" @change="stats_time_start_change" style="width:130px">
                             <option value="all">All</option>
+                            <option value="last7">Last 7 days</option> 
                             <option value="last30">Last 30 days</option>
                             <option value="last365">Last 365 days</option>
                             <option v-for="month in available_months_start">{{ month }}</option>
@@ -50,7 +51,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         
                         <span class="input-group-text" v-if="stats_time_end!='only'">to</span>
 
-                        <select class="form-control" v-model="stats_time_end" v-if="stats_time_start!='all' && stats_time_start!='last30' && stats_time_start!='last365'" @change="stats_time_end_change" style="width:120px">
+                        <select class="form-control" v-model="stats_time_end" v-if="stats_time_start!='all' && stats_time_start!='last7' && stats_time_start!='last30' && stats_time_start!='last365'" @change="stats_time_end_change" style="width:120px">
                             <option value="only">Only</option>
                             <option v-for="month in available_months_end">{{ month }}</option>
                         </select>
@@ -323,7 +324,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             },
             stats_time_start_change: function () {
                 // change available_months_end to only show months after start
-                if (this.stats_time_start=='last30' || this.stats_time_start=='last365' || this.stats_time_start=='all') {
+                if (this.stats_time_start=='last7' || this.stats_time_start=='last30' || this.stats_time_start=='last365' || this.stats_time_start=='all') {
                     this.stats_time_end = 'only';
                 } else {
                     let start_index = this.available_months_start.indexOf(this.stats_time_start);
@@ -340,6 +341,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 } else if (this.stats_time_start=='last30') {
                     this.minDays = 24;
                     columns['combined_cop'].name = 'COP';
+                } else if (this.stats_time_start=='last7') {
+                    this.minDays = 5;
+                    columns['combined_cop'].name = 'COP';
                 } else {
                     this.minDays = 0;
                     columns['combined_cop'].name = 'COP';
@@ -354,7 +358,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 
                 // Start
                 let start = this.stats_time_start;
-                if (start!='last30' && start!='last365' && start!='all') {
+                if (start!='last7' && start!='last30' && start!='last365' && start!='all') {
                     // Convert e.g Mar 2023 to 2023-03-01
                     let months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sept','Oct','Nov','Dec'];
                     let month = start.split(' ')[0];
@@ -380,13 +384,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     end: end
                 };
 
-                if (start == 'last30' || start == 'last365' || start == 'all') {
+                if (start == 'last7' || start == 'last30' || start == 'last365' || start == 'all') {
                     
-                    if (start == 'all') {
-                        url = path+'system/stats/last365';
-                    } else {
-                        url = path+'system/stats/'+start;
-                    }
+                    url = path+'system/stats/'+start;
                     params = {};
                 }
                 // Load system/stats data
@@ -476,7 +476,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         return '';
                     }
                 }
-                if (key=='quality_elec') {
+                if (key=='quality_elec' || key=='quality_heat' || key=='quality_flowT' || key=='quality_returnT' || key=='quality_outsideT'|| key=='quality_roomT' ) {
                     if (val==undefined) return '';
                     return val + '%';
                 }
@@ -494,8 +494,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     if (this.stats_time_start=='last365' || this.stats_time_start=='all') {
                         
                         return (days<=360) ? 'partial ' : '';
-                    } else {
+                    } else if (this.stats_time_start=='last30') {
                         return (days<=27) ? 'partial ' : '';
+                    } else if (this.stats_time_start=='last7') {
+                        return (days<=5) ? 'partial ' : '';
                     }
                 }
                 

@@ -33,10 +33,14 @@ $start_last365 = $date->getTimestamp();
 $data = $system->list_admin();
 foreach ($data as $meta) {
     $systemid = $meta->id;
-    if ($meta->id!=116) continue;
+    //if ($meta->id>4) continue;
     $userid = (int) $meta->userid;
     if ($user_data = $user->get($userid)) {
-    
+
+        print "----------------------------------\n";
+        print $userid."\n";
+        print "----------------------------------\n";
+
         // get data period
         $result = $system_stats->get_data_period($meta->url);
         if (!$result['success']) {
@@ -76,13 +80,17 @@ foreach ($data as $meta) {
             $end_str = $date->format("Y-m-d");
 
             print "- start: ".$start_str." end: ".$end_str."\n";
+            if ($start_str==$end_str) break;
 
             $result = $system_stats->load_from_url($meta->url, $start, $end, 'getdaily');
 
             // split csv into array, first line is header
             $csv = explode("\n", $result);
             $fields = str_getcsv($csv[0]);
-            if ($fields[0]!="timestamp") die("error");
+            if ($fields[0]!="timestamp") {
+                echo $result;
+                die;
+            }
 
             $days = 0;
             // for each line, split into array
@@ -99,6 +107,7 @@ foreach ($data as $meta) {
                 }
             }
             print "- days: $days\n";
+            sleep(1);
 
             if ($end==$data_end) {
                 break;
