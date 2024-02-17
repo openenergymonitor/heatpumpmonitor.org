@@ -221,7 +221,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         showContent = true;
         if (mode == 'public') {
             selected_columns = ['location', 'installer_name', 'hp_type', 'hp_model', 'hp_output', 'combined_data_length', 'combined_cop'];
-            default_minDays = 30;
+            default_minDays = 27;
             default_stats_time_start = "last30";
         } else {
             selected_columns = ['location','hp_model','combined_data_length','combined_cop','mid_metering'];
@@ -230,7 +230,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         showContent = false;
         if (mode == 'public') {
             selected_columns = ['installer_name', 'hp_model', 'hp_output', 'combined_cop']; 
-            default_minDays = 30;
+            default_minDays = 27;
             default_stats_time_start = "last30";
         } else {
             selected_columns = ['location','hp_model','combined_cop'];
@@ -335,10 +335,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 }
                 
                 if (this.stats_time_start=='last365') {
-                    this.minDays = 365;
+                    this.minDays = 320;
                     columns['combined_cop'].name = 'SCOP';
                 } else if (this.stats_time_start=='last30') {
-                    this.minDays = 30;
+                    this.minDays = 27;
                     columns['combined_cop'].name = 'COP';
                 } else {
                     this.minDays = 0;
