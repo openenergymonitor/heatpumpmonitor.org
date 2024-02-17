@@ -71,8 +71,8 @@ foreach ($data as $row) {
             }
 
             // print json_encode($stats)."\n";
-            $mysqli->query("DELETE FROM system_stats_monthly WHERE id=$systemid AND timestamp=$start");
-            $system_stats->save_stats_table('system_stats_monthly',$stats);
+            $mysqli->query("DELETE FROM system_stats_monthly_v2 WHERE id=$systemid AND timestamp=$start");
+            $system_stats->save_stats_table('system_stats_monthly_v2',$stats);
 
             $start = $end;
             $date->modify("+1 month");

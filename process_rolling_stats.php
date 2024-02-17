@@ -38,14 +38,14 @@ foreach ($data as $row) {
         // Last 365 days
         $stats = $system_stats->process_from_daily($systemid,$start_last365,$end);
         if ($stats == false) continue;
-        $mysqli->query("DELETE FROM system_stats_last365 WHERE id=$systemid");
-        $system_stats->save_stats_table('system_stats_last365',$stats);
+        $mysqli->query("DELETE FROM system_stats_last365_v2 WHERE id=$systemid");
+        $system_stats->save_stats_table('system_stats_last365_v2',$stats);
 
         // Last 30 days
         $stats = $system_stats->process_from_daily($systemid,$start_last30,$end);
         if ($stats == false) continue;
-        $mysqli->query("DELETE FROM system_stats_last30 WHERE id=$systemid");
-        $system_stats->save_stats_table('system_stats_last30',$stats);
+        $mysqli->query("DELETE FROM system_stats_last30_v2 WHERE id=$systemid");
+        $system_stats->save_stats_table('system_stats_last30_v2',$stats);
         
     }
 }

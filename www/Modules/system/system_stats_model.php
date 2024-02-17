@@ -17,9 +17,9 @@ class SystemStats
         $schema = array();
         require "Modules/system/system_schema.php";
 
-        $this->schema['system_stats_monthly'] = $this->system->populate_codes($schema['system_stats_monthly']);
-        $this->schema['system_stats_last30'] = $this->system->populate_codes($schema['system_stats_last30']);
-        $this->schema['system_stats_last365'] = $this->system->populate_codes($schema['system_stats_last365']);
+        $this->schema['system_stats_monthly_v2'] = $this->system->populate_codes($schema['system_stats_monthly_v2']);
+        $this->schema['system_stats_last30_v2'] = $this->system->populate_codes($schema['system_stats_last30_v2']);
+        $this->schema['system_stats_last365_v2'] = $this->system->populate_codes($schema['system_stats_last365_v2']);
         $this->schema['system_stats_daily'] = $this->system->populate_codes($schema['system_stats_daily']);
 
     }
@@ -174,15 +174,15 @@ class SystemStats
     }
 
     public function get_monthly($start,$end,$system_id = false) {
-        return $this->get('system_stats_monthly',$start,$end,$system_id);
+        return $this->get('system_stats_monthly_v2',$start,$end,$system_id);
     }
 
     public function get_last30($system_id = false) {
-        return $this->get('system_stats_last30',false,false,$system_id);
+        return $this->get('system_stats_last30_v2',false,false,$system_id);
     }
 
     public function get_last365($system_id = false) {
-        return $this->get('system_stats_last365',false,false,$system_id);
+        return $this->get('system_stats_last365_v2',false,false,$system_id);
     }
 
     // Get system stats
@@ -305,7 +305,7 @@ class SystemStats
         }
 
         $monthly = array();
-        $result = $this->mysqli->query("SELECT * FROM system_stats_monthly WHERE timestamp BETWEEN $start AND $end AND id = $systemid ORDER BY timestamp ASC");
+        $result = $this->mysqli->query("SELECT * FROM system_stats_monthly_v2 WHERE timestamp BETWEEN $start AND $end AND id = $systemid ORDER BY timestamp ASC");
         while ($row = $result->fetch_object()) {
             $monthly[] = $row;
         }

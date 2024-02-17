@@ -47,7 +47,7 @@ switch ($route->controller) {
             "mode"=>"public",
             "systems"=>$system->list_public($session['userid']),
             "columns"=>$system->get_columns(),
-            "stats_columns"=>$system_stats->schema['system_stats_monthly']
+            "stats_columns"=>$system_stats->schema['system_stats_monthly_v2']
 
         ));        
         break;
@@ -61,7 +61,7 @@ switch ($route->controller) {
         $route->format = "html";
         $output = view("views/monthly.php", array(
             "userid"=>$session['userid'],
-            'system_stats_monthly'=>$system_stats->schema['system_stats_monthly']
+            'system_stats_monthly'=>$system_stats->schema['system_stats_monthly_v2']
         ));
         break;
 
