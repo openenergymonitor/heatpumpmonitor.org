@@ -381,7 +381,7 @@ class SystemStats
             if ($totals[$category]['elec_kwh'] > 0) {
                 $stats[$category.'_cop'] = $totals[$category]['heat_kwh'] / $totals[$category]['elec_kwh'];
             } else {
-                $stats[$category.'_cop'] = 0;
+                $stats[$category.'_cop'] = null;
             }
             $stats[$category.'_data_length'] = $totals[$category]['data_length'];
 

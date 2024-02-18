@@ -103,6 +103,11 @@
   margin: -2px 8px 0px 0px;
   border-radius: 50%;
 }
+.logo {
+  width:18px;
+  margin: -2px 8px 0px 0px;
+  border-radius: 50%;
+}
 
 /*
 .table-striped tbody tr:nth-of-type(odd) {

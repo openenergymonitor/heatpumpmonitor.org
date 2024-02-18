@@ -189,21 +189,6 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         if (column_groups[column.group] == undefined) column_groups[column.group] = [];
         column_groups[column.group].push({key: key, name: column.name, helper: column.helper});
     }
-    
-    
-    var categories = ["combined","running","space","water"];
-    var fields = {"cop":1,"elec_kwh":0,"heat_kwh":0,"elec_mean":0,"heat_mean":0,"flowT_mean":1,"returnT_mean":1,"outsideT_mean":1,"roomT_mean":1,"prc_carnot":1};
-    var units = {"elec_kwh":"kWh","heat_kwh":"kWh","elec_mean":'W',"heat_mean":'W',"flowT_mean":'°C',"returnT_mean":'°C',"outsideT_mean":'°C',"roomT_mean":'°C',"prc_carnot":'%'};
-    var dp_settings = {};
-    var units_settings = {};
-    for (var z in categories) {
-       let category = categories[z]
-       for (var field in fields) {
-           dp_settings[category+"_"+field] = fields[field]
-           units_settings[category+"_"+field] = units[field]
-           
-       }
-    }
 
     // Available months
     // Aug 2023, Jul 2023, Jun 2023 etc for 12 months
@@ -302,7 +287,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     return;
                 }
                 this.selected_columns.push(column);
-                this.sort(column, 'desc');
+                // this.sort(column, 'desc');
 
             },
             sort: function(column, starting_order) {
@@ -448,15 +433,21 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 }                
                 if (key=='installer_name') {
                     if (val!=null && val!='') {
-                       
-                        return "<a class='installer_link' href='"+system['installer_url']+"'>"+val+"</a>";
+                        var installer_logo = '';
+                        
+                        if (val=="Urban Plumbers") {
+                            installer_logo = "<img class='logo' src='theme/img/urban_plumbers2.png'/>";
+                        } else if (val=="Ultimate Renewables") {
+                            installer_logo = "<img class='logo' src='theme/img/ultimate_renewables.png'/>";
+                        }
+                        return installer_logo+"<a class='installer_link' href='"+system['installer_url']+"'>"+val+"</a>";
                     } else {
                         return '';
                     }
                 }
                 if (key=='heatgeek') {
                     if (val==1) {
-                        return "<img class='heatgeeklogo' src='theme/img/HeatGeekLogo.png' title='HeatGeek Trained'/>";
+                        return "<img class='heatgeeklogo' src='theme/img/HeatGeekLogo.png' title='HeatGeek Mastery or above'/>";
                     } else {
                         return "";
                     }
@@ -479,18 +470,6 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 if (key=='hp_output') {
                     return val + ' kW';
                 }
-                
-                if (dp_settings[key]!=undefined) {
-                    if (isNaN(val) || val == null) {
-                        return val;
-                    } else {
-                        let unit = '';
-                        if (units_settings[key]!=undefined) {
-                            unit = units_settings[key];
-                        }
-                        return val.toFixed(dp_settings[key])+' '+unit;
-                    }
-                }
                 if (key=='mid_metering') {
                     if (val==1) {
                         return 'Yes';
@@ -498,10 +477,23 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         return '';
                     }
                 }
-                if (key=='quality_elec' || key=='quality_heat' || key=='quality_flowT' || key=='quality_returnT' || key=='quality_outsideT'|| key=='quality_roomT' ) {
-                    if (val==undefined) return '';
-                    return val + '%';
+                
+                
+                if (stats_columns[key]!=undefined) {
+                    if (isNaN(val) || val == null) {
+                        return val;
+                    }
+                    
+                    let unit = '';
+                    if (stats_columns[key]['unit']!=undefined) {
+                        unit = ' '+stats_columns[key]['unit'];
+                    }
+                
+                    if (stats_columns[key]['dp']!=undefined) {
+                        return val.toFixed(stats_columns[key]['dp'])+unit;
+                    }
                 }
+                
                 return val;
             },
             // grey if start date is less that 1 year ago
