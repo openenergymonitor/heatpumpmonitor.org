@@ -100,7 +100,6 @@ $navigation = array(
                                 <i class="fas fa-chart-line"></i>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="avatarDropdown">
-                                <li><a class="dropdown-item" href="<?php echo $path; ?>graph">Graph</a></li>
                                 <li><a class="dropdown-item" href="<?php echo $path; ?>compare">Compare</a></li>
                                 <li><a class="dropdown-item" href="<?php echo $path; ?>monthly">Monthly</a></li>
                                 <li><a class="dropdown-item" href="<?php echo $path; ?>histogram">Histogram</a></li>

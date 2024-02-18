@@ -303,6 +303,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     }
                 }
                 this.sort_only(column);
+                if (app.chart_enable) draw_chart();
             },
             sort_only: function(column) {
                 this.systems.sort((a, b) => {
@@ -670,20 +671,31 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     function draw_chart() {
         var x = [];
         var y = [];
-        for (var i = 0; i < app.systems.length; i++) {
-            x.push(app.systems[i].location);
-            let cop = app.systems[i].combined_cop;
-            if (cop<0) cop = 0;
-            y.push(cop);
+        
+        if (stats_columns[app.currentSortColumn]!=undefined) {
+            
+        
+            for (var i = 0; i < app.systems.length; i++) {
+                x.push(app.systems[i].location);
+                let val = app.systems[i][app.currentSortColumn];
+                if (val==undefined) val = null;
+                
+                if (val!==null) {
+                    val = val.toFixed(stats_columns[app.currentSortColumn]['dp']+1);
+                }
+                
+                y.push(val);
+            }
+
+            chart_options.xaxis.categories = x;
+            chart_options.series = [{
+                name: app.currentSortColumn,
+                data: y
+            }];
+
+            chart.updateOptions(chart_options);
+        
         }
-
-        chart_options.xaxis.categories = x;
-        chart_options.series = [{
-            name: 'COP',
-            data: y
-        }];
-
-        chart.updateOptions(chart_options);
     }
 
 </script>
