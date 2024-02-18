@@ -171,6 +171,7 @@ function system_controller() {
         }
     }
 
+    /*
     if ($route->action=="loadstats") {
         $route->format = "json";
         if ($session['userid']) {
@@ -292,7 +293,7 @@ function system_controller() {
                 return array('success'=>false, 'message'=>'access denied');
             }
         }
-    }
+    }*/
 
     return false;
 }

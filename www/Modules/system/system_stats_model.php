@@ -220,97 +220,23 @@ class SystemStats
                 $where .= " AND id=$system_id";
             }
         }
-
-        $categories = array('combined','running','space','water');
-        $fields_to_sum = array('elec_kwh','heat_kwh','data_length','elec_mean','heat_mean','flowT_mean','returnT_mean','outsideT_mean','roomT_mean','prc_carnot');
-        $fields_to_mean = array('elec_mean','heat_mean','flowT_mean','returnT_mean','outsideT_mean','roomT_mean','prc_carnot');
-        $quality_fields = array('elec','heat','flowT','returnT','outsideT','roomT');
-
-        $stats = array();
+        
+        $system_rows = array();
         $result = $this->mysqli->query("SELECT * FROM $table_name $where");
         while ($row = $result->fetch_object()) {
-            $systemid = "".$row->id;
-            unset($row->id);
-            unset($row->timestamp);
-
-            // convert to numbers
-            foreach ($row as $key => $value) {
-                if ($value!==null) $row->$key = $value * 1;
+            $systemid = $row->id;
+            if (!isset($system_rows[$systemid])) {
+                $system_rows[$systemid] = array();
             }
-
-            // If no entry for this system, add it
-            if (!isset($stats[$systemid])) {
-                $stats[$systemid] = new stdClass();
-            }
-
-            foreach ($categories as $category) {
-                foreach ($fields_to_sum as $field) {
-                    if (!isset($stats[$systemid]->{$category."_".$field})) {
-                        $stats[$systemid]->{$category."_".$field} = 0;
-                    }
-                    // if in fields_to_mean multiply by data_length
-                    if (in_array($field,$fields_to_mean)) {
-                        $stats[$systemid]->{$category."_".$field} += $row->{$category."_".$field} * $row->{$category."_data_length"};
-                    } else {
-                        $stats[$systemid]->{$category."_".$field} += $row->{$category."_".$field};
-                    }
-                }
-            }
-
-            // Custom fields
-            if (!isset($stats[$systemid]->combined_cooling_kwh)) $stats[$systemid]->combined_cooling_kwh = 0;
-            $stats[$systemid]->combined_cooling_kwh += $row->combined_cooling_kwh;
-            if (!isset($stats[$systemid]->from_energy_feeds_elec_kwh)) $stats[$systemid]->from_energy_feeds_elec_kwh = 0;
-            $stats[$systemid]->from_energy_feeds_elec_kwh += $row->from_energy_feeds_elec_kwh;
-            if (!isset($stats[$systemid]->from_energy_feeds_heat_kwh)) $stats[$systemid]->from_energy_feeds_heat_kwh = 0;
-            $stats[$systemid]->from_energy_feeds_heat_kwh += $row->from_energy_feeds_heat_kwh;
-            
-            
-            foreach ($quality_fields as $field) {
-                if (!isset($stats[$systemid]->{"quality_".$field})) $stats[$systemid]->{"quality_".$field} = 0;
-                $stats[$systemid]->{"quality_".$field} += $row->{"quality_".$field} * $row->combined_data_length;
-            }
+            $system_rows[$systemid][] = $row;
         }
 
-        // Calculate mean from sum
-        foreach ($stats as $systemid => $stat) {
-            foreach ($categories as $category) {
-                foreach ($fields_to_mean as $field) {
-                    if ($stats[$systemid]->{$category."_data_length"} > 0) {
-                        $stats[$systemid]->{$category."_".$field} = $stats[$systemid]->{$category."_".$field} / $stats[$systemid]->{$category."_data_length"};
-                        // number format 1 decimal place
-                        $stats[$systemid]->{$category."_".$field} = number_format($stats[$systemid]->{$category."_".$field},1,'.','');
-                    } else {
-                        $stats[$systemid]->{$category."_".$field} = null;
-                    }
-                }     
-            }
-            foreach ($quality_fields as $field) {
-                if ($stats[$systemid]->combined_data_length > 0) {
-                    $stats[$systemid]->{"quality_".$field} = $stats[$systemid]->{"quality_".$field} / $stats[$systemid]->combined_data_length;
-                    $stats[$systemid]->{"quality_".$field} = number_format($stats[$systemid]->{"quality_".$field},1,'.','');
-                } else {
-                    $stats[$systemid]->{"quality_".$field} = null;
-                }
-            }     
-        }
-
-        // Calculate COP
-        foreach ($stats as $systemid => $stat) {
-            foreach ($categories as $category) {
-                if ($stats[$systemid]->{$category."_elec_kwh"} > 0) {
-                    $stats[$systemid]->{$category."_cop"} = $stats[$systemid]->{$category."_heat_kwh"} / $stats[$systemid]->{$category."_elec_kwh"};
-                    // number format 1 decimal place
-                    $stats[$systemid]->{$category."_cop"} = number_format($stats[$systemid]->{$category."_cop"},1,'.','');
-                } else {
-                    $stats[$systemid]->{$category."_cop"} = null;
-                }
-            }
+        $stats = array();        
+        foreach ($system_rows as $systemid => $rows) {
+            $stats[$systemid] = $this->process($rows,$systemid,$start);
             
-            $stats[$systemid]->from_energy_feeds_cop = 0;
-            if ($stats[$systemid]->from_energy_feeds_elec_kwh > 0) {
-                $stats[$systemid]->from_energy_feeds_cop = $stats[$systemid]->from_energy_feeds_heat_kwh / $stats[$systemid]->from_energy_feeds_elec_kwh;
-                $stats[$systemid]->from_energy_feeds_cop = number_format($stats[$systemid]->from_energy_feeds_cop,1,'.','');
+            if ($stats[$systemid]['combined_cop']!==null) {
+                $stats[$systemid]['combined_cop'] = number_format($stats[$systemid]['combined_cop'],1,'.','')*1;
             }
         }
 
@@ -349,6 +275,19 @@ class SystemStats
             $end = (int) $end;
             $where = "WHERE timestamp >= $start AND timestamp < $end AND id = $systemid";
         }
+        
+        $rows = array();
+
+        // Get daily data from system_stats_daily table for this system and time period
+        $result = $this->mysqli->query("SELECT * FROM system_stats_daily $where");
+        while ($row = $result->fetch_object()) {
+            $rows[] = $row;
+        }
+
+        return $this->process($rows,$systemid,$start);
+    }
+    
+    public function process($rows,$systemid,$start) {
 
         $categories = array('combined','running','space','water');
 
@@ -384,9 +323,7 @@ class SystemStats
         // Count days
         $days = 0;
 
-        // Get daily data from system_stats_daily table for this system and time period
-        $result = $this->mysqli->query("SELECT * FROM system_stats_daily $where");
-        while ($row = $result->fetch_object()) {
+        foreach ($rows as $row) {
 
             foreach ($categories as $category) {
                 foreach ($total_fields as $field) {

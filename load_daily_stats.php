@@ -33,7 +33,7 @@ $start_last365 = $date->getTimestamp();
 $data = $system->list_admin();
 foreach ($data as $meta) {
     $systemid = $meta->id;
-    //if ($meta->id>4) continue;
+    // if ($meta->id!=172) continue;
     $userid = (int) $meta->userid;
     if ($user_data = $user->get($userid)) {
 
@@ -51,6 +51,8 @@ foreach ($data as $meta) {
         $data_start = $result['period']->start;
         $data_end = $result['period']->end;
         $start = $data_start;
+
+        // $mysqli->query("DELETE FROM system_stats_daily WHERE `id`='$systemid'");
 
         for ($x=0; $x<50; $x++) {
 
