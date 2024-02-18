@@ -189,15 +189,21 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         if (column_groups[column.group] == undefined) column_groups[column.group] = [];
         column_groups[column.group].push({key: key, name: column.name, helper: column.helper});
     }
-
-    // create list of Stats, When Running, Standby columns
-    // var stats_columns = [];
-    // for (var key in columns) {
-    //     var column = columns[key];
-    //     if (column.group == 'Stats') stats_columns.push(key);
-    //     if (column.group == 'When Running') stats_columns.push(key);
-    //     if (column.group == 'Standby') stats_columns.push(key);
-    // }
+    
+    
+    var categories = ["combined","running","space","water"];
+    var fields = {"cop":1,"elec_kwh":0,"heat_kwh":0,"elec_mean":0,"heat_mean":0,"flowT_mean":1,"returnT_mean":1,"outsideT_mean":1,"roomT_mean":1,"prc_carnot":1};
+    var units = {"elec_kwh":"kWh","heat_kwh":"kWh","elec_mean":'W',"heat_mean":'W',"flowT_mean":'°C',"returnT_mean":'°C',"outsideT_mean":'°C',"roomT_mean":'°C',"prc_carnot":'%'};
+    var dp_settings = {};
+    var units_settings = {};
+    for (var z in categories) {
+       let category = categories[z]
+       for (var field in fields) {
+           dp_settings[category+"_"+field] = fields[field]
+           units_settings[category+"_"+field] = units[field]
+           
+       }
+    }
 
     // Available months
     // Aug 2023, Jul 2023, Jun 2023 etc for 12 months
@@ -473,11 +479,16 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 if (key=='hp_output') {
                     return val + ' kW';
                 }
-                if (key=='cop') {
+                
+                if (dp_settings[key]!=undefined) {
                     if (isNaN(val) || val == null) {
                         return val;
                     } else {
-                        return val.toFixed(1);
+                        let unit = '';
+                        if (units_settings[key]!=undefined) {
+                            unit = units_settings[key];
+                        }
+                        return val.toFixed(dp_settings[key])+' '+unit;
                     }
                 }
                 if (key=='mid_metering') {

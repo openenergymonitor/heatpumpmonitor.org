@@ -236,7 +236,7 @@ class SystemStats
             $stats[$systemid] = $this->process($rows,$systemid,$start);
             
             if ($stats[$systemid]['combined_cop']!==null) {
-                $stats[$systemid]['combined_cop'] = number_format($stats[$systemid]['combined_cop'],1,'.','')*1;
+                //$stats[$systemid]['combined_cop'] = number_format($stats[$systemid]['combined_cop'],1,'.','')*1;
             }
         }
 
