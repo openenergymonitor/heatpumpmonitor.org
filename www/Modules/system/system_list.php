@@ -434,12 +434,12 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 if (key=='installer_name') {
                     if (val!=null && val!='') {
                         var installer_logo = '';
-                        
+                        /*
                         if (val=="Urban Plumbers") {
                             installer_logo = "<img class='logo' src='theme/img/urban_plumbers2.png'/>";
                         } else if (val=="Ultimate Renewables") {
                             installer_logo = "<img class='logo' src='theme/img/ultimate_renewables.png'/>";
-                        }
+                        }*/
                         return installer_logo+"<a class='installer_link' href='"+system['installer_url']+"'>"+val+"</a>";
                     } else {
                         return '';

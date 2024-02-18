@@ -100,9 +100,6 @@ $navigation = array(
                                 <i class="fas fa-chart-line"></i>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="avatarDropdown">
-                                <?php if ($settings['public_mode_enabled']) { ?>
-                                <li><a class="dropdown-item" href="<?php echo $path; ?>system/list/original">Original</a></li>
-                                <?php } ?>
                                 <li><a class="dropdown-item" href="<?php echo $path; ?>graph">Graph</a></li>
                                 <li><a class="dropdown-item" href="<?php echo $path; ?>compare">Compare</a></li>
                                 <li><a class="dropdown-item" href="<?php echo $path; ?>monthly">Monthly</a></li>

@@ -83,9 +83,6 @@ function system_controller() {
                         "stats_columns"=>$system_stats->schema['system_stats_monthly_v2']
                     ));
                 }
-            // Original
-            } else if ($route->subaction=="original" && $settings['public_mode_enabled']) {
-                return view("Modules/system/original/main.php",array());
             }
         } else {
             // Public list view
