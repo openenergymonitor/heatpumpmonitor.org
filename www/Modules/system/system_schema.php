@@ -36,6 +36,15 @@ $schema['system_meta'] = array(
         'name' => 'Installer URL', 
         'group' => 'Overview'
     ),
+    
+    'installer_logo' => array(
+        'type' => 'varchar(64)', 
+        'editable' => true, 
+        'optional' => true, 
+        'name' => 'Installer Logo', 
+        'group' => 'Overview',
+        'editable' => false
+    ),    
 
     'heatgeek' => array(
         'type' => 'tinyint(1)', 

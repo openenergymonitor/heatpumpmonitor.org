@@ -173,6 +173,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     columns['hp_model'].name = "Make & Model";
     columns['hp_output'].name = "Rating";
     columns['heatgeek'].name = "Training";
+    columns['installer_logo'].name = "";
+    
     // remove stats_columns id & timestmap
     delete stats_columns.id;
     delete stats_columns.timestamp;
@@ -212,7 +214,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     if (width>800) {
         showContent = true;
         if (mode == 'public') {
-            selected_columns = ['location', 'installer_name', 'heatgeek', 'hp_type', 'hp_model', 'hp_output', 'combined_data_length', 'combined_cop'];
+            selected_columns = ['location', 'installer_logo', 'installer_name', 'heatgeek', 'hp_type', 'hp_model', 'hp_output', 'combined_data_length', 'combined_cop'];
             default_minDays = 24;
             default_stats_time_start = "last30";
         } else {
@@ -221,7 +223,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     } else {
         showContent = false;
         if (mode == 'public') {
-            selected_columns = ['installer_name', 'heatgeek', 'hp_model', 'hp_output', 'combined_cop']; 
+            selected_columns = ['installer_name', 'hp_model', 'hp_output', 'combined_cop']; 
             default_minDays = 24;
             default_stats_time_start = "last30";
         } else {
@@ -431,17 +433,23 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 }
                 if (key=='combined_data_length') {
                     return (val/(24*3600)).toFixed(0)+" days";
-                }                
-                if (key=='installer_name') {
+                }             
+
+                if (key=='installer_logo') {
                     if (val!=null && val!='') {
                         var installer_logo = '';
-                        /*
-                        if (val=="Urban Plumbers") {
-                            installer_logo = "<img class='logo' src='theme/img/urban_plumbers2.png'/>";
-                        } else if (val=="Ultimate Renewables") {
-                            installer_logo = "<img class='logo' src='theme/img/ultimate_renewables.png'/>";
-                        }*/
-                        return installer_logo+"<a class='installer_link' href='"+system['installer_url']+"'>"+val+"</a>";
+                        if (system['installer_logo']) {
+                            installer_logo = "<img class='logo' src='theme/img/installers/"+val+"'/>";
+                        }
+                        return installer_logo;
+                    } else {
+                        return '';
+                    }
+                }
+                   
+                if (key=='installer_name') {
+                    if (val!=null && val!='') {
+                        return "<a class='installer_link' href='"+system['installer_url']+"'>"+val+"</a>";
                     } else {
                         return '';
                     }

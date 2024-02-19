@@ -8,3 +8,4 @@ hpmon.log
 www/webhook.php
 sheet.tsv
 www/settings.php
+www/theme/img/installers/*
