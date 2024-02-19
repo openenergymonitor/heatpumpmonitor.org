@@ -96,11 +96,19 @@
 }
 .heatgeeklogo { 
   width:11px;
-  margin: -3px 10px 0px 3px;
+  margin: -3px 5px 0px 3px;
+}
+.ultimatelogo { 
+  width:11px;
+  margin: -3px 5px 0px 3px;
+}
+.heatingacademylogo { 
+  width:11px;
+  margin: -3px 5px 0px 3px;
 }
 .betateachlogo { 
   width:18px;
-  margin: -2px 8px 0px 0px;
+  margin: -2px 0px 0px 0px;
   border-radius: 50%;
 }
 .logo {

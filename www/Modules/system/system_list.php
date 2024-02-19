@@ -172,8 +172,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     columns['hp_type'].name = "Source";
     columns['hp_model'].name = "Make & Model";
     columns['hp_output'].name = "Rating";
-    columns['heatgeek'].name = "Training";
-    columns['installer_logo'].name = "";
+    // columns['heatgeek'].name = "Training";
+
+    
+    columns['training'] = { name: "Training", group: "Overview", helper: "Training" };
     
     // remove stats_columns id & timestmap
     delete stats_columns.id;
@@ -191,6 +193,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         if (column_groups[column.group] == undefined) column_groups[column.group] = [];
         column_groups[column.group].push({key: key, name: column.name, helper: column.helper});
     }
+    
+    columns['installer_logo'].name = "";
+    columns['betateach'].name = "";
 
     // Available months
     // Aug 2023, Jul 2023, Jun 2023 etc for 12 months
@@ -214,7 +219,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     if (width>800) {
         showContent = true;
         if (mode == 'public') {
-            selected_columns = ['location', 'installer_logo', 'installer_name', 'heatgeek', 'hp_type', 'hp_model', 'hp_output', 'combined_data_length', 'combined_cop'];
+            selected_columns = ['location', 'installer_logo', 'installer_name', 'training', 'hp_type', 'hp_model', 'hp_output', 'combined_data_length', 'combined_cop'];
             default_minDays = 24;
             default_stats_time_start = "last30";
         } else {
@@ -454,6 +459,20 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         return '';
                     }
                 }
+                if (key=='training') {
+                    var training = "";
+                    if (system['heatgeek']==1) {
+                        training += "<img class='heatgeeklogo' src='theme/img/HeatGeekLogo.png' title='HeatGeek Mastery or above'/>";
+                    }
+                    if (system['ultimaterenewables']==1) {
+                        training += "<img class='ultimatelogo' src='theme/img/ultimate.png' title='Ultimate Pro'/>";
+                    }
+                    if (system['heatingacademy']==1) {
+                        training += "<img class='heatingacademylogo' src='theme/img/HA.png' title='Heating Academy Hydronics'/>";
+                    }
+                    return training;
+                }
+                
                 if (key=='heatgeek') {
                     if (val==1) {
                         return "<img class='heatgeeklogo' src='theme/img/HeatGeekLogo.png' title='HeatGeek Mastery or above'/>";
@@ -462,8 +481,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     }
                 }
                 if (key=='betateach') {
-                    if (val==1) {
-                        return "<img class='betateachlogo' src='theme/img/beta-teach.jpg' title='BetaTeach Heat Architect'/>";
+                    if (val!=null && val!='0') {
+                        return "<a href='"+val+"'><img class='betateachlogo' src='theme/img/beta-teach.jpg' title='Learn more on the BetaTalk Podcast'/></a>";
                     } else {
                         return "";
                     }

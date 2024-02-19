@@ -44,22 +44,38 @@ $schema['system_meta'] = array(
         'name' => 'Installer Logo', 
         'group' => 'Overview',
         'editable' => false
-    ),    
+    ),
 
     'heatgeek' => array(
         'type' => 'tinyint(1)', 
         'editable' => true, 
         'optional' => true, 
-        'name' => 'Heat Geek', 
-        'group' => 'Overview'
+        'name' => 'Heat Geek Mastery', 
+        'group' => 'Training'
     ),
     
-    'betateach' => array(
+    'ultimaterenewables' => array(
         'type' => 'tinyint(1)', 
         'editable' => true, 
         'optional' => true, 
-        'name' => 'Beta Teach', 
-        'group' => 'Overview'
+        'name' => 'Ultimate Renewables Pro', 
+        'group' => 'Training'
+    ),
+    
+    'heatingacademy' => array(
+        'type' => 'tinyint(1)', 
+        'editable' => true, 
+        'optional' => true, 
+        'name' => 'Heating Academy Hydronics', 
+        'group' => 'Training'
+    ),
+    
+    'betateach' => array(
+        'type' => 'varchar(256)',
+        'editable' => true, 
+        'optional' => true, 
+        'name' => 'BetaTalk', 
+        'group' => 'Learn more'
     ),
 
     'url' => array(
