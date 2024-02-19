@@ -228,7 +228,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     } else {
         showContent = false;
         if (mode == 'public') {
-            selected_columns = ['installer_name', 'hp_model', 'hp_output', 'combined_cop']; 
+            selected_columns = ['installer_logo', 'hp_model', 'hp_output', 'combined_cop']; 
             default_minDays = 24;
             default_stats_time_start = "last30";
         } else {
@@ -444,7 +444,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     if (val!=null && val!='') {
                         var installer_logo = '';
                         if (system['installer_logo']) {
-                            installer_logo = "<img class='logo' src='theme/img/installers/"+val+"'/>";
+                            installer_logo = "<a href='"+system['installer_url']+"'><img class='logo' src='theme/img/installers/"+val+"'/></a>";
                         }
                         return installer_logo;
                     } else {
