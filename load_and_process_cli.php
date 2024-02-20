@@ -1,6 +1,10 @@
 <?php
+
 $dir = dirname(__FILE__);
 chdir("$dir/www");
+
+$fp = fopen("/home/oem/hpmon3/hpmon.lock", "w");
+if (! flock($fp, LOCK_EX | LOCK_NB)) { echo "Already running\n"; die; }
 
 require "Lib/load_database.php";
 
@@ -13,11 +17,11 @@ $system = new System($mysqli);
 require ("Modules/system/system_stats_model.php");
 $system_stats = new SystemStats($mysqli,$system);
 
-print "############################################\n";
-print "HeatpumpMonitor.org CLI: ".date("Y-m-d H:i:s")."\n";
-print "############################################\n";
-print "Settings:\n";
-print "- directory: $dir\n";
+logger("############################################");
+logger("HeatpumpMonitor.org CLI: ".date("Y-m-d H:i:s"));
+logger("############################################");
+logger("Settings:");
+logger("- directory: $dir");
 
 $single_system = false;
 if (isset($argv[1])) {
@@ -25,22 +29,22 @@ if (isset($argv[1])) {
     if ($single_system<1) {
         $single_system = false;
     } else {
-        print "- single system: 9\n";
+        logger("- single system: 9");
     }
 }
 if (!$single_system) {
-    print "- all systems\n";
+    logger("- all systems");
 }
 
 $reload = false;
 if (isset($argv[2])) {
     if ($argv[2] == "all") {
         $reload = true;
-        print "- reload all\n";
+        logger("- reload all");
     }
 }
 if (!$reload) {
-    print "- load new data only\n";
+    logger("- load new data only");
 }
 
 // Load all systems
@@ -65,7 +69,7 @@ function load_daily_stats($systemlist, $single_system, $reload) {
             $loaded_systems ++;
         }
     }
-    print "- loaded systems: ".$loaded_systems."\n";
+    logger("- loaded systems: ".$loaded_systems);
 }
 
 function load_daily_stats_system($meta, $reload) {
@@ -80,14 +84,14 @@ function load_daily_stats_system($meta, $reload) {
         $host = $url['host'];
     }
 
-    print "----------------------------------\n";
-    print "System: ".$meta->id.", Host: ".$host."\n";
-    print "----------------------------------\n";
+    logger("----------------------------------");
+    logger("System: ".$meta->id.", Host: ".$host);
+    logger("----------------------------------");
 
     // get data period
     $result = $system_stats->get_data_period($meta->url);
     if (!$result['success']) {
-        print "- error loading data period\n";
+        logger("- error loading data period");
         return false;
     }
 
@@ -129,7 +133,7 @@ function load_daily_stats_system($meta, $reload) {
         $date->setTimestamp($end);
         $end_str = $date->format("Y-m-d");
 
-        print "- start: ".$start_str." end: ".$end_str."\n";
+        logger("- start: ".$start_str." end: ".$end_str);
         if ($start_str==$end_str) break;
 
         if ($result = $system_stats->load_from_url($meta->url, $start, $end, 'getdaily')) 
@@ -156,7 +160,7 @@ function load_daily_stats_system($meta, $reload) {
                     $days++;
                 }
             }
-            print "- days: $days\n";
+            logger("- days: $days");
         }
         sleep(1);
         
@@ -232,7 +236,7 @@ function process_rolling_stats($systemlist, $single_system, $reload) {
             $processed_systems ++;            
         }
     }
-    print "- processed systems: ".$processed_systems."\n";
+    logger("- processed rolling systems: ".$processed_systems);
 }
 
 function process_monthly_stats($systemlist, $single_system, $reload) {
@@ -289,11 +293,10 @@ function process_monthly_stats($systemlist, $single_system, $reload) {
 
                 $stats = $system_stats->process_from_daily($systemid,$start,$end);
                 if ($stats == false) {
-                    print "No data for system $systemid\n";
+                    logger("No data for system $systemid");
                     break;
                 }
-
-                // print json_encode($stats)."\n";
+                
                 $mysqli->query("DELETE FROM system_stats_monthly_v2 WHERE id=$systemid AND timestamp=$start");
                 $system_stats->save_stats_table('system_stats_monthly_v2',$stats);
 
@@ -308,5 +311,9 @@ function process_monthly_stats($systemlist, $single_system, $reload) {
             $processed_systems ++;
         }
     }
-    print "- processed systems: ".$processed_systems."\n";
+    logger("- processed monthly systems: ".$processed_systems);
+}
+
+function logger($message) {
+    print $message."\n";
 }

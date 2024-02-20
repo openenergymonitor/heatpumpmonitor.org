@@ -701,3 +701,10 @@ unset($schema['system_stats_last30_v2']['timestamp']);
 unset($schema['system_stats_last90_v2']['timestamp']);
 unset($schema['system_stats_last365_v2']['timestamp']);
 unset($schema['system_stats_all_v2']['timestamp']);
+
+$schema['system_stats_script'] = array(
+
+    'running' => array('type' => 'int(11)'),
+    'systemid' => array('type' => 'int(11)')
+    
+);

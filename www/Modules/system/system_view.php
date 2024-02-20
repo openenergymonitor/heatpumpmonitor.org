@@ -189,8 +189,7 @@ global $settings;
             <h5 class="card-header">Reload system data</h5>
             <div class="card-body">
                 <p>Manually reload system data from Emoncms dashboard</p>
-                <button type="button" class="btn btn-primary" @click="loadstats" :disabled="disable_loadstats">Load rolling 30 & 365 day data</button>
-                <button type="button" class="btn btn-primary" @click="loadmonthly" :disabled="disable_loadstats">Load monthly data</button>
+                <button type="button" class="btn btn-primary" @click="loadstats" :disabled="disable_loadstats">Reload</button>
             </div>
         </div>
     </div>
@@ -418,14 +417,6 @@ global $settings;
             loadstats: function() {
                 app.disable_loadstats = true;
                 axios.get(path + 'system/loadstats?id=' + app.system.id)
-                    .then(function(response) {
-                        alert(response.data.message);
-                        app.disable_loadstats = false;
-                    });
-            },
-            loadmonthly: function() {
-                app.disable_loadstats = true;
-                axios.get(path + 'system/loadmonthlystats?id=' + app.system.id)
                     .then(function(response) {
                         alert(response.data.message);
                         app.disable_loadstats = false;
