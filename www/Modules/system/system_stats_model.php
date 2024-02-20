@@ -439,4 +439,48 @@ class SystemStats
 
         return $stats;
     }
+    
+    public function export_daily($systemid) {
+    
+        $filename = "daily.csv";
+        $where = '';
+        if ($systemid>0) {
+            $where = "WHERE id=$systemid";
+            $filename = "daily-$systemid.csv";
+        }
+
+        // There is no need for the browser to cache the output
+        header("Cache-Control: no-cache, no-store, must-revalidate");
+
+        // Tell the browser to handle output as a csv file to be downloaded
+        header('Content-Description: File Transfer');
+        header("Content-type: application/octet-stream");
+        header("Content-Disposition: attachment; filename=$filename");
+
+        header("Expires: 0");
+        header("Pragma: no-cache");
+
+        // Write to output stream
+        $fh = @fopen( 'php://output', 'w' );
+        
+        // Print header based on system_stats_daily schema
+        $header = array();
+        foreach ($this->schema['system_stats_daily'] as $field => $field_schema) {
+            $header[] = $field;
+        }
+        fputcsv($fh, $header);
+
+        // Get data
+        $result = $this->mysqli->query("SELECT * FROM system_stats_daily $where");
+        while ($row = $result->fetch_object()) {
+            $data = array();
+            foreach ($this->schema['system_stats_daily'] as $field => $field_schema) {
+                $data[] = $row->$field;
+            }
+            fputcsv($fh, $data);
+        }
+        
+        fclose($fh);
+        exit;
+    }
 }

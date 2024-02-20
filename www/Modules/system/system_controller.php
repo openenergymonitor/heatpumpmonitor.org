@@ -113,8 +113,16 @@ function system_controller() {
             $system_id = (int) $_GET['id'];
         }
 
+        // stats?start=2016-01-01&end=2016-01-02
+        if ($route->subaction == "") {
+            return $system_stats->get_monthly(
+                get('start',true),
+                get('end',true),
+                $system_id
+            );
+            
         // stats/last7
-        if ($route->subaction == "last7") { 
+        } else if ($route->subaction == "last7") { 
             return $system_stats->get_last7($system_id);
 
         // stats/last30
@@ -133,13 +141,10 @@ function system_controller() {
         } else if ($route->subaction == "all") {
             return $system_stats->get_all($system_id);
 
-        // stats?start=2016-01-01&end=2016-01-02
-        } else if ($route->subaction == "") {
-            return $system_stats->get_monthly(
-                get('start',true),
-                get('end',true),
-                $system_id
-            );
+        } else if ($route->subaction == "export") {
+            if ($route->subaction2 == "daily") {
+                $system_stats->export_daily($system_id);
+            }
         }
     }
 
