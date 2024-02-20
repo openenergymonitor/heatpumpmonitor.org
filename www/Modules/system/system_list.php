@@ -143,7 +143,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             <a :href="'<?php echo $path;?>system/view?id='+system.id">
                                 <button class="btn btn-primary btn-sm" title="Summary"><i class="fa fa-list-alt" style="color: #ffffff;"></i></button>
                             </a>
-                            <a :href="system.url">
+                            <a :href="system.url" target="_blank">
                                 <button class="btn btn-secondary btn-sm" title="Dashboard"><i class="fa fa-chart-bar" style="color: #ffffff;"></i></button>
                             </a> 
                         </td>
@@ -175,7 +175,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     // columns['heatgeek'].name = "Training";
 
     
-    columns['training'] = { name: "Training", group: "Overview", helper: "Training" };
+    columns['training'] = { name: "Combined", group: "Training", helper: "Training" };
+    columns['learnmore'] = { name: "Combined", group: "Learn more" };
     
     // remove stats_columns id & timestmap
     delete stats_columns.id;
@@ -195,7 +196,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     }
     
     columns['installer_logo'].name = "";
-    columns['betateach'].name = "";
+
+    columns['training'].name = "Training";
+    columns['learnmore'].name = "";
 
     // Available months
     // Aug 2023, Jul 2023, Jun 2023 etc for 12 months
@@ -219,7 +222,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     if (width>800) {
         showContent = true;
         if (mode == 'public') {
-            selected_columns = ['location', 'installer_logo', 'installer_name', 'training', 'hp_type', 'hp_model', 'hp_output', 'combined_data_length', 'combined_cop'];
+            selected_columns = ['location', 'installer_logo', 'installer_name', 'training', 'hp_type', 'hp_model', 'hp_output', 'combined_data_length', 'combined_cop', 'learnmore'];
             default_minDays = 24;
             default_stats_time_start = "last30";
         } else {
@@ -480,12 +483,16 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         return "";
                     }
                 }
-                if (key=='betateach') {
-                    if (val!=null && val!='0') {
-                        return "<a href='"+val+"'><img class='betateachlogo' src='theme/img/beta-teach.jpg' title='Learn more on the BetaTalk Podcast'/></a>";
-                    } else {
-                        return "";
+                if (key=='learnmore') {
+                    var learnmore = "";
+                    if (system['youtube']!=null && system['youtube']!="" && system['youtube']!='0') {
+                        learnmore += "<a href='"+system['youtube']+"'><img class='betateachlogo' src='theme/img/youtube.png' title='Learn more about this system on YouTube'/></a>";
                     }
+                    if (system['betateach']!=null && system['betateach']!="" && system['betateach']!='0') {
+                        learnmore += "<a href='"+system['betateach']+"'><img class='betateachlogo' src='theme/img/beta-teach.jpg' title='Learn more on the BetaTalk Podcast'/></a>";
+                    }
+
+                    return learnmore;
                 }
                 if (key=='hp_type') {
                     if (val=="Air Source") {

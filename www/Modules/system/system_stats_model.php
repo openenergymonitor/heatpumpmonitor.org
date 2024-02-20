@@ -94,8 +94,19 @@ class SystemStats
             }
         }
 
-        $stats_rx = file_get_contents($getstats);
-        return $stats_rx;
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $getstats);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+        $stats_rx = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        
+        if ($httpCode == 200) { // Check if successful response
+            return $stats_rx;
+        } else {
+            return false; // Or handle error as needed
+        }
 
         if (!$stats = json_decode($stats_rx)) {
             return array("success" => false, "message" => $stats_rx);
@@ -108,6 +119,9 @@ class SystemStats
     {
         # decode the url to separate out any args
         $url_parts = parse_url($url);
+        if (!isset($url_parts['scheme']) || !isset($url_parts['host']) || !isset($url_parts['path'])) {
+            return array("success" => false, "message" => "Invalid URL"); 
+        }
         $server = $url_parts['scheme'] . '://' . $url_parts['host'];
 
         # check if url was to /app/view instead of username
@@ -125,13 +139,23 @@ class SystemStats
                 $getstats .= '?' . $url_parts['query'];
             }
         }
-
-        $stats_rx = file_get_contents($getstats);
-
-        if (!$period = json_decode($stats_rx)) {
-            return array("success" => false, "message" => $stats_rx);
+        
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $getstats);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+        $stats_rx = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        
+        if ($httpCode == 200) { // Check if successful response
+            if (!$period = json_decode($stats_rx)) {
+                return array("success" => false, "message" => $stats_rx);
+            } else {
+                return array("success" => true, "period" => $period);
+            }
         } else {
-            return array("success" => true, "period" => $period);
+            return array("success" => false, "message" => $httpCode);
         }
     }
 
@@ -159,10 +183,12 @@ class SystemStats
         $codes = array();
         $values = array();
         foreach ($this->schema[$table_name] as $field => $field_schema) {
-            $fields[] = $field;
-            $qmarks[] = '?';
-            $codes[] = $field_schema['code'];
-            $values[] = $stats[$field];
+            if (isset($stats[$field])) {
+                $fields[] = $field;
+                $qmarks[] = '?';
+                $codes[] = $field_schema['code'];
+                $values[] = $stats[$field];
+            }
         }
         $fields = implode(',',$fields);
         $qmarks = implode(',',$qmarks);

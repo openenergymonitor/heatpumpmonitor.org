@@ -31,7 +31,7 @@ class System
 
     // All systems
     public function list_admin() {
-        $result = $this->mysqli->query("SELECT system_meta.*,users.name,users.username,users.email FROM system_meta JOIN users ON system_meta.userid = users.id");
+        $result = $this->mysqli->query("SELECT system_meta.*,users.name,users.username,users.email FROM system_meta JOIN users ON system_meta.userid = users.id ORDER BY system_meta.id");
         $list = array();
         while ($row = $result->fetch_object()) {
             if (!isset($row->emoncmsorg_userid)) {

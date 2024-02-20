@@ -36,9 +36,15 @@ foreach ($data as $meta) {
     // if ($meta->id!=172) continue;
     $userid = (int) $meta->userid;
     if ($user_data = $user->get($userid)) {
+    
+        $url = parse_url($meta->url);
+        $host = "";
+        if (isset($url['host'])) {
+            $host = $url['host'];
+        }
 
         print "----------------------------------\n";
-        print $userid."\n";
+        print $systemid." ".$host."\n";
         print "----------------------------------\n";
 
         // get data period
@@ -73,7 +79,11 @@ foreach ($data as $meta) {
             $start = $date->getTimestamp();
             $start_str = $date->format("Y-m-d");
             // +30 days
-            $date->modify("+60 days");
+            if ($host=="emoncms.org") {
+                $date->modify("+60 days");
+            } else {
+                $date->modify("+7 days"); 
+            }
             $end = $date->getTimestamp();
             if ($end>$data_end) {
                 $end = $data_end;
@@ -84,32 +94,34 @@ foreach ($data as $meta) {
             print "- start: ".$start_str." end: ".$end_str."\n";
             if ($start_str==$end_str) break;
 
-            $result = $system_stats->load_from_url($meta->url, $start, $end, 'getdaily');
-
-            // split csv into array, first line is header
-            $csv = explode("\n", $result);
-            $fields = str_getcsv($csv[0]);
-            if ($fields[0]!="timestamp") {
-                echo $result;
-                die;
-            }
-
-            $days = 0;
-            // for each line, split into array
-            for ($i=1; $i<count($csv); $i++) {
-                if ($csv[$i]) {
-                    $values = str_getcsv($csv[$i]);
-
-                    $row = array();
-                    for ($j=0; $j<count($fields); $j++) {
-                        $row[$fields[$j]] = $values[$j];
-                    }
-                    $system_stats->save_day($systemid, $row);
-                    $days++;
+            if ($result = $system_stats->load_from_url($meta->url, $start, $end, 'getdaily')) 
+            {
+                // split csv into array, first line is header
+                $csv = explode("\n", $result);
+                $fields = str_getcsv($csv[0]);
+                if ($fields[0]!="timestamp") {
+                    echo $result;
+                    die;
                 }
+
+                $days = 0;
+                // for each line, split into array
+                for ($i=1; $i<count($csv); $i++) {
+                    if ($csv[$i]) {
+                        $values = str_getcsv($csv[$i]);
+
+                        $row = array();
+                        for ($j=0; $j<count($fields); $j++) {
+                            $row[$fields[$j]] = $values[$j];
+                        }
+                        $system_stats->save_day($systemid, $row);
+                        $days++;
+                    }
+                }
+                print "- days: $days\n";
             }
-            print "- days: $days\n";
             sleep(1);
+            
 
             if ($end==$data_end) {
                 break;

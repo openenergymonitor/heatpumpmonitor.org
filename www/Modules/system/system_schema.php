@@ -77,6 +77,14 @@ $schema['system_meta'] = array(
         'name' => 'BetaTalk', 
         'group' => 'Learn more'
     ),
+    
+    'youtube' => array(
+        'type' => 'varchar(256)',
+        'editable' => true, 
+        'optional' => true, 
+        'name' => 'YouTube', 
+        'group' => 'Learn more'
+    ),
 
     'url' => array(
         'type' => 'varchar(128)', 
