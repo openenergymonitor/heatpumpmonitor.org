@@ -42,6 +42,7 @@ $schema['system_meta'] = array(
         'editable' => true, 
         'optional' => true, 
         'name' => 'Installer Logo', 
+        'heading' => '',
         'group' => 'Overview',
         'editable' => false
     ),
@@ -623,7 +624,7 @@ $schema['system_stats_daily'] = array(
     // Full period stats
     'combined_elec_kwh' => array('type' => 'float', 'name'=>'Electricity consumption', 'group'=>'Stats: Combined', 'dp'=>0, 'unit'=>'kWh'),
     'combined_heat_kwh' => array('type' => 'float', 'name'=>'Heat output', 'group'=>'Stats: Combined', 'dp'=>0, 'unit'=>'kWh'),
-    'combined_cop' => array('type' => 'float', 'name'=>'COP', 'group'=>'Stats: Combined', 'dp'=>1, 'unit'=>''),
+    'combined_cop' => array('type' => 'float', 'name'=>'COP', 'heading'=>"COP", 'group'=>'Stats: Combined', 'dp'=>1, 'unit'=>''),
     'combined_data_length' => array('type' => 'float', 'name'=>'Data length', 'group'=>'Stats: Combined', 'dp'=>0, 'unit'=>''),
     'combined_elec_mean' => array('type' => 'float', 'name'=>'Elec mean', 'group'=>'Stats: Combined', 'dp'=>0, 'unit'=>'W'),
     'combined_heat_mean' => array('type' => 'float', 'name'=>'Heat mean', 'group'=>'Stats: Combined', 'dp'=>0, 'unit'=>'W'),
@@ -637,7 +638,7 @@ $schema['system_stats_daily'] = array(
     // When Running
     'running_elec_kwh' => array('type' => 'float', 'name'=>'Electricity consumption', 'group'=>'Stats: When Running', 'dp'=>0, 'unit'=>'kWh'),
     'running_heat_kwh' => array('type' => 'float', 'name'=>'Heat output', 'group'=>'Stats: When Running', 'dp'=>0, 'unit'=>'kWh'),
-    'running_cop' => array('type' => 'float', 'name'=>'COP', 'group'=>'Stats: When Running', 'dp'=>1, 'unit'=>''),
+    'running_cop' => array('type' => 'float', 'name'=>'COP', 'heading'=>"Running<br>COP", 'group'=>'Stats: When Running', 'dp'=>1, 'unit'=>''),
     'running_data_length' => array('type' => 'float', 'name'=>'Data length', 'group'=>'Stats: When Running', 'dp'=>0, 'unit'=>''),
     'running_elec_mean' => array('type' => 'float', 'name'=>'Elec mean', 'group'=>'Stats: When Running', 'dp'=>0, 'unit'=>'W'),
     'running_heat_mean' => array('type' => 'float', 'name'=>'Heat mean', 'group'=>'Stats: When Running', 'dp'=>0, 'unit'=>'W'),
@@ -650,7 +651,7 @@ $schema['system_stats_daily'] = array(
     // Space heating
     'space_elec_kwh' => array('type' => 'float', 'name'=>'Electricity consumption', 'group'=>'Stats: Space heating', 'dp'=>0, 'unit'=>'kWh'),
     'space_heat_kwh' => array('type' => 'float', 'name'=>'Heat output', 'group'=>'Stats: Space heating', 'dp'=>0, 'unit'=>'kWh'),
-    'space_cop' => array('type' => 'float', 'name'=>'COP', 'group'=>'Stats: Space heating', 'dp'=>1, 'unit'=>''),
+    'space_cop' => array('type' => 'float', 'name'=>'COP', 'heading'=>"Space<br>COP", 'group'=>'Stats: Space heating', 'dp'=>1, 'unit'=>''),
     'space_data_length' => array('type' => 'float', 'name'=>'Data length', 'group'=>'Stats: Space heating', 'dp'=>0, 'unit'=>''),
     'space_elec_mean' => array('type' => 'float', 'name'=>'Elec mean', 'group'=>'Stats: Space heating', 'dp'=>0, 'unit'=>'W'),
     'space_heat_mean' => array('type' => 'float', 'name'=>'Heat mean', 'group'=>'Stats: Space heating', 'dp'=>0, 'unit'=>'W'),
@@ -663,7 +664,7 @@ $schema['system_stats_daily'] = array(
     // Water heating
     'water_elec_kwh' => array('type' => 'float', 'name'=>'Electricity consumption', 'group'=>'Stats: Water heating', 'dp'=>0, 'unit'=>'kWh'),
     'water_heat_kwh' => array('type' => 'float', 'name'=>'Heat output', 'group'=>'Stats: Water heating', 'dp'=>0, 'unit'=>'kWh'),
-    'water_cop' => array('type' => 'float', 'name'=>'COP', 'group'=>'Stats: Water heating', 'dp'=>1, 'unit'=>''),
+    'water_cop' => array('type' => 'float', 'name'=>'COP', 'heading'=>"Water<br>COP", 'group'=>'Stats: Water heating', 'dp'=>1, 'unit'=>''),
     'water_data_length' => array('type' => 'float', 'name'=>'Data length', 'group'=>'Stats: Water heating', 'dp'=>0, 'unit'=>''),
     'water_elec_mean' => array('type' => 'float', 'name'=>'Elec mean', 'group'=>'Stats: Water heating', 'dp'=>0, 'unit'=>'W'),
     'water_heat_mean' => array('type' => 'float', 'name'=>'Heat mean', 'group'=>'Stats: Water heating', 'dp'=>0, 'unit'=>'W'),

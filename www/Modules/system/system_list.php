@@ -118,7 +118,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='name'"></i>
                         </th>
                         <th v-if="mode=='admin'">LINK</th>
-                        <th v-for="column in selected_columns" @click="sort(column, 'desc')" style="cursor:pointer" :title="columns[column].helper">{{ columns[column].name }}
+                        <th v-for="column in selected_columns" @click="sort(column, 'desc')" style="cursor:pointer" :title="columns[column].helper"><span v-html="columns[column].heading"></span>
                             <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn==column"></i>
                         </th>
                         <th v-if="mode!='public' && public_mode_enabled">Status</th>
@@ -176,8 +176,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     // columns['heatgeek'].name = "Training";
 
     
-    columns['training'] = { name: "Combined", group: "Training", helper: "Training" };
-    columns['learnmore'] = { name: "Combined", group: "Learn more" };
+    columns['training'] = { name: "Combined", heading: "Training", group: "Training", helper: "Training" };
+    columns['learnmore'] = { name: "Combined", heading: "", group: "Learn more" };
     
     // remove stats_columns id & timestmap
     delete stats_columns.id;
@@ -186,6 +186,12 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     // add stats_columns to columns
     for (var key in stats_columns) {
         columns[key] = stats_columns[key];
+    }
+    
+    for (var key in columns) {
+        if (columns[key].heading === undefined) {
+            columns[key].heading = columns[key].name;
+        }
     }
 
     // convert to column groups
@@ -196,11 +202,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         column_groups[column.group].push({key: key, name: column.name, helper: column.helper});
     }
     
-    columns['installer_logo'].name = "";
-
-    columns['training'].name = "Training";
-    columns['learnmore'].name = "";
-
+    columns['installer_logo'].heading = "";
+    
     // Available months
     // Aug 2023, Jul 2023, Jun 2023 etc for 12 months
     var months = [];
