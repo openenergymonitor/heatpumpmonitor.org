@@ -20,6 +20,7 @@ class SystemStats
         $this->schema['system_stats_monthly_v2'] = $this->system->populate_codes($schema['system_stats_monthly_v2']);
         $this->schema['system_stats_last7_v2'] = $this->system->populate_codes($schema['system_stats_last7_v2']);
         $this->schema['system_stats_last30_v2'] = $this->system->populate_codes($schema['system_stats_last30_v2']);
+        $this->schema['system_stats_last90_v2'] = $this->system->populate_codes($schema['system_stats_last90_v2']);
         $this->schema['system_stats_last365_v2'] = $this->system->populate_codes($schema['system_stats_last365_v2']);
         $this->schema['system_stats_all_v2'] = $this->system->populate_codes($schema['system_stats_all_v2']);
         $this->schema['system_stats_daily'] = $this->system->populate_codes($schema['system_stats_daily']);
@@ -210,6 +211,10 @@ class SystemStats
 
     public function get_last30($system_id = false) {
         return $this->get('system_stats_last30_v2',false,false,$system_id);
+    }
+   
+    public function get_last90($system_id = false) {
+        return $this->get('system_stats_last90_v2',false,false,$system_id);
     }
 
     public function get_last365($system_id = false) {

@@ -30,6 +30,10 @@ $date->modify("-30 days");
 $start_last30 = $date->getTimestamp();
 
 $date->setTimestamp($end);
+$date->modify("-90 days");
+$start_last90 = $date->getTimestamp();
+
+$date->setTimestamp($end);
 $date->modify("-365 days");
 $start_last365 = $date->getTimestamp();
 
@@ -51,6 +55,12 @@ foreach ($data as $row) {
         if ($stats == false) continue;
         $mysqli->query("DELETE FROM system_stats_last365_v2 WHERE id=$systemid");
         $system_stats->save_stats_table('system_stats_last365_v2',$stats);
+
+        // Last 90 days
+        $stats = $system_stats->process_from_daily($systemid,$start_last90,$end);
+        if ($stats == false) continue;
+        $mysqli->query("DELETE FROM system_stats_last90_v2 WHERE id=$systemid");
+        $system_stats->save_stats_table('system_stats_last90_v2',$stats);
 
         // Last 30 days
         $stats = $system_stats->process_from_daily($systemid,$start_last30,$end);

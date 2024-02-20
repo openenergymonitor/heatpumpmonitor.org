@@ -121,6 +121,10 @@ function system_controller() {
         } else if ($route->subaction == "last30") { 
             return $system_stats->get_last30($system_id);
 
+        // stats/last90
+        } else if ($route->subaction == "last90") { 
+            return $system_stats->get_last90($system_id);
+
         // stats/last365
         } else if ($route->subaction == "last365") {
             return $system_stats->get_last365($system_id);
