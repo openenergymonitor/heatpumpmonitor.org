@@ -1,4 +1,7 @@
 <?php
+
+$heatpumpmonitor_host = "https://dev.heatpumpmonitor.org";
+
 $dir = dirname(__FILE__);
 chdir("$dir/www");
 
@@ -24,7 +27,7 @@ if (isset($_ENV["LOAD_DATA"]) && ($_ENV["LOAD_DATA"]=="1" || $_ENV["LOAD_DATA"]=
 // This script pulls in public data from heatpumpmonitor.org and loads it into the database
 // private data is not loaded and is replaced with dummy data
 
-$data = file_get_contents("https://heatpumpmonitor.org/system/list/public.json");
+$data = file_get_contents("$heatpumpmonitor_host/system/list/public.json");
 $systems = json_decode($data);
 if ($systems==null) die("Error: could not load data from heatpumpmonitor.org");
 
@@ -98,46 +101,42 @@ foreach ($systems as $system) {
 $mysqli->query("UPDATE system_meta SET published=1");
 print "- Created ".count($systems)." systems\n";
 
-// Load 365 day data
-$data = file_get_contents("https://heatpumpmonitor.org/system/stats/last365");
-$stats = json_decode($data);
-if ($stats==null) die("Error: could not load last 365 day data from heatpumpmonitor.org");
-foreach ($stats as $id=>$system_stats) {
-    $system_stats->id = $id;
-    // convert to array
-    $system_stats = (array) $system_stats;
-    $system_stats_class->save_stats_table('system_stats_last365',$system_stats);
-}
-print "- Loaded 365 day data\n";
 
-// Load 30 day data
-$data = file_get_contents("https://heatpumpmonitor.org/system/stats/last30");
-$stats = json_decode($data);
-if ($stats==null) die("Error: could not load last 30 day data from heatpumpmonitor.org");
-foreach ($stats as $id=>$system_stats) {
-    $system_stats->id = $id;
-    $system_stats->when_running_elec_W = 0;
-    $system_stats->when_running_heat_W = 0;
-    // convert to array
-    $system_stats = (array) $system_stats;
-    $system_stats_class->save_stats_table('system_stats_last30',$system_stats);
-}
-print "- Loaded 30 day data\n";
+// Initialize cURL session to download the CSV
+$apiUrl = 'https://dev.heatpumpmonitor.org/system/stats/export/daily';
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL, $apiUrl);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+$csvData = curl_exec($ch);
+curl_close($ch);
 
-// Load monthly data
-foreach ($systems as $system) {
-    $data = file_get_contents("https://heatpumpmonitor.org/system/monthly?id=".$system->id);
-    $monthly = json_decode($data);
-    foreach ($monthly as $month=>$stats) {
-        $stats->id = $system->id;
-        $stats->when_running_elec_W = 0;
-        $stats->when_running_heat_W = 0;
-        $stats->since = 0;
-        // convert to array
-        $stats = (array) $stats;
-        $timestamp = $stats['timestamp'];
-        $mysqli->query("DELETE FROM system_stats_monthly WHERE id=$system->id AND timestamp=$timestamp");
-        $system_stats_class->save_stats_table('system_stats_monthly',$stats);
+// Temporarily save CSV data to a file
+$tempFilePath = tempnam(sys_get_temp_dir(), 'csv');
+file_put_contents($tempFilePath, $csvData);
+
+// Open the temporary file for reading
+if (($handle = fopen($tempFilePath, 'r')) !== FALSE) {
+
+    // Skip the header row
+    $header = fgetcsv($handle, 2000, ",");
+
+    $row_count = 0;
+    // Read the rest of the file
+    while (($data = fgetcsv($handle, 2000, ",")) !== FALSE) {
+        // Build an associative array from the CSV data
+        $row = array();
+        foreach ($header as $i => $field) {
+            $row[$field] = $data[$i];
+        }
+
+        // Save the data to the database
+        $system_stats_class->save_day($row['id'], $row);
+        $row_count++;
+
+        // print a . every 1000 rows
+        if ($row_count % 1000 == 0) {
+            print ".";
+        }
     }
-    print "- Loaded monthly data for system $system->id\n";
 }
