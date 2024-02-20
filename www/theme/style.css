@@ -117,6 +117,17 @@
   border-radius: 50%;
 }
 
+.oslink { 
+    color:#e5f2fa;
+    text-decoration: none !important;
+    font-weight:normal;
+    font-size:14px;
+}
+
+.oslink:hover { 
+    color:#fff;
+}
+
 /*
 .table-striped tbody tr:nth-of-type(odd) {
   background-color: #eef;

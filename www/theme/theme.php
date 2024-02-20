@@ -25,7 +25,7 @@ $navigation = array(
     <link href="https://openenergymonitor.org/homepage/theme/favicon.ico" rel="shortcut icon">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css">
-    <link rel="stylesheet" href="<?php echo $path; ?>theme/style.css?v=48" />
+    <link rel="stylesheet" href="<?php echo $path; ?>theme/style.css?v=51" />
 
 </head>
 
@@ -147,7 +147,8 @@ $navigation = array(
 
     <footer class="footer sticky-footer bg-custom text-light">
         <div class="container">
-            An <b>OpenEnergyMonitor.org</b> community initiative
+            An <b>OpenEnergyMonitor.org</b> community initiative<br>
+            <a href="https://github.com/openenergymonitor/heatpumpmonitor.org" class="oslink">This website is open source on github</a>
         </div>
     </footer>
 
