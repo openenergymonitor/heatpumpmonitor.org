@@ -151,7 +151,7 @@ $navigation = array(
 
     <footer class="footer sticky-footer bg-custom text-light">
         <div class="container">
-            An <b>OpenEnergyMonitor.org</b> community initiative
+            An <a href="https://openenergymonitor.org/"><b>OpenEnergyMonitor.org</b></a> community initiative
         </div>
     </footer>
 
