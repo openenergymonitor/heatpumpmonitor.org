@@ -103,7 +103,7 @@ function load_daily_stats_system($meta, $reload) {
         $mysqli->query("DELETE FROM system_stats_daily WHERE `id`='$systemid'");
     }
 
-    for ($x=0; $x<50; $x++) {
+    for ($x=0; $x<200; $x++) {
 
         // get most recent entry in db
         $result = $mysqli->query("SELECT MAX(timestamp) AS timestamp FROM system_stats_daily WHERE `id`='$systemid'");
