@@ -425,7 +425,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     if (val!=null && val!='') {
                         var installer_logo = '';
                         if (system['installer_logo']) {
-                            installer_logo = "<a href='"+system['installer_url']+"'><img class='logo' src='theme/img/installers/"+val+"'/></a>";
+                            installer_logo = "<a href='"+system['installer_url']+"'><img class='logo' src='"+path+"theme/img/installers/"+val+"'/></a>";
                         }
                         return installer_logo;
                     } else {
@@ -443,20 +443,20 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 if (key=='training') {
                     var training = "";
                     if (system['heatgeek']==1) {
-                        training += "<img class='heatgeeklogo' src='theme/img/HeatGeekLogo.png' title='HeatGeek Mastery or above'/>";
+                        training += "<img class='heatgeeklogo' src='"+path+"theme/img/HeatGeekLogo.png' title='HeatGeek Mastery'/>";
                     }
                     if (system['ultimaterenewables']==1) {
-                        training += "<img class='ultimatelogo' src='theme/img/ultimate.png' title='Ultimate Pro'/>";
+                        training += "<img class='ultimatelogo' src='"+path+"theme/img/ultimate.png' title='Ultimate Pro'/>";
                     }
                     if (system['heatingacademy']==1) {
-                        training += "<img class='heatingacademylogo' src='theme/img/HA.png' title='Heating Academy Hydronics'/>";
+                        training += "<img class='heatingacademylogo' src='"+path+"theme/img/HA.png' title='Heating Academy Hydronics'/>";
                     }
                     return training;
                 }
                 
                 if (key=='heatgeek') {
                     if (val==1) {
-                        return "<img class='heatgeeklogo' src='theme/img/HeatGeekLogo.png' title='HeatGeek Mastery or above'/>";
+                        return "<img class='heatgeeklogo' src='"+path+"theme/img/HeatGeekLogo.png' title='HeatGeek Mastery'/>";
                     } else {
                         return "";
                     }
@@ -464,10 +464,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 if (key=='learnmore') {
                     var learnmore = "";
                     if (system['youtube']!=null && system['youtube']!="" && system['youtube']!='0') {
-                        learnmore += "<a href='"+system['youtube']+"'><img class='betateachlogo' src='theme/img/youtube.png' title='Learn more about this system on YouTube'/></a>";
+                        learnmore += "<a href='"+system['youtube']+"'><img class='betateachlogo' src='"+path+"theme/img/youtube.png' title='Learn more about this system on YouTube'/></a>";
                     }
                     if (system['betateach']!=null && system['betateach']!="" && system['betateach']!='0') {
-                        learnmore += "<a href='"+system['betateach']+"'><img class='betateachlogo' src='theme/img/beta-teach.jpg' title='Learn more on the BetaTalk Podcast'/></a>";
+                        learnmore += "<a href='"+system['betateach']+"'><img class='betateachlogo' src='"+path+"theme/img/beta-teach.jpg' title='Learn more on the BetaTalk Podcast'/></a>";
                     }
 
                     return learnmore;

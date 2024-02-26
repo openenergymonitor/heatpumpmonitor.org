@@ -29,7 +29,7 @@ if (isset($argv[1])) {
     if ($single_system<1) {
         $single_system = false;
     } else {
-        logger("- single system: 9");
+        logger("- single system: $single_system");
     }
 }
 if (!$single_system) {
