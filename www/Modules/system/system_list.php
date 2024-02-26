@@ -514,6 +514,13 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 // return node.since > 0 ? 'partial ' : '';
                 // node.since is unix time in seconds
                 if (column=='combined_cop' || column=='since' || column=='combined_data_length' || column=='quality_elec') {
+                
+
+                    
+                    if (system.mid_metering==0) {
+                        return 'partial';
+                    }
+                
                     var days = system.combined_data_length / (24 * 3600)
                     if (system.combined_cop==0) {
                         return 'partial ';
