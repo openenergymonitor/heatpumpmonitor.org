@@ -29,9 +29,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     <p v-if="mode=='user'">Add, edit and view systems associated with your account.</p>
                     <p v-if="mode=='admin'">Add, edit and view all systems.</p>
                     
-                    <p v-if="mode=='public'">Here you can see a variety of installations monitored with OpenEnergyMonitor, and compare detailed statistics to see how performance can vary.</p>
-                    <p v-if="mode=='public'">If you're monitoring a heat pump with <b>emoncms</b> and the My Heat Pump app, <a href="<?php echo $path; ?>/user/login">login</a> to add your details.</p>
-                    <p v-if="mode=='public'">To join in with discussion of the results, or for support please use the <a href="https://community.openenergymonitor.org/tag/heatpumpmonitor">OpenEnergyMonitor forums.</a></p> 
+                    <p v-if="mode=='public' && showContent">Here you can see a variety of installations monitored with OpenEnergyMonitor, and compare detailed statistics to see how performance can vary.</p>
+                    <p v-if="mode=='public' && showContent">If you're monitoring a heat pump with <b>emoncms</b> and the My Heat Pump app, <a href="<?php echo $path; ?>/user/login">login</a> to add your details.</p>
+                    <p v-if="mode=='public' && showContent">To join in with discussion of the results, or for support please use the <a href="https://community.openenergymonitor.org/tag/heatpumpmonitor">OpenEnergyMonitor forums.</a></p> 
                     
                     <button v-if="mode!='public'" class="btn btn-primary" @click="create">Add new system</button>            
                 </div>
@@ -203,6 +203,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     }
     
     columns['installer_logo'].heading = "";
+    columns['mid_metering'].heading = "MID";
     
     // Available months
     // Aug 2023, Jul 2023, Jun 2023 etc for 12 months
@@ -484,7 +485,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 }
                 if (key=='mid_metering') {
                     if (val==1) {
-                        return 'Yes';
+                        return '<input type="checkbox" disabled checked title="This system has class 1 electric and class 2 heat metering">';
                     } else {
                         return '';
                     }
@@ -725,7 +726,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 app.showContent = false;
                 app.columns['training'].heading = "";
             } else {
-                app.selected_columns = ['location', 'installer_logo', 'installer_name', 'training', 'hp_type', 'hp_model', 'hp_output', 'combined_data_length', 'combined_cop', 'learnmore'];
+                app.selected_columns = ['location', 'installer_logo', 'installer_name', 'training', 'hp_type', 'hp_model', 'hp_output', 'combined_data_length', 'combined_cop', 'mid_metering', 'learnmore'];
                 app.showContent = true;
                 app.columns['training'].heading = "Training";
             }

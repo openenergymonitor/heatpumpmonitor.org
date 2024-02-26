@@ -521,6 +521,7 @@ $schema['system_meta'] = array(
         'editable' => true, 
         'optional' => false, 
         'name' => 'MID Metering', 
+        'heading' => 'MID',
         'helper' => 'Tick if electric meter is class 1 and heat meter at least class 2',
         'group' => 'Metering'
     ),
