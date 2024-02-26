@@ -123,7 +123,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         </th>
                         <th v-if="mode!='public' && public_mode_enabled">Status</th>
                         <th v-if="mode!='public'">Actions</th>
-                        <th style="width:80px">View</th>
+                        <th :style="(showContent)?'width:80px':'width:20px'">View</th>
                     </tr>
                     <tr v-for="(system,index) in fSystems" v-if="mode!='public' || (mode=='public' && system.combined_data_length!=0)">
                         <td v-if="mode=='admin'">{{ system.id }}</td>
@@ -144,7 +144,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             <a :href="'<?php echo $path;?>system/view?id='+system.id">
                                 <button class="btn btn-primary btn-sm" title="Summary"><i class="fa fa-list-alt" style="color: #ffffff;"></i></button>
                             </a>
-                            <a :href="system.url" target="_blank">
+                            <a :href="system.url" target="_blank" v-if="showContent">
                                 <button class="btn btn-secondary btn-sm" title="Dashboard"><i class="fa fa-chart-bar" style="color: #ffffff;"></i></button>
                             </a> 
                         </td>
@@ -723,9 +723,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             if (width<800) {
                 app.selected_columns = ['installer_logo', 'training', 'hp_model', 'hp_output', 'combined_cop', 'learnmore'];
                 app.showContent = false;
+                app.columns['training'].heading = "";
             } else {
                 app.selected_columns = ['location', 'installer_logo', 'installer_name', 'training', 'hp_type', 'hp_model', 'hp_output', 'combined_data_length', 'combined_cop', 'learnmore'];
                 app.showContent = true;
+                app.columns['training'].heading = "Training";
             }
         } else {
             if (width<800) {

@@ -95,6 +95,8 @@ function load_daily_stats_system($meta, $reload) {
         return false;
     }
 
+    $end = false;
+
     $data_start = $result['period']->start;
     $data_end = $result['period']->end;
     $start = $data_start;
@@ -118,6 +120,8 @@ function load_daily_stats_system($meta, $reload) {
         $date->setTimezone(new DateTimeZone("Europe/London"));
         $date->setTimestamp($start);
         $date->modify("midnight");
+
+        $last_start = $start;
         $start = $date->getTimestamp();
         $start_str = $date->format("Y-m-d");
         // +30 days
@@ -126,6 +130,7 @@ function load_daily_stats_system($meta, $reload) {
         } else {
             $date->modify("+7 days"); 
         }
+        $last_end = $end;
         $end = $date->getTimestamp();
         if ($end>$data_end) {
             $end = $data_end;
@@ -135,6 +140,12 @@ function load_daily_stats_system($meta, $reload) {
 
         logger("- start: ".$start_str." end: ".$end_str);
         if ($start_str==$end_str) break;
+
+        if ($x>1) {
+            if ($start==$last_start) break;
+            if ($end==$last_end) break;
+        }
+
 
         if ($result = $system_stats->load_from_url($meta->url, $start, $end, 'getdaily')) 
         {
