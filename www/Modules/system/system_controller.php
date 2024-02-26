@@ -18,7 +18,7 @@ function system_controller() {
                 "system_data"=>$system_data, 
                 'admin'=>$session['admin'], 
                 'schema'=>$system->schema_meta,
-                'system_stats_monthly'=>$system_stats->schema['system_stats_monthly']
+                'system_stats_monthly'=>$system_stats->schema['system_stats_monthly_v2']
             ));
         }
     }
@@ -33,7 +33,7 @@ function system_controller() {
                 "system_data"=>$system_data, 
                 'admin'=>$session['admin'], 
                 'schema'=>$system->schema_meta,
-                'system_stats_monthly'=>$system_stats->schema['system_stats_monthly']
+                'system_stats_monthly'=>$system_stats->schema['system_stats_monthly_v2']
             ));
         }
     }
@@ -47,7 +47,7 @@ function system_controller() {
             "system_data"=>$system_data, 
             'admin'=>$session['admin'], 
             'schema'=>$system->schema_meta,
-            'system_stats_monthly'=>$system_stats->schema['system_stats_monthly']
+            'system_stats_monthly'=>$system_stats->schema['system_stats_monthly_v2']
         ));
     }
 
@@ -58,7 +58,8 @@ function system_controller() {
                 return view("Modules/system/system_list.php",array(
                     "mode"=>"public",
                     "systems"=>$system->list_public($session['userid']),
-                    "columns"=>$system->get_columns()
+                    "columns"=>$system->get_columns(),
+                    "stats_columns"=>$system_stats->schema['system_stats_monthly_v2']
                 ));
 
             // User list view
@@ -67,7 +68,8 @@ function system_controller() {
                     return view("Modules/system/system_list.php",array(
                         "mode" => "user",
                         "systems"=>$system->list_user($session['userid']),
-                        "columns"=>$system->get_columns()
+                        "columns"=>$system->get_columns(),
+                        "stats_columns"=>$system_stats->schema['system_stats_monthly_v2']
                     ));
                 }
 
@@ -77,12 +79,10 @@ function system_controller() {
                     return view("Modules/system/system_list.php",array(
                         "mode" => "admin",
                         "systems"=>$system->list_admin(),
-                        "columns"=>$system->get_columns()
+                        "columns"=>$system->get_columns(),
+                        "stats_columns"=>$system_stats->schema['system_stats_monthly_v2']
                     ));
                 }
-            // Original
-            } else if ($route->subaction=="original" && $settings['public_mode_enabled']) {
-                return view("Modules/system/original/main.php",array());
             }
         } else {
             // Public list view
@@ -113,21 +113,38 @@ function system_controller() {
             $system_id = (int) $_GET['id'];
         }
 
-        // stats/last30
-        if ($route->subaction == "last30") { 
-            return $system_stats->get_last30($system_id);
-
-        // stats/last365
-        } else if ($route->subaction == "last365") {
-            return $system_stats->get_last365($system_id);
-
         // stats?start=2016-01-01&end=2016-01-02
-        } else if ($route->subaction == "") {
+        if ($route->subaction == "") {
             return $system_stats->get_monthly(
                 get('start',true),
                 get('end',true),
                 $system_id
             );
+            
+        // stats/last7
+        } else if ($route->subaction == "last7") { 
+            return $system_stats->get_last7($system_id);
+
+        // stats/last30
+        } else if ($route->subaction == "last30") { 
+            return $system_stats->get_last30($system_id);
+
+        // stats/last90
+        } else if ($route->subaction == "last90") { 
+            return $system_stats->get_last90($system_id);
+
+        // stats/last365
+        } else if ($route->subaction == "last365") {
+            return $system_stats->get_last365($system_id);
+
+        // stats/all
+        } else if ($route->subaction == "all") {
+            return $system_stats->get_all($system_id);
+
+        } else if ($route->subaction == "export") {
+            if ($route->subaction2 == "daily") {
+                $system_stats->export_daily($system_id);
+            }
         }
     }
 
@@ -163,63 +180,24 @@ function system_controller() {
     if ($route->action=="loadstats") {
         $route->format = "json";
         if ($session['userid']) {
-
             $systemid = get("id",false);
-            $system_data = $system->get($session['userid'],$systemid);
-
-            $result = $system_stats->load_from_url($system_data->url);
-            if (isset($result['success']) && $result['success']) {
-                if ($system->has_access($session['userid'], $systemid)) {
-                    $system_stats->save_last30($systemid, $result['stats']); 
-                    $system_stats->save_last365($systemid, $result['stats']);
-                    return array('success'=>true, 'message'=>'stats loaded');
-                } else {
-                    return array('success'=>false, 'message'=>'access denied');
-                }
-            } else {
-                return array('success'=>false, 'message'=>'error loading stats');
+            
+            // Check if user has access
+            if ($system->has_access($session['userid'],$systemid)==false) {
+                return array("success"=>false, "message"=>"Invalid access");
             }
+            
+            $fp = fopen("/home/oem/hpmon3/hpmon.lock", "w");
+            if (!flock($fp, LOCK_EX | LOCK_NB)) {
+                return array("success"=>false, "message"=>"Already running");
+            }
+            fclose($fp);
+            
+            shell_exec("php /home/oem/hpmon3/load_and_process_cli.php $systemid all > /dev/null 2>&1 &");
+            return array("success"=>false, "message"=>"Loading data and processing in background, check back in 5 minutes.");
         }
     }
 
-    if ($route->action=="loadmonthlystats") {
-        $route->format = "json";
-        if ($session['userid']) {
-
-            $systemid = get("id",false);
-
-            if ($system->has_access($session['userid'], $systemid)) {
-
-                $system_data = $system->get($session['userid'],$systemid);
-
-                // timestamp start of July
-                $date = new DateTime();
-                // set timezone Europe/London
-                $date->setTimezone(new DateTimeZone('Europe/London'));
-                $date->setDate(2022, 6, 1);
-                $date->setTime(0, 0, 0);
-                $start = $date->getTimestamp();
-
-                while (true) {
-                    // +1 month
-                    $date->modify('+1 month');
-                    $end = $date->getTimestamp();
-
-                    $stats = $system_stats->load_from_url($system_data->url,$start,$end);
-                    if (isset($stats['success']) && !$stats['success']) {
-                        break;
-                    }
-                    $system_stats->save_monthly($systemid,$start,$stats['stats']);
-                    if ($end>time()) break;
-
-                    $start = $end;
-                }
-                return array('success'=>true, 'message'=>'monthly stats loaded');
-            } else {
-                return array('success'=>false, 'message'=>'access denied');
-            }
-        }
-    }
 
     return false;
 }

@@ -28,7 +28,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
                     <p v-if="mode=='user'">Add, edit and view systems associated with your account.</p>
                     <p v-if="mode=='admin'">Add, edit and view all systems.</p>
-                    <p v-if="mode=='public'">Here you can see a variety of installations monitored with OpenEnergyMonitor, and compare detailed statistic to see how performance can vary.</p>
+                    
+                    <p v-if="mode=='public'">Here you can see a variety of installations monitored with OpenEnergyMonitor, and compare detailed statistics to see how performance can vary.</p>
                     <p v-if="mode=='public'">If you're monitoring a heat pump with <b>emoncms</b> and the My Heat Pump app, <a href="<?php echo $path; ?>/user/login">login</a> to add your details.</p>
                     <p v-if="mode=='public'">To join in with discussion of the results, or for support please use the <a href="https://community.openenergymonitor.org/tag/heatpumpmonitor">OpenEnergyMonitor forums.</a></p> 
                     
@@ -42,14 +43,16 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
                         <select class="form-control" v-model="stats_time_start" @change="stats_time_start_change" style="width:130px">
                             <option value="all">All</option>
+                            <option value="last7">Last 7 days</option> 
                             <option value="last30">Last 30 days</option>
+                            <option value="last90">Last 90 days</option>
                             <option value="last365">Last 365 days</option>
                             <option v-for="month in available_months_start">{{ month }}</option>
                         </select>
                         
                         <span class="input-group-text" v-if="stats_time_end!='only'">to</span>
 
-                        <select class="form-control" v-model="stats_time_end" v-if="stats_time_start!='all' && stats_time_start!='last30' && stats_time_start!='last365'" @change="stats_time_end_change" style="width:120px">
+                        <select class="form-control" v-model="stats_time_end" v-if="stats_time_start!='all' && stats_time_start!='last7' && stats_time_start!='last30' && stats_time_start!='last90' && stats_time_start!='last365'" @change="stats_time_end_change" style="width:120px">
                             <option value="only">Only</option>
                             <option v-for="month in available_months_end">{{ month }}</option>
                         </select>
@@ -115,14 +118,14 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='name'"></i>
                         </th>
                         <th v-if="mode=='admin'">LINK</th>
-                        <th v-for="column in selected_columns" @click="sort(column, 'desc')" style="cursor:pointer" :title="columns[column].helper">{{ columns[column].name }}
+                        <th v-for="column in selected_columns" @click="sort(column, 'desc')" style="cursor:pointer" :title="columns[column].helper"><span v-html="columns[column].heading"></span>
                             <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn==column"></i>
                         </th>
                         <th v-if="mode!='public' && public_mode_enabled">Status</th>
                         <th v-if="mode!='public'">Actions</th>
-                        <th style="width:80px">View</th>
+                        <th :style="(showContent)?'width:80px':'width:20px'">View</th>
                     </tr>
-                    <tr v-for="(system,index) in fSystems" v-if="mode!='public' || (mode=='public' && system.data_length!=0)">
+                    <tr v-for="(system,index) in fSystems" v-if="mode!='public' || (mode=='public' && system.combined_data_length!=0)">
                         <td v-if="mode=='admin'">{{ system.id }}</td>
                         <td v-if="mode=='admin'" :title="system.username+'\n'+system.email"><span v-if="system.name">{{ system.name }}</span><span v-if="!system.name" style="color:#888">{{ system.username }}</span></td>
                         <td v-if="mode=='admin'"><a v-if="system.emoncmsorg_userid" :href="'https://emoncms.org/admin/setuser?id='+system.emoncmsorg_userid" target="_blank">{{ system.emoncmsorg_userid }}</a></td>
@@ -141,7 +144,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             <a :href="'<?php echo $path;?>system/view?id='+system.id">
                                 <button class="btn btn-primary btn-sm" title="Summary"><i class="fa fa-list-alt" style="color: #ffffff;"></i></button>
                             </a>
-                            <a :href="system.url">
+                            <a :href="system.url" target="_blank" v-if="showContent">
                                 <button class="btn btn-secondary btn-sm" title="Dashboard"><i class="fa fa-chart-bar" style="color: #ffffff;"></i></button>
                             </a> 
                         </td>
@@ -165,31 +168,31 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 <script>
 
     var columns = <?php echo json_encode($columns); ?>;
+    var stats_columns = <?php echo json_encode($stats_columns); ?>;
 
     columns['hp_type'].name = "Source";
     columns['hp_model'].name = "Make & Model";
     columns['hp_output'].name = "Rating";
+    // columns['heatgeek'].name = "Training";
 
-    columns['cop'] = {name: 'COP', group: 'Stats'};
-    columns['elec_kwh'] = {name: 'Electricity (kWh)', group: 'Stats'};
-    columns['heat_kwh'] = {name: 'Heat (kWh)', group: 'Stats'};
-    columns['data_start'] = {name: 'Data Start', group: 'Stats'};
-    columns['data_length'] = {name: 'Data length', group: 'Stats'};
+    
+    columns['training'] = { name: "Combined", heading: "Training", group: "Training", helper: "Training" };
+    columns['learnmore'] = { name: "Combined", heading: "", group: "Learn more" };
+    
+    // remove stats_columns id & timestmap
+    delete stats_columns.id;
+    delete stats_columns.timestamp;
 
-    columns['when_running_elec_kwh'] = {name: 'Electricity (kWh)', group: 'When Running'};
-    columns['when_running_heat_kwh'] = {name: 'Heat (kWh)', group: 'When Running'};
-    columns['when_running_cop'] = {name: 'COP', group: 'When Running'};
-    columns['when_running_flowT'] = {name: 'Flow Temperature (°C)', group: 'When Running'};
-    columns['when_running_returnT'] = {name: 'Return Temperature (°C)', group: 'When Running'};
-    columns['when_running_flow_minus_return'] = {name: 'Flow - Return (°K)', group: 'When Running'};
-    columns['when_running_outsideT'] = {name: 'Outside Temperature (°C)', group: 'When Running'};
-    columns['when_running_flow_minus_outside'] = {name: 'Flow - Outside (°K)', group: 'When Running'};
-    columns['when_running_carnot_prc'] = {name: 'Carnot Efficiency (%)', group: 'When Running'};
-
-    columns['standby_threshold'] = {name: 'Standby Threshold (°C)', group: 'Standby'};
-    columns['standby_kwh'] = {name: 'Electricity (kWh)', group: 'Standby'};
-
-    columns['quality_elec'] = {name: 'Quality', group: 'Quality'};
+    // add stats_columns to columns
+    for (var key in stats_columns) {
+        columns[key] = stats_columns[key];
+    }
+    
+    for (var key in columns) {
+        if (columns[key].heading === undefined) {
+            columns[key].heading = columns[key].name;
+        }
+    }
 
     // convert to column groups
     var column_groups = {};
@@ -198,16 +201,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         if (column_groups[column.group] == undefined) column_groups[column.group] = [];
         column_groups[column.group].push({key: key, name: column.name, helper: column.helper});
     }
-
-    // create list of Stats, When Running, Standby columns
-    var stats_columns = [];
-    for (var key in columns) {
-        var column = columns[key];
-        if (column.group == 'Stats') stats_columns.push(key);
-        if (column.group == 'When Running') stats_columns.push(key);
-        if (column.group == 'Standby') stats_columns.push(key);
-    }
-
+    
+    columns['installer_logo'].heading = "";
+    
     // Available months
     // Aug 2023, Jul 2023, Jun 2023 etc for 12 months
     var months = [];
@@ -216,37 +212,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         months.push(d.toLocaleString('default', { month: 'short' }) + ' ' + d.getFullYear());
         d.setMonth(d.getMonth() - 1);
     }
-
-    // get screen size
-    var width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
-    var showContent = true;
-
-    var mode = "<?php echo $mode; ?>";
-    var selected_columns = [];
     
-    var default_minDays = 0;
-    var default_stats_time_start = "all";
-    
-    if (width>800) {
-        showContent = true;
-        if (mode == 'public') {
-            selected_columns = ['location', 'installer_name', 'hp_type', 'hp_model', 'hp_output', 'kwh_m2', 'data_length', 'cop', 'mid_metering'];
-            default_minDays = 30;
-            default_stats_time_start = "last30";
-        } else {
-            selected_columns = ['location','hp_model','data_length','cop','mid_metering'];
-        }
-    } else {
-        showContent = false;
-        if (mode == 'public') {
-            selected_columns = ['installer_name', 'hp_model', 'hp_output', 'cop']; 
-            default_minDays = 30;
-            default_stats_time_start = "last30";
-        } else {
-            selected_columns = ['location','hp_model','cop'];
-        }
-    }
-
     var app = new Vue({
         el: '#app',
         data: {
@@ -255,18 +221,18 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             chart_enable: false,
             columns: columns,
             column_groups: column_groups,
-            selected_columns: selected_columns,
-            currentSortColumn: 'cop',
+            selected_columns: [],
+            currentSortColumn: 'combined_cop',
             currentSortDir: 'desc',
             // stats time selection
-            stats_time_start: default_stats_time_start,
+            stats_time_start: "last30",
             stats_time_end: "only",
             stats_time_range: false,
             available_months_start: months,
             available_months_end: months,
             filterKey: window.location.hash.replace(/^#/, ''),
-            minDays: default_minDays,
-            showContent: showContent,
+            minDays: 24,
+            showContent: true,
             public_mode_enabled: public_mode_enabled
         },
         methods: {
@@ -305,7 +271,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     return;
                 }
                 this.selected_columns.push(column);
-                this.sort(column, 'desc');
+                // this.sort(column, 'desc');
 
             },
             sort: function(column, starting_order) {
@@ -321,6 +287,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     }
                 }
                 this.sort_only(column);
+                if (app.chart_enable) draw_chart();
             },
             sort_only: function(column) {
                 this.systems.sort((a, b) => {
@@ -333,7 +300,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             },
             stats_time_start_change: function () {
                 // change available_months_end to only show months after start
-                if (this.stats_time_start=='last30' || this.stats_time_start=='last365' || this.stats_time_start=='all') {
+                if (this.stats_time_start=='last7' || this.stats_time_start=='last30' || this.stats_time_start=='last90' || this.stats_time_start=='last365' || this.stats_time_start=='all') {
                     this.stats_time_end = 'only';
                 } else {
                     let start_index = this.available_months_start.indexOf(this.stats_time_start);
@@ -345,14 +312,20 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 }
                 
                 if (this.stats_time_start=='last365') {
-                    this.minDays = 365;
-                    columns['cop'].name = 'SCOP';
+                    this.minDays = 290;
+                    columns['combined_cop'].name = 'SCOP';
+                } else if (this.stats_time_start=='last90') {
+                    this.minDays = 72;
+                    columns['combined_cop'].name = 'COP';
                 } else if (this.stats_time_start=='last30') {
-                    this.minDays = 30;
-                    columns['cop'].name = 'COP';
+                    this.minDays = 24;
+                    columns['combined_cop'].name = 'COP';
+                } else if (this.stats_time_start=='last7') {
+                    this.minDays = 5;
+                    columns['combined_cop'].name = 'COP';
                 } else {
                     this.minDays = 0;
-                    columns['cop'].name = 'COP';
+                    columns['combined_cop'].name = 'COP';
                 }
                 
                 this.load_system_stats();
@@ -364,7 +337,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 
                 // Start
                 let start = this.stats_time_start;
-                if (start!='last30' && start!='last365' && start!='all') {
+                if (start!='last7' && start!='last30' && start!='last90' && start!='last365' && start!='all') {
                     // Convert e.g Mar 2023 to 2023-03-01
                     let months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sept','Oct','Nov','Dec'];
                     let month = start.split(' ')[0];
@@ -390,13 +363,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     end: end
                 };
 
-                if (start == 'last30' || start == 'last365' || start == 'all') {
+                if (start == 'last7' || start == 'last30' || start == 'last90' || start == 'last365' || start == 'all') {
                     
-                    if (start == 'all') {
-                        url = path+'system/stats/last365';
-                    } else {
-                        url = path+'system/stats/'+start;
-                    }
+                    url = path+'system/stats/'+start;
                     params = {};
                 }
                 // Load system/stats data
@@ -413,9 +382,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                     app.systems[i][key] = stats[id][key];
                                 }
                             } else {
-                                for (var col in stats_columns) {
-                                    app.systems[i][stats_columns[col]] = 0;
-                                }
+                                // for (var col in stats_columns) {
+                                //    app.systems[i][stats_columns[col]] = 0;
+                                // }
+                                app.systems[i]['combined_cop'] = 0;
+                                app.systems[i]['combined_data_length'] = 0;
                             }
                         }
                         // sort
@@ -445,19 +416,60 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 if (key=='since') {
                     return time_ago(val);
                 }
-                if (key=='data_length') {
+                if (key=='combined_data_length') {
                     return (val/(24*3600)).toFixed(0)+" days";
-                }                
-                if (key=='installer_name') {
+                }             
+
+                if (key=='installer_logo') {
                     if (val!=null && val!='') {
-                        var heatgeek = "";
-                        if (system['heatgeek']==1) heatgeek = "<img class='heatgeeklogo' src='theme/img/HeatGeekLogo.png' title='HeatGeek Trained'/>";
-                        var betateach = "";
-                        if (system['betateach']==1) betateach = "<img class='betateachlogo' src='theme/img/beta-teach.jpg' title='BetaTeach Heat Architect'/>";
-                        return betateach+heatgeek+"<a class='installer_link' href='"+system['installer_url']+"'>"+val+"</a>";
+                        var installer_logo = '';
+                        if (system['installer_logo']) {
+                            installer_logo = "<a href='"+system['installer_url']+"'><img class='logo' src='theme/img/installers/"+val+"'/></a>";
+                        }
+                        return installer_logo;
                     } else {
                         return '';
                     }
+                }
+                   
+                if (key=='installer_name') {
+                    if (val!=null && val!='') {
+                        return "<a class='installer_link' href='"+system['installer_url']+"'>"+val+"</a>";
+                    } else {
+                        return '';
+                    }
+                }
+                if (key=='training') {
+                    var training = "";
+                    if (system['heatgeek']==1) {
+                        training += "<img class='heatgeeklogo' src='theme/img/HeatGeekLogo.png' title='HeatGeek Mastery or above'/>";
+                    }
+                    if (system['ultimaterenewables']==1) {
+                        training += "<img class='ultimatelogo' src='theme/img/ultimate.png' title='Ultimate Pro'/>";
+                    }
+                    if (system['heatingacademy']==1) {
+                        training += "<img class='heatingacademylogo' src='theme/img/HA.png' title='Heating Academy Hydronics'/>";
+                    }
+                    return training;
+                }
+                
+                if (key=='heatgeek') {
+                    if (val==1) {
+                        return "<img class='heatgeeklogo' src='theme/img/HeatGeekLogo.png' title='HeatGeek Mastery or above'/>";
+                    } else {
+                        return "";
+                    }
+                }
+                if (key=='learnmore') {
+                    var learnmore = "";
+                    if (system['youtube']!=null && system['youtube']!="" && system['youtube']!='0') {
+                        learnmore += "<a href='"+system['youtube']+"'><img class='betateachlogo' src='theme/img/youtube.png' title='Learn more about this system on YouTube'/></a>";
+                    }
+                    if (system['betateach']!=null && system['betateach']!="" && system['betateach']!='0') {
+                        learnmore += "<a href='"+system['betateach']+"'><img class='betateachlogo' src='theme/img/beta-teach.jpg' title='Learn more on the BetaTalk Podcast'/></a>";
+                    }
+
+                    return learnmore;
                 }
                 if (key=='hp_type') {
                     if (val=="Air Source") {
@@ -470,13 +482,6 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 if (key=='hp_output') {
                     return val + ' kW';
                 }
-                if (key=='cop') {
-                    if (isNaN(val) || val == null) {
-                        return val;
-                    } else {
-                        return val.toFixed(1);
-                    }
-                }
                 if (key=='mid_metering') {
                     if (val==1) {
                         return 'Yes';
@@ -484,26 +489,43 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         return '';
                     }
                 }
-                if (key=='quality_elec') {
-                    if (val==undefined) return '';
-                    return val + '%';
+                
+                
+                if (stats_columns[key]!=undefined) {
+                    if (isNaN(val) || val == null) {
+                        return val;
+                    }
+                    
+                    let unit = '';
+                    if (stats_columns[key]['unit']!=undefined) {
+                        unit = ' '+stats_columns[key]['unit'];
+                    }
+                
+                    if (stats_columns[key]['dp']!=undefined) {
+                        return val.toFixed(stats_columns[key]['dp'])+unit;
+                    }
                 }
+                
                 return val;
             },
             // grey if start date is less that 1 year ago
             sinceClass: function(system,column) {
                 // return node.since > 0 ? 'partial ' : '';
                 // node.since is unix time in seconds
-                if (column=='cop' || column=='since' || column=='data_length' || column=='quality_elec') {
-                    var days = system.data_length / (24 * 3600)
-                    if (system.cop==0) {
+                if (column=='combined_cop' || column=='since' || column=='combined_data_length' || column=='quality_elec') {
+                    var days = system.combined_data_length / (24 * 3600)
+                    if (system.combined_cop==0) {
                         return 'partial ';
                     }
                     if (this.stats_time_start=='last365' || this.stats_time_start=='all') {
                         
                         return (days<=360) ? 'partial ' : '';
-                    } else {
+                    } else if (this.stats_time_start=='last90') {
+                        return (days<=72) ? 'partial ' : '';                    
+                    } else if (this.stats_time_start=='last30') {
                         return (days<=27) ? 'partial ' : '';
+                    } else if (this.stats_time_start=='last7') {
+                        return (days<=5) ? 'partial ' : '';
                     }
                 }
                 
@@ -530,7 +552,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 this.minDays = parseInt(this.minDays);
                 let minDays = this.minDays-1;
                 if (minDays<0) minDays = 0;
-                return (row.data_length/ (24 * 3600)) >= minDays;
+                return (row.combined_data_length/ (24 * 3600)) >= minDays;
             }
        },
         filters: {
@@ -561,10 +583,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 };
                 var count = 0;
                 for (var i = 0; i < this.fSystems.length; i++) {
-                    if (this.fSystems[i].elec_kwh>0 && this.fSystems[i].heat_kwh>0 && this.fSystems[i].heat_kwh>this.fSystems[i].elec_kwh) {
-                        totals.average_cop += this.fSystems[i].cop*1;
-                        totals.elec_kwh += this.fSystems[i].elec_kwh;
-                        totals.heat_kwh += this.fSystems[i].heat_kwh;
+                    if (this.fSystems[i].combined_elec_kwh>0 && this.fSystems[i].combined_heat_kwh>0 && this.fSystems[i].combined_heat_kwh>this.fSystems[i].combined_elec_kwh) {
+                        totals.average_cop += this.fSystems[i].combined_cop*1;
+                        totals.elec_kwh += this.fSystems[i].combined_elec_kwh;
+                        totals.heat_kwh += this.fSystems[i].combined_heat_kwh;
                         totals.count++;
                     }
                 }
@@ -579,7 +601,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     init_chart();
     
     app.load_system_stats();
-    app.sort_only('cop');
+    app.sort_only('combined_cop');
+    resize();
 
     function time_ago(val,ago='') {
         if (val == null || val == 0) {
@@ -662,20 +685,59 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     function draw_chart() {
         var x = [];
         var y = [];
-        for (var i = 0; i < app.systems.length; i++) {
-            x.push(app.systems[i].location);
-            let cop = app.systems[i].cop;
-            if (cop<0) cop = 0;
-            y.push(cop);
+        
+        if (stats_columns[app.currentSortColumn]!=undefined) {
+            
+        
+            for (var i = 0; i < app.systems.length; i++) {
+                x.push(app.systems[i].location);
+                let val = app.systems[i][app.currentSortColumn];
+                if (val==undefined) val = null;
+                
+                if (val!==null) {
+                    val = val.toFixed(stats_columns[app.currentSortColumn]['dp']+1);
+                }
+                
+                y.push(val);
+            }
+
+            chart_options.xaxis.categories = x;
+            chart_options.series = [{
+                name: app.currentSortColumn,
+                data: y
+            }];
+
+            chart.updateOptions(chart_options);
+        
         }
+    }
 
-        chart_options.xaxis.categories = x;
-        chart_options.series = [{
-            name: 'COP',
-            data: y
-        }];
+    window.addEventListener('resize', function(event) {
+        resize();
+    }, true);
+    
+    function resize() {
+        var width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
 
-        chart.updateOptions(chart_options);
+        if (app.mode == 'public') {
+            if (width<800) {
+                app.selected_columns = ['installer_logo', 'training', 'hp_model', 'hp_output', 'combined_cop', 'learnmore'];
+                app.showContent = false;
+                app.columns['training'].heading = "";
+            } else {
+                app.selected_columns = ['location', 'installer_logo', 'installer_name', 'training', 'hp_type', 'hp_model', 'hp_output', 'combined_data_length', 'combined_cop', 'learnmore'];
+                app.showContent = true;
+                app.columns['training'].heading = "Training";
+            }
+        } else {
+            if (width<800) {
+                app.selected_columns = ['hp_model', 'hp_output', 'combined_cop'];
+                app.showContent = false;
+            } else {
+                app.selected_columns = ['location', 'hp_type', 'hp_model', 'hp_output', 'combined_data_length', 'combined_cop'];
+                app.showContent = true;
+            }
+        } 
     }
 
 </script>

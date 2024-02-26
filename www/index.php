@@ -4,8 +4,12 @@ require "Lib/load_database.php";
 
 require "core.php";
 require "route.php";
+
+require("Modules/user/rememberme_model.php");
+$rememberme = new RememberMe($mysqli);
 require("Modules/user/user_model.php");
-$user = new User($mysqli);
+$user = new User($mysqli,$rememberme);
+
 require ("Modules/system/system_model.php");
 $system = new System($mysqli);
 
@@ -42,7 +46,9 @@ switch ($route->controller) {
         $output = view("views/graph2.php",array(
             "mode"=>"public",
             "systems"=>$system->list_public($session['userid']),
-            "columns"=>$system->get_columns()
+            "columns"=>$system->get_columns(),
+            "stats_columns"=>$system_stats->schema['system_stats_monthly_v2']
+
         ));        
         break;
 
@@ -55,7 +61,7 @@ switch ($route->controller) {
         $route->format = "html";
         $output = view("views/monthly.php", array(
             "userid"=>$session['userid'],
-            'system_stats_monthly'=>$system_stats->schema['system_stats_monthly']
+            'system_stats_monthly'=>$system_stats->schema['system_stats_monthly_v2']
         ));
         break;
 

@@ -15,6 +15,17 @@ $schema['users'] = array(
     'welcome_email_sent' => array('type' => 'int(11)', 'default'=>0)
 );
 
+// Remember me table
+$schema['user_sessions'] = array(
+    'id' => array('type' => 'int(11)', 'Null'=>false, 'Key'=>'PRI', 'Extra'=>'auto_increment'),
+    'userid' => array('type' => 'int(11)'),
+    // selector
+    'selector' => array('type' => 'varchar(255)'),
+    // hashed validator
+    'hash_validator' => array('type' => 'varchar(255)'),
+    'expires' => array('type' => 'int(11)')
+);
+
 $schema['emoncmsorg_link'] = array(
     'userid' => array('type' => 'int(11)'),
     'emoncmsorg_userid' => array('type' => 'int(11)'),

@@ -6,11 +6,13 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 class User
 {
     private $mysqli;
+    private $rememberme;
     private $email_verification = true;
 
-    public function __construct($mysqli)
+    public function __construct($mysqli, $rememberme)
     {
         $this->mysqli = $mysqli;
+        $this->rememberme = $rememberme;
     }
 
     public function emon_session_start()
@@ -46,6 +48,14 @@ class User
 
         session_start();
 
+        // If no session, check for remember me cookie
+        if (!isset($_SESSION['userid']) || !$_SESSION['userid']) {
+            $userid = $this->rememberme->login_from_cookie();
+            if ($userid) {
+                $this->create_session($userid);
+            }
+        }
+
         $session = array();
 
         if (isset($_SESSION['admin'])) $session['admin'] = $_SESSION['admin'];
@@ -58,6 +68,23 @@ class User
         else $session['email'] = '';
 
         return $session;
+    }
+
+    public function create_session($userid) {
+        $userid = (int) $userid;
+        $result = $this->mysqli->query("SELECT id,username,email,admin FROM users WHERE id='$userid'");
+        if ($result->num_rows == 0) {
+            return false;
+        } else {
+            $row = $result->fetch_object();
+            session_regenerate_id();
+            $_SESSION['userid'] = $row->id;
+            $_SESSION['username'] = $row->username;
+            $_SESSION['admin'] = $row->admin;
+            $_SESSION['email'] = $row->email;
+            $this->update_last_login($userid);
+            return true;
+        }
     }
 
     public function login($username, $password, $with_emoncmsorg = false)
@@ -135,6 +162,10 @@ class User
         $_SESSION['admin'] = $admin;
 
         $this->update_last_login($userid);
+
+        // Remember me
+        $this->rememberme->remember_me($userid);
+
         return array('success' => true, 'message' => _("Login successful"));
     }
 
@@ -171,6 +202,10 @@ class User
             $_SESSION['email'] = $userData->email;
 
             $this->update_last_login($userData->id);
+
+            // Remember me
+            $this->rememberme->remember_me($userid);
+
             return array('success' => true, 'message' => _("Login successful"));
         }
     }
@@ -217,6 +252,10 @@ class User
             $_SESSION['admin'] = 0;
             $_SESSION['email'] = $email; 
             $this->update_last_login($userid);
+
+            // Remember me
+            $this->rememberme->remember_me($userid);
+
             return array('success'=>true, 'verifyemail'=>false, 'userid'=>$userid, 'message'=>"User account created");
         }
     }
@@ -378,6 +417,10 @@ class User
 
     public function logout()
     {
+        if (isset($_SESSION['userid'])) {
+            $userid = (int) $_SESSION['userid'];
+            $this->rememberme->logout($userid);
+        }
         session_unset();
         session_destroy();
     }

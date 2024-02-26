@@ -36,21 +36,55 @@ $schema['system_meta'] = array(
         'name' => 'Installer URL', 
         'group' => 'Overview'
     ),
+    
+    'installer_logo' => array(
+        'type' => 'varchar(64)', 
+        'editable' => true, 
+        'optional' => true, 
+        'name' => 'Installer Logo', 
+        'heading' => '',
+        'group' => 'Overview',
+        'editable' => false
+    ),
 
     'heatgeek' => array(
         'type' => 'tinyint(1)', 
         'editable' => true, 
         'optional' => true, 
-        'name' => 'Heat Geek', 
-        'group' => 'Overview'
+        'name' => 'Heat Geek Mastery', 
+        'group' => 'Training'
     ),
     
-    'betateach' => array(
+    'ultimaterenewables' => array(
         'type' => 'tinyint(1)', 
         'editable' => true, 
         'optional' => true, 
-        'name' => 'Beta Teach', 
-        'group' => 'Overview'
+        'name' => 'Ultimate Renewables Pro', 
+        'group' => 'Training'
+    ),
+    
+    'heatingacademy' => array(
+        'type' => 'tinyint(1)', 
+        'editable' => true, 
+        'optional' => true, 
+        'name' => 'Heating Academy Hydronics', 
+        'group' => 'Training'
+    ),
+    
+    'betateach' => array(
+        'type' => 'varchar(256)',
+        'editable' => true, 
+        'optional' => true, 
+        'name' => 'BetaTalk', 
+        'group' => 'Learn more'
+    ),
+    
+    'youtube' => array(
+        'type' => 'varchar(256)',
+        'editable' => true, 
+        'optional' => true, 
+        'name' => 'YouTube', 
+        'group' => 'Learn more'
     ),
 
     'url' => array(
@@ -580,90 +614,98 @@ $schema['system_meta'] = array(
     ),
 );
 
-$schema['system_stats_last30'] = array(
+$schema['system_stats_daily'] = array(
     // System ID
     'id' => array('type' => 'int(11)'),
-
-    // Full period stats
-    'elec_kwh' => array('type' => 'float', 'name'=>'Last 30 days electricity consumption', 'group'=>'Stats'),
-    'heat_kwh' => array('type' => 'float', 'name'=>'Last 30 days heat output', 'group'=>'Stats'),
-    'cop' => array('type' => 'float', 'name'=>'Last 30 days COP', 'group'=>'Stats'),
-    'since' => array('type' => 'int(11)'),
-    'data_length' => array('type' => 'int(11)'),
-
-    // when running
-    'when_running_elec_kwh' => array('type' => 'float'),
-    'when_running_heat_kwh' => array('type' => 'float'),
-    'when_running_cop' => array('type' => 'float'),
-    'when_running_elec_W' => array('type' => 'float'),
-    'when_running_heat_W' => array('type' => 'float'),
-    'when_running_flowT' => array('type' => 'float'),
-    'when_running_returnT' => array('type' => 'float'),
-    'when_running_flow_minus_return' => array('type' => 'float'),
-    'when_running_outsideT' => array('type' => 'float'),
-    'when_running_flow_minus_outside' => array('type' => 'float'),
-    'when_running_carnot_prc' => array('type' => 'float'),
-
-    // standby
-    'standby_threshold' => array('type' => 'float'),
-    'standby_kwh' => array('type' => 'float'),
-
-    // quality
-    'quality_elec' => array('type' => 'int(11)'),
-    'quality_heat' => array('type' => 'int(11)'),
-    'quality_flow' => array('type' => 'int(11)'),
-    'quality_return' => array('type' => 'int(11)'),
-    'quality_outside' => array('type' => 'int(11)'),
-    'data_start' => array('type' => 'int(11)')
-);
-
-// Monthly stats
-$schema['system_stats_monthly'] = array(
-    // System ID
-    'id' => array('type' => 'int(11)'),
-    // Timestamp of the start of the month
+    
+    // Start of day timestamp
     'timestamp' => array('type' => 'int(11)'),
-
+    
     // Full period stats
-    'elec_kwh' => array('type' => 'float', 'name'=>'Electricity (kWh)', 'group'=>'Stats'),
-    'heat_kwh' => array('type' => 'float', 'name'=>'Heat (kWh)', 'group'=>'Stats'),
-    'cop' => array('type' => 'float', 'name'=>'SCOP', 'group'=>'Stats'),
-    'since' => array('type' => 'int(11)'),
-    'data_length' => array('type' => 'int(11)'),
+    'combined_elec_kwh' => array('type' => 'float', 'name'=>'Electricity consumption', 'group'=>'Stats: Combined', 'dp'=>0, 'unit'=>'kWh'),
+    'combined_heat_kwh' => array('type' => 'float', 'name'=>'Heat output', 'group'=>'Stats: Combined', 'dp'=>0, 'unit'=>'kWh'),
+    'combined_cop' => array('type' => 'float', 'name'=>'COP', 'heading'=>"COP", 'group'=>'Stats: Combined', 'dp'=>1, 'unit'=>''),
+    'combined_data_length' => array('type' => 'float', 'name'=>'Data length', 'group'=>'Stats: Combined', 'dp'=>0, 'unit'=>''),
+    'combined_elec_mean' => array('type' => 'float', 'name'=>'Elec mean', 'group'=>'Stats: Combined', 'dp'=>0, 'unit'=>'W'),
+    'combined_heat_mean' => array('type' => 'float', 'name'=>'Heat mean', 'group'=>'Stats: Combined', 'dp'=>0, 'unit'=>'W'),
+    'combined_flowT_mean' => array('type' => 'float', 'name'=>'FlowT mean', 'group'=>'Stats: Combined', 'dp'=>1, 'unit'=>'°C'),
+    'combined_returnT_mean' => array('type' => 'float', 'name'=>'ReturnT mean', 'group'=>'Stats: Combined', 'dp'=>1, 'unit'=>'°C'),
+    'combined_outsideT_mean' => array('type' => 'float', 'name'=>'OutsideT mean', 'group'=>'Stats: Combined', 'dp'=>1, 'unit'=>'°C'),
+    'combined_roomT_mean' => array('type' => 'float', 'name'=>'RoomT mean', 'group'=>'Stats: Combined', 'dp'=>1, 'unit'=>'°C'),
+    'combined_prc_carnot' => array('type' => 'float', 'name'=>'% Carnot', 'group'=>'Stats: Combined', 'dp'=>1, 'unit'=>'%'),
+    'combined_cooling_kwh' => array('type' => 'float', 'name'=>'Cooling energy', 'group'=>'Stats: Combined', 'dp'=>0, 'unit'=>'kWh'),
+    
+    // When Running
+    'running_elec_kwh' => array('type' => 'float', 'name'=>'Electricity consumption', 'group'=>'Stats: When Running', 'dp'=>0, 'unit'=>'kWh'),
+    'running_heat_kwh' => array('type' => 'float', 'name'=>'Heat output', 'group'=>'Stats: When Running', 'dp'=>0, 'unit'=>'kWh'),
+    'running_cop' => array('type' => 'float', 'name'=>'COP', 'heading'=>"Running<br>COP", 'group'=>'Stats: When Running', 'dp'=>1, 'unit'=>''),
+    'running_data_length' => array('type' => 'float', 'name'=>'Data length', 'group'=>'Stats: When Running', 'dp'=>0, 'unit'=>''),
+    'running_elec_mean' => array('type' => 'float', 'name'=>'Elec mean', 'group'=>'Stats: When Running', 'dp'=>0, 'unit'=>'W'),
+    'running_heat_mean' => array('type' => 'float', 'name'=>'Heat mean', 'group'=>'Stats: When Running', 'dp'=>0, 'unit'=>'W'),
+    'running_flowT_mean' => array('type' => 'float', 'name'=>'FlowT mean', 'group'=>'Stats: When Running', 'dp'=>1, 'unit'=>'°C'),
+    'running_returnT_mean' => array('type' => 'float', 'name'=>'ReturnT mean', 'group'=>'Stats: When Running', 'dp'=>1, 'unit'=>'°C'),
+    'running_outsideT_mean' => array('type' => 'float', 'name'=>'OutsideT mean', 'group'=>'Stats: When Running', 'dp'=>1, 'unit'=>'°C'),
+    'running_roomT_mean' => array('type' => 'float', 'name'=>'RoomT mean', 'group'=>'Stats: When Running', 'dp'=>1, 'unit'=>'°C'),
+    'running_prc_carnot' => array('type' => 'float', 'name'=>'% Carnot', 'group'=>'Stats: When Running', 'dp'=>1, 'unit'=>'%'),
+    
+    // Space heating
+    'space_elec_kwh' => array('type' => 'float', 'name'=>'Electricity consumption', 'group'=>'Stats: Space heating', 'dp'=>0, 'unit'=>'kWh'),
+    'space_heat_kwh' => array('type' => 'float', 'name'=>'Heat output', 'group'=>'Stats: Space heating', 'dp'=>0, 'unit'=>'kWh'),
+    'space_cop' => array('type' => 'float', 'name'=>'COP', 'heading'=>"Space<br>COP", 'group'=>'Stats: Space heating', 'dp'=>1, 'unit'=>''),
+    'space_data_length' => array('type' => 'float', 'name'=>'Data length', 'group'=>'Stats: Space heating', 'dp'=>0, 'unit'=>''),
+    'space_elec_mean' => array('type' => 'float', 'name'=>'Elec mean', 'group'=>'Stats: Space heating', 'dp'=>0, 'unit'=>'W'),
+    'space_heat_mean' => array('type' => 'float', 'name'=>'Heat mean', 'group'=>'Stats: Space heating', 'dp'=>0, 'unit'=>'W'),
+    'space_flowT_mean' => array('type' => 'float', 'name'=>'FlowT mean', 'group'=>'Stats: Space heating', 'dp'=>1, 'unit'=>'°C'),
+    'space_returnT_mean' => array('type' => 'float', 'name'=>'ReturnT mean', 'group'=>'Stats: Space heating', 'dp'=>1, 'unit'=>'°C'),
+    'space_outsideT_mean' => array('type' => 'float', 'name'=>'OutsideT mean', 'group'=>'Stats: Space heating', 'dp'=>1, 'unit'=>'°C'),
+    'space_roomT_mean' => array('type' => 'float', 'name'=>'RoomT mean', 'group'=>'Stats: Space heating', 'dp'=>1, 'unit'=>'°C'),
+    'space_prc_carnot' => array('type' => 'float', 'name'=>'% Carnot', 'group'=>'Stats: Space heating', 'dp'=>1, 'unit'=>'%'),
+        
+    // Water heating
+    'water_elec_kwh' => array('type' => 'float', 'name'=>'Electricity consumption', 'group'=>'Stats: Water heating', 'dp'=>0, 'unit'=>'kWh'),
+    'water_heat_kwh' => array('type' => 'float', 'name'=>'Heat output', 'group'=>'Stats: Water heating', 'dp'=>0, 'unit'=>'kWh'),
+    'water_cop' => array('type' => 'float', 'name'=>'COP', 'heading'=>"Water<br>COP", 'group'=>'Stats: Water heating', 'dp'=>1, 'unit'=>''),
+    'water_data_length' => array('type' => 'float', 'name'=>'Data length', 'group'=>'Stats: Water heating', 'dp'=>0, 'unit'=>''),
+    'water_elec_mean' => array('type' => 'float', 'name'=>'Elec mean', 'group'=>'Stats: Water heating', 'dp'=>0, 'unit'=>'W'),
+    'water_heat_mean' => array('type' => 'float', 'name'=>'Heat mean', 'group'=>'Stats: Water heating', 'dp'=>0, 'unit'=>'W'),
+    'water_flowT_mean' => array('type' => 'float', 'name'=>'FlowT mean', 'group'=>'Stats: Water heating', 'dp'=>1, 'unit'=>'°C'),
+    'water_returnT_mean' => array('type' => 'float', 'name'=>'ReturnT mean', 'group'=>'Stats: Water heating', 'dp'=>1, 'unit'=>'°C'),
+    'water_outsideT_mean' => array('type' => 'float', 'name'=>'OutsideT mean', 'group'=>'Stats: Water heating', 'dp'=>1, 'unit'=>'°C'),
+    'water_roomT_mean' => array('type' => 'float', 'name'=>'RoomT mean', 'group'=>'Stats: Water heating', 'dp'=>1, 'unit'=>'°C'),
+    'water_prc_carnot' => array('type' => 'float', 'name'=>'% Carnot', 'group'=>'Stats: Water heating', 'dp'=>1, 'unit'=>'%'),
 
-    // when running
-    'when_running_elec_kwh' => array('type' => 'float', 'name'=>'Electricity running (kWh)', 'group'=>'When Running'),
-    'when_running_heat_kwh' => array('type' => 'float', 'name'=>'Heat running (kWh)', 'group'=>'When Running'),
-    'when_running_cop' => array('type' => 'float', 'name'=>'COP (Running)', 'group'=>'When Running'),
-    'when_running_elec_W' => array('type' => 'float'),
-    'when_running_heat_W' => array('type' => 'float'),
-    'when_running_flowT' => array('type' => 'float', 'name'=>'Flow temperature (°C)', 'group'=>'When Running'),
-    'when_running_returnT' => array('type' => 'float', 'name'=>'Return temperature (°C)', 'group'=>'When Running'),
-    'when_running_flow_minus_return' => array('type' => 'float', 'name'=>'Flow minus return (°C)', 'group'=>'When Running'),
-    'when_running_outsideT' => array('type' => 'float', 'name'=>'Outside temperature (°C)', 'group'=>'When Running'),
-    'when_running_flow_minus_outside' => array('type' => 'float', 'name'=>'Flow minus outside (°C)', 'group'=>'When Running'),
-    'when_running_carnot_prc' => array('type' => 'float', 'name'=>'Carnot efficiency (%)', 'group'=>'When Running'),
-
-    // standby
-    'standby_threshold' => array('type' => 'float', 'name'=>'Standby threshold (W)', 'group'=>'Standby'),
-    'standby_kwh' => array('type' => 'float', 'name'=>'Standby (kWh)', 'group'=>'Standby'),
-
-    // quality
-    'quality_elec' => array('type' => 'int(11)', 'name'=>'Electricity data quality', 'group'=>'Quality'),
-    'quality_heat' => array('type' => 'int(11)', 'name'=>'Heat data quality', 'group'=>'Quality'),
-    'quality_flow' => array('type' => 'int(11)', 'name'=>'Flow temperature data quality', 'group'=>'Quality'),
-    'quality_return' => array('type' => 'int(11)', 'name'=>'Return temperature data quality', 'group'=>'Quality'),
-    'quality_outside' => array('type' => 'int(11)', 'name'=>'Outside temperature data quality', 'group'=>'Quality'),
-    'data_start' => array('type' => 'int(11)', 'name'=>'Data start', 'group'=>'Stats')
+    // from energy feeds
+    'from_energy_feeds_elec_kwh' => array('type' => 'float', 'name'=>'Electricity consumption', 'group'=>'From energy feeds', 'dp'=>0, 'unit'=>'kWh'),
+    'from_energy_feeds_heat_kwh' => array('type' => 'float', 'name'=>'Heat output', 'group'=>'From energy feeds', 'dp'=>0, 'unit'=>'kWh'),
+    'from_energy_feeds_cop' => array('type' => 'float', 'name'=>'COP', 'group'=>'From energy feeds', 'dp'=>1, 'unit'=>''),
+    
+    // Quality
+    'quality_elec' => array('type' => 'float', 'name'=>'Quality elec', 'group'=>'Quality', 'dp'=>1, 'unit'=>'%'),
+    'quality_heat' => array('type' => 'float', 'name'=>'Quality heat', 'group'=>'Quality', 'dp'=>1, 'unit'=>'%'),
+    'quality_flowT' => array('type' => 'float', 'name'=>'Quality flowT', 'group'=>'Quality', 'dp'=>1, 'unit'=>'%'),
+    'quality_returnT' => array('type' => 'float', 'name'=>'Quality returnT', 'group'=>'Quality', 'dp'=>1, 'unit'=>'%'),
+    'quality_outsideT' => array('type' => 'float', 'name'=>'Quality outsideT', 'group'=>'Quality', 'dp'=>1, 'unit'=>'%'),
+    'quality_roomT' => array('type' => 'float', 'name'=>'Quality roomT', 'group'=>'Quality', 'dp'=>1, 'unit'=>'%')
 );
 
-$schema['system_stats_last365'] = array(
-    'id' => array('type' => 'int(11)'),
-    'elec_kwh' => array('type' => 'float', 'name'=>'Last 365 days electricity consumption', 'group'=>'Stats'),
-    'heat_kwh' => array('type' => 'float', 'name'=>'Last 365 days heat output', 'group'=>'Stats'),
-    'cop' => array('type' => 'float', 'name'=>'Last 365 days COP', 'group'=>'Stats'),
-    'since' => array('type' => 'int(11)'),
-    'data_length' => array('type' => 'int(11)'),
-    'data_start' => array('type' => 'int(11)')
+// Copy the same structure for aggregated stats
+$schema['system_stats_monthly_v2'] = $schema['system_stats_daily'];
+$schema['system_stats_last7_v2'] = $schema['system_stats_daily'];
+$schema['system_stats_last30_v2'] = $schema['system_stats_daily'];
+$schema['system_stats_last90_v2'] = $schema['system_stats_daily'];
+$schema['system_stats_last365_v2'] = $schema['system_stats_daily'];
+$schema['system_stats_all_v2'] = $schema['system_stats_daily'];
 
+// Remove the timestamp field from the aggregated stats
+unset($schema['system_stats_last7_v2']['timestamp']);
+unset($schema['system_stats_last30_v2']['timestamp']);
+unset($schema['system_stats_last90_v2']['timestamp']);
+unset($schema['system_stats_last365_v2']['timestamp']);
+unset($schema['system_stats_all_v2']['timestamp']);
+
+$schema['system_stats_script'] = array(
+
+    'running' => array('type' => 'int(11)'),
+    'systemid' => array('type' => 'int(11)')
+    
 );

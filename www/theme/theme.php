@@ -25,7 +25,7 @@ $navigation = array(
     <link href="https://openenergymonitor.org/homepage/theme/favicon.ico" rel="shortcut icon">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css">
-    <link rel="stylesheet" href="<?php echo $path; ?>theme/style.css?v=40" />
+    <link rel="stylesheet" href="<?php echo $path; ?>theme/style.css?v=51" />
 
 </head>
 
@@ -100,10 +100,6 @@ $navigation = array(
                                 <i class="fas fa-chart-line"></i>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="avatarDropdown">
-                                <?php if ($settings['public_mode_enabled']) { ?>
-                                <li><a class="dropdown-item" href="<?php echo $path; ?>system/list/original">Original</a></li>
-                                <?php } ?>
-                                <li><a class="dropdown-item" href="<?php echo $path; ?>graph">Graph</a></li>
                                 <li><a class="dropdown-item" href="<?php echo $path; ?>compare">Compare</a></li>
                                 <li><a class="dropdown-item" href="<?php echo $path; ?>monthly">Monthly</a></li>
                                 <li><a class="dropdown-item" href="<?php echo $path; ?>histogram">Histogram</a></li>
@@ -151,7 +147,8 @@ $navigation = array(
 
     <footer class="footer sticky-footer bg-custom text-light">
         <div class="container">
-            An <a href="https://openenergymonitor.org/"><b>OpenEnergyMonitor.org</b></a> community initiative
+            An <b>OpenEnergyMonitor.org</b> community initiative<br>
+            <a href="https://github.com/openenergymonitor/heatpumpmonitor.org" class="oslink">This website is open source on github</a>
         </div>
     </footer>
 

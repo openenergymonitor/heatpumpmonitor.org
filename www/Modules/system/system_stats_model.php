@@ -17,9 +17,13 @@ class SystemStats
         $schema = array();
         require "Modules/system/system_schema.php";
 
-        $this->schema['system_stats_monthly'] = $this->system->populate_codes($schema['system_stats_monthly']);
-        $this->schema['system_stats_last30'] = $this->system->populate_codes($schema['system_stats_last30']);
-        $this->schema['system_stats_last365'] = $this->system->populate_codes($schema['system_stats_last365']);
+        $this->schema['system_stats_monthly_v2'] = $this->system->populate_codes($schema['system_stats_monthly_v2']);
+        $this->schema['system_stats_last7_v2'] = $this->system->populate_codes($schema['system_stats_last7_v2']);
+        $this->schema['system_stats_last30_v2'] = $this->system->populate_codes($schema['system_stats_last30_v2']);
+        $this->schema['system_stats_last90_v2'] = $this->system->populate_codes($schema['system_stats_last90_v2']);
+        $this->schema['system_stats_last365_v2'] = $this->system->populate_codes($schema['system_stats_last365_v2']);
+        $this->schema['system_stats_all_v2'] = $this->system->populate_codes($schema['system_stats_all_v2']);
+        $this->schema['system_stats_daily'] = $this->system->populate_codes($schema['system_stats_daily']);
     }
 
     public function get_system_config($userid, $systemid)
@@ -64,7 +68,7 @@ class SystemStats
         return $output;
     }
 
-    public function load_from_url($url, $start = false, $end = false)
+    public function load_from_url($url, $start = false, $end = false, $api = 'getstats2')
     {
         # decode the url to separate out any args
         $url_parts = parse_url($url);
@@ -77,9 +81,9 @@ class SystemStats
 
         # check if url was to /app/view instead of username
         if (preg_match('/^(.*)\/app\/view$/', $url_parts['path'], $matches)) {
-            $getstats = "$server$matches[1]/app/getstats" . $time_range_query;
+            $getstats = "$server$matches[1]/app/" . $api . $time_range_query;
         } else {
-            $getstats = $server . $url_parts['path'] . "/app/getstats" . $time_range_query;
+            $getstats = $server . $url_parts['path'] . "/app/" . $api . $time_range_query;
         }
 
         # if url has query string, pull out the readkey
@@ -91,7 +95,19 @@ class SystemStats
             }
         }
 
-        $stats_rx = file_get_contents($getstats);
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $getstats);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+        $stats_rx = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        
+        if ($httpCode == 200) { // Check if successful response
+            return $stats_rx;
+        } else {
+            return false; // Or handle error as needed
+        }
 
         if (!$stats = json_decode($stats_rx)) {
             return array("success" => false, "message" => $stats_rx);
@@ -100,111 +116,63 @@ class SystemStats
         }
     }
 
-    public function save_last30($systemid, $stats)
+    public function get_data_period($url)
     {
-        $systemid = (int) $systemid;
+        # decode the url to separate out any args
+        $url_parts = parse_url($url);
+        if (!isset($url_parts['scheme']) || !isset($url_parts['host']) || !isset($url_parts['path'])) {
+            return array("success" => false, "message" => "Invalid URL"); 
+        }
+        $server = $url_parts['scheme'] . '://' . $url_parts['host'];
 
-        // Translate the stats into the schema
-        // consider changing API structure to match schema
-        $stats = array(
-            'id' => $systemid,
-            'elec_kwh' => $stats->last30->elec_kwh,
-            'heat_kwh' => $stats->last30->heat_kwh,
-            'cop' => $stats->last30->cop,
-            'since' => $stats->last30->since,
-            'data_length' => isset($stats->last30->data_length) ? $stats->last30->data_length : 0,
-            'when_running_elec_kwh' => $stats->when_running->elec_kwh,
-            'when_running_heat_kwh' => $stats->when_running->heat_kwh,
-            'when_running_cop' => $stats->when_running->cop,
-            'when_running_elec_W' => $stats->when_running->elec_W,
-            'when_running_heat_W' => $stats->when_running->heat_W,
-            'when_running_flowT' => $stats->when_running->flowT,
-            'when_running_returnT' => $stats->when_running->returnT,
-            'when_running_flow_minus_return' => $stats->when_running->flow_minus_return,
-            'when_running_outsideT' => $stats->when_running->outsideT,
-            'when_running_flow_minus_outside' => $stats->when_running->flow_minus_outside,
-            'when_running_carnot_prc' => $stats->when_running->carnot_prc,
-            'standby_threshold' => $stats->standby_threshold,
-            'standby_kwh' => isset($stats->standby_kwh) ? $stats->standby_kwh : 0,
-            "quality_elec" => isset($stats->quality_elec) ? $stats->quality_elec : 0,
-            "quality_heat" => isset($stats->quality_heat) ? $stats->quality_heat : 0,
-            "quality_flow" => isset($stats->quality_flow) ? $stats->quality_flow : 0,
-            "quality_return" => isset($stats->quality_return) ? $stats->quality_return : 0,
-            "quality_outside" => isset($stats->quality_outside) ? $stats->quality_outside : 0,
-            'data_start' => isset($stats->data_start) ? $stats->data_start : 0
-        );
+        # check if url was to /app/view instead of username
+        if (preg_match('/^(.*)\/app\/view$/', $url_parts['path'], $matches)) {
+            $getstats = "$server$matches[1]/app/datastart";
+        } else {
+            $getstats = $server . $url_parts['path'] . "/app/datastart";
+        }
 
-        $id = $stats['id'];
-        $this->mysqli->query("DELETE FROM system_stats_last30 WHERE id=$id");
-        $this->save_stats_table('system_stats_last30',$stats);
-
-        return array("success" => true, "message" => "Saved");
-    }
-
-    public function save_last365($systemid, $stats)
-    {
-        $systemid = (int) $systemid;
-
-        // Translate the stats into the schema
-        // consider changing API structure to match schema
-
-        $stats = array(
-            'id' => $systemid,
-            'elec_kwh' => $stats->last365->elec_kwh,
-            'heat_kwh' => $stats->last365->heat_kwh,
-            'cop' => $stats->last365->cop,
-            'since' => $stats->last365->since,
-            'data_length' => isset($stats->last365->data_length) ? $stats->last365->data_length : 0,
-            'data_start' => isset($stats->data_start) ? $stats->data_start : 0
-        );
-
-        $id = $stats['id'];
-        $this->mysqli->query("DELETE FROM system_stats_last365 WHERE id=$id");
-        $this->save_stats_table('system_stats_last365',$stats);
-
-        return array("success" => true, "message" => "Saved");
-    }
-
-    public function save_monthly($systemid,$start,$stats) 
-    {    
-        $systemid = (int) $systemid;
-        $start = (int) $start;
+        # if url has query string, pull out the readkey
+        if (isset($url_parts['query'])) {
+            parse_str($url_parts['query'], $url_args);
+            if (isset($url_args['readkey'])) {
+                // $readkey = $url_args['readkey'];
+                $getstats .= '?' . $url_parts['query'];
+            }
+        }
         
-        $stats = array(
-            'id' => $systemid,
-            'timestamp' => $start,
-            'elec_kwh' => $stats->full_period->elec_kwh,
-            'heat_kwh' => $stats->full_period->heat_kwh,
-            'cop' => $stats->full_period->cop,
-            'since' => $stats->data_start,
-            'data_length' => isset($stats->full_period->data_length) ? $stats->full_period->data_length : 0,
-            'when_running_elec_kwh' => $stats->when_running->elec_kwh,
-            'when_running_heat_kwh' => $stats->when_running->heat_kwh,
-            'when_running_cop' => $stats->when_running->cop,
-            'when_running_elec_W' => $stats->when_running->elec_W,
-            'when_running_heat_W' => $stats->when_running->heat_W,
-            'when_running_flowT' => $stats->when_running->flowT,
-            'when_running_returnT' => $stats->when_running->returnT,
-            'when_running_flow_minus_return' => $stats->when_running->flow_minus_return,
-            'when_running_outsideT' => $stats->when_running->outsideT,
-            'when_running_flow_minus_outside' => $stats->when_running->flow_minus_outside,
-            'when_running_carnot_prc' => $stats->when_running->carnot_prc,
-            'standby_threshold' => $stats->standby_threshold,
-            'standby_kwh' => $stats->standby_kwh,
-            "quality_elec" => $stats->quality_elec,
-            "quality_heat" => $stats->quality_heat,
-            "quality_flow" => $stats->quality_flow,
-            "quality_return" => $stats->quality_return,
-            "quality_outside" => $stats->quality_outside,
-            'data_start' => isset($stats->data_start) ? $stats->data_start : 0
-        );
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $getstats);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+        $stats_rx = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        
+        if ($httpCode == 200) { // Check if successful response
+            if (!$period = json_decode($stats_rx)) {
+                return array("success" => false, "message" => $stats_rx);
+            } else {
+                return array("success" => true, "period" => $period);
+            }
+        } else {
+            return array("success" => false, "message" => $httpCode);
+        }
+    }
 
-        $id = $stats['id'];
-        $timestamp = $stats['timestamp'];
 
-        // Save stats to system_stats_monthly table
-        $this->mysqli->query("DELETE FROM system_stats_monthly WHERE id=$id AND timestamp=$timestamp");
-        $this->save_stats_table('system_stats_monthly',$stats);
+    // Save day
+    public function save_day($systemid, $row) 
+    {
+        $systemid = (int) $systemid;
+        $timestamp = (int) $row['timestamp'];
+        $row['id'] = $systemid;
+
+        // Delete existing stats
+        $this->mysqli->query("DELETE FROM system_stats_daily WHERE `id`='$systemid' AND `timestamp`='$timestamp'");
+
+        // Insert new
+        $this->save_stats_table('system_stats_daily',$row);
 
         return array("success" => true, "message" => "Saved");
     }
@@ -216,10 +184,12 @@ class SystemStats
         $codes = array();
         $values = array();
         foreach ($this->schema[$table_name] as $field => $field_schema) {
-            $fields[] = $field;
-            $qmarks[] = '?';
-            $codes[] = $field_schema['code'];
-            $values[] = $stats[$field];
+            if (isset($stats[$field])) {
+                $fields[] = $field;
+                $qmarks[] = '?';
+                $codes[] = $field_schema['code'];
+                $values[] = $stats[$field];
+            }
         }
         $fields = implode(',',$fields);
         $qmarks = implode(',',$qmarks);
@@ -232,11 +202,27 @@ class SystemStats
     }
 
     public function get_monthly($start,$end,$system_id = false) {
-        return $this->get('system_stats_monthly',$start,$end,$system_id);
+        return $this->get('system_stats_monthly_v2',$start,$end,$system_id);
+    }
+
+    public function get_last7($system_id = false) {
+        return $this->get('system_stats_last7_v2',false,false,$system_id);
     }
 
     public function get_last30($system_id = false) {
-        return $this->get('system_stats_last30',false,false,$system_id);
+        return $this->get('system_stats_last30_v2',false,false,$system_id);
+    }
+   
+    public function get_last90($system_id = false) {
+        return $this->get('system_stats_last90_v2',false,false,$system_id);
+    }
+
+    public function get_last365($system_id = false) {
+        return $this->get('system_stats_last365_v2',false,false,$system_id);
+    }
+    
+    public function get_all($system_id = false) {
+        return $this->get('system_stats_all_v2',false,false,$system_id);
     }
 
     // Get system stats
@@ -265,165 +251,236 @@ class SystemStats
                 $where .= " AND id=$system_id";
             }
         }
-
-        $fields = array(
-            "elec_kwh" => array("average" => false, "dp" => 0),
-            "heat_kwh" => array("average" => false, "dp" => 0),
-            "when_running_elec_kwh" => array("average" => false, "dp" => 0),
-            "when_running_heat_kwh" => array("average" => false, "dp" => 0),
-
-            "when_running_flowT" => array("average" => true, "dp" => 1),
-            "when_running_returnT" => array("average" => true, "dp" => 1),
-            "when_running_flow_minus_return" => array("average" => true, "dp" => 1),
-            "when_running_outsideT" => array("average" => true, "dp" => 1),
-            "when_running_flow_minus_outside" => array("average" => true, "dp" => 1),
-            "when_running_carnot_prc" => array("average" => true, "dp" => 1),
-
-            "standby_threshold" => array("average" => true, "dp" => 0),
-            "standby_kwh" => array("average" => false, "dp" => 0),
-
-            "quality_elec" => array("average" => true, "dp" => 0),
-            "quality_heat" => array("average" => true, "dp" => 0),
-            "quality_flow" => array("average" => true, "dp" => 0),
-            "quality_return" => array("average" => true, "dp" => 0),
-            "quality_outside" => array("average" => true, "dp" => 0),
-
-            "data_start" => array("average" => false, "dp" => 0),
-            "data_length" => array("average" => false, "dp" => 0),
-            "since" => array("average" => false, "dp" => 0)
-        );
-
-        $field_str = implode(",", array_keys($fields));
-
-        $available_stats = array();
-        $result = $this->mysqli->query("SELECT id,$field_str FROM $table_name $where");
+        
+        $system_rows = array();
+        $result = $this->mysqli->query("SELECT * FROM $table_name $where");
         while ($row = $result->fetch_object()) {
-
-            // Initialise if not set, zero all fields
-            if (!isset($available_stats[$row->id])) {
-                $available_stats[$row->id] = array(
-                    "count" => 0
-                );
-                foreach ($fields as $key => $field) {
-                    $available_stats[$row->id][$key] = 0;
-                }
+            $systemid = $row->id;
+            if (!isset($system_rows[$systemid])) {
+                $system_rows[$systemid] = array();
             }
-
-            // Sum across all months
-            foreach ($fields as $key => $field) {
-                $available_stats[$row->id][$key] += $row->$key * 1;
-            }
-            $available_stats[$row->id]['count']++;
+            $system_rows[$systemid][] = $row;
         }
 
-        $stats = array();
-        foreach ($available_stats as $id=>$system) {
-
-            // Calculate averages
-            if ($system['count'] > 0) {
-                foreach ($fields as $key => $field) {
-                    if ($field['average']) {
-                        $system[$key] = $system[$key] / $system['count'];
-                    }
-                }
+        $stats = array();        
+        foreach ($system_rows as $systemid => $rows) {
+            $stats[$systemid] = $this->process($rows,$systemid,$start);
+            
+            if ($stats[$systemid]['combined_cop']!==null) {
+                //$stats[$systemid]['combined_cop'] = number_format($stats[$systemid]['combined_cop'],1,'.','')*1;
             }
-
-            $min_energy = 0.5;
-
-            // Calculate COP
-            $cop = 0;
-            if ($system['elec_kwh'] > $min_energy && $system['heat_kwh'] > $min_energy) {
-                $cop = $system['heat_kwh'] / $system['elec_kwh'];
-            }
-            $when_running_cop = 0;
-            if ($system['when_running_elec_kwh'] > $min_energy && $system['when_running_heat_kwh'] > $min_energy) {
-                $when_running_cop = $system['when_running_heat_kwh'] / $system['when_running_elec_kwh'];
-            }
-
-            // Round to required dp
-            $stats["" . $id] = array();
-            foreach ($fields as $key => $field) {
-                $stats["" . $id][$key] = number_format($system[$key], $field['dp'], ".", "") * 1;
-            }
-            $stats["" . $id]["cop"] = number_format($cop, 1, ".", "") * 1;
-            $stats["" . $id]["when_running_cop"] = number_format($when_running_cop, 1, ".", "") * 1;
-            $stats["" . $id]["since"] = $system['since'];
-            $stats["" . $id]["data_length"] = $system['data_length'];
         }
 
         return $stats;
     }
 
-    public function get_last365($system_id = false) {
+    public function system_get_monthly($systemid, $start = false, $end = false) {
 
-        $where = '';
-        if ($system_id!==false) {
-            $where = "WHERE id=$system_id";
+        $systemid = (int) $systemid;
+
+        if ($start === false || $end === false) {
+            $date = new DateTime();
+            $date->setTimezone(new DateTimeZone('Europe/London'));
+            $date->setTime(0, 0, 0);
+            $end = $date->getTimestamp();
+            $date->modify("-1 year");
+            $start = $date->getTimestamp();        
         }
-
-        $stats = array();
-        $result = $this->mysqli->query("SELECT id,elec_kwh,heat_kwh,cop,since,data_start,data_length FROM system_stats_last365 $where");
-        while ($row = $result->fetch_object()) {
-            $stats["" . $row->id] = array(
-                "elec_kwh" => number_format($row->elec_kwh, 0, ".", "") * 1,
-                "heat_kwh" => number_format($row->heat_kwh, 0, ".", "") * 1,
-                "cop" => number_format($row->cop, 1, ".", "") * 1,
-                "since" => $row->since*1,
-                "data_start" => $row->data_start*1,
-                "data_length" => $row->data_length*1
-            );
-        }
-        return $stats;
-    }
-
-    public function system_get_monthly($systemid) {
-
-        $fields = array(
-            "timestamp", 
-            "elec_kwh",
-            "heat_kwh",
-            "cop",
-            "when_running_elec_kwh",
-            "when_running_heat_kwh",
-            "when_running_cop",
-            "when_running_flowT",
-            "when_running_returnT",
-            "when_running_flow_minus_return",
-            "when_running_outsideT",
-            "when_running_flow_minus_outside",
-            "when_running_carnot_prc",
-            "standby_threshold",
-            "standby_kwh",
-            "quality_elec",
-            "quality_heat",
-            "quality_flow",
-            "quality_return",
-            "quality_outside",
-            "data_start",
-            "data_length"
-        );
-
-        $field_str = implode(",", $fields);
 
         $monthly = array();
-        $result = $this->mysqli->query("SELECT $field_str FROM system_stats_monthly WHERE id=$systemid ORDER BY timestamp ASC");
+        $result = $this->mysqli->query("SELECT * FROM system_stats_monthly_v2 WHERE timestamp BETWEEN $start AND $end AND id = $systemid ORDER BY timestamp ASC");
         while ($row = $result->fetch_object()) {
-          
-            $min_energy = 0.5;
-            $cop = 0;
-            if ($row->elec_kwh > $min_energy && $row->heat_kwh > $min_energy) {
-                $cop = $row->heat_kwh / $row->elec_kwh;
-            }
-            $row->cop = number_format($cop,2);
-
-            $cop = 0;
-            if ($row->when_running_elec_kwh > $min_energy && $row->when_running_heat_kwh > $min_energy) {
-                $cop = $row->when_running_heat_kwh / $row->when_running_elec_kwh;
-            }
-            $row->when_running_cop = number_format($cop,2);
-        
             $monthly[] = $row;
         }
         return $monthly;
+    }
+
+    public function process_from_daily($systemid, $start = false, $end = false) {
+
+        $systemid = (int) $systemid;
+        
+        if ($start===false && $end===false) {
+            $where = "WHERE id = $systemid";
+        } else {
+            $start = (int) $start;
+            $end = (int) $end;
+            $where = "WHERE timestamp >= $start AND timestamp < $end AND id = $systemid";
+        }
+        
+        $rows = array();
+
+        // Get daily data from system_stats_daily table for this system and time period
+        $result = $this->mysqli->query("SELECT * FROM system_stats_daily $where");
+        while ($row = $result->fetch_object()) {
+            $rows[] = $row;
+        }
+
+        return $this->process($rows,$systemid,$start);
+    }
+    
+    public function process($rows,$systemid,$start) {
+
+        $categories = array('combined','running','space','water');
+
+        // Totals only
+        $totals = array();
+        $total_fields = array('elec_kwh','heat_kwh','data_length');
+        foreach ($categories as $category) {
+            foreach ($total_fields as $field) {
+                $totals[$category][$field] = 0;
+            }
+        }
+
+        // sum x data_length
+        $sum = array();
+        $sum_fields = array('elec_mean','heat_mean','flowT_mean','returnT_mean','outsideT_mean','roomT_mean','prc_carnot');
+        foreach ($categories as $category) {
+            foreach ($sum_fields as $field) {
+                $sum[$category][$field] = 0;
+            }
+        }
+
+        // Custom fields
+        $totals['combined']['cooling_kwh'] = 0;
+        $totals['from_energy_feeds'] = array('elec_kwh'=>0,'heat_kwh'=>0);
+
+        // Quality
+        $quality_fields = array('elec','heat','flowT','returnT','outsideT','roomT');
+        $quality_totals = array();
+        foreach ($quality_fields as $field) {
+            $quality_totals[$field] = 0;
+        }
+        
+        // Count days
+        $days = 0;
+
+        foreach ($rows as $row) {
+
+            foreach ($categories as $category) {
+                foreach ($total_fields as $field) {
+                    $totals[$category][$field] += $row->{$category."_".$field};
+                }
+                foreach ($sum_fields as $field) {
+                    $sum[$category][$field] += $row->{$category."_".$field} * $row->{$category."_data_length"};
+                }
+            }
+
+            foreach ($quality_fields as $field) {
+                $quality_totals[$field] += $row->{"quality_".$field};
+            }
+
+            $totals['combined']['cooling_kwh'] += $row->combined_cooling_kwh;
+            $totals['from_energy_feeds']['elec_kwh'] += $row->from_energy_feeds_elec_kwh;
+            $totals['from_energy_feeds']['heat_kwh'] += $row->from_energy_feeds_heat_kwh;
+            
+            $days++;
+        }
+
+        if ($days == 0) {
+            return false;
+        }
+
+        // Calculate mean from sum
+        $mean = array();
+        foreach ($categories as $category) {
+            foreach ($sum_fields as $field) {
+                $mean[$category][$field] = null;
+                if ($totals[$category]['data_length'] > 0) {
+                    $mean[$category][$field] = $sum[$category][$field] / $totals[$category]['data_length'];
+                }
+            }
+        }
+
+        // Calculate quality
+        $quality = array();
+        foreach ($quality_fields as $field) {
+            $quality[$field] = 0;
+            if ($days > 0) {
+                $quality[$field] = $quality_totals[$field] / $days;
+            }
+        }
+
+        $stats = array(
+            'id' => $systemid,
+            'timestamp' => $start   
+        );
+
+        // As above but without number formatting
+        foreach ($categories as $category) {
+            $stats[$category.'_elec_kwh'] = $totals[$category]['elec_kwh'];
+            $stats[$category.'_heat_kwh'] = $totals[$category]['heat_kwh'];
+            if ($totals[$category]['elec_kwh'] > 0) {
+                $stats[$category.'_cop'] = $totals[$category]['heat_kwh'] / $totals[$category]['elec_kwh'];
+            } else {
+                $stats[$category.'_cop'] = null;
+            }
+            $stats[$category.'_data_length'] = $totals[$category]['data_length'];
+
+            $stats[$category.'_elec_mean'] = $mean[$category]['elec_mean'];
+            $stats[$category.'_heat_mean'] = $mean[$category]['heat_mean'];
+            $stats[$category.'_flowT_mean'] = $mean[$category]['flowT_mean'];
+            $stats[$category.'_returnT_mean'] = $mean[$category]['returnT_mean'];
+            $stats[$category.'_outsideT_mean'] = $mean[$category]['outsideT_mean'];
+            $stats[$category.'_roomT_mean'] = $mean[$category]['roomT_mean'];
+            $stats[$category.'_prc_carnot'] = $mean[$category]['prc_carnot'];
+        }
+
+        $stats['combined_cooling_kwh'] = $totals['combined']['cooling_kwh'];
+        $stats['from_energy_feeds_elec_kwh'] = $totals['from_energy_feeds']['elec_kwh'];
+        $stats['from_energy_feeds_heat_kwh'] = $totals['from_energy_feeds']['heat_kwh'];
+        $stats['from_energy_feeds_cop'] = 0;
+        if ($totals['from_energy_feeds']['elec_kwh'] > 0) {
+            $stats['from_energy_feeds_cop'] = $totals['from_energy_feeds']['heat_kwh'] / $totals['from_energy_feeds']['elec_kwh'];
+        }
+
+        foreach ($quality_fields as $field) {
+            $stats['quality_'.$field] = $quality[$field];
+        }
+
+        return $stats;
+    }
+    
+    public function export_daily($systemid) {
+    
+        $filename = "daily.csv";
+        $where = '';
+        if ($systemid>0) {
+            $where = "WHERE id=$systemid";
+            $filename = "daily-$systemid.csv";
+        }
+
+        // There is no need for the browser to cache the output
+        header("Cache-Control: no-cache, no-store, must-revalidate");
+
+        // Tell the browser to handle output as a csv file to be downloaded
+        header('Content-Description: File Transfer');
+        header("Content-type: application/octet-stream");
+        header("Content-Disposition: attachment; filename=$filename");
+
+        header("Expires: 0");
+        header("Pragma: no-cache");
+
+        // Write to output stream
+        $fh = @fopen( 'php://output', 'w' );
+        
+        // Print header based on system_stats_daily schema
+        $header = array();
+        foreach ($this->schema['system_stats_daily'] as $field => $field_schema) {
+            $header[] = $field;
+        }
+        fputcsv($fh, $header);
+
+        // Get data
+        $result = $this->mysqli->query("SELECT * FROM system_stats_daily $where");
+        while ($row = $result->fetch_object()) {
+            $data = array();
+            foreach ($this->schema['system_stats_daily'] as $field => $field_schema) {
+                $data[] = $row->$field;
+            }
+            fputcsv($fh, $data);
+        }
+        
+        fclose($fh);
+        exit;
     }
 }
