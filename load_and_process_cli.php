@@ -3,7 +3,7 @@
 $dir = dirname(__FILE__);
 chdir("$dir/www");
 
-$fp = fopen("/home/oem/hpmon3/hpmon.lock", "w");
+$fp = fopen("/home/oem/hpmon_main/hpmon.lock", "w");
 if (! flock($fp, LOCK_EX | LOCK_NB)) { echo "Already running\n"; die; }
 
 require "Lib/load_database.php";

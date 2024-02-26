@@ -187,13 +187,13 @@ function system_controller() {
                 return array("success"=>false, "message"=>"Invalid access");
             }
             
-            $fp = fopen("/home/oem/hpmon3/hpmon.lock", "w");
+            $fp = fopen("/home/oem/hpmon_main/hpmon.lock", "w");
             if (!flock($fp, LOCK_EX | LOCK_NB)) {
                 return array("success"=>false, "message"=>"Already running");
             }
             fclose($fp);
             
-            shell_exec("php /home/oem/hpmon3/load_and_process_cli.php $systemid all > /dev/null 2>&1 &");
+            shell_exec("php /home/oem/hpmon_main/load_and_process_cli.php $systemid all > /dev/null 2>&1 &");
             return array("success"=>false, "message"=>"Loading data and processing in background, check back in 5 minutes.");
         }
     }
