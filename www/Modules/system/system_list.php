@@ -212,37 +212,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         months.push(d.toLocaleString('default', { month: 'short' }) + ' ' + d.getFullYear());
         d.setMonth(d.getMonth() - 1);
     }
-
-    // get screen size
-    var width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
-    var showContent = true;
-
-    var mode = "<?php echo $mode; ?>";
-    var selected_columns = [];
     
-    var default_minDays = 0;
-    var default_stats_time_start = "all";
-    
-    if (width>800) {
-        showContent = true;
-        if (mode == 'public') {
-            selected_columns = ['location', 'installer_logo', 'installer_name', 'training', 'hp_type', 'hp_model', 'hp_output', 'combined_data_length', 'combined_cop', 'learnmore'];
-            default_minDays = 24;
-            default_stats_time_start = "last30";
-        } else {
-            selected_columns = ['location','hp_model','combined_data_length','combined_cop','mid_metering'];
-        }
-    } else {
-        showContent = false;
-        if (mode == 'public') {
-            selected_columns = ['installer_logo', 'hp_model', 'hp_output', 'combined_cop']; 
-            default_minDays = 24;
-            default_stats_time_start = "last30";
-        } else {
-            selected_columns = ['location','hp_model','combined_cop'];
-        }
-    }
-
     var app = new Vue({
         el: '#app',
         data: {
@@ -251,18 +221,18 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             chart_enable: false,
             columns: columns,
             column_groups: column_groups,
-            selected_columns: selected_columns,
+            selected_columns: [],
             currentSortColumn: 'combined_cop',
             currentSortDir: 'desc',
             // stats time selection
-            stats_time_start: default_stats_time_start,
+            stats_time_start: "last30",
             stats_time_end: "only",
             stats_time_range: false,
             available_months_start: months,
             available_months_end: months,
             filterKey: window.location.hash.replace(/^#/, ''),
-            minDays: default_minDays,
-            showContent: showContent,
+            minDays: 24,
+            showContent: true,
             public_mode_enabled: public_mode_enabled
         },
         methods: {
@@ -632,6 +602,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     
     app.load_system_stats();
     app.sort_only('combined_cop');
+    resize();
 
     function time_ago(val,ago='') {
         if (val == null || val == 0) {
@@ -739,6 +710,32 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             chart.updateOptions(chart_options);
         
         }
+    }
+
+    window.addEventListener('resize', function(event) {
+        resize();
+    }, true);
+    
+    function resize() {
+        var width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+
+        if (app.mode == 'public') {
+            if (width<800) {
+                app.selected_columns = ['installer_logo', 'training', 'hp_model', 'hp_output', 'combined_cop', 'learnmore'];
+                app.showContent = false;
+            } else {
+                app.selected_columns = ['location', 'installer_logo', 'installer_name', 'training', 'hp_type', 'hp_model', 'hp_output', 'combined_data_length', 'combined_cop', 'learnmore'];
+                app.showContent = true;
+            }
+        } else {
+            if (width<800) {
+                app.selected_columns = ['hp_model', 'hp_output', 'combined_cop'];
+                app.showContent = false;
+            } else {
+                app.selected_columns = ['location', 'hp_type', 'hp_model', 'hp_output', 'combined_data_length', 'combined_cop'];
+                app.showContent = true;
+            }
+        } 
     }
 
 </script>
