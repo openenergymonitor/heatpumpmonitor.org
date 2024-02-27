@@ -154,7 +154,7 @@ function load_daily_stats_system($meta, $reload) {
             $fields = str_getcsv($csv[0]);
             if ($fields[0]!="timestamp") {
                 echo $result;
-                die;
+                break;
             }
 
             $days = 0;

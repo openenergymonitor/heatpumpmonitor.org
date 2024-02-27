@@ -8,6 +8,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script src="Lib/clipboard.js"></script>
 
 <style>
     .sticky {
@@ -157,6 +158,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     <p class="card-text">Number of systems in selection: <b>{{ totals.count }}</b></p>
                     <p class="card-text">Average of individual system COP values: <b>{{ totals.average_cop | toFixed(1) }}</b></p>
                     <p class="card-text">Average COP based on total sum of heat and electric values: <b>{{ totals.average_cop_kwh | toFixed(1) }}</p>
+                    <!-- csv export button copy table data to clipboard -->
+                    <button class="btn btn-primary" @click="export_csv">Copy table data to clipboard</button>
+
+
                   </div>
                 </div>
             </div>
@@ -298,6 +303,49 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     if (a[column] > b[column]) return 1 * modifier;
                     return 0;
                 });
+            },
+            export_csv: function() {
+                console.log('export csv');
+                // copy table data to clipboard as csv
+                
+
+                var csv = [];
+
+                var header = [];
+                for (var i = 0; i < this.selected_columns.length; i++) {
+                    // filter out logo, training, learnmore
+                    if (this.selected_columns[i]=='installer_logo') continue;
+                    if (this.selected_columns[i]=='training') continue;
+                    if (this.selected_columns[i]=='learnmore') continue;
+                    header.push('"'+this.columns[this.selected_columns[i]].name+'"');
+                }
+                csv.push(header.join(","));
+
+                for (var i = 0; i < this.fSystems.length; i++) {
+                    var row = [];
+                    for (var j = 0; j < this.selected_columns.length; j++) {
+                        // filter out logo, training, learnmore
+                        if (this.selected_columns[j]=='installer_logo') continue;
+                        if (this.selected_columns[j]=='training') continue;
+                        if (this.selected_columns[j]=='learnmore') continue;
+
+                        var column = this.selected_columns[j];
+
+                        var value = this.fSystems[i][column];
+                        if (value==null) value = '';
+
+                        // if float 3dp
+                        if (stats_columns[column]!=undefined) {
+                            if (stats_columns[column]['dp']!=undefined) {
+                                value = value.toFixed(stats_columns[column]['dp']+1);
+                            }
+                        }
+                        row.push('"'+value+'"');
+                    }
+                    csv.push(row.join(","));
+                }
+                var csv_string = csv.join("\n");
+                copy_text_to_clipboard(csv_string, 'CSV data copied to clipboard');
             },
             stats_time_start_change: function () {
                 // change available_months_end to only show months after start
@@ -546,6 +594,12 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         return row.mid_metering === 1;
                     } else if (this.filterKey === 'HG' || this.filterKey === 'HeatGeek') {
                         return row.heatgeek === 1;
+                    } else if (this.filterKey === 'NHG') {
+                        return row.heatgeek === 0;
+                    } else if (this.filterKey === 'UR') {
+                        return row.ultimaterenewables === 1;
+                    } else if (this.filterKey === 'HA') {
+                        return row.heatingacademy === 1;
                     } else {
                         return Object.keys(row).some((key) => {
                             return String(row[key]).toLowerCase().indexOf(this.filterKey.toLowerCase()) > -1
