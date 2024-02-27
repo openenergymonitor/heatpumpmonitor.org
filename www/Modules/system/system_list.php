@@ -458,10 +458,17 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
                                         app.systems[i][category+"_elec_kwh_per_m2"] = app.systems[i][category+"_elec_kwh_per_m2"].toFixed(columns[category+'_elec_kwh_per_m2']['dp'])*1;
                                         app.systems[i][category+"_heat_kwh_per_m2"] = app.systems[i][category+"_heat_kwh_per_m2"].toFixed(columns[category+'_elec_kwh_per_m2']['dp'])*1;
+                                        
+                                        if (app.systems[i][category+"_elec_kwh_per_m2"]===0) {
+                                            app.systems[i][category+"_elec_kwh_per_m2"] = null;
+                                        }
+                                        if (app.systems[i][category+"_heat_kwh_per_m2"]===0) {
+                                            app.systems[i][category+"_heat_kwh_per_m2"] = null;
+                                        }
                                     }
                                 } else {
-                                    app.systems[i].combined_elec_kwh_per_m2 = 0;
-                                    app.systems[i].combined_heat_kwh_per_m2 = 0;
+                                    app.systems[i].combined_elec_kwh_per_m2 = null;
+                                    app.systems[i].combined_heat_kwh_per_m2 = null;
                                 }
 
                             } else {
