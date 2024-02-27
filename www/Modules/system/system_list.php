@@ -192,6 +192,20 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     for (var key in stats_columns) {
         columns[key] = stats_columns[key];
     }
+
+    // post process columns
+    var categories = ['combined','running','space','water'];
+    var category_names = {
+        'combined': 'Combined',
+        'running': 'When Running',
+        'space': 'Space heating',
+        'water': 'Water heating'
+    }
+    for (var z in categories) {
+        let category = categories[z];
+        columns[category+'_elec_kwh_per_m2'] = { name: "Electric kWh/m²", heading: "Elec kWh/m²", group: "Stats: "+category_names[category], helper: "Electricity consumption per m²", unit: "kWh/m²", dp: 1 };
+        columns[category+'_heat_kwh_per_m2'] = { name: "Heat kWh/m²", heading: "Heat kWh/m²", group: "Stats: "+category_names[category], helper: "Electricity consumption per m²", unit: "kWh/m²", dp: 1 };
+    }
     
     for (var key in columns) {
         if (columns[key].heading === undefined) {
@@ -430,6 +444,26 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                 for (var key in stats[id]) {
                                     app.systems[i][key] = stats[id][key];
                                 }
+
+                                // Calculate combined_elec_kwh / floor_area
+                                if (app.systems[i].floor_area!=null && app.systems[i].floor_area>0) {
+
+                                    // for each category
+                                    let categories = ['combined','running','space','water'];
+                                    for (var z in categories) {
+                                        let category = categories[z];
+
+                                        app.systems[i][category+"_elec_kwh_per_m2"] = app.systems[i][category+"_elec_kwh"] / app.systems[i].floor_area;
+                                        app.systems[i][category+"_heat_kwh_per_m2"] = app.systems[i][category+"_heat_kwh"] / app.systems[i].floor_area;
+
+                                        app.systems[i][category+"_elec_kwh_per_m2"] = app.systems[i][category+"_elec_kwh_per_m2"].toFixed(columns[category+'_elec_kwh_per_m2']['dp'])*1;
+                                        app.systems[i][category+"_heat_kwh_per_m2"] = app.systems[i][category+"_heat_kwh_per_m2"].toFixed(columns[category+'_elec_kwh_per_m2']['dp'])*1;
+                                    }
+                                } else {
+                                    app.systems[i].combined_elec_kwh_per_m2 = 0;
+                                    app.systems[i].combined_heat_kwh_per_m2 = 0;
+                                }
+
                             } else {
                                 // for (var col in stats_columns) {
                                 //    app.systems[i][stats_columns[col]] = 0;
