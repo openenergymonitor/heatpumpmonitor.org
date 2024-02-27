@@ -188,11 +188,6 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     delete stats_columns.id;
     delete stats_columns.timestamp;
 
-    // add stats_columns to columns
-    for (var key in stats_columns) {
-        columns[key] = stats_columns[key];
-    }
-
     // post process columns
     var categories = ['combined','running','space','water'];
     var category_names = {
@@ -203,10 +198,50 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     }
     for (var z in categories) {
         let category = categories[z];
-        columns[category+'_elec_kwh_per_m2'] = { name: "Electric kWh/m²", heading: "Elec kWh/m²", group: "Stats: "+category_names[category], helper: "Electricity consumption per m²", unit: "kWh/m²", dp: 1 };
-        columns[category+'_heat_kwh_per_m2'] = { name: "Heat kWh/m²", heading: "Heat kWh/m²", group: "Stats: "+category_names[category], helper: "Electricity consumption per m²", unit: "kWh/m²", dp: 1 };
+        
+        stats_columns[category+'_elec_kwh_per_m2'] = { 
+            name: "Electric kWh/m²", 
+            heading: "Elec kWh/m²", 
+            group: "Stats: "+category_names[category], 
+            helper: "Electricity consumption per m²", 
+            unit: "kWh/m²", 
+            dp: 1 
+        };
+        
+        stats_columns[category+'_heat_kwh_per_m2'] = { 
+            name: "Heat kWh/m²", 
+            heading: "Heat kWh/m²", 
+            group: "Stats: "+category_names[category], 
+            helper: "Electricity consumption per m²", 
+            unit: "kWh/m²", 
+            dp: 1 
+        };
+        
+        stats_columns[category+'_cost'] = { 
+            name: "Cost", 
+            heading: "Cost", 
+            group: "Stats: "+category_names[category], 
+            helper: "Electricity cost", 
+            unit: "", 
+            prepend: "£",
+            dp: 0 
+        };
+        
+        stats_columns[category+'_heat_unit_cost'] = { 
+            name: "Heat p/kWh", 
+            heading: "Heat<br>p/kWh", 
+            group: "Stats: "+category_names[category], 
+            helper: "Heat unit cost", 
+            unit: "p/kWh", 
+            dp: 1 
+        };        
     }
     
+    // add stats_columns to columns
+    for (var key in stats_columns) {
+        columns[key] = stats_columns[key];
+    }
+
     for (var key in columns) {
         if (columns[key].heading === undefined) {
             columns[key].heading = columns[key].name;
@@ -223,6 +258,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     
     columns['installer_logo'].heading = "";
     columns['mid_metering'].heading = "MID";
+    columns['electricity_tariff_unit_rate_all'].heading = "Elec<br>p/kWh";
     
     // Available months
     // Aug 2023, Jul 2023, Jun 2023 etc for 12 months
@@ -445,30 +481,47 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                     app.systems[i][key] = stats[id][key];
                                 }
 
-                                // Calculate combined_elec_kwh / floor_area
-                                if (app.systems[i].floor_area!=null && app.systems[i].floor_area>0) {
+                                // for each category
+                                let categories = ['combined','running','space','water'];
+                                for (var z in categories) {
+                                    let category = categories[z];
 
-                                    // for each category
-                                    let categories = ['combined','running','space','water'];
-                                    for (var z in categories) {
-                                        let category = categories[z];
+                                    
+                                    if (app.systems[i].floor_area!=null && app.systems[i].floor_area>0) {
+                                        // elec kwh/m2
+                                        let elec_kwh_per_m2 = app.systems[i][category+"_elec_kwh"] / app.systems[i].floor_area;
+                                        elec_kwh_per_m2 = elec_kwh_per_m2.toFixed(columns[category+'_elec_kwh_per_m2']['dp'])*1;
+                                        if (elec_kwh_per_m2===0) elec_kwh_per_m2 = null;
+                                        app.systems[i][category+"_elec_kwh_per_m2"] = elec_kwh_per_m2;
 
-                                        app.systems[i][category+"_elec_kwh_per_m2"] = app.systems[i][category+"_elec_kwh"] / app.systems[i].floor_area;
-                                        app.systems[i][category+"_heat_kwh_per_m2"] = app.systems[i][category+"_heat_kwh"] / app.systems[i].floor_area;
-
-                                        app.systems[i][category+"_elec_kwh_per_m2"] = app.systems[i][category+"_elec_kwh_per_m2"].toFixed(columns[category+'_elec_kwh_per_m2']['dp'])*1;
-                                        app.systems[i][category+"_heat_kwh_per_m2"] = app.systems[i][category+"_heat_kwh_per_m2"].toFixed(columns[category+'_elec_kwh_per_m2']['dp'])*1;
-                                        
-                                        if (app.systems[i][category+"_elec_kwh_per_m2"]===0) {
-                                            app.systems[i][category+"_elec_kwh_per_m2"] = null;
-                                        }
-                                        if (app.systems[i][category+"_heat_kwh_per_m2"]===0) {
-                                            app.systems[i][category+"_heat_kwh_per_m2"] = null;
-                                        }
+                                        // heat kwh/m2
+                                        let heat_kwh_per_m2 = app.systems[i][category+"_heat_kwh"] / app.systems[i].floor_area;
+                                        heat_kwh_per_m2 = heat_kwh_per_m2.toFixed(columns[category+'_elec_kwh_per_m2']['dp'])*1;
+                                        if (heat_kwh_per_m2===0) heat_kwh_per_m2 = null;
+                                        app.systems[i][category+"_heat_kwh_per_m2"] = heat_kwh_per_m2;
+                                    } else {
+                                        app.systems[i][category+"_elec_kwh_per_m2"] = null;
+                                        app.systems[i][category+"_heat_kwh_per_m2"] = null;
                                     }
-                                } else {
-                                    app.systems[i].combined_elec_kwh_per_m2 = null;
-                                    app.systems[i].combined_heat_kwh_per_m2 = null;
+
+                                    // cost
+                                    if (app.systems[i].electricity_tariff_unit_rate_all==0) {
+                                        app.systems[i].electricity_tariff_unit_rate_all = 26;
+                                    }
+                                    let cost = app.systems[i][category+"_elec_kwh"] * app.systems[i].electricity_tariff_unit_rate_all * 0.01;
+                                    cost = cost.toFixed(columns[category+'_cost']['dp'])*1;
+                                    if (cost === 0) cost = null;
+                                    app.systems[i][category+"_cost"] = cost;
+
+                                    // unitcost
+                                    if (app.systems[i][category+"_cop"]>0) {
+                                        let unitcost = app.systems[i].electricity_tariff_unit_rate_all / app.systems[i][category+"_cop"];
+                                        unitcost = unitcost.toFixed(columns[category+'_heat_unit_cost']['dp'])*1;
+                                        if (unitcost === 0) unitcost = null;
+                                        app.systems[i][category+"_heat_unit_cost"] = unitcost;
+                                    } else {
+                                        app.systems[i][category+"_heat_unit_cost"] = null;
+                                    }
                                 }
 
                             } else {
@@ -580,6 +633,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     }
                 }
                 
+                if (key=='electricity_tariff_unit_rate_all') {
+                    if (val==null) return '';
+                    return val + ' p/kWh';
+                }
                 
                 if (stats_columns[key]!=undefined) {
                     if (isNaN(val) || val == null) {
@@ -590,9 +647,14 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     if (stats_columns[key]['unit']!=undefined) {
                         unit = ' '+stats_columns[key]['unit'];
                     }
+
+                    let prepend = '';
+                    if (stats_columns[key]['prepend']!=undefined) {
+                        prepend = stats_columns[key]['prepend'];
+                    }
                 
                     if (stats_columns[key]['dp']!=undefined) {
-                        return val.toFixed(stats_columns[key]['dp'])+unit;
+                        return prepend+val.toFixed(stats_columns[key]['dp'])+unit;
                     }
                 }
                 

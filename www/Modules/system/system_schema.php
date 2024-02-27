@@ -428,6 +428,7 @@ $schema['system_meta'] = array(
         'options' => array('Passivhaus', 'Fully insulated walls, floors and loft', 'Some insulation in walls and loft', 'Cavity wall, plus some loft insulation', 'Non-insulated cavity wall', 'Solid walls')
     ),
 
+    /*
     'kwh_m2' => array(
         'type' => 'float', 
         'editable' => false, 
@@ -436,7 +437,7 @@ $schema['system_meta'] = array(
         'group' => 'Property', 
         'helper' => 'Annual space and water heating demand per m2',
         'unit' => 'kWh/m²/yr'
-    ),
+    ),*/
 
     /* ----------------------------- Electricity tariff ----------------------------- */
 
