@@ -84,6 +84,13 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         <div class="row">
             <!-- Side bar with field selection -->
             <div class="col-12 col-sm-12 col-md-12 col-lg-12 col-xl-2">
+
+                <ul class="list-group" style="margin-top:15px">
+                    <li @click="template_view('topofthescops')" :class="'list-group-item list-group-item-action '+(selected_template=='topofthescops'?'active':'')" style="cursor:pointer">Top of the SCOPs</li>
+                    <li @click="template_view('heatpumpfabric')" :class="'list-group-item list-group-item-action '+(selected_template=='heatpumpfabric'?'active':'')" style="cursor:pointer">Heatpump + Fabric</li>
+                    <li @click="template_view('costs')" :class="'list-group-item list-group-item-action '+(selected_template=='costs'?'active':'')" style="cursor:pointer">Costs</li>
+                </ul>
+                
                 <div class="card mt-3 sticky-card">
                     <div class="card-header">
                     <button class="btn btn-sm btn-secondary" style="float:right; margin-right:-8px" @click="show_field_selector = !show_field_selector">
@@ -265,6 +272,20 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     columns['mid_metering'].heading = "MID";
     columns['electricity_tariff_unit_rate_all'].heading = "Elec<br>p/kWh";
     
+    // Template views
+    var template_views = {}
+    template_views['topofthescops'] = {}
+    template_views['topofthescops']['wide'] = ['location', 'installer_logo', 'installer_name', 'training', 'hp_type', 'hp_model', 'hp_output', 'combined_data_length', 'combined_cop', 'mid_metering', 'learnmore'];
+    template_views['topofthescops']['narrow'] = ['installer_logo', 'training', 'hp_model', 'hp_output', 'combined_cop', 'learnmore'];
+
+    template_views['heatpumpfabric'] = {}
+    template_views['heatpumpfabric']['wide'] = ['location', 'installer_logo', 'installer_name', 'training', 'hp_type', 'hp_model', 'hp_output', 'combined_data_length', 'combined_cop', 'combined_elec_kwh_per_m2', 'mid_metering', 'learnmore'];
+    template_views['heatpumpfabric']['narrow'] = ['installer_logo', 'training', 'hp_model', 'hp_output', 'combined_elec_kwh_per_m2', 'learnmore'];
+
+    template_views['costs'] = {}
+    template_views['costs']['wide'] = ['location', 'installer_logo', 'installer_name', 'training', 'hp_type', 'hp_model', 'hp_output', 'combined_data_length', 'combined_cop', 'combined_cost', 'combined_heat_unit_cost', 'mid_metering', 'learnmore'];
+    template_views['costs']['narrow'] = ['installer_logo', 'training', 'hp_model', 'hp_output', 'combined_cost', 'learnmore'];
+
     // Available months
     // Aug 2023, Jul 2023, Jun 2023 etc for 12 months
     var months = [];
@@ -301,9 +322,24 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             minDays: minDays,
             showContent: true,
             show_field_selector: true,
-            public_mode_enabled: public_mode_enabled
+            public_mode_enabled: public_mode_enabled,
+            selected_template: 'topofthescops'
         },
         methods: {
+            template_view: function(template) {
+                this.selected_template = template;
+                if (template == 'topofthescops') {
+                    app.currentSortDir = 'desc'
+                    app.sort_only('combined_cop');
+                } else if (template == 'heatpumpfabric') {
+                    app.currentSortDir = 'asc'
+                    app.sort_only('combined_elec_kwh_per_m2');
+                } else if (template == 'costs') {
+                    app.currentSortDir = 'asc'
+                    app.sort_only('combined_cost');
+                }
+                resize();
+            },
             create: function() {
                 window.location = path+"system/new";
             },
@@ -906,12 +942,12 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
         if (app.mode == 'public') {
             if (width<800) {
-                app.selected_columns = ['installer_logo', 'training', 'hp_model', 'hp_output', 'combined_cop', 'learnmore'];
+                app.selected_columns = template_views[app.selected_template]['narrow'];
                 app.showContent = false;
                 if (first) app.show_field_selector = false;
                 app.columns['training'].heading = "";
             } else {
-                app.selected_columns = ['location', 'installer_logo', 'installer_name', 'training', 'hp_type', 'hp_model', 'hp_output', 'combined_data_length', 'combined_cop', 'mid_metering', 'learnmore'];
+                app.selected_columns = template_views[app.selected_template]['wide'];
                 app.showContent = true;
                 app.columns['training'].heading = "Training";
             }
