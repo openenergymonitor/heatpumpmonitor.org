@@ -86,21 +86,23 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             <div class="col-12 col-sm-12 col-md-12 col-lg-12 col-xl-2">
                 <div class="card mt-3 sticky-card">
                     <div class="card-header">
-                    <button class="btn btn-primary d-md-none" style="float:right" @click="showContent = !showContent">
-                        <i :class="{'fas fa-chevron-up': showContent, 'fas fa-chevron-down': !showContent}"></i>
-                    </button>                        
-                    <h5>Select Fields</h5>
+                    <button class="btn btn-sm btn-secondary" style="float:right; margin-right:-8px" @click="show_field_selector = !show_field_selector">
+                        <i :class="{'fas fa-minus': show_field_selector, 'fas fa-plus': !show_field_selector}"></i>
+                    </button>
+                    <div style="margin-top:2px; font-weight:bold; font-size:18px">Select Fields</div>
                     </div>
-                    <div class="collapse show" :class="{ 'd-none': !showContent, 'd-md-block': showContent }">
-                        <ul class="list-group list-group-flush" style="overflow-x:hidden; height:600px">
+                    <div class="collapse show" :class="{ 'd-none': !show_field_selector, 'd-md-block': show_field_selector }">
+                        <ul class="list-group list-group-flush">
                         <template v-for="(group, group_name) in column_groups" v-if="!((stats_time_start=='last365' || stats_time_start=='all') && (group_name=='When Running' || group_name=='Standby'))">
-                            <li class="list-group-item">
+                            <li class="list-group-item" @click="toggle_field_group(group_name)" style="cursor:pointer; background-color:#f7f7f7;">
+                                <!-- plus icon -->
+                                <i :class="(show_field_group[group_name])?'fa fa-angle-up':'fa fa-angle-down'" style="float:right; margin-top:3px; margin-right:3px"></i>
                                 <b>{{ group_name }}</b>
                             </li>
-                            <li v-for="column in group" class="list-group-item">
+                            <li v-for="column in group" class="list-group-item" v-if="show_field_group[group_name]">
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault" @click="select_column(column.key)" :checked="selected_columns.includes(column.key)">
-                                <label class="form-check-label" for="flexCheckDefault">
+                                <label class="form-check-label" for="flexCheckDefault" style="font-size:15px">
                                 {{ column.name }}
                                 </label>
                             </div>
@@ -250,10 +252,13 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
     // convert to column groups
     var column_groups = {};
+    var show_field_group = {};
+
     for (var key in columns) {
         var column = columns[key];
         if (column_groups[column.group] == undefined) column_groups[column.group] = [];
         column_groups[column.group].push({key: key, name: column.name, helper: column.helper});
+        show_field_group[column.group] = false;
     }
     
     columns['installer_logo'].heading = "";
@@ -282,6 +287,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             chart_enable: false,
             columns: columns,
             column_groups: column_groups,
+            show_field_group: show_field_group,
             selected_columns: [],
             currentSortColumn: 'combined_cop',
             currentSortDir: 'desc',
@@ -294,6 +300,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             filterKey: window.location.hash.replace(/^#/, ''),
             minDays: minDays,
             showContent: true,
+            show_field_selector: true,
             public_mode_enabled: public_mode_enabled
         },
         methods: {
@@ -334,6 +341,14 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 this.selected_columns.push(column);
                 // this.sort(column, 'desc');
 
+            },
+            toggle_field_group: function(group) {
+                // hide all
+                for (var key in this.show_field_group) {
+                    if (key==group) continue;
+                    this.show_field_group[key] = false;
+                }
+                this.show_field_group[group] = !this.show_field_group[group];
             },
             sort: function(column, starting_order) {
 
@@ -772,7 +787,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     
     app.load_system_stats();
     app.sort_only('combined_cop');
-    resize();
+    resize(true);
 
     function time_ago(val,ago='') {
         if (val == null || val == 0) {
@@ -886,13 +901,14 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         resize();
     }, true);
     
-    function resize() {
+    function resize(first = false) {
         var width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
 
         if (app.mode == 'public') {
             if (width<800) {
                 app.selected_columns = ['installer_logo', 'training', 'hp_model', 'hp_output', 'combined_cop', 'learnmore'];
                 app.showContent = false;
+                if (first) app.show_field_selector = false;
                 app.columns['training'].heading = "";
             } else {
                 app.selected_columns = ['location', 'installer_logo', 'installer_name', 'training', 'hp_type', 'hp_model', 'hp_output', 'combined_data_length', 'combined_cop', 'mid_metering', 'learnmore'];
@@ -903,6 +919,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             if (width<800) {
                 app.selected_columns = ['hp_model', 'hp_output', 'combined_cop'];
                 app.showContent = false;
+                if (first) app.show_field_selector = false;
             } else {
                 app.selected_columns = ['location', 'hp_type', 'hp_model', 'hp_output', 'combined_data_length', 'combined_cop'];
                 app.showContent = true;
