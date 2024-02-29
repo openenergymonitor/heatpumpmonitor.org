@@ -269,6 +269,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         d.setMonth(d.getMonth() - 1);
     }
     
+    var mode = "<?php echo $mode; ?>";
+    
+    var minDays = 24;
+    if (mode!='public') minDays = 0;
+
     var app = new Vue({
         el: '#app',
         data: {
@@ -287,7 +292,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             available_months_start: months,
             available_months_end: months,
             filterKey: window.location.hash.replace(/^#/, ''),
-            minDays: 24,
+            minDays: minDays,
             showContent: true,
             public_mode_enabled: public_mode_enabled
         },
@@ -411,19 +416,19 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 }
                 
                 if (this.stats_time_start=='last365') {
-                    this.minDays = 290;
+                    if (this.mode == 'public') this.minDays = 290;
                     columns['combined_cop'].name = 'SCOP';
                 } else if (this.stats_time_start=='last90') {
-                    this.minDays = 72;
+                    if (this.mode == 'public') this.minDays = 72;
                     columns['combined_cop'].name = 'COP';
                 } else if (this.stats_time_start=='last30') {
-                    this.minDays = 24;
+                    if (this.mode == 'public') this.minDays = 24;
                     columns['combined_cop'].name = 'COP';
                 } else if (this.stats_time_start=='last7') {
-                    this.minDays = 5;
+                    if (this.mode == 'public') this.minDays = 5;
                     columns['combined_cop'].name = 'COP';
                 } else {
-                    this.minDays = 0;
+                    if (this.mode == 'public') this.minDays = 0;
                     columns['combined_cop'].name = 'COP';
                 }
                 

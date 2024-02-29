@@ -107,6 +107,9 @@ function load_daily_stats_system($meta, $reload) {
 
     for ($x=0; $x<200; $x++) {
 
+        $last_start = $start;
+        
+        
         // get most recent entry in db
         $result = $mysqli->query("SELECT MAX(timestamp) AS timestamp FROM system_stats_daily WHERE `id`='$systemid'");
         if ($row = $result->fetch_assoc()) {
@@ -121,7 +124,7 @@ function load_daily_stats_system($meta, $reload) {
         $date->setTimestamp($start);
         $date->modify("midnight");
 
-        $last_start = $start;
+        
         $start = $date->getTimestamp();
         $start_str = $date->format("Y-m-d");
         // +30 days
@@ -139,11 +142,20 @@ function load_daily_stats_system($meta, $reload) {
         $end_str = $date->format("Y-m-d");
 
         logger("- start: ".$start_str." end: ".$end_str);
-        if ($start_str==$end_str) break;
+        if ($start_str==$end_str) {
+            echo "start_str == end_str\n";
+            break;
+        }
 
         if ($x>1) {
-            if ($start==$last_start) break;
-            if ($end==$last_end) break;
+            if ($start==$last_start) {
+                echo "start == last_start\n";
+                break;
+            }    
+            if ($end==$last_end) {
+                echo "end == last_end\n";
+                break;
+            }
         }
 
 
