@@ -96,7 +96,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     <button class="btn btn-sm btn-secondary" style="float:right; margin-right:-8px" @click="show_field_selector = !show_field_selector">
                         <i :class="{'fas fa-minus': show_field_selector, 'fas fa-plus': !show_field_selector}"></i>
                     </button>
-                    <div style="margin-top:2px; font-weight:bold; font-size:18px">Select Fields</div>
+                    <div style="margin-top:2px; font-size:18px">Add fields</div>
                     </div>
                     <div class="collapse show" :class="{ 'd-none': !show_field_selector, 'd-md-block': show_field_selector }">
                         <ul class="list-group list-group-flush">
@@ -283,8 +283,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     template_views['heatpumpfabric']['narrow'] = ['installer_logo', 'training', 'hp_model', 'hp_output', 'combined_elec_kwh_per_m2', 'learnmore'];
 
     template_views['costs'] = {}
-    template_views['costs']['wide'] = ['location', 'installer_logo', 'installer_name', 'training', 'hp_type', 'hp_model', 'hp_output', 'combined_data_length', 'combined_cop', 'combined_cost', 'combined_heat_unit_cost', 'mid_metering', 'learnmore'];
-    template_views['costs']['narrow'] = ['installer_logo', 'training', 'hp_model', 'hp_output', 'combined_cost', 'learnmore'];
+    template_views['costs']['wide'] = ['location', 'installer_logo', 'installer_name', 'training', 'hp_type', 'hp_model', 'hp_output', 'combined_data_length', 'combined_cop', 'combined_heat_unit_cost', 'combined_cost', 'mid_metering', 'learnmore'];
+    template_views['costs']['narrow'] = ['installer_logo', 'training', 'hp_model', 'hp_output', 'combined_heat_unit_cost', 'learnmore'];
 
     // Available months
     // Aug 2023, Jul 2023, Jun 2023 etc for 12 months
@@ -321,7 +321,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             filterKey: window.location.hash.replace(/^#/, ''),
             minDays: minDays,
             showContent: true,
-            show_field_selector: true,
+            show_field_selector: false,
             public_mode_enabled: public_mode_enabled,
             selected_template: 'topofthescops'
         },
@@ -336,7 +336,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     app.sort_only('combined_elec_kwh_per_m2');
                 } else if (template == 'costs') {
                     app.currentSortDir = 'asc'
-                    app.sort_only('combined_cost');
+                    app.sort_only('combined_heat_unit_cost');
                 }
                 resize();
             },
@@ -545,13 +545,13 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                     
                                     if (app.systems[i].floor_area!=null && app.systems[i].floor_area>0) {
                                         // elec kwh/m2
-                                        let elec_kwh_per_m2 = app.systems[i][category+"_elec_kwh"] / app.systems[i].floor_area;
+                                        let elec_kwh_per_m2 = 1*app.systems[i][category+"_elec_kwh"] / app.systems[i].floor_area;
                                         elec_kwh_per_m2 = elec_kwh_per_m2.toFixed(columns[category+'_elec_kwh_per_m2']['dp'])*1;
                                         if (elec_kwh_per_m2===0) elec_kwh_per_m2 = null;
                                         app.systems[i][category+"_elec_kwh_per_m2"] = elec_kwh_per_m2;
 
                                         // heat kwh/m2
-                                        let heat_kwh_per_m2 = app.systems[i][category+"_heat_kwh"] / app.systems[i].floor_area;
+                                        let heat_kwh_per_m2 = 1*app.systems[i][category+"_heat_kwh"] / app.systems[i].floor_area;
                                         heat_kwh_per_m2 = heat_kwh_per_m2.toFixed(columns[category+'_elec_kwh_per_m2']['dp'])*1;
                                         if (heat_kwh_per_m2===0) heat_kwh_per_m2 = null;
                                         app.systems[i][category+"_heat_kwh_per_m2"] = heat_kwh_per_m2;
@@ -907,29 +907,31 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         var x = [];
         var y = [];
         
-        if (stats_columns[app.currentSortColumn]!=undefined) {
-            
+        if (columns[app.currentSortColumn]!=undefined) {
         
             for (var i = 0; i < app.systems.length; i++) {
-                x.push(app.systems[i].location);
                 let val = app.systems[i][app.currentSortColumn];
-                if (val==undefined) val = null;
+                if (isNaN(val)) continue;
+                if (val==undefined) continue;
+                if (val==null) continue;
                 
-                if (val!==null) {
-                    val = val.toFixed(stats_columns[app.currentSortColumn]['dp']+1);
+                if (columns[app.currentSortColumn]['dp']!=undefined) {
+                    val = val.toFixed(columns[app.currentSortColumn]['dp']+1);
                 }
                 
+                x.push(app.systems[i].location);                
                 y.push(val);
             }
 
             chart_options.xaxis.categories = x;
+            chart_options.yaxis[0].title.text = columns[app.currentSortColumn]['name'];
+            
             chart_options.series = [{
                 name: app.currentSortColumn,
                 data: y
             }];
 
             chart.updateOptions(chart_options);
-        
         }
     }
 
