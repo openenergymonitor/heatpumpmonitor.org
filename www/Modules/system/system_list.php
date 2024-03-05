@@ -641,13 +641,13 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 if (key=='training') {
                     var training = "";
                     if (system['heatgeek']==1) {
-                        training += "<img class='heatgeeklogo' src='"+path+"theme/img/HeatGeekLogo.png' title='HeatGeek Mastery'/>";
+                        training += "<a href='https://www.heatgeek.com'><img class='heatgeeklogo' src='"+path+"theme/img/HeatGeekLogo.png' title='HeatGeek Mastery'/></a>";
                     }
                     if (system['ultimaterenewables']==1) {
-                        training += "<img class='ultimatelogo' src='"+path+"theme/img/ultimate.png' title='Ultimate Pro'/>";
+                        training += "<a href='https://www.ultimatetrainingandtechnical.co.uk'><img class='ultimatelogo' src='"+path+"theme/img/ultimate.png' title='Ultimate Pro'/></a>";
                     }
                     if (system['heatingacademy']==1) {
-                        training += "<img class='heatingacademylogo' src='"+path+"theme/img/HA.png' title='Heating Academy Hydronics'/>";
+                        training += "<a href='https://heatingacademynorthampton.co.uk'><img class='heatingacademylogo' src='"+path+"theme/img/HA2.png' title='Heating Academy Hydronics'/></a>";
                     }
                     return training;
                 }
