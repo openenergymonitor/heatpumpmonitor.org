@@ -14,7 +14,7 @@ var app = new Vue({
     mode: "cop_vs_dt",
     // months: ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
     // days_in_month: [31,28,31,30,31,30,31,31,30,31,30,31],
-    // years: [2020,2021,2022,2023],
+    // years: [2020,2021,2022,2023,...],
     interval: 3600,
     match_dates: true,
     selected_systems: [
@@ -70,6 +70,7 @@ var app = new Vue({
     
     change_dates: function(idx) {
     
+      // don't allow dates before 2020
       date = new Date(app.selected_systems[idx].start+" 00:00:00");
       if (date.getFullYear()<2020) {
         date.setFullYear(2020);
@@ -79,15 +80,18 @@ var app = new Vue({
         start = date.getTime()*0.001;
       }
       
+      // don't allow dates in the future
+      today = new Date();
       date = new Date(app.selected_systems[idx].end+" 00:00:00");
-      if (date.getFullYear()>2023) {
-        date.setFullYear(2023);
+      if (date > today) {
+        date = today;
         app.selected_systems[idx].end = time_to_date_str(date.getTime()*0.001);
       }
       if (!isNaN(date.getTime())) {
         end = date.getTime()*0.001;
       }  
       
+      // set minimum period of 1 day
       if (start>(end-(3600*24))) {
           start = end-(3600*24)
           app.selected_systems[idx].start = time_to_date_str(start);
