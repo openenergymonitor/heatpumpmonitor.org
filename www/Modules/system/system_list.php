@@ -442,7 +442,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
                         // if float 3dp
                         if (stats_columns[column]!=undefined) {
-                            if (stats_columns[column]['dp']!=undefined) {
+                            if (stats_columns[column]['dp']!=undefined && value != null && value != '') {
                                 value = value.toFixed(stats_columns[column]['dp']+1);
                             }
                         }
