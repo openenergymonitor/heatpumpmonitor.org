@@ -8,7 +8,7 @@ $schema['system_meta'] = array(
     'published' => array('type' => 'tinyint(1)', 'editable' => false, 'optional' => false, 'name' => 'Published', 'group' => 'Overview'),
     'last_updated' => array('type' => 'int(11)', 'editable' => false, 'name' => 'Last updated', 'group' => 'Overview'),
     'emoncmsorg_userid' => array('type' => 'int(11)', 'editable' => false),
-
+    
     /* ------------------------------ Overview ----------------------------- */
 
     'location' => array(
@@ -613,6 +613,15 @@ $schema['system_meta'] = array(
         'optional' => true, 
         'name' => 'Any other notes or comments', 
         'group' => 'Notes'
+    ),
+    
+    'data_flag' => array('type' => 'tinyint(1)', 'editable' => true, 'optional' => true, 'name' => 'Data issue flag', 'group' => 'Metering'),
+    'data_flag_note' => array(
+        'type' => 'varchar(128)', 
+        'editable' => true, 
+        'optional' => true, 
+        'name' => 'Data issue flag note',
+        'group' => 'Metering'
     ),
 );
 

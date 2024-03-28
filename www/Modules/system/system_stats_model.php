@@ -439,6 +439,57 @@ class SystemStats
 
         return $stats;
     }
+
+    public function get_daily($systemid, $start, $end, $fields) {
+
+
+
+        // Print header based on system_stats_daily schema
+        $all_fields = array();
+        foreach ($this->schema['system_stats_daily'] as $field => $field_schema) {
+            $all_fields[] = $field;
+        }
+
+        if ($fields) {
+            $fields = explode(",",$fields);
+            $valid_fields = array();
+            foreach ($fields as $field) {
+                if (in_array($field,$all_fields)) {
+                    $valid_fields[] = $field;
+                }
+            }
+            $field_select = implode(",",$valid_fields);
+        } else {
+            $valid_fields = $all_fields;
+            $field_select = "*";
+        }
+        
+        $out = implode(", ",$valid_fields)."\n";
+
+        $date = new DateTime();
+        $date->setTimezone(new DateTimeZone('Europe/London'));
+
+        // Get data
+        $result = $this->mysqli->query("SELECT $field_select FROM system_stats_daily WHERE id=$systemid ORDER BY timestamp ASC");
+        while ($row = $result->fetch_object()) {
+            $data = array();
+            foreach ($valid_fields as $field) {
+            
+                $value = $row->$field;
+                
+                if ($field == "timestamp") {
+                    // convert DateTime
+                    // $date->setTimestamp($value);
+                    // $value = $date->format('Y-m-d H:i:s');
+                }
+            
+                $data[] = $value;
+            }
+            $out .= implode(", ",$data)."\n";
+        }
+        
+        return $out;
+    }
     
     public function export_daily($systemid) {
     

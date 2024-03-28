@@ -145,6 +145,15 @@ function system_controller() {
             if ($route->subaction2 == "daily") {
                 $system_stats->export_daily($system_id);
             }
+        } else if ($route->subaction == "daily") {
+            $route->format = "text";
+            
+            return $system_stats->get_daily(
+                $system_id,
+                get('start',true),
+                get('end',true),   
+                get('fields',false),     
+            );
         }
     }
 

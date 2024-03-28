@@ -57,6 +57,21 @@ switch ($route->controller) {
         $output = view("views/compare.html", array("userid"=>$session['userid']));
         break;
 
+    case "daily":
+        $route->format = "html";
+
+        $systemid = 1;
+        if (isset($_GET['id'])) $systemid = (int) $_GET['id'];
+
+        $system_data = $system->get($session['userid'],$systemid);
+        
+        $output = view("views/daily.php", array(
+            "userid"=>$session['userid'],
+            "systemid"=>$systemid,
+            "system_data"=>$system_data   
+        ));
+        break;
+
     case "monthly":
         $route->format = "html";
         $output = view("views/monthly.php", array(

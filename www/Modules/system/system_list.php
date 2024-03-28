@@ -67,6 +67,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <div class="input-group-text">Min days</div>
                         <input class="form-control" name="query" v-model="minDays" style="width:100px">  
                     </div>
+                    
+      
             </div>
 
         </div>
@@ -85,38 +87,77 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             <!-- Side bar with field selection -->
             <div class="col-12 col-sm-12 col-md-12 col-lg-12 col-xl-2">
 
-                <ul class="list-group" style="margin-top:15px">
-                    <li @click="template_view('topofthescops')" :class="'list-group-item list-group-item-action '+(selected_template=='topofthescops'?'active':'')" style="cursor:pointer"><i class="fa fa-trophy" style="margin: 0px 10px 0px 5px"></i> Top of the SCOPs</li>
-                    <li @click="template_view('heatpumpfabric')" :class="'list-group-item list-group-item-action '+(selected_template=='heatpumpfabric'?'active':'')" style="cursor:pointer"><i class="fas fa-house-damage" style="margin: 0px 10px 0px 5px"></i> Heatpump + Fabric</li>
-                    <li @click="template_view('costs')" :class="'list-group-item list-group-item-action '+(selected_template=='costs'?'active':'')" style="cursor:pointer"><i class="fas fa-pound-sign" style="margin: 0px 15px 0px 8px"></i> Costs</li>
-                </ul>
-                
-                <div class="card mt-3 sticky-card">
-                    <div class="card-header">
-                    <button class="btn btn-sm btn-secondary" style="float:right; margin-right:-8px" @click="show_field_selector = !show_field_selector">
-                        <i :class="{'fas fa-minus': show_field_selector, 'fas fa-plus': !show_field_selector}"></i>
-                    </button>
-                    <div style="margin-top:2px; font-size:18px">Add fields</div>
+
+                <div class="sticky-top">
+
+                    <ul class="list-group mt-3">
+                        <li @click="template_view('topofthescops')" :class="'list-group-item list-group-item-action '+(selected_template=='topofthescops'?'active':'')" style="cursor:pointer"><i class="fa fa-trophy" style="margin: 0px 10px 0px 5px"></i> Top of the SCOPs</li>
+                        <li @click="template_view('heatpumpfabric')" :class="'list-group-item list-group-item-action '+(selected_template=='heatpumpfabric'?'active':'')" style="cursor:pointer"><i class="fas fa-house-damage" style="margin: 0px 10px 0px 5px"></i> Heatpump + Fabric</li>
+                        <li @click="template_view('costs')" :class="'list-group-item list-group-item-action '+(selected_template=='costs'?'active':'')" style="cursor:pointer"><i class="fas fa-pound-sign" style="margin: 0px 15px 0px 8px"></i> Costs</li>
+                    </ul>
+                    
+                    
+                    
+                    <div class="card mt-3">
+                        <div class="card-header">
+                        <button class="btn btn-sm btn-secondary" style="float:right; margin-right:-8px" @click="show_field_selector = !show_field_selector">
+                            <i :class="{'fas fa-minus': show_field_selector, 'fas fa-plus': !show_field_selector}"></i>
+                        </button>
+                        <div style="margin-top:2px; font-size:18px">Add fields</div>
+                        </div>
+                        <div class="collapse show" :class="{ 'd-none': !show_field_selector, 'd-md-block': show_field_selector }">
+                            <ul class="list-group list-group-flush">
+                            <template v-for="(group, group_name) in column_groups" v-if="!((stats_time_start=='last365' || stats_time_start=='all') && (group_name=='When Running' || group_name=='Standby'))">
+                                <li class="list-group-item" @click="toggle_field_group(group_name)" style="cursor:pointer; background-color:#f7f7f7;">
+                                    <!-- plus icon -->
+                                    <i :class="(show_field_group[group_name])?'fa fa-angle-up':'fa fa-angle-down'" style="float:right; margin-top:3px; margin-right:3px"></i>
+                                    <b>{{ group_name }}</b>
+                                </li>
+                                <li v-for="column in group" class="list-group-item" v-if="show_field_group[group_name]">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault" @click="select_column(column.key)" :checked="selected_columns.includes(column.key)">
+                                    <label class="form-check-label" for="flexCheckDefault" style="font-size:15px">
+                                    {{ column.name }}
+                                    </label>
+                                </div>
+                                </li>
+                            </template>
+                            </ul>
+                        </div>
                     </div>
-                    <div class="collapse show" :class="{ 'd-none': !show_field_selector, 'd-md-block': show_field_selector }">
-                        <ul class="list-group list-group-flush">
-                        <template v-for="(group, group_name) in column_groups" v-if="!((stats_time_start=='last365' || stats_time_start=='all') && (group_name=='When Running' || group_name=='Standby'))">
-                            <li class="list-group-item" @click="toggle_field_group(group_name)" style="cursor:pointer; background-color:#f7f7f7;">
-                                <!-- plus icon -->
-                                <i :class="(show_field_group[group_name])?'fa fa-angle-up':'fa fa-angle-down'" style="float:right; margin-top:3px; margin-right:3px"></i>
-                                <b>{{ group_name }}</b>
-                            </li>
-                            <li v-for="column in group" class="list-group-item" v-if="show_field_group[group_name]">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault" @click="select_column(column.key)" :checked="selected_columns.includes(column.key)">
-                                <label class="form-check-label" for="flexCheckDefault" style="font-size:15px">
-                                {{ column.name }}
-                                </label>
-                            </div>
-                            </li>
-                        </template>
-                        </ul>
-                    </div>
+                    
+                    <ul class="list-group mt-3">
+                      <li class="list-group-item">
+                      <b>Show systems with</b>
+                      </li>
+                      <!--
+                      <li class="list-group-item">
+                        <input class="form-check-input me-1" type="checkbox" value="" id="show_mid_id" v-model="show_mid">
+                        <label class="form-check-label stretched-link" for="show_mid_id">MID metering <span style="color:#666;"> (<span v-html="num_mid"></span>)</span></label>
+                      </li>
+                      -->
+                      <li class="list-group-item">
+                        <div style="color:#666; float:right"> (<span v-html="num_class2_heat"></span>)</div>
+                        <input class="form-check-input me-1" type="checkbox" value="" id="show_class2_heat" v-model="show_class2_heat">
+                        <label class="form-check-label stretched-link" for="show_class2_heat">Class 2 Heat metering </label>
+                      </li>
+                      <li class="list-group-item">
+                        <div style="color:#666; float:right"> (<span v-html="num_class1_elec"></span>)</div>
+                        <input class="form-check-input me-1" type="checkbox" value="" id="show_class1_elec" v-model="show_class1_elec">
+                        <label class="form-check-label stretched-link" for="show_class1_elec">Class 1 Electric metering </label>
+                      </li>
+                      <li class="list-group-item">
+                        <span style="color:#666; float:right"> (<span v-html="num_other_metering"></span>)</span>
+                        <input class="form-check-input me-1" type="checkbox" value="" id="show_other_metering_id" v-model="show_other_metering">
+                        <label class="form-check-label stretched-link" for="show_other_metering_id">Other metering </label>
+                      </li> 
+                      <li class="list-group-item">
+                        <div style="color:#666; float:right"> (<span v-html="num_flagged"></span>)</div>
+                        <input class="form-check-input me-1" type="checkbox" value="" id="show_flagged_id" v-model="showFlagged">
+                        <label class="form-check-label stretched-link" for="show_flagged_id">Metering errors </label>
+                      </li>
+                    </ul>
+                    
                 </div>
             </div>
             <div class="col-12 col-sm-12 col-md-12 col-lg-12 col-xl-10">
@@ -169,8 +210,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     <p class="card-text">Average COP based on total sum of heat and electric values: <b>{{ totals.average_cop_kwh | toFixed(1) }}</p>
                     <!-- csv export button copy table data to clipboard -->
                     <button class="btn btn-primary" @click="export_csv">Copy table data to clipboard</button>
-
-
+                    
                   </div>
                 </div>
             </div>
@@ -297,8 +337,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     
     var mode = "<?php echo $mode; ?>";
     
-    var minDays = 24;
+    var minDays = 72;
     if (mode!='public') minDays = 0;
+    
+    var showFlagged = true;
+    if (mode=='public') showFlagged = false;
 
     var app = new Vue({
         el: '#app',
@@ -313,7 +356,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             currentSortColumn: 'combined_cop',
             currentSortDir: 'desc',
             // stats time selection
-            stats_time_start: "last30",
+            stats_time_start: "last90",
             stats_time_end: "only",
             stats_time_range: false,
             available_months_start: months,
@@ -323,7 +366,19 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             showContent: true,
             show_field_selector: false,
             public_mode_enabled: public_mode_enabled,
-            selected_template: 'topofthescops'
+            selected_template: 'topofthescops',
+            showFlagged: showFlagged,
+            show_mid: true,
+            show_non_mid: true,
+            show_class2_heat: true,
+            show_class1_elec: true,
+            show_other_metering: true,
+            num_flagged: 0,
+            num_mid: 0,
+            num_non_mid: 0,
+            num_class2_heat: 0,
+            num_class1_elec: 0,
+            num_other_metering: 0
         },
         methods: {
             template_view: function(template) {
@@ -616,7 +671,13 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     return time_ago(val);
                 }
                 if (key=='combined_data_length') {
-                    return (val/(24*3600)).toFixed(0)+" days";
+                
+                    var flag = "";
+                    if (system['data_flag']) {
+                        flag = "<i class='fas fa-exclamation-circle' style='color: #FFD43B; margin-left:10px; cursor:pointer' title='"+system['data_flag_note']+"'></i>";
+                    }
+                
+                    return (val/(24*3600)).toFixed(0)+" days"+flag;
                 }             
 
                 if (key=='installer_logo') {
@@ -748,6 +809,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             },
  
             filterNodes(row) {
+
                 if (this.filterKey != '') {
                     if (this.filterKey === 'MID') {
                         return row.mid_metering === 1;
@@ -774,7 +836,80 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 let minDays = this.minDays-1;
                 if (minDays<0) minDays = 0;
                 return (row.combined_data_length/ (24 * 3600)) >= minDays;
-            }
+            },
+            
+            filterMetering(row) {
+            
+                var show = false;
+                /*
+                if (this.show_mid && row.mid_metering) {
+                    show = true;
+                }
+                if (this.show_non_mid && !row.mid_metering) {
+                    show = true;
+                }*/
+                
+                if (this.show_class2_heat && this.show_class1_elec) {
+                    if (row.heat_meter_class2 && row.elec_meter_class1) {
+                        show = true;
+                    } 
+                } else {
+                    if (this.show_class2_heat && row.heat_meter_class2) {
+                        show = true;
+                    }      
+                    if (this.show_class1_elec && row.elec_meter_class1) {
+                        show = true;
+                    }
+                }
+                if (this.show_other_metering) {
+                    if (!row.heat_meter_class2 && !row.elec_meter_class1) {
+                        show = true;
+                    }
+                }
+                if (this.showFlagged && row.data_flag) {
+                    show = true;
+                } else {
+                    if (row.data_flag) {
+                        show = false;
+                    }
+                }
+                return show;
+            },
+            
+            system_count(systems) {
+                // Count flagged systems
+                this.num_flagged = 0
+                this.num_mid = 0
+                this.num_non_mid = 0
+                this.num_class2_heat = 0
+                this.num_class1_elec = 0
+                this.num_other_metering = 0
+                
+                for (var i = 0; i < systems.length; i++) {
+                
+                    if (systems[i].data_flag) {
+                        this.num_flagged ++;
+                    } else {
+                        if (systems[i].mid_metering) {
+                            this.num_mid ++;
+                        } else {
+                            this.num_non_mid ++;
+                        }
+                        
+                        if (systems[i].heat_meter_class2) {
+                            this.num_class2_heat++;
+                        }
+
+                        if (systems[i].elec_meter_class1) {
+                            this.num_class1_elec++;
+                        }
+                        
+                        if (!systems[i].elec_meter_class1 && !systems[i].heat_meter_class2) {
+                            this.num_other_metering++;
+                        }
+                    }
+                }
+            }         
        },
         filters: {
             toFixed: function(val, dp) {
@@ -791,7 +926,13 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
         computed: {
             fSystems: function () {
-                return this.systems.filter(this.filterNodes).filter(this.filterDays);
+            
+                var filtered_nodes_days = this.systems.filter(this.filterNodes).filter(this.filterDays);
+                
+                this.system_count(filtered_nodes_days);
+            
+            
+                return filtered_nodes_days.filter(this.filterMetering)
             },
             // calculate total scop of fSystems
             totals: function () {
@@ -818,6 +959,24 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             }
         }
     });
+   
+   
+    for (var i = 0; i < app.systems.length; i++) {
+        let heat_meter = app.systems[i].heat_meter;
+        let elec_meter = app.systems[i].electric_meter;
+        
+        if (heat_meter!=null && heat_meter.indexOf("class 2")!=-1) {
+            app.systems[i].heat_meter_class2 = true;
+        } else {
+            app.systems[i].heat_meter_class2 = false;   
+        }
+        
+        if (elec_meter!=null && elec_meter.indexOf("class 1")!=-1) {
+            app.systems[i].elec_meter_class1 = true;
+        } else {
+            app.systems[i].elec_meter_class1 = false;   
+        }
+    }
 
     init_chart();
     
