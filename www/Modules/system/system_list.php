@@ -130,12 +130,18 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                       <li class="list-group-item">
                       <b>Show systems with</b>
                       </li>
-                      <!--
+                      
                       <li class="list-group-item">
+                        <div style="color:#666; float:right"> (<span v-html="num_mid"></span>)</div>           
                         <input class="form-check-input me-1" type="checkbox" value="" id="show_mid_id" v-model="show_mid">
-                        <label class="form-check-label stretched-link" for="show_mid_id">MID metering <span style="color:#666;"> (<span v-html="num_mid"></span>)</span></label>
+                        <label class="form-check-label stretched-link" for="show_mid_id">MID metering</label>
                       </li>
-                      -->
+                      <li class="list-group-item">
+                        <div style="color:#666; float:right"> (<span v-html="num_non_mid"></span>)</div>           
+                        <input class="form-check-input me-1" type="checkbox" value="" id="show_non_mid_id" v-model="show_non_mid">
+                        <label class="form-check-label stretched-link" for="show_non_mid_id">Other metering</label>
+                      </li>
+                      <!--
                       <li class="list-group-item">
                         <div style="color:#666; float:right"> (<span v-html="num_class2_heat"></span>)</div>
                         <input class="form-check-input me-1" type="checkbox" value="" id="show_class2_heat" v-model="show_class2_heat">
@@ -151,6 +157,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <input class="form-check-input me-1" type="checkbox" value="" id="show_other_metering_id" v-model="show_other_metering">
                         <label class="form-check-label stretched-link" for="show_other_metering_id">Other metering </label>
                       </li> 
+                      -->
                       <li class="list-group-item">
                         <div style="color:#666; float:right"> (<span v-html="num_flagged"></span>)</div>
                         <input class="form-check-input me-1" type="checkbox" value="" id="show_flagged_id" v-model="showFlagged">
@@ -841,15 +848,15 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             filterMetering(row) {
             
                 var show = false;
-                /*
+                
                 if (this.show_mid && row.mid_metering) {
                     show = true;
                 }
                 if (this.show_non_mid && !row.mid_metering) {
                     show = true;
-                }*/
+                }
                 
-                if (this.show_class2_heat && this.show_class1_elec) {
+                /*if (this.show_class2_heat && this.show_class1_elec) {
                     if (row.heat_meter_class2 && row.elec_meter_class1) {
                         show = true;
                     } 
@@ -860,12 +867,12 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     if (this.show_class1_elec && row.elec_meter_class1) {
                         show = true;
                     }
-                }
+                //}
                 if (this.show_other_metering) {
                     if (!row.heat_meter_class2 && !row.elec_meter_class1) {
                         show = true;
                     }
-                }
+                }*/
                 if (this.showFlagged && row.data_flag) {
                     show = true;
                 } else {
@@ -896,6 +903,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             this.num_non_mid ++;
                         }
                         
+                        /*
                         if (systems[i].heat_meter_class2) {
                             this.num_class2_heat++;
                         }
@@ -907,6 +915,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         if (!systems[i].elec_meter_class1 && !systems[i].heat_meter_class2) {
                             this.num_other_metering++;
                         }
+                        */
                     }
                 }
             }         
