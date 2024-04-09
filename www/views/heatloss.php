@@ -48,6 +48,26 @@
         <div class="row">
             <div id="placeholder" style="width:100%;height:600px; margin-bottom:20px"></div>
             
+            <div class="input-group mb-3" style="max-width:250px">
+                <span class="input-group-text">Base DT</span>
+                <input type="text" class="form-control" v-model="base_DT" @change="update_fit">
+                <span class="input-group-text">°K</span>
+            </div>
+
+            <div class="input-group mb-3" style="max-width:250px">
+                <span class="input-group-text">Design DT</span>
+                <input type="text" class="form-control" v-model="design_DT" @change="update_fit">
+                <span class="input-group-text">°K</span>
+            </div>
+
+            <div class="input-group mb-3" style="max-width:400px">
+                <span class="input-group-text">Measured heat loss</span>
+                <input type="text" class="form-control" v-model="measured_heatloss" @change="update_fit">
+                <span class="input-group-text">W</span>
+            </div>
+
+
+            
             <p>Each datapoint shows the average heat output over a 24 hour period. Hover over data point for more information.</p>
             
             <p><b>Note:</b> The measured heat output shown here is the combined heat output of space heating and hot water. 
@@ -80,11 +100,17 @@ var app = new Vue({
         system_list: {},
         total_elec_kwh: 0,
         total_heat_kwh: 0,
-        total_cop: 0
+        total_cop: 0,
+        base_DT: 4,
+        design_DT: 23,
+        measured_heatloss: 0
     },
     methods: {
        change_system: function() {
            load();
+       },
+       update_fit: function() {
+           draw();
        }
     },
     filters: {
@@ -130,6 +156,7 @@ function load() {
     heat_loss = app.system_list[z].heat_loss * 1000;
     hp_max = app.system_list[z].hp_max_output * 1000;
 
+    app.measured_heatloss = app.system_list[z].heat_loss*1000;
     
     var fields = [
         'timestamp',
@@ -218,7 +245,7 @@ function draw() {
         },
         xaxis: {
             axisLabel: 'Room - Outside Temperature',
-            max: 23
+            max: app.design_DT
         },
         yaxis: {
             min: 0,
@@ -246,7 +273,7 @@ function draw() {
 
     // Add horizontal line for heat loss
     series.push({
-        data: [[0,heat_loss],[23,heat_loss]],
+        data: [[0,heat_loss],[app.design_DT,heat_loss]],
         color: 'grey',
         lines: { show: true, fill: false },
         points: { show: false }
@@ -254,7 +281,7 @@ function draw() {
 
     // Add horizontal line for heatpump output
     series.push({
-        data: [[0,hp_output],[23,hp_output]],
+        data: [[0,hp_output],[app.design_DT,hp_output]],
         color: 'black',
         lines: { show: true, fill: false },
         points: { show: false }
@@ -263,12 +290,20 @@ function draw() {
     // Add horizontal line for heatpump output
     if (hp_max>0) {
         series.push({
-            data: [[0,hp_max],[23,hp_max]],
+            data: [[0,hp_max],[app.design_DT,hp_max]],
             color: '#aa0000',
             lines: { show: true, fill: false },
             points: { show: false }
         });
     }
+
+    // Add measured heat loss line
+    series.push({
+        data: [[app.base_DT,0],[app.design_DT,app.measured_heatloss]],
+        color: '#aaa',
+        lines: { show: true, fill: false },
+        points: { show: false }
+    });
 
     var chart = $.plot("#placeholder", series, options);
 
