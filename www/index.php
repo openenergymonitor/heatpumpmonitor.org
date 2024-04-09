@@ -57,18 +57,15 @@ switch ($route->controller) {
         $output = view("views/compare.html", array("userid"=>$session['userid']));
         break;
 
-    case "daily":
+    case "heatloss":
         $route->format = "html";
 
         $systemid = 1;
         if (isset($_GET['id'])) $systemid = (int) $_GET['id'];
-
-        $system_data = $system->get($session['userid'],$systemid);
         
-        $output = view("views/daily.php", array(
+        $output = view("views/heatloss.php", array(
             "userid"=>$session['userid'],
-            "systemid"=>$systemid,
-            "system_data"=>$system_data   
+            "systemid"=>$systemid 
         ));
         break;
 
