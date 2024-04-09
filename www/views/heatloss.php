@@ -12,15 +12,40 @@
     </div>
 
     <div class="container" style="margin-top:20px">
+        <!-- row and 4 columns -->
         <div class="row">
-            <div class="input-group mb-3" style="max-width:600px">
-                <span class="input-group-text">Select system</span>
+            <div class="col-6">
+                <div class="input-group mb-3" style="max-width:600px">
+                    <span class="input-group-text">Select system</span>
 
-                <select class="form-control" v-model="systemid" @change="change_system" >
-                    <option v-for="s,i in system_list" :value="s.id">{{ s.location }},  {{ s.hp_model }}, {{ s.hp_output }} kW</option>
-                </select>
+                    <select class="form-control" v-model="systemid" @change="change_system" >
+                        <option v-for="s,i in system_list" :value="s.id">{{ s.location }},  {{ s.hp_model }}, {{ s.hp_output }} kW</option>
+                    </select>
+                </div>
             </div>
-        
+            <div class="col">
+                <div class="input-group mb-3" style="max-width:200px">
+                    <span class="input-group-text">Elec</span>
+                    <input type="text" class="form-control" :value="total_elec_kwh | toFixed(0)" disabled>
+                    <span class="input-group-text">kWh</span>
+                </div>
+            </div>
+            <div class="col">
+                <div class="input-group mb-3" style="max-width:200px">
+                    <span class="input-group-text">Heat</span>
+                    <input type="text" class="form-control" :value="total_heat_kwh | toFixed(0)" disabled>
+                    <span class="input-group-text">kWh</span>
+                </div>
+            </div>
+            <div class="col">
+                <div class="input-group mb-3" style="max-width:200px">
+                    <span class="input-group-text">COP</span>
+                    <input type="text" class="form-control" :value="total_cop | toFixed(2)" disabled>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
             <div id="placeholder" style="width:100%;height:600px; margin-bottom:20px"></div>
             
             <p>Each datapoint shows the average heat output over a 24 hour period. Hover over data point for more information.</p>
@@ -45,17 +70,27 @@ var hp_output = 0;
 var heat_loss = 0;
 var data = [];
 var series = [];
+var systemid_map = {};
 
 var app = new Vue({
     el: '#app',
     data: {
         systemid: systemid,
-        system_list: {}
+        system_list: {},
+        total_elec_kwh: 0,
+        total_heat_kwh: 0,
+        total_cop: 0
     },
     methods: {
        change_system: function() {
            load();
        }
+    },
+    filters: {
+        toFixed: function (value, dp) {
+            if (!value) value = 0;
+            return value.toFixed(dp);
+        }
     }
 });
 
@@ -64,13 +99,22 @@ $.ajax({
     type: "GET",
     url: path + "system/list/public.json",
     success: function(result) {
-    
+
+        // sort by location
+        result.sort(function(a, b) {
+            // sort by location string
+            if (a.location < b.location) return -1;
+            if (a.location > b.location) return 1;
+            return 0;
+        });
+
         // System list by id
-        app.system_list = {};
+        app.system_list = result;
+
         for (var z in result) {
-            app.system_list[result[z].id] = result[z];
+            systemid_map[result[z].id] = z;
         }
-        
+
         load();
     }
 });
@@ -79,11 +123,22 @@ function load() {
 
     app.system_list
 
-    hp_output = app.system_list[app.systemid].hp_output * 1000;
-    heat_loss = app.system_list[app.systemid].heat_loss * 1000;
+    var z = systemid_map[app.systemid];
+
+    hp_output = app.system_list[z].hp_output * 1000;
+    heat_loss = app.system_list[z].heat_loss * 1000;
 
     
-    var fields = ['timestamp',mode+'_heat_mean',mode+'_roomT_mean',mode+'_outsideT_mean','running_flowT_mean','running_returnT_mean'];
+    var fields = [
+        'timestamp',
+        mode+'_heat_mean',
+        mode+'_roomT_mean',
+        mode+'_outsideT_mean',
+        'running_flowT_mean',
+        'running_returnT_mean',
+        'combined_elec_kwh',
+        'combined_heat_kwh',
+    ];
 
     $.ajax({
         // text plain dataType:
@@ -125,6 +180,9 @@ function load() {
             max_heat = heat_loss;
             if (max_heat<hp_output) max_heat = hp_output;
 
+            var total_elec_kwh = 0;
+            var total_heat_kwh = 0;
+
             data['heat_vs_dt'] = [];
             for (var i = 0; i < data[mode+'_heat_mean'].length; i++) {
                 var x = data[mode+'_roomT_mean'][i][1] - data[mode+'_outsideT_mean'][i][1];
@@ -134,7 +192,15 @@ function load() {
 
                     if (y>max_heat) max_heat = y;
                 }
+
+                total_elec_kwh += data['combined_elec_kwh'][i][1];
+                total_heat_kwh += data['combined_heat_kwh'][i][1];
             }
+
+            app.total_elec_kwh = total_elec_kwh;
+            app.total_heat_kwh = total_heat_kwh;
+            app.total_cop = total_heat_kwh / total_elec_kwh;
+            
 
             draw();
         }

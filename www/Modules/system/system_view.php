@@ -27,16 +27,20 @@ global $settings;
 <div id="app" class="bg-light">
     <div style=" background-color:#f0f0f0; padding-top:20px; padding-bottom:10px">
         <div class="container" style="max-width:800px;">
-            <button class="btn btn-warning" style="float:right; margin-left:10px" v-if="admin && mode=='view'" @click="mode='edit'">Edit</button>
-            <button class="btn btn-light" style="float:right; margin-left:10px" v-if="admin && mode=='edit'" @click="mode='view'">Cancel</button>
-            <button class="btn btn-primary" style="float:right" @click="open_emoncms_dashboard" v-if="system.url!=''">Open Emoncms Heat Pump Dashboard</button>
+
             <div v-if="system.hp_model!=''">
                 <h3>{{ system.hp_output }} kW, {{ system.hp_model }}</h3>
                 <p>{{ system.location }}, <span v-if="system.installer_name"><a :href="system.installer_url">{{ system.installer_name }}</a></span></p>
             </div>
-            <h3 v-else>New System</h3>
+            <button class="btn btn-primary"  @click="open_emoncms_dashboard" v-if="system.url!=''">Open Emoncms Heat Pump Dashboard</button>
+            <button class="btn btn-primary"  @click="open_heatloss_tool" v-if="system.url!=''" style="margin-left:10px">Heatloss tool</button>  
+            <button class="btn btn-warning" style="margin-left:10px" v-if="admin && mode=='view'" @click="mode='edit'">Edit</button>
+            <button class="btn btn-light" style="margin-left:10px" v-if="admin && mode=='edit'" @click="mode='view'">Cancel</button>
+
+            <h3 v-if="system.hp_model==''">New System</h3>
         </div>
     </div>
+    <br>
 
     <div class="container mt-3" style="max-width:800px" v-if="last365!=undefined && last30!=undefined">
 
@@ -413,6 +417,9 @@ global $settings;
             },
             open_emoncms_dashboard: function() {
                 window.open(app.system.url);
+            },
+            open_heatloss_tool: function() {
+                window.open(path+"heatloss?id="+app.system.id);
             },
             loadstats: function() {
                 app.disable_loadstats = true;
