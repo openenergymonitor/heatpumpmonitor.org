@@ -178,6 +178,18 @@ function system_controller() {
         }
     }
 
+    // Save measured heat loss
+    // saveheatloss?id=1&measured_base_DT=0&measured_design_DT=0&measured_heat_loss=0
+    if ($route->action=="saveheatloss") {
+        $route->format = "json";
+        if ($session['userid']) {
+            // save_measured_heat_loss($userid,$systemid,$measured_base_DT,$measured_design_DT,$measured_heat_loss)
+            return $system->save_measured_heat_loss($session['userid'],get("id",false),get("measured_base_DT",false),get("measured_design_DT",false),get("measured_heat_loss",false));
+        } else {
+            return array("success"=>false, "message"=>"Invalid access");
+        }
+    }
+
     if ($route->action=="delete") {
         $route->format = "json";
         if ($session['userid']) {

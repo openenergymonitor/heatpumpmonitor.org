@@ -449,6 +449,38 @@ $schema['system_meta'] = array(
         'unit' => 'kWh/m²/yr'
     ),*/
 
+    /* ----------------------------- Measured heat loss ----------------------------- */
+
+    'measured_base_DT' => array(
+        'type' => 'float', 
+        'editable' => false, 
+        'optional' => true,
+        'name' => 'Measured base DT', 
+        'group' => 'Measured heat loss',
+        'helper' => 'Use the heatpumpmonitor heat loss tool to fill this in once you have enough data', 
+        'unit' => '°K'
+    ),
+
+    'measured_design_DT' => array(
+        'type' => 'float', 
+        'editable' => false, 
+        'optional' => true, 
+        'name' => 'Measured design DT', 
+        'group' => 'Measured heat loss',
+        'helper' => 'Use the heatpumpmonitor heat loss tool to fill this in once you have enough data', 
+        'unit' => 'kW @ -3°C'
+    ),
+
+    'measured_heat_loss' => array(
+        'type' => 'float', 
+        'editable' => false, 
+        'optional' => true, 
+        'name' => 'Measured heat loss', 
+        'group' => 'Measured heat loss',
+        'helper' => 'Use the heatpumpmonitor heat loss tool to fill this in once you have enough data',
+        'unit' => 'kW'
+    ),
+
     /* ----------------------------- Electricity tariff ----------------------------- */
 
     'electricity_tariff' => array(

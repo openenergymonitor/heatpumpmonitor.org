@@ -249,6 +249,39 @@ class System
         }
     }
 
+    // Save measured heat loss values
+    // - systemid
+    // - measured_base_DT
+    // - measured_design_DT
+    // - measured_heat_loss
+    public function save_measured_heat_loss($userid,$systemid,$measured_base_DT,$measured_design_DT,$measured_heat_loss) {
+        $userid = (int) $userid;
+        $systemid = (int) $systemid;
+        $measured_base_DT = (float) $measured_base_DT;
+        $measured_design_DT = (float) $measured_design_DT;
+        $measured_heat_loss = (float) $measured_heat_loss;
+
+        // Check if user has access
+        if ($this->has_access($userid,$systemid)==false) {
+            return array("success"=>false, "message"=>"Invalid access");
+        }
+
+        // Prepare and execute the query with error checking
+        if (!$stmt = $this->mysqli->prepare("UPDATE system_meta SET measured_base_DT=?,measured_design_DT=?,measured_heat_loss=? WHERE id=?")) {
+            return array("success"=>false,"message"=>"Prepare failed: (" . $this->mysqli->errno . ") " . $this->mysqli->error);
+        }
+        if (!$stmt->bind_param("dddi", $measured_base_DT,$measured_design_DT,$measured_heat_loss,$systemid)) {
+            return array("success"=>false,"message"=>"Binding parameters failed: (" . $stmt->errno . ") " . $stmt->error);
+        }
+        if (!$stmt->execute()) {
+            return array("success"=>false,"message"=>"Execute failed: (" . $stmt->errno . ") " . $stmt->error);
+        }
+
+        $stmt->close();
+
+        return array("success"=>true,"message"=>"Saved");
+    }
+
     public function computed_fields($systemid=false) {
         $systemid = (int) $systemid;
         $where = "";

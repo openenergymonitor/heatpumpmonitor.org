@@ -47,25 +47,39 @@
 
         <div class="row">
             <div id="placeholder" style="width:100%;height:600px; margin-bottom:20px"></div>
-            
-            <div class="input-group mb-3" style="max-width:250px">
-                <span class="input-group-text">Base DT</span>
-                <input type="text" class="form-control" v-model="base_DT" @change="update_fit">
-                <span class="input-group-text">°K</span>
+        </div>
+
+        <div class="row">
+            <div class="col">
+                <div class="input-group mb-3" style="max-width:250px">
+                    <span class="input-group-text">Base DT</span>
+                    <input type="text" class="form-control" v-model="base_DT" @change="update_fit">
+                    <span class="input-group-text">°K</span>
+                </div>
             </div>
 
-            <div class="input-group mb-3" style="max-width:250px">
-                <span class="input-group-text">Design DT</span>
-                <input type="text" class="form-control" v-model="design_DT" @change="update_fit">
-                <span class="input-group-text">°K</span>
+            <div class="col">
+                <div class="input-group mb-3" style="max-width:250px">
+                    <span class="input-group-text">Design DT</span>
+                    <input type="text" class="form-control" v-model="design_DT" @change="update_fit">
+                    <span class="input-group-text">°K</span>
+                </div>
             </div>
 
-            <div class="input-group mb-3" style="max-width:400px">
-                <span class="input-group-text">Measured heat loss</span>
-                <input type="text" class="form-control" v-model="measured_heatloss" @change="update_fit">
-                <span class="input-group-text">W</span>
+            <div class="col">
+                <div class="input-group mb-3" style="max-width:250px">
+                    <span class="input-group-text">Heat loss</span>
+                    <input type="text" class="form-control" v-model="measured_heatloss" @change="update_fit">
+                    <span class="input-group-text">W</span>
+                </div>
             </div>
 
+            <div class="col">
+                <button class="btn btn-primary" @click="save_heat_loss" v-if="userid">Save</button>
+            </div>
+        </div>
+
+        <div class="row">
 
             
             <p>Each datapoint shows the average heat output over a 24 hour period. Hover over data point for more information.</p>
@@ -82,6 +96,7 @@
 </div>
 
 <script>
+var userid = <?php echo $userid; ?>;
 
 var systemid = <?php echo $systemid; ?>;
 var mode = "combined";
@@ -96,6 +111,7 @@ var systemid_map = {};
 var app = new Vue({
     el: '#app',
     data: {
+        userid: userid,
         systemid: systemid,
         system_list: {},
         total_elec_kwh: 0,
@@ -111,6 +127,29 @@ var app = new Vue({
        },
        update_fit: function() {
            draw();
+       },
+       save_heat_loss: function() {
+            // saveheatloss?id=1&measured_base_DT=0&measured_design_DT=0&measured_heat_loss=0
+            $.ajax({
+                type: "GET",
+                url: path + "system/saveheatloss",
+                data: {
+                        'id': app.systemid,
+                        'measured_base_DT': app.base_DT,
+                        'measured_design_DT': app.design_DT,
+                        'measured_heat_loss': app.measured_heatloss*0.001
+                },
+                success: function(result) {
+                        console.log(result);
+                        alert(result.message);
+
+                        // update app.system_list
+                        var z = systemid_map[app.systemid];
+                        app.system_list[z].measured_base_DT = app.base_DT;
+                        app.system_list[z].measured_design_DT = app.design_DT;
+                        app.system_list[z].measured_heat_loss = app.measured_heatloss*0.001;
+                }
+            });
        }
     },
     filters: {
@@ -156,7 +195,16 @@ function load() {
     heat_loss = app.system_list[z].heat_loss * 1000;
     hp_max = app.system_list[z].hp_max_output * 1000;
 
-    app.measured_heatloss = app.system_list[z].heat_loss*1000;
+    app.measured_heatloss = app.system_list[z].measured_heat_loss*1000;
+    app.base_DT = app.system_list[z].measured_base_DT;
+    app.design_DT = app.system_list[z].measured_design_DT;
+
+    if (app.measured_heatloss==0 && app.base_DT==0 && app.design_DT==0) {
+        app.measured_heatloss = heat_loss;
+        app.base_DT = 4;
+        app.design_DT = 23;
+    }
+
     
     var fields = [
         'timestamp',

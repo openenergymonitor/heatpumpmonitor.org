@@ -287,7 +287,7 @@ global $settings;
     // arrange by group
     var schema_groups = {};
     for (var key in schema) {
-        if (schema[key].group) {
+        if (schema[key].group && schema[key].editable) {
             if (!schema_groups[schema[key].group]) {
                 schema_groups[schema[key].group] = {};
             }
