@@ -344,7 +344,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     
     var mode = "<?php echo $mode; ?>";
     
-    var minDays = 72;
+    var minDays = 24;
     if (mode!='public') minDays = 0;
     
     var showFlagged = true;
@@ -363,7 +363,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             currentSortColumn: 'combined_cop',
             currentSortDir: 'desc',
             // stats time selection
-            stats_time_start: "last90",
+            stats_time_start: "last30",
             stats_time_end: "only",
             stats_time_range: false,
             available_months_start: months,
