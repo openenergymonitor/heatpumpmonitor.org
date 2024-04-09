@@ -68,6 +68,7 @@ var mode = "combined";
 
 var hp_output = 0;
 var heat_loss = 0;
+var hp_max = 0;
 var data = [];
 var series = [];
 var systemid_map = {};
@@ -127,6 +128,7 @@ function load() {
 
     hp_output = app.system_list[z].hp_output * 1000;
     heat_loss = app.system_list[z].heat_loss * 1000;
+    hp_max = app.system_list[z].hp_max_output * 1000;
 
     
     var fields = [
@@ -179,6 +181,7 @@ function load() {
             // Create series with room - outside x-axis and heatpump heat output y-axis
             max_heat = heat_loss;
             if (max_heat<hp_output) max_heat = hp_output;
+            if (max_heat<hp_max) max_heat = hp_max;         
 
             var total_elec_kwh = 0;
             var total_heat_kwh = 0;
@@ -256,12 +259,27 @@ function draw() {
         lines: { show: true, fill: false },
         points: { show: false }
     });
+    
+    // Add horizontal line for heatpump output
+    if (hp_max>0) {
+        series.push({
+            data: [[0,hp_max],[23,hp_max]],
+            color: '#aa0000',
+            lines: { show: true, fill: false },
+            points: { show: false }
+        });
+    }
 
     var chart = $.plot("#placeholder", series, options);
 
     var placeholder = $("#placeholder");
     var o = chart.pointOffset({ x: 0, y: hp_output});
     placeholder.append("<div style='position:absolute;left:" + (o.left + 4) + "px;top:" + (o.top-23) + "px;color:#666;font-size:smaller'>Heatpump badge capacity</div>");
+
+    if (hp_max>0) {
+        o = chart.pointOffset({ x: 0, y: hp_max});
+        placeholder.append("<div style='position:absolute;left:" + (o.left + 4) + "px;top:" + (o.top-23) + "px;color:#666;font-size:smaller'>Heatpump datasheet capacity</div>");
+    }
 
     o = chart.pointOffset({ x: 0, y: heat_loss});
     placeholder.append("<div style='position:absolute;left:" + (o.left + 4) + "px;top:" + (o.top-23) + "px;color:#666;font-size:smaller'>Heat loss value on form</div>");

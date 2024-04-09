@@ -132,6 +132,16 @@ $schema['system_meta'] = array(
         'group' => 'Heat pump',
         'unit' => 'kW'
     ),
+    
+    'hp_max_output' => array(
+        'type' => 'float', 
+        'editable' => true, 
+        'optional' => false, 
+        'name' => 'Heat pump max output', 
+        'helper' => 'Maximum output as given on the datasheet for expected design flow temperature',
+        'group' => 'Heat pump',
+        'unit' => 'kW'
+    ),
 
     'refrigerant' => array(
         'type' => 'varchar(64)', 
