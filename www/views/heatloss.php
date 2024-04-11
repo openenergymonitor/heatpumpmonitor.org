@@ -48,7 +48,7 @@
             </div>
         </div>
 
-        <div class="row">
+        <div class="row" style="margin-right:-5px">
             <div id="placeholder" style="width:100%;height:600px; margin-bottom:20px"></div>
         </div>
 
@@ -74,7 +74,7 @@
                 <div class="input-group mb-3">
                     <span class="input-group-text">Heat demand</span>
                     <input type="text" class="form-control" v-model.number="measured_heatloss" @change="update_fit">
-                    <span class="input-group-text">W</span>
+                    <span class="input-group-text">kW</span>
                 </div>
             </div>
 
@@ -82,7 +82,7 @@
                 <div class="input-group">
                     <span class="input-group-text">&plusmn;</span>
                     <input type="text" class="form-control" v-model.number="measured_heatloss_range" @change="update_fit">
-                    <span class="input-group-text">W</span>
+                    <span class="input-group-text">kW</span>
                     <button class="btn btn-primary" @click="save_heat_loss" v-if="enable_save">Save</button>
                 </div>
             </div>
@@ -159,8 +159,8 @@
                         'id': app.systemid,
                         'measured_base_DT': app.base_DT,
                         'measured_design_DT': app.design_DT,
-                        'measured_heat_loss': app.measured_heatloss * 0.001,
-                        'measured_heat_loss_range': app.measured_heatloss_range * 0.001
+                        'measured_heat_loss': app.measured_heatloss,
+                        'measured_heat_loss_range': app.measured_heatloss_range
                     },
                     success: function(result) {
                         console.log(result);
@@ -170,8 +170,8 @@
                         var z = systemid_map[app.systemid];
                         app.system_list[z].measured_base_DT = app.base_DT;
                         app.system_list[z].measured_design_DT = app.design_DT;
-                        app.system_list[z].measured_heat_loss = app.measured_heatloss * 0.001;
-                        app.system_list[z].measured_heat_loss_range = app.measured_heatloss_range * 0.001;
+                        app.system_list[z].measured_heat_loss = app.measured_heatloss;
+                        app.system_list[z].measured_heat_loss_range = app.measured_heatloss_range;
                     }
                 });
             },
@@ -188,7 +188,7 @@
 
                 app.design_DT = 23;
                 app.measured_heatloss = (fit.m * app.design_DT) + fit.b;
-                app.measured_heatloss = Math.round(app.measured_heatloss / 10) * 10;
+                app.measured_heatloss = app.measured_heatloss.toFixed(2)*1;
 
                 app.base_DT = (0 - fit.b) / fit.m
                 app.base_DT = app.base_DT.toFixed(1) * 1;
@@ -197,7 +197,7 @@
                     var fit = calculateSlopeWithZeroIntercept(data['heat_vs_dt']);
                     app.base_DT = 0;
                     app.measured_heatloss = (fit * app.design_DT);
-                    app.measured_heatloss = Math.round(app.measured_heatloss / 10) * 10;
+                    app.measured_heatloss = app.measured_heatloss.toFixed(2)*1;
 
                 }
 
@@ -234,6 +234,7 @@
             }
 
             load();
+            resize();
         }
     });
 
@@ -253,12 +254,12 @@
 
         var z = systemid_map[app.systemid];
 
-        hp_output = app.system_list[z].hp_output * 1000;
-        heat_loss = app.system_list[z].heat_loss * 1000;
-        hp_max = app.system_list[z].hp_max_output * 1000;
+        hp_output = app.system_list[z].hp_output;
+        heat_loss = app.system_list[z].heat_loss;
+        hp_max = app.system_list[z].hp_max_output;
 
-        app.measured_heatloss = app.system_list[z].measured_heat_loss * 1000;
-        app.measured_heatloss_range = app.system_list[z].measured_heat_loss_range * 1000;
+        app.measured_heatloss = app.system_list[z].measured_heat_loss;
+        app.measured_heatloss_range = app.system_list[z].measured_heat_loss_range;
 
         app.base_DT = app.system_list[z].measured_base_DT;
         app.design_DT = app.system_list[z].measured_design_DT;
@@ -267,7 +268,7 @@
             app.measured_heatloss = 0;
             app.base_DT = 4;
             app.design_DT = 23;
-            app.measured_heatloss_range = 500;
+            app.measured_heatloss_range = 0.5;
         }
 
         
@@ -333,7 +334,7 @@
                     if (data[mode + '_roomT_mean'][i][1] > 0) {
                         var x = data[mode + '_roomT_mean'][i][1] - data[mode + '_outsideT_mean'][i][1];
                         if (x > 0) {
-                            var y = data[mode + '_heat_mean'][i][1];
+                            var y = data[mode + '_heat_mean'][i][1]*0.001;
                             data['heat_vs_dt'].push([x, y, i]);
 
                             if (y > max_heat) max_heat = y;
@@ -365,7 +366,7 @@
             yaxis: {
                 min: 0,
                 max: max_heat * 1.1,
-                axisLabel: 'Heatpump heat output (W)'
+                axisLabel: 'Heatpump heat output (kW)'
             },
             grid: {
                 hoverable: true,
@@ -529,7 +530,7 @@
                 var HEAT = item.datapoint[1];
 
                 var str = "";
-                str += "Heat: " + HEAT.toFixed(0) + " W<br>";
+                str += "Heat: " + HEAT.toFixed(3) + " kW<br>";
                 str += "DT: " + DT.toFixed(1) + " °K<br>";
 
                 var original_index = data['heat_vs_dt'][item.dataIndex][2];
@@ -554,8 +555,16 @@
 
     // Window resize
     $(window).resize(function() {
-        draw();
+        resize();
     });
+    
+    function resize() {
+        var width = $("#placeholder").width();
+        var height = width*1.2;
+        if (height>600) height = 600;
+        $("#placeholder").height(height);
+        draw();   
+    }
 
     // Creates a tooltip for use with flot graphs
     function tooltip(x, y, contents, bgColour, borderColour = "rgb(255, 221, 221)") {

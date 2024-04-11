@@ -33,7 +33,7 @@ global $settings;
                 <p>{{ system.location }}, <span v-if="system.installer_name"><a :href="system.installer_url">{{ system.installer_name }}</a></span></p>
             </div>
             <button class="btn btn-primary"  @click="open_emoncms_dashboard" v-if="system.url!=''"><span class="d-none d-lg-inline-block">Open Emoncms Heat Pump</span> Dashboard</button>
-            <button class="btn btn-primary"  @click="open_heatloss_tool" v-if="system.url!=''" style="margin-left:10px">Heatloss <span class="d-none d-lg-inline-block">tool</span></button>  
+            <button class="btn btn-primary"  @click="open_heatloss_tool" v-if="system.url!=''" style="margin-left:10px">Heat demand <span class="d-none d-lg-inline-block">tool</span></button>  
             <button class="btn btn-warning" style="margin-left:10px" v-if="admin && mode=='view'" @click="mode='edit'">Edit</button>
             <button class="btn btn-light" style="margin-left:10px" v-if="admin && mode=='edit'" @click="mode='view'">Cancel</button>
 
