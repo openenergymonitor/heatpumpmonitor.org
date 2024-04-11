@@ -231,7 +231,7 @@ class System
         if ($affected==0) {
             return array("success"=>true,"message"=>"No changes");
         }  else {
-            $this->send_change_notification($userid,$systemid,$change_log);
+            // $this->send_change_notification($userid,$systemid,$change_log);
             $this->log_changes($systemid,$userid,$change_log);
 
             $this->computed_fields($systemid);
@@ -471,16 +471,17 @@ class System
 
     // Convert change log in to log calls
     public function log_changes($systemid,$userid,$change_log) {
+        $timestamp = time();
         foreach ($change_log as $change) {
-            $this->log($systemid,$userid,$change['key'],$change['old'],$change['new']);
+            $this->log($timestamp,$systemid,$userid,$change['key'],$change['old'],$change['new']);
         }
     }
 
     // System log
-    public function log($systemid,$userid,$field,$old_value,$new_value) {
+    public function log($timestamp,$systemid,$userid,$field,$old_value,$new_value) {
+        $timestamp = (int) $timestamp;
         $systemid = (int) $systemid;
         $userid = (int) $userid;
-        $timestamp = time();
 
         if (!$stmt = $this->mysqli->prepare("INSERT INTO system_meta_changes (timestamp,systemid,userid,field,old_value,new_value) VALUES (?,?,?,?,?,?)")) {
             return false;
