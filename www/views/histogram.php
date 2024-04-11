@@ -1,5 +1,5 @@
 <?php
-$id = 2;
+$id = 1;
 if (isset($_GET['id'])) {
     $id = $_GET['id'];
 }
@@ -42,7 +42,7 @@ if (isset($_GET['id'])) {
                         <td><input class="form-control" type="color" v-model="system.color" @change="change_color"></td>
                         <td>
                             <select class="form-control" v-model="system.id" @change="change_system(idx)">
-                                <option v-for="s,i in system_list" :value="i">{{ s.location }}, {{ s.hp_model }}, {{ s.hp_output }} kW</option>
+                                <option v-for="s,i in system_list" :value="s.id">{{ s.location }}, {{ s.hp_model }}, {{ s.hp_output }} kW</option>
                             </select>
                         </td>
                         <td><input class="form-control" v-if="idx==0 || !match_dates" v-model="system.start" type="date" @change="date_changed(idx)"></td>
@@ -120,8 +120,7 @@ if (isset($_GET['id'])) {
             histogram_type: "kwh_at_cop",
             system_list: system_list,
             selected_systems: [
-                {id: id, color: colours[0], start: default_start, end: default_end, time_changed: false, data: []},
-                //{id: 3, color: colours[1], start: default_start, end: default_end, time_changed: false, data: []}
+                {id: id, color: colours[0], start: default_start, end: default_end, time_changed: false, data: []}
             ],
             match_dates: true,
             interval: 600,
@@ -152,8 +151,8 @@ if (isset($_GET['id'])) {
             add_system: function () {
                 if (this.selected_systems.length == 0) {
                     // add empty system
-                    this.selected_systems.push({id: 2, color: colours[0], start: default_start, end: default_end, time_changed: false, data: []});
-                    load_system_data(1);
+                    this.selected_systems.push({id: 1, color: colours[0], start: default_start, end: default_end, time_changed: false, data: []});
+                    load_system_data(this.selected_systems.length-1);
                     draw();
                 } else {
                     // add copy of last system
@@ -268,12 +267,13 @@ if (isset($_GET['id'])) {
 
     // Load system data
     load_system_data(0);
-    //load_system_data(1);
     draw();
 
 
     function load_system_data(idx) {
         var system = app.selected_systems[idx];
+        
+        console.log(system)
 
         var view_start = date_str_to_time(system.start);
 
@@ -281,7 +281,7 @@ if (isset($_GET['id'])) {
             dataType: "json", 
             url: "api/histogram/"+app.histogram_type,
             data: {
-                'system': system.id+1, 
+                'system': system.id, 
                 'start': date_str_to_time(system.start), 
                 'end': date_str_to_time(system.end),
                 'x_min': app.x_min,
@@ -313,57 +313,6 @@ if (isset($_GET['id'])) {
                 }
             }
         });
-
-        /*
-        $.ajax({
-            dataType: "json", 
-            url: "api/data/all?system="+(system.id+1)+"&start="+date_str_to_time(system.start)+"&end="+date_str_to_time(system.end)+"&interval="+app.interval, 
-            async:false, 
-            success: function(system_data) {
-                
-
-                let power_to_kwh = app.interval / 3600000;
-
-                let histogram = {};
-
-                for (var i=0; i<system_data.elec.length; i++) {
-                    let time = view_start + i*app.interval;
-
-                    let elec = system_data.elec[i];
-                    let heat = system_data.heat[i];
-                    let flowT = system_data.flowT[i];
-                    let cop = heat / elec;
-
-                    let kwh_inc = elec * power_to_kwh;
-
-                    
-                    if (cop>0 && cop<10) {
-                        let div = Math.floor(cop / 0.1) * 0.1;
-                        div = div.toFixed(1);
-                        if (histogram[div] == undefined) histogram[div] = 0;
-                        histogram[div] += kwh_inc;
-                    }
-                    
-                    //let div = Math.floor(flowT / 0.5) * 0.5;
-                    //div = div.toFixed(1);
-                    //if (histogram[div] == undefined) histogram[div] = 0;
-                    //histogram[div] += kwh_inc;
-                }
-                var keys = Object.keys(histogram);
-                var max = Math.max(...keys);
-                var min = Math.min(...keys);
-
-                data = [];
-                for (var i=min; i<max; i+=0.1) {
-                    let div = i.toFixed(1);
-                    let value = histogram[div];
-                    if (value == undefined) value = 0;
-                    data.push([i, value]);
-                }
-
-                app.selected_systems[idx].data = data;
-            }
-        });*/
     }
 
     resize();

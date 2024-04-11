@@ -32,10 +32,13 @@ global $settings;
                 <h3>{{ system.hp_output }} kW, {{ system.hp_model }}</h3>
                 <p>{{ system.location }}, <span v-if="system.installer_name"><a :href="system.installer_url">{{ system.installer_name }}</a></span></p>
             </div>
-            <button class="btn btn-primary"  @click="open_emoncms_dashboard" v-if="system.url!=''"><span class="d-none d-lg-inline-block">Open Emoncms Heat Pump</span> Dashboard</button>
-            <button class="btn btn-primary"  @click="open_heatloss_tool" v-if="system.url!=''" style="margin-left:10px">Heat demand <span class="d-none d-lg-inline-block">tool</span></button>  
-            <button class="btn btn-warning" style="margin-left:10px" v-if="admin && mode=='view'" @click="mode='edit'">Edit</button>
-            <button class="btn btn-light" style="margin-left:10px" v-if="admin && mode=='edit'" @click="mode='view'">Cancel</button>
+            <button class="btn btn-primary mb-3"  @click="open_emoncms_dashboard" v-if="system.url!=''"><span class="d-none d-lg-inline-block">Emoncms</span> Dashboard</button>
+            <button class="btn btn-secondary mb-3"  @click="open_heatloss_tool" v-if="system.url!=''" >Heat demand <span class="d-none d-lg-inline-block">tool</span></button>  
+            <button class="btn btn-secondary mb-3"  @click="open_monthly_tool" v-if="system.url!=''" >Monthly</button>  
+            <button class="btn btn-secondary mb-3"  @click="open_compare_tool" v-if="system.url!=''" >Compare</button>              
+            <button class="btn btn-secondary mb-3"  @click="open_histogram_tool" v-if="system.url!=''" >Histogram</button>  
+            <button class="btn btn-warning mb-3" style="margin-left:10px" v-if="admin && mode=='view'" @click="mode='edit'">Edit</button>
+            <button class="btn btn-light mb-3" style="margin-left:10px" v-if="admin && mode=='edit'" @click="mode='view'">Cancel</button>
 
             <h3 v-if="system.hp_model==''">New System</h3>
         </div>
@@ -419,7 +422,16 @@ global $settings;
                 window.open(app.system.url);
             },
             open_heatloss_tool: function() {
-                window.open(path+"heatloss?id="+app.system.id);
+                window.location = path+"heatloss?id="+app.system.id;
+            },
+            open_monthly_tool: function() {
+                window.location = path+"monthly?id="+app.system.id;
+            },
+            open_histogram_tool: function() {
+                window.location = path+"histogram?id="+app.system.id;
+            },
+            open_compare_tool: function() {
+                window.location = path+"compare?id="+app.system.id;
             },
             loadstats: function() {
                 app.disable_loadstats = true;
