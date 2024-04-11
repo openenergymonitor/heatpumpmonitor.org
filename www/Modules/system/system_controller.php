@@ -178,13 +178,29 @@ function system_controller() {
         }
     }
 
+    // check if user has access to system
+    // hasaccess?id=1
+    if ($route->action=="hasaccess") {
+        $route->format = "text";
+        if ($session['userid']) {
+            $systemid = get("id",false);
+            if ($system->has_access($session['userid'],$systemid)) {
+                return 1;
+            } else {
+                return 0;
+            }
+        } else {
+            return 0;
+        }
+    }
+
     // Save measured heat loss
     // saveheatloss?id=1&measured_base_DT=0&measured_design_DT=0&measured_heat_loss=0
     if ($route->action=="saveheatloss") {
         $route->format = "json";
         if ($session['userid']) {
             // save_measured_heat_loss($userid,$systemid,$measured_base_DT,$measured_design_DT,$measured_heat_loss)
-            return $system->save_measured_heat_loss($session['userid'],get("id",false),get("measured_base_DT",false),get("measured_design_DT",false),get("measured_heat_loss",false));
+            return $system->save_measured_heat_loss($session['userid'],get("id",false),get("measured_base_DT",false),get("measured_design_DT",false),get("measured_heat_loss",false),get("measured_heat_loss_range",false));
         } else {
             return array("success"=>false, "message"=>"Invalid access");
         }

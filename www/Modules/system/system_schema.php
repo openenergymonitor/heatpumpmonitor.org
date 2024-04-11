@@ -456,7 +456,7 @@ $schema['system_meta'] = array(
         'editable' => false, 
         'optional' => true,
         'name' => 'Measured base DT', 
-        'group' => 'Measured heat loss',
+        'group' => 'Measured heat demand',
         'helper' => 'Use the heatpumpmonitor heat loss tool to fill this in once you have enough data', 
         'unit' => '°K'
     ),
@@ -466,7 +466,7 @@ $schema['system_meta'] = array(
         'editable' => false, 
         'optional' => true, 
         'name' => 'Measured design DT', 
-        'group' => 'Measured heat loss',
+        'group' => 'Measured heat demand',
         'helper' => 'Use the heatpumpmonitor heat loss tool to fill this in once you have enough data', 
         'unit' => 'kW @ -3°C'
     ),
@@ -475,8 +475,18 @@ $schema['system_meta'] = array(
         'type' => 'float', 
         'editable' => false, 
         'optional' => true, 
-        'name' => 'Measured heat loss', 
-        'group' => 'Measured heat loss',
+        'name' => 'Measured heat demand', 
+        'group' => 'Measured heat demand',
+        'helper' => 'Use the heatpumpmonitor heat loss tool to fill this in once you have enough data',
+        'unit' => 'kW'
+    ),
+
+    'measured_heat_loss_range' => array(
+        'type' => 'float', 
+        'editable' => false, 
+        'optional' => true, 
+        'name' => 'Measured heat demand range', 
+        'group' => 'Measured heat demand',
         'helper' => 'Use the heatpumpmonitor heat loss tool to fill this in once you have enough data',
         'unit' => 'kW'
     ),
