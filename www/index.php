@@ -54,7 +54,7 @@ switch ($route->controller) {
 
     case "compare":
         $route->format = "html";
-        $output = view("views/compare.html", array("userid"=>$session['userid']));
+        $output = view("views/compare.php", array("userid"=>$session['userid']));
         break;
 
     case "heatloss":
@@ -79,7 +79,7 @@ switch ($route->controller) {
 
     case "histogram":
         $route->format = "html";
-        $output = view("views/histogram.html", array("userid"=>$session['userid']));
+        $output = view("views/histogram.php", array("userid"=>$session['userid']));
         break;
 
     case "user":

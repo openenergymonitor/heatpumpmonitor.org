@@ -1,3 +1,10 @@
+<?php
+$id = 0;
+if (isset($_GET['id'])) {
+    $id = $_GET['id'];
+}
+?>
+
 <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
 <script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
 <script src="https://cdn.plot.ly/plotly-2.18.1.min.js" charset="utf-8"></script>
@@ -77,4 +84,26 @@
     </div>  
 </div> 
 
-<script src="views/compare.js?v=7"></script>
+<script>
+var id = <?php echo $id; ?>;
+// initialise dates to be from 30 days ago to today
+var today = new Date();
+var daysago = new Date(new Date().setDate(today.getDate() - 30));
+var start_date = daysago.toISOString().substring(0,10);
+var end_date = today.toISOString().substring(0,10);
+
+var selected_systems = [];
+
+if (id) {
+    selected_systems = [
+        {color:"#0000ff", id:id, start: start_date, end: end_date, time_changed: false, data: false}
+    ];
+} else {
+    selected_systems = [
+        {color:"#0000ff", id:1, start: start_date, end: end_date, time_changed: false, data: false},
+        {color:"#ff0000", id:2, start: start_date, end: end_date, time_changed: false, data: false}
+    ];
+}
+</script>
+
+<script src="views/compare.js?v=9"></script>

@@ -1,3 +1,9 @@
+<?php
+$id = 2;
+if (isset($_GET['id'])) {
+    $id = $_GET['id'];
+}
+?>
 <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
 <script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/flot/0.8.3/jquery.flot.min.js"></script>
@@ -85,8 +91,24 @@
 </div>
 
 <script>
+    var id = <?php echo $id; ?>;
+    
     var system_list = [];
-    $.ajax({dataType: "json", url: path+"system/list/public.json", async: false, success: function(result) { system_list = result; }});
+    var system_map = {};
+    $.ajax({
+        dataType: "json", 
+        url: path+"system/list/public.json", 
+        async: false, 
+        success: function(result) { 
+            system_list = result; 
+
+            // map by id
+            for (var i=0; i<system_list.length; i++) {
+                system_map[system_list[i].id] = i;
+            }
+
+        }
+    });
 
     var default_start = "2022-05-01";
     var default_end = "2023-05-01";
@@ -98,7 +120,7 @@
             histogram_type: "kwh_at_cop",
             system_list: system_list,
             selected_systems: [
-                {id: 7, color: colours[0], start: default_start, end: default_end, time_changed: false, data: []},
+                {id: id, color: colours[0], start: default_start, end: default_end, time_changed: false, data: []},
                 //{id: 3, color: colours[1], start: default_start, end: default_end, time_changed: false, data: []}
             ],
             match_dates: true,
@@ -130,8 +152,8 @@
             add_system: function () {
                 if (this.selected_systems.length == 0) {
                     // add empty system
-                    this.selected_systems.push({id: 0, color: colours[0], start: default_start, end: default_end, time_changed: false, data: []});
-                    load_system_data(0);
+                    this.selected_systems.push({id: 2, color: colours[0], start: default_start, end: default_end, time_changed: false, data: []});
+                    load_system_data(1);
                     draw();
                 } else {
                     // add copy of last system

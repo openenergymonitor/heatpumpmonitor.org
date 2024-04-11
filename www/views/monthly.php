@@ -1,3 +1,9 @@
+<?php
+$id = 1;
+if (isset($_GET['id'])) {
+    $id = $_GET['id'];
+}
+?>
 <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
@@ -53,6 +59,8 @@
 </div>
 
 <script>
+    var id = <?php echo $id; ?>;
+    
     var colours = ["#fec601","#ea7317","#73bfb8","#3da5d9","#2364aa"];
 
     let system_stats_monthly = <?php echo json_encode($system_stats_monthly); ?>;
@@ -74,7 +82,7 @@
             system_stats_monthly_by_group: system_stats_monthly_by_group,
             system_list: [],
             selected_systems: [
-                {id: 2, color: colours[0], monthly: []}
+                {id: id, color: colours[0], monthly: []}
             ],
             chart_yaxis: 'combined_cop',
         },

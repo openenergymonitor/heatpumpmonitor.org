@@ -2,12 +2,6 @@
 var system_list = [];
 $.ajax({dataType: "json", url: path+"system/list/public.json", async: false, success: function(result) { system_list = result; }});
 
-// initialise dates to be from 30 days ago to today
-var today = new Date();
-var daysago = new Date(new Date().setDate(today.getDate() - 30));
-var start_date = daysago.toISOString().substring(0,10);
-var end_date = today.toISOString().substring(0,10);
-
 var app = new Vue({
   el: '#app',
   data: {
@@ -17,10 +11,7 @@ var app = new Vue({
     // years: [2020,2021,2022,2023,...],
     interval: 3600,
     match_dates: true,
-    selected_systems: [
-      {color:"#0000ff", id:1, start: start_date, end: end_date, time_changed: false, data: false},
-      {color:"#ff0000", id:2, start: start_date, end: end_date, time_changed: false, data: false}
-   ],
+    selected_systems: selected_systems,
     system_list: system_list
   },
   methods: {

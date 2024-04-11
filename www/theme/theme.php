@@ -103,6 +103,7 @@ $navigation = array(
                                 <li><a class="dropdown-item" href="<?php echo $path; ?>compare">Compare</a></li>
                                 <li><a class="dropdown-item" href="<?php echo $path; ?>monthly">Monthly</a></li>
                                 <li><a class="dropdown-item" href="<?php echo $path; ?>histogram">Histogram</a></li>
+                                <li><a class="dropdown-item" href="<?php echo $path; ?>heatloss">Heat demand tool</a></li>                    
                             </ul>
                         </li>
                     </ul>
