@@ -772,3 +772,14 @@ $schema['system_stats_script'] = array(
     'systemid' => array('type' => 'int(11)')
     
 );
+
+// Schema to hold a list of system_meta changes
+// timestamp, systemid, userid, field, old_value, new_value
+$schema['system_meta_changes'] = array(
+    'timestamp' => array('type' => 'int(11)'),
+    'systemid' => array('type' => 'int(11)'),
+    'userid' => array('type' => 'int(11)'),
+    'field' => array('type' => 'varchar(64)'),
+    'old_value' => array('type' => 'text'),
+    'new_value' => array('type' => 'text')
+);

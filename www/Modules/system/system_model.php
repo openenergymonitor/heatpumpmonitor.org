@@ -232,6 +232,7 @@ class System
             return array("success"=>true,"message"=>"No changes");
         }  else {
             $this->send_change_notification($userid,$systemid,$change_log);
+            $this->log_changes($systemid,$userid,$change_log);
 
             $this->computed_fields($systemid);
 
@@ -462,5 +463,73 @@ class System
 
 
         return $columns;
+    }
+
+    // --------------------------------------------------------------------------------
+    // System meta changes log
+    // --------------------------------------------------------------------------------
+
+    // Convert change log in to log calls
+    public function log_changes($systemid,$userid,$change_log) {
+        foreach ($change_log as $change) {
+            $this->log($systemid,$userid,$change['key'],$change['old'],$change['new']);
+        }
+    }
+
+    // System log
+    public function log($systemid,$userid,$field,$old_value,$new_value) {
+        $systemid = (int) $systemid;
+        $userid = (int) $userid;
+        $timestamp = time();
+
+        if (!$stmt = $this->mysqli->prepare("INSERT INTO system_meta_changes (timestamp,systemid,userid,field,old_value,new_value) VALUES (?,?,?,?,?,?)")) {
+            return false;
+        }
+        if (!$stmt->bind_param("iiisss", $timestamp,$systemid,$userid,$field,$old_value,$new_value)) {
+            return false;
+        }
+        if (!$stmt->execute()) {
+            return false;
+        }
+        $stmt->close();
+        return true;
+    }
+
+    // Get system changes log
+    public function get_changes($systemid = false) {
+        // If systemid is set then get changes for that system
+        $where = "";
+        if ($systemid !== false) {
+            $systemid = (int) $systemid;
+            $where = "WHERE systemid='$systemid'";
+        }
+
+        // Get list of usernames
+        $result = $this->mysqli->query("SELECT id,username,admin FROM users");
+        $users = array();
+        while ($row = $result->fetch_object()) {
+            $users[$row->id] = $row;
+        }
+
+        // Get changes
+        $result = $this->mysqli->query("SELECT * FROM system_meta_changes $where ORDER BY timestamp ASC");
+        $list = array();
+        while ($row = $result->fetch_object()) {
+
+            // Convert timestamp to date
+            $date = new DateTime();
+            // Europe/London timezone
+            $date->setTimezone(new DateTimeZone('Europe/London'));
+            $date->setTimestamp($row->timestamp);
+            // 12th Dec 2024 08:00
+            $row->datetime = $date->format('jS M Y H:i');
+
+            // add username
+            $row->username = $users[$row->userid]->username;
+            $row->admin = $users[$row->userid]->admin;
+
+            $list[] = $row;
+        }
+        return $list;
     }
 }

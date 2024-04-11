@@ -50,6 +50,15 @@ function system_controller() {
             'system_stats_monthly'=>$system_stats->schema['system_stats_monthly_v2']
         ));
     }
+    
+    if ($route->action=="log" && $session['admin']) {
+        if ($route->format=="json") {
+            return $system->get_changes();
+        } else {
+            $route->format = "html";
+            return view("Modules/system/system_log_view.php", array());
+        }
+    }
 
     if ($route->action=="list") {
         if ($route->format=="html") {
