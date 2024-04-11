@@ -21,7 +21,7 @@
           </thead>
           <tbody>
             <tr v-for="(row,index) in log">
-              <td><span v-if="index==0 || row.timestamp != log[index-1].timestamp">{{ row.datetime }}</span></td>
+              <td><span v-if="index==0 || row.datetime != log[index-1].datetime">{{ row.datetime }}</span></td>
               <td><span v-if="index==0 || row.username != log[index-1].username">{{ row.username }} <span v-if="row.admin">(Admin)</span></span></td>
               <td><span v-if="index==0 || row.systemid != log[index-1].systemid">{{ row.systemid }}</span></td>
               <td><b>{{ row.field }}</b></td>
