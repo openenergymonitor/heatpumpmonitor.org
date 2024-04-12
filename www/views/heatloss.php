@@ -189,7 +189,6 @@
         methods: {
             change_system: function() {
                 app.fixed_room_tmp_enable = 0;
-                console.log("changing system")
                 load();
             },
             load: function() {
@@ -255,6 +254,7 @@
                 });
             },
             next_system: function(direction) {
+                app.fixed_room_tmp_enable = 0;
                 var z = systemid_map[app.systemid] * 1;
                 z += direction;
                 if (z >= 0 && z < app.system_list.length) {
