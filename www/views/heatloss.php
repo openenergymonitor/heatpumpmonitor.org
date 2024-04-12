@@ -124,6 +124,17 @@
             </div>
         </div>
 
+        <div class="row mb-3">
+            <div class="col-lg-4 col-md-6">
+                <div class="input-group mb-3">
+                    <span class="input-group-text">Fixed room temperature</span>
+                    <span class="input-group-text"><input type="checkbox" v-model="fixed_room_tmp_enable" @change="change_system" /></span>
+                    <input type="text" class="form-control" v-model.number="fixed_room_tmp" @change="change_system">
+                    <span class="input-group-text">°C</span>
+                </div>
+            </div>
+        </div>
+
         <div class="row">
 
 
@@ -170,7 +181,9 @@
             auto_min_DT: 0,
             calculated_heatloss: 0,
             datasheet_hp_max: 0,
-            measured_hp_max: ''
+            measured_hp_max: '',
+            fixed_room_tmp_enable: 0,
+            fixed_room_tmp: 20
 
         },
         methods: {
@@ -382,6 +395,13 @@
                         let value = parts[j] * 1;
                         // add to data
                         data[fields[j]].push([timestamp, value]);
+                    }
+                }
+
+                // Apply fixed room temperature
+                if (app.fixed_room_tmp_enable) {
+                    for (var i = 0; i < data[mode + '_roomT_mean'].length; i++) {
+                        data[mode + '_roomT_mean'][i][1] = app.fixed_room_tmp;
                     }
                 }
 
