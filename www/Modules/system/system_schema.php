@@ -242,6 +242,15 @@ $schema['system_meta'] = array(
         'group' => 'Space heating', 
         'options'=> array('None','Low loss header','Buffer','Plate heat exchanger',"Don't know")
     ),
+
+    'volumiser' => array(
+        'type' => 'tinyint(1)', 
+        'editable' => true, 
+        'optional' => true, 
+        'name' => 'Volumiser', 
+        'group' => 'Space heating',
+        'helper' => "A volumiser is a 2-pipe tank that adds more water volume to the system to reduce cycling"
+    ),
     /* ------------------------------ System controls ----------------------------- */
 
     'flow_temp' => array(

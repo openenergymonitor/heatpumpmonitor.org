@@ -103,21 +103,21 @@
             <div class="col-lg-4 col-md-6">
                 <div class="input-group mb-3">
                     <span class="input-group-text">Calculated heat loss</span>
-                    <input type="text" class="form-control" v-model.number="calculated_heatloss" :disabled="!enable_save">
+                    <input type="text" class="form-control" v-model.number="calculated_heatloss" :disabled="!enable_save" @change="update_fit">
                     <span class="input-group-text">kW</span>
                 </div>
             </div>
             <div class="col-lg-4 col-md-6">
                 <div class="input-group mb-3">
                     <span class="input-group-text">Heat pump datasheet capacity</span>
-                    <input type="text" class="form-control" v-model.number="datasheet_hp_max" :disabled="!enable_save">
+                    <input type="text" class="form-control" v-model.number="datasheet_hp_max" :disabled="!enable_save" @change="update_fit">
                     <span class="input-group-text">kW</span>
                 </div>
             </div>
             <div class="col-lg-4 col-md-6">
                 <div class="input-group mb-3">
                     <span class="input-group-text">Max capacity test result</span>
-                    <input type="text" class="form-control" v-model.number="measured_hp_max" :disabled="!enable_save">
+                    <input type="text" class="form-control" v-model.number="measured_hp_max" :disabled="!enable_save" @change="update_fit">
                     <span class="input-group-text">kW</span>
                     <button class="btn btn-primary" @click="save_capacity_figures" v-if="enable_save">Save</button>
                 </div>
@@ -152,6 +152,7 @@
     var data = [];
     var series = [];
     var systemid_map = {};
+    var max_heat = 0;
 
     var app = new Vue({
         el: '#app',
@@ -213,12 +214,14 @@
                 var z = systemid_map[app.systemid];
                 app.system_list[z].hp_max_output = app.datasheet_hp_max;
                 app.system_list[z].heat_loss = app.calculated_heatloss;
+                app.system_list[z].hp_max_output_test = app.measured_hp_max;
                 
                 var data_to_save = {
                     id: app.systemid,
                     data: {
                         hp_max_output: app.datasheet_hp_max,
-                        heat_loss: app.calculated_heatloss
+                        heat_loss: app.calculated_heatloss,
+                        hp_max_output_test: app.measured_hp_max
                     }
                 };
 
@@ -320,7 +323,7 @@
         app.measured_heatloss_range = app.system_list[z].measured_heat_loss_range;
         app.calculated_heatloss = app.system_list[z].heat_loss;
         app.datasheet_hp_max = app.system_list[z].hp_max_output;
-        app.measured_hp_max = null;
+        app.measured_hp_max = app.system_list[z].hp_max_output_test;
 
         app.base_DT = app.system_list[z].measured_base_DT;
         app.design_DT = app.system_list[z].measured_design_DT;
@@ -383,7 +386,7 @@
                 }
 
                 // Create series with room - outside x-axis and heatpump heat output y-axis
-                max_heat = heat_loss;
+                max_heat = app.calculated_heatloss;
                 if (max_heat < hp_output) max_heat = hp_output;
                 if (max_heat < hp_max) max_heat = hp_max;
 
@@ -416,6 +419,8 @@
     }
 
     function draw() {
+
+        console.log("Draw")
 
         // Flot options
         var options = {
@@ -455,8 +460,8 @@
         // Add horizontal line for heat loss
         series.push({
             data: [
-                [0, heat_loss],
-                [app.design_DT, heat_loss]
+                [0, app.calculated_heatloss],
+                [app.design_DT, app.calculated_heatloss]
             ],
             color: 'grey',
             lines: {
@@ -485,13 +490,31 @@
         });
 
         // Add horizontal line for heatpump output
-        if (hp_max > 0) {
+        if (app.datasheet_hp_max > 0) {
             series.push({
                 data: [
-                    [0, hp_max],
-                    [app.design_DT, hp_max]
+                    [0, app.datasheet_hp_max],
+                    [app.design_DT, app.datasheet_hp_max]
                 ],
                 color: '#aa0000',
+                lines: {
+                    show: true,
+                    fill: false
+                },
+                points: {
+                    show: false
+                }
+            });
+        }
+
+        // Add horizontal line for heatpump output
+        if (app.measured_hp_max > 0) {
+            series.push({
+                data: [
+                    [0, app.measured_hp_max],
+                    [app.design_DT, app.measured_hp_max]
+                ],
+                color: '#ddaaaa',
                 lines: {
                     show: true,
                     fill: false
@@ -557,26 +580,27 @@
         var chart = $.plot("#placeholder", series, options);
 
         var placeholder = $("#placeholder");
-        var o = chart.pointOffset({
-            x: 0,
-            y: hp_output
-        });
-        placeholder.append("<div style='position:absolute;left:" + (o.left + 4) + "px;top:" + (o.top - 23) + "px;color:#666;font-size:smaller'>Heatpump badge capacity</div>");
+        var o = false;
 
-        if (hp_max > 0) {
-            o = chart.pointOffset({
-                x: 0,
-                y: hp_max
-            });
-            placeholder.append("<div style='position:absolute;left:" + (o.left + 4) + "px;top:" + (o.top - 23) + "px;color:#666;font-size:smaller'>Heatpump datasheet capacity</div>");
+        if (hp_output>0) {
+            o = chart.pointOffset({ x: 0, y: hp_output });
+            placeholder.append("<div style='position:absolute;left:" + (o.left + 4) + "px;top:" + (o.top - 23) + "px;color:#666;font-size:smaller'>Heatpump badge capacity</div>");
         }
-
-        o = chart.pointOffset({
-            x: 0,
-            y: heat_loss
-        });
-        placeholder.append("<div style='position:absolute;left:" + (o.left + 4) + "px;top:" + (o.top - 23) + "px;color:#666;font-size:smaller'>Heat loss value on form</div>");
-
+        if (app.datasheet_hp_max > 0) {
+            o = chart.pointOffset({ x: 0, y: app.datasheet_hp_max });
+            let offset = -23;
+            if ((hp_output - app.datasheet_hp_max)<0.5) offset = 5;
+            console.log(hp_output - app.datasheet_hp_max);
+            placeholder.append("<div style='position:absolute;left:" + (o.left + 4) + "px;top:" + (o.top + offset) + "px;color:#666;font-size:smaller'>Heatpump datasheet capacity</div>");
+        }
+        if (app.measured_hp_max > 0) {
+            o = chart.pointOffset({ x: 0, y: app.measured_hp_max });
+            placeholder.append("<div style='position:absolute;left:" + (o.left + 4) + "px;top:" + (o.top - 23) + "px;color:#666;font-size:smaller'>Max capacity test result</div>");
+        }
+        if (app.calculated_heatloss>0) {
+            o = chart.pointOffset({ x: 0, y: app.calculated_heatloss });
+            placeholder.append("<div style='position:absolute;left:" + (o.left + 4) + "px;top:" + (o.top - 23) + "px;color:#666;font-size:smaller'>Heat loss value on form</div>");
+        }
     }
 
     // Flot tooltip
