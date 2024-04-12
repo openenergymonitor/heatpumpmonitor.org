@@ -128,8 +128,8 @@
             <div class="col-lg-4 col-md-6">
                 <div class="input-group mb-3">
                     <span class="input-group-text">Fixed room temperature</span>
-                    <span class="input-group-text"><input type="checkbox" v-model="fixed_room_tmp_enable" @change="change_system" /></span>
-                    <input type="text" class="form-control" v-model.number="fixed_room_tmp" @change="change_system">
+                    <span class="input-group-text"><input type="checkbox" v-model="fixed_room_tmp_enable" @change="load" /></span>
+                    <input type="text" class="form-control" v-model.number="fixed_room_tmp" @change="load">
                     <span class="input-group-text">°C</span>
                 </div>
             </div>
@@ -188,6 +188,11 @@
         },
         methods: {
             change_system: function() {
+                app.fixed_room_tmp_enable = 0;
+                console.log("changing system")
+                load();
+            },
+            load: function() {
                 load();
             },
             update_fit: function() {
