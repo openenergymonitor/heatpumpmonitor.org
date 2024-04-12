@@ -212,7 +212,7 @@ global $settings;
                         <td style="background-color:#f0f0f0;"></td>
                         <td style="background-color:#f0f0f0;"></td>
                     </tr>
-                    <tr v-for="(field,key) in group" v-if="field.editable && key!='share'">
+                    <tr v-for="(field,key) in group" v-if="field.editable && key!='share' && !field.hide_on_form">
                         <td>
                             <span>{{ field.name }}</span> <span v-if="!field.optional && mode=='edit'" style="color:#aa0000">*</span>
                         </td>
@@ -290,7 +290,7 @@ global $settings;
     // arrange by group
     var schema_groups = {};
     for (var key in schema) {
-        if (schema[key].group && schema[key].editable) {
+        if (schema[key].group && schema[key].editable && !schema[key].hide_on_form) {
             if (!schema_groups[schema[key].group]) {
                 schema_groups[schema[key].group] = {};
             }

@@ -7,12 +7,12 @@
             <h3>Change log</h3>
         </div>
     </div>
-    <div class="container">
+    <div class="container-fluid">
         <table class="table">
           <thead>
             <tr>
-              <th scope="col">Date & Time</th>
-              <th scope="col">User</th>
+              <th scope="col" style="width:200px">Date & Time</th>
+              <th scope="col" style="width:250px">User</th>
               <th scope="col">System</th>
               <th scope="col">Field</th>
               <th scope="col">Old value</th>
@@ -22,7 +22,7 @@
           <tbody>
             <tr v-for="(row,index) in log">
               <td><span v-if="index==0 || row.datetime != log[index-1].datetime">{{ row.datetime }}</span></td>
-              <td><span v-if="index==0 || row.username != log[index-1].username">{{ row.username }} <span v-if="row.admin">(Admin)</span></span></td>
+              <td><span v-if="index==0 || row.username != log[index-1].username">{{ row.username }} <span v-if="row.admin==1">(Admin)</span></span></td>
               <td><span v-if="index==0 || row.systemid != log[index-1].systemid">{{ row.systemid }}</span></td>
               <td><b>{{ row.field }}</b></td>
               <td>{{ row.old_value }}</td>

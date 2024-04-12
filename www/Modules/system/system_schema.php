@@ -136,9 +136,20 @@ $schema['system_meta'] = array(
     'hp_max_output' => array(
         'type' => 'float', 
         'editable' => true, 
-        'optional' => false, 
+        'optional' => true, 
         'name' => 'Heat pump max output', 
         'helper' => 'Maximum output as given on the datasheet for expected design flow temperature',
+        'group' => 'Heat pump',
+        'unit' => 'kW'
+    ),
+
+    'hp_max_output_test' => array(
+        'type' => 'float', 
+        'editable' => true, 
+        'optional' => true,
+        'hide_on_form' => true,
+        'name' => 'Heat pump max output test', 
+        'helper' => 'Maximum output recorded over 2-3 defrost cycles using HeatpumpMonitor data',
         'group' => 'Heat pump',
         'unit' => 'kW'
     ),
@@ -453,8 +464,9 @@ $schema['system_meta'] = array(
 
     'measured_base_DT' => array(
         'type' => 'float', 
-        'editable' => false, 
+        'editable' => true, 
         'optional' => true,
+        'hide_on_form' => true,
         'name' => 'Measured base DT', 
         'group' => 'Measured heat demand',
         'helper' => 'Use the heatpumpmonitor heat loss tool to fill this in once you have enough data', 
@@ -463,8 +475,9 @@ $schema['system_meta'] = array(
 
     'measured_design_DT' => array(
         'type' => 'float', 
-        'editable' => false, 
+        'editable' => true, 
         'optional' => true, 
+        'hide_on_form' => true,
         'name' => 'Measured design DT', 
         'group' => 'Measured heat demand',
         'helper' => 'Use the heatpumpmonitor heat loss tool to fill this in once you have enough data', 
@@ -473,8 +486,9 @@ $schema['system_meta'] = array(
 
     'measured_heat_loss' => array(
         'type' => 'float', 
-        'editable' => false, 
+        'editable' => true, 
         'optional' => true, 
+        'hide_on_form' => true,
         'name' => 'Measured heat demand', 
         'group' => 'Measured heat demand',
         'helper' => 'Use the heatpumpmonitor heat loss tool to fill this in once you have enough data',
@@ -483,8 +497,9 @@ $schema['system_meta'] = array(
 
     'measured_heat_loss_range' => array(
         'type' => 'float', 
-        'editable' => false, 
+        'editable' => true, 
         'optional' => true, 
+        'hide_on_form' => true,
         'name' => 'Measured heat demand range', 
         'group' => 'Measured heat demand',
         'helper' => 'Use the heatpumpmonitor heat loss tool to fill this in once you have enough data',

@@ -108,20 +108,23 @@ class System
         return $this->typecast($row);
     }
 
-    public function validate($userid,$form_data) {
+    public function validate($userid,$form_data,$full_validation=false) {
         $error_log = array();
         $warning_log = array();
 
         foreach ($this->schema_meta as $key=>$value) {
             if ($this->schema_meta[$key]['editable']) {
-                if (isset($form_data->$key) || $form_data->$key===null) {
-                    if ($form_data->$key===null || $form_data->$key==='') {
+                if ($full_validation) {
+                    // Check if key is set, report missing
+                    if (!isset($form_data->$key)) {
+                        $error_log[] = array("key"=>$key,"message"=>"missing");
+                    // Check if key is empty, report required
+                    // if not optional or admin
+                    } else if ($form_data->$key===null || $form_data->$key==='') {
                         if (!$this->schema_meta[$key]['optional'] && $this->is_admin($userid)==false) {
                             $error_log[] = array("key"=>$key,"message"=>"required");
                         }
                     }
-                } else {
-                    $error_log[] = array("key"=>$key,"message"=>"missing");
                 }
             }
         }
@@ -139,8 +142,12 @@ class System
         $userid = (int) $userid;
         $systemid = (int) $systemid;
 
+        // Make sure first form submission has all fields validated
+        $full_validation = false;
+        if ($systemid==false) $full_validation = true;
+
         if ($validate) {
-            $validate_result = $this->validate($userid,$form_data);
+            $validate_result = $this->validate($userid,$form_data,$full_validation);
             if ($validate_result['success']==false) {
                 return $validate_result;
             }
@@ -200,8 +207,6 @@ class System
             // $codes[] = "i";        
         }
 
-
-
         if (!count($values)) {
             return array("success"=>false, "message"=>"No changes");
         }
@@ -250,40 +255,6 @@ class System
         }
     }
 
-    // Save measured heat loss values
-    // - systemid
-    // - measured_base_DT
-    // - measured_design_DT
-    // - measured_heat_loss
-    public function save_measured_heat_loss($userid,$systemid,$measured_base_DT,$measured_design_DT,$measured_heat_loss, $measured_heat_loss_range) {
-        $userid = (int) $userid;
-        $systemid = (int) $systemid;
-        $measured_base_DT = (float) $measured_base_DT;
-        $measured_design_DT = (float) $measured_design_DT;
-        $measured_heat_loss = (float) $measured_heat_loss;
-        $measured_heat_loss_range = (float) $measured_heat_loss_range;
-
-        // Check if user has access
-        if ($this->has_access($userid,$systemid)==false) {
-            return array("success"=>false, "message"=>"Invalid access");
-        }
-
-        // Prepare and execute the query with error checking
-        if (!$stmt = $this->mysqli->prepare("UPDATE system_meta SET measured_base_DT=?,measured_design_DT=?,measured_heat_loss=?,measured_heat_loss_range=? WHERE id=?")) {
-            return array("success"=>false,"message"=>"Prepare failed: (" . $this->mysqli->errno . ") " . $this->mysqli->error);
-        }
-        if (!$stmt->bind_param("ddddi", $measured_base_DT,$measured_design_DT,$measured_heat_loss,$measured_heat_loss_range,$systemid)) {
-            return array("success"=>false,"message"=>"Binding parameters failed: (" . $stmt->errno . ") " . $stmt->error);
-        }
-        if (!$stmt->execute()) {
-            return array("success"=>false,"message"=>"Execute failed: (" . $stmt->errno . ") " . $stmt->error);
-        }
-
-        $stmt->close();
-
-        return array("success"=>true,"message"=>"Saved");
-    }
-
     public function computed_fields($systemid=false) {
         $systemid = (int) $systemid;
         $where = "";
@@ -297,8 +268,6 @@ class System
             $this->mysqli->query("UPDATE system_meta SET kwh_m2='$kwh_m2' WHERE id='$row->id'");
         }
     }
-
-    
 
     public function delete($userid,$systemid) {
         $userid = (int) $userid;

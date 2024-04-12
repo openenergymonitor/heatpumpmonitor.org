@@ -99,6 +99,31 @@
             </div>
         </div>
 
+        <div class="row mb-3">
+            <div class="col-lg-4 col-md-6">
+                <div class="input-group mb-3">
+                    <span class="input-group-text">Calculated heat loss</span>
+                    <input type="text" class="form-control" v-model.number="calculated_heatloss" :disabled="!enable_save">
+                    <span class="input-group-text">kW</span>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="input-group mb-3">
+                    <span class="input-group-text">Heat pump datasheet capacity</span>
+                    <input type="text" class="form-control" v-model.number="datasheet_hp_max" :disabled="!enable_save">
+                    <span class="input-group-text">kW</span>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="input-group mb-3">
+                    <span class="input-group-text">Max capacity test result</span>
+                    <input type="text" class="form-control" v-model.number="measured_hp_max" :disabled="!enable_save">
+                    <span class="input-group-text">kW</span>
+                    <button class="btn btn-primary" @click="save_capacity_figures" v-if="enable_save">Save</button>
+                </div>
+            </div>
+        </div>
+
         <div class="row">
 
 
@@ -141,7 +166,11 @@
             design_DT: 23,
             measured_heatloss: 0,
             measured_heatloss_range: 500,
-            auto_min_DT: 0
+            auto_min_DT: 0,
+            calculated_heatloss: 0,
+            datasheet_hp_max: 0,
+            measured_hp_max: ''
+
         },
         methods: {
             change_system: function() {
@@ -151,27 +180,56 @@
                 draw();
             },
             save_heat_loss: function() {
-                // saveheatloss?id=1&measured_base_DT=0&measured_design_DT=0&measured_heat_loss=0
-                $.ajax({
-                    type: "GET",
-                    url: path + "system/saveheatloss",
+
+                var z = systemid_map[app.systemid];
+                app.system_list[z].measured_base_DT = app.base_DT;
+                app.system_list[z].measured_design_DT = app.design_DT;
+                app.system_list[z].measured_heat_loss = app.measured_heatloss;
+                app.system_list[z].measured_heat_loss_range = app.measured_heatloss_range;
+
+                var data_to_save =  {
+                    id: app.systemid,
                     data: {
-                        'id': app.systemid,
-                        'measured_base_DT': app.base_DT,
-                        'measured_design_DT': app.design_DT,
-                        'measured_heat_loss': app.measured_heatloss,
-                        'measured_heat_loss_range': app.measured_heatloss_range
-                    },
+                        measured_base_DT: app.base_DT,
+                        measured_design_DT: app.design_DT,
+                        measured_heat_loss: app.measured_heatloss,
+                        measured_heat_loss_range: app.measured_heatloss_range
+                    }
+                };
+
+                $.ajax({
+                    type: "POST",
+                    url: path + "system/save",
+                    contentType: "application/json",
+                    data: JSON.stringify(data_to_save),
                     success: function(result) {
                         console.log(result);
                         alert(result.message);
+                    }
+                });
+            },
+            save_capacity_figures: function () {
 
-                        // update app.system_list
-                        var z = systemid_map[app.systemid];
-                        app.system_list[z].measured_base_DT = app.base_DT;
-                        app.system_list[z].measured_design_DT = app.design_DT;
-                        app.system_list[z].measured_heat_loss = app.measured_heatloss;
-                        app.system_list[z].measured_heat_loss_range = app.measured_heatloss_range;
+                var z = systemid_map[app.systemid];
+                app.system_list[z].hp_max_output = app.datasheet_hp_max;
+                app.system_list[z].heat_loss = app.calculated_heatloss;
+                
+                var data_to_save = {
+                    id: app.systemid,
+                    data: {
+                        hp_max_output: app.datasheet_hp_max,
+                        heat_loss: app.calculated_heatloss
+                    }
+                };
+
+                $.ajax({
+                    type: "POST",
+                    url: path + "system/save",
+                    contentType: "application/json",
+                    data: JSON.stringify(data_to_save),
+                    success: function(result) {
+                        console.log(result);
+                        alert(result.message);
                     }
                 });
             },
@@ -260,6 +318,9 @@
 
         app.measured_heatloss = app.system_list[z].measured_heat_loss;
         app.measured_heatloss_range = app.system_list[z].measured_heat_loss_range;
+        app.calculated_heatloss = app.system_list[z].heat_loss;
+        app.datasheet_hp_max = app.system_list[z].hp_max_output;
+        app.measured_hp_max = null;
 
         app.base_DT = app.system_list[z].measured_base_DT;
         app.design_DT = app.system_list[z].measured_design_DT;
