@@ -403,6 +403,20 @@
                     }
                 }
 
+                // Detect if we have valid room temperature data
+                var valid_room_temp = 0;
+                for (var i = 0; i < data[mode + '_roomT_mean'].length; i++) {
+                    if (data[mode + '_roomT_mean'][i][1] > 0) {
+                        valid_room_temp = 1;
+                        break;
+                    }
+                }
+                // auto enable fixed room temp if no room temp data
+                if (valid_room_temp == 0) {
+                    app.fixed_room_tmp_enable = 1;
+                    alert("No room temperature data found, fixed room temperature enabled\nSet fixed room temperature in the box below (default 20°C)")
+                }
+
                 // Apply fixed room temperature
                 if (app.fixed_room_tmp_enable) {
                     for (var i = 0; i < data[mode + '_roomT_mean'].length; i++) {
