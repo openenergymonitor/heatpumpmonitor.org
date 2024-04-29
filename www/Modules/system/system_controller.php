@@ -53,10 +53,14 @@ function system_controller() {
     
     if ($route->action=="log" && $session['admin']) {
         if ($route->format=="json") {
-            return $system->get_changes();
+            $system_id = get("id",false);
+            return $system->get_changes($system_id);
         } else {
             $route->format = "html";
-            return view("Modules/system/system_log_view.php", array());
+            $system_id =  get("id",false);
+            return view("Modules/system/system_log_view.php", array(
+                "system_id"=>$system_id
+            ));
         }
     }
 

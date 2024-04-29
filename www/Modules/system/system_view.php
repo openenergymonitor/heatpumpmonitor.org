@@ -27,6 +27,7 @@ global $settings;
 <div id="app" class="bg-light">
     <div style=" background-color:#f0f0f0; padding-top:20px; padding-bottom:10px">
         <div class="container" style="max-width:800px;">
+            <div style="float:right" v-if="admin"><a :href="path+'system/log?id='+system.id" class="btn btn-light">Change log</a></div>
 
             <div v-if="system.hp_model!=''">
                 <h3>{{ system.hp_output }} kW, {{ system.hp_model }}</h3>
@@ -314,6 +315,7 @@ global $settings;
     var app = new Vue({
         el: '#app',
         data: {
+            path: path,
             mode: "<?php echo $mode; ?>", // edit, view
             system: <?php echo json_encode($system_data); ?>,
             monthly: [],

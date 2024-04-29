@@ -25,14 +25,16 @@
               <td><span v-if="index==0 || row.username != log[index-1].username">{{ row.username }} <span v-if="row.admin==1">(Admin)</span></span></td>
               <td><span v-if="index==0 || row.systemid != log[index-1].systemid">{{ row.systemid }}</span></td>
               <td><b>{{ row.field }}</b></td>
-              <td>{{ row.old_value }}</td>
-              <td>{{ row.new_value }}</td>
+              <td><div style="max-width:450px; overflow:scroll">{{ row.old_value }}</div></td>
+              <td><div style="max-width:450px; overflow:scroll">{{ row.new_value }}</div></td>
             </tr>
         </table>
     </div>
 </div>
 
 <script>
+
+var system_id = "<?php echo $system_id; ?>";
 
 var app = new Vue({
     el: '#app',
@@ -41,12 +43,19 @@ var app = new Vue({
     }
 });
 
+var params = {};
+if (system_id) {
+    params.id = system_id;
+}
+
 // Load load ajax
 $.ajax({
       url: path+"system/log.json",
+      data: params,
       type: "GET",
       success: function(data) {
           app.log = data;
+
       }
 });
 

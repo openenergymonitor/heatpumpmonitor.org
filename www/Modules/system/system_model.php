@@ -239,6 +239,11 @@ class System
             // $this->send_change_notification($userid,$systemid,$change_log);
             $this->log_changes($systemid,$userid,$change_log);
 
+            if ($new_system) {
+                // Sent new system notification
+                $this->send_change_notification($userid,$systemid,$change_log,true);
+            }
+
             $this->computed_fields($systemid);
 
             // Update last updated time
@@ -326,7 +331,7 @@ class System
         return $row;
     }
 
-    public function send_change_notification($userid,$systemid,$change_log) {
+    public function send_change_notification($userid,$systemid,$change_log, $new_system=false) {
         $userid = (int) $userid;
         $systemid = (int) $systemid;
         $change_count = count($change_log);
@@ -368,22 +373,42 @@ class System
             $by = "by $result->name";
         }
 
-        $html = "<h3>System $systemid user $system_name ($system_username) has been updated $by</h3>";
-        $html .= "<p>$change_count fields updated</p>";
-        $html .= "<ul>";
-        foreach ($change_log as $change) {
-            // as list
-            $html .= "<li><b>".$change['key']."</b> changed from <b>".$change['old']."</b> to <b>".$change['new']."</b></li>";
+        if ($new_system) {
+            $subject = "New system $systemid user $system_name ($system_username) has been created $by $published_str";
+            $text = "New system $systemid user $system_name ($system_username) has been created $by";
+
+            $html = "<h3>New system $systemid user $system_name ($system_username) has been created $by</h3>";
+            $html .= "<p>$change_count fields set</p>";
+
+            $html .= "<ul>";
+            foreach ($change_log as $change) {
+                // as list
+                $html .= "<li><b>".$change['key']."</b>: <b>".$change['new']."</b></li>";
+            }
+            $html .= "</ul>";
+
+        } else {
+            $subject = "System $systemid user $system_name ($system_username) has been updated $by $published_str";
+            $text = "System $systemid has been updated, $change_count fields updated";
+
+            $html = "<h3>System $systemid user $system_name ($system_username) has been updated $by</h3>";
+            $html .= "<p>$change_count fields updated</p>";
+
+            $html .= "<ul>";
+            foreach ($change_log as $change) {
+                // as list
+                $html .= "<li><b>".$change['key']."</b> changed from <b>".$change['old']."</b> to <b>".$change['new']."</b></li>";
+            }
+            $html .= "</ul>";
         }
-        $html .= "</ul>";
 
         // Move this to background task
         require_once "Lib/email.php";
         $email_class = new Email();
         $email_class->send(array(
             "to" => $emails,
-            "subject" => "System $systemid user $system_name ($system_username) has been updated $by $published_str",
-            "text" => "System $systemid has been updated, $change_count fields updated",
+            "subject" => $subject,
+            "text" => $text,
             "html" => $html
         ));
     }
@@ -469,7 +494,7 @@ class System
     public function get_changes($systemid = false) {
         // If systemid is set then get changes for that system
         $where = "";
-        if ($systemid !== false) {
+        if ($systemid) {
             $systemid = (int) $systemid;
             $where = "WHERE systemid='$systemid'";
         }
