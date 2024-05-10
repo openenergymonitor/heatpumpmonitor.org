@@ -62,7 +62,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
                     <div class="input-group" style="margin-top: 12px">
                         <div class="input-group-text">Filter</div>
-                        <input class="form-control" name="query" v-model="filterKey" style="width:100px">
+                        <input class="form-control" name="query" v-model="filterKey" style="width:100px" onchange="draw_chart()">
 
                         <div class="input-group-text">Min days</div>
                         <input class="form-control" name="query" v-model="minDays" style="width:100px">  
@@ -1072,13 +1072,15 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     }
 
     function draw_chart() {
+        if (!app.chart_enable) return;
+
         var x = [];
         var y = [];
         
         if (columns[app.currentSortColumn]!=undefined) {
         
-            for (var i = 0; i < app.systems.length; i++) {
-                let val = app.systems[i][app.currentSortColumn];
+            for (var i = 0; i < app.fSystems.length; i++) {
+                let val = app.fSystems[i][app.currentSortColumn];
                 if (isNaN(val)) continue;
                 if (val==undefined) continue;
                 if (val==null) continue;
@@ -1087,7 +1089,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     val = val.toFixed(columns[app.currentSortColumn]['dp']+1);
                 }
                 
-                x.push(app.systems[i].location);                
+                x.push(app.fSystems[i].location);
                 y.push(val);
             }
 
