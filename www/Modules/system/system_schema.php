@@ -632,7 +632,7 @@ $schema['system_meta'] = array(
             'Sontex heat meter (class 2)',
             'Kamstrup heat meter (class 2)',
             'Sharky heat meter (class 2)',
-            'Qalcosonic heat meter (class 2)',
+            'Axioma Qalcosonic heat meter (class 2)',
             'SensoStar heat meter (class 2)',
             'Itron heat meter (class 2)',
             'Danfoss Sono heat meter (class 2)',
