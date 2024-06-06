@@ -721,6 +721,8 @@ $schema['system_stats_daily'] = array(
     'combined_roomT_mean' => array('type' => 'float', 'name'=>'RoomT mean', 'group'=>'Stats: Combined', 'dp'=>1, 'unit'=>'°C'),
     'combined_prc_carnot' => array('type' => 'float', 'name'=>'% Carnot', 'group'=>'Stats: Combined', 'dp'=>1, 'unit'=>'%'),
     'combined_cooling_kwh' => array('type' => 'float', 'name'=>'Cooling energy', 'group'=>'Stats: Combined', 'dp'=>0, 'unit'=>'kWh'),
+    'combined_starts' => array('type' => 'float', 'name'=>'Starts', 'group'=>'Stats: Combined', 'dp'=>0, 'unit'=>''),
+    'combined_starts_per_hour' => array('type' => 'float', 'name'=>'Starts per hour', 'group'=>'Stats: Combined', 'dp'=>2, 'unit'=>''),
     
     // When Running
     'running_elec_kwh' => array('type' => 'float', 'name'=>'Electricity consumption', 'group'=>'Stats: When Running', 'dp'=>0, 'unit'=>'kWh'),

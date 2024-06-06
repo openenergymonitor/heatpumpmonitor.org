@@ -9,6 +9,8 @@ $system = new System($mysqli);
 
 $logos = array();
 
+$fails = array();
+
 $data = $system->list_admin();
 foreach ($data as $row) {
     $systemid = $row->id;
@@ -64,13 +66,22 @@ foreach ($data as $row) {
                     file_put_contents($filename, $image);
                     
                     $mysqli->query("UPDATE system_meta SET `installer_logo`='".$imagefile.$extension."' WHERE `id`='$systemid'"); 
+
+                    print "success: $imagefile"."$extension\n";
                 } else {
-                    print $url['host']."\n";
+                    //print $url['host']."\n";
+                    $fails[] = $url['host'];
                 }
             // }
         }
     }
 }
+
+
+foreach ($fails as $fail) {
+    print "fail $fail\n";
+}
+
 
 function getFaviconContent($url) {
 

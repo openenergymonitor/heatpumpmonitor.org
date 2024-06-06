@@ -342,6 +342,7 @@ class SystemStats
 
         // Custom fields
         $totals['combined']['cooling_kwh'] = 0;
+        $totals['combined']['starts'] = 0;
         $totals['from_energy_feeds'] = array('elec_kwh'=>0,'heat_kwh'=>0);
 
         // Quality
@@ -369,6 +370,7 @@ class SystemStats
                 $quality_totals[$field] += $row->{"quality_".$field};
             }
 
+            $totals['combined']['starts'] += $row->combined_starts*1;
             $totals['combined']['cooling_kwh'] += $row->combined_cooling_kwh;
             $totals['from_energy_feeds']['elec_kwh'] += $row->from_energy_feeds_elec_kwh;
             $totals['from_energy_feeds']['heat_kwh'] += $row->from_energy_feeds_heat_kwh;
@@ -426,6 +428,12 @@ class SystemStats
         }
 
         $stats['combined_cooling_kwh'] = $totals['combined']['cooling_kwh'];
+        $stats['combined_starts'] = $totals['combined']['starts'];
+        if ($totals['combined']['data_length']>0) {
+            $stats['combined_starts_per_hour'] = $totals['combined']['starts'] / ($totals['combined']['data_length'] / 3600.0);
+        } else {
+            $stats['combined_starts_per_hour'] = 0;
+        }
         $stats['from_energy_feeds_elec_kwh'] = $totals['from_energy_feeds']['elec_kwh'];
         $stats['from_energy_feeds_heat_kwh'] = $totals['from_energy_feeds']['heat_kwh'];
         $stats['from_energy_feeds_cop'] = 0;
