@@ -98,7 +98,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     
                     
                     
-                    <div class="card mt-3">
+                    <div class="card mt-3" style="max-height:780px; overflow-y:scroll">
                         <div class="card-header">
                         <button class="btn btn-sm btn-secondary" style="float:right; margin-right:-8px" @click="show_field_selector = !show_field_selector">
                             <i :class="{'fas fa-minus': show_field_selector, 'fas fa-plus': !show_field_selector}"></i>
