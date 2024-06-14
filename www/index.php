@@ -82,6 +82,21 @@ switch ($route->controller) {
         $output = view("views/histogram.php", array("userid"=>$session['userid']));
         break;
 
+    case "about":
+        $route->format = "html";
+        $output = view("views/about.php", array(
+            "userid"=>$session['userid'],
+            "number_of_systems"=>$system->count_public()
+            
+        ));
+        break;
+        
+    case "apidoc":
+        $route->format = "html";
+        $output = view("views/api.php", array("userid"=>$session['userid']));
+        break;
+
+
     case "user":
         require "Modules/user/user_controller.php";
         $output = user_controller();

@@ -96,8 +96,6 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <li @click="template_view('costs')" :class="'list-group-item list-group-item-action '+(selected_template=='costs'?'active':'')" style="cursor:pointer"><i class="fas fa-pound-sign" style="margin: 0px 15px 0px 8px"></i> Costs</li>
                     </ul>
                     
-                    
-                    
                     <div class="card mt-3" style="max-height:780px; overflow-y:scroll">
                         <div class="card-header">
                         <button class="btn btn-sm btn-secondary" style="float:right; margin-right:-8px" @click="show_field_selector = !show_field_selector">
@@ -168,6 +166,18 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 </div>
             </div>
             <div class="col-12 col-sm-12 col-md-12 col-lg-12 col-xl-10">
+
+                <!-- add button group -->
+                <!-- Last 365 days, Last 90 days, Last 30 days, Last 7 days, All -->
+                <!--
+                <div class="btn-group" role="group" aria-label="Basic example">
+                    <button type="button" class="btn btn-primary" @click="stats_time_start='last365'; stats_time_start_change()">Last 365 days</button>
+                    <button type="button" class="btn btn-secondary" @click="stats_time_start='last90'; stats_time_start_change()">Last 90 days</button>
+                    <button type="button" class="btn btn-secondary" @click="stats_time_start='last30'; stats_time_start_change()">Last 30 days</button>
+                    <button type="button" class="btn btn-secondary" @click="stats_time_start='last7'; stats_time_start_change()">Last 7 days</button>
+                    <button type="button" class="btn btn-secondary" @click="stats_time_start='all'; stats_time_start_change()">All</button>
+                </div>
+                -->
 
                 <table id="custom" class="table table-striped table-sm mt-3">
                     <tr>

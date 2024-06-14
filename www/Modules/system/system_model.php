@@ -29,6 +29,13 @@ class System
         return $list;
     }
 
+    // Return number of public systems
+    public function count_public() {
+        $result = $this->mysqli->query("SELECT COUNT(*) as count FROM system_meta WHERE share=1 AND published=1");
+        $row = $result->fetch_object();
+        return $row->count;
+    }
+
     // All systems
     public function list_admin() {
         $result = $this->mysqli->query("SELECT system_meta.*,users.name,users.username,users.email FROM system_meta JOIN users ON system_meta.userid = users.id ORDER BY system_meta.id");
@@ -92,20 +99,29 @@ class System
     public function get($userid,$systemid) {
         $userid = (int) $userid;
         $systemid = (int) $systemid;
+        
         $result = $this->mysqli->query("SELECT * FROM system_meta WHERE id='$systemid'");
         if (!$row = $result->fetch_object()) {
             return array("success"=>false, "message"=>"System does not exist");
         }
-
-        if ($userid===0) {
-            // Public access
-            return $this->typecast($row);
+        $row = $this->typecast($row);
+        
+        // If public then return system
+        if ($row->share==1 && $row->published==1) {
+            return $row;
         }
-
-        if ($userid!=$row->userid && $this->is_admin($userid)==false) {
-            return array("success"=>false, "message"=>"Invalid access");
+        
+        // If it's the users system then return system
+        if ($userid == $row->userid) {
+            return $row;
         }
-        return $this->typecast($row);
+        
+        // If user is an admin return system
+        if ($this->is_admin($userid)) {
+            return $row;
+        }
+        
+        return array("success"=>false, "message"=>"Invalid access");
     }
 
     public function validate($userid,$form_data,$full_validation=false) {

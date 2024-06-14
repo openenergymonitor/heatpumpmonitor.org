@@ -163,10 +163,13 @@ function system_controller() {
             
             return $system_stats->get_daily(
                 $system_id,
-                get('start',true),
-                get('end',true),   
+                get('start',false),
+                get('end',false),   
                 get('fields',false),     
             );
+        } else if ($route->subaction=="monthly") {
+            $route->format = "json";
+            return $system_stats->system_get_monthly(get('id',true));
         }
     }
 
@@ -177,10 +180,8 @@ function system_controller() {
 
     if ($route->action=="get") {
         $route->format = "json";
-        if ($session['userid']) {
-            $systemid = get("id",false);
-            return $system->get($session['userid'],$systemid);
-        }    
+        $systemid = get("id",true);
+        return $system->get($session['userid'],$systemid);  
     }
 
     if ($route->action=="save") {
