@@ -91,7 +91,7 @@ switch ($route->controller) {
         ));
         break;
         
-    case "apidoc":
+    case "api-helper":
         $route->format = "html";
         $output = view("views/api.php", array("userid"=>$session['userid']));
         break;

@@ -151,6 +151,7 @@ $navigation = array(
         <div class="container">
             <div>An <a href="https://openenergymonitor.org/" class="oslink"><b>OpenEnergyMonitor.org</b></a> community initiative</div>
             <a href="https://github.com/openenergymonitor/heatpumpmonitor.org" class="oslink" style="font-size:14px">This website is open source on github</a>
+            <p><a href="<?php echo $path; ?>about" class="oslink">About</a> | <a href="<?php echo $path; ?>api-helper" class="oslink">API</a></p>
         </div>
     </footer>
 
