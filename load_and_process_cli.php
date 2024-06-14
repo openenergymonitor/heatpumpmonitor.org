@@ -90,6 +90,7 @@ function load_daily_stats_system($meta, $reload) {
 
     // get data period
     $result = $system_stats->get_data_period($meta->url);
+    
     if (!$result['success']) {
         logger("- error loading data period");
         return false;
@@ -129,7 +130,7 @@ function load_daily_stats_system($meta, $reload) {
         $start_str = $date->format("Y-m-d");
         // +30 days
         if ($host=="emoncms.org") {
-            $date->modify("+60 days");
+            $date->modify("+30 days");
         } else {
             $date->modify("+7 days"); 
         }
@@ -161,6 +162,8 @@ function load_daily_stats_system($meta, $reload) {
 
         if ($result = $system_stats->load_from_url($meta->url, $start, $end, 'getdaily')) 
         {
+        
+            print $result."\n";
             // split csv into array, first line is header
             $csv = explode("\n", $result);
             $fields = str_getcsv($csv[0]);
