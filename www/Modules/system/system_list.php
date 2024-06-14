@@ -336,11 +336,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     template_views['topofthescops']['narrow'] = ['installer_logo', 'training', 'hp_model', 'hp_output', 'combined_cop', 'learnmore'];
 
     template_views['heatpumpfabric'] = {}
-    template_views['heatpumpfabric']['wide'] = ['location', 'installer_logo', 'installer_name', 'training', 'hp_type', 'hp_model', 'hp_output', 'combined_data_length', 'combined_cop', 'combined_elec_kwh_per_m2', 'mid_metering', 'learnmore'];
-    template_views['heatpumpfabric']['narrow'] = ['installer_logo', 'training', 'hp_model', 'hp_output', 'combined_elec_kwh_per_m2', 'learnmore'];
+    template_views['heatpumpfabric']['wide'] = ['installer_logo', 'location', 'property', 'insulation', 'age', 'floor_area', 'hp_type', 'hp_model', 'hp_output', 'combined_cop', 'combined_elec_kwh_per_m2', 'combined_heat_kwh_per_m2'];
+    template_views['heatpumpfabric']['narrow'] = ['installer_logo', 'hp_model', 'hp_output', 'combined_elec_kwh_per_m2'];
 
     template_views['costs'] = {}
-    template_views['costs']['wide'] = ['location', 'installer_logo', 'installer_name', 'training', 'hp_type', 'hp_model', 'hp_output', 'combined_data_length', 'combined_cop', 'combined_heat_unit_cost', 'combined_cost', 'mid_metering', 'learnmore'];
+    template_views['costs']['wide'] = ['installer_logo', 'training', 'location' , 'hp_type', 'hp_model', 'hp_output', 'electricity_tariff', 'electricity_tariff_unit_rate_all', 'combined_cop', 'combined_heat_unit_cost', 'combined_cost', 'learnmore'];
     template_views['costs']['narrow'] = ['installer_logo', 'training', 'hp_model', 'hp_output', 'combined_heat_unit_cost', 'learnmore'];
 
     // Available months
@@ -354,7 +354,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     
     var mode = "<?php echo $mode; ?>";
     
-    var minDays = 24;
+    var minDays = 72;
     if (mode!='public') minDays = 0;
     
     var showFlagged = true;
@@ -373,7 +373,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             currentSortColumn: 'combined_cop',
             currentSortDir: 'desc',
             // stats time selection
-            stats_time_start: "last30",
+            stats_time_start: "last90",
             stats_time_end: "only",
             stats_time_range: false,
             available_months_start: months,
@@ -404,11 +404,16 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     app.currentSortDir = 'desc'
                     app.sort_only('combined_cop');
                 } else if (template == 'heatpumpfabric') {
-                    app.currentSortDir = 'asc'
-                    app.sort_only('combined_elec_kwh_per_m2');
+                    app.stats_time_start = "last365";
+                    app.currentSortDir = 'asc';
+                    app.currentSortColumn = 'combined_elec_kwh_per_m2';                    
+                    app.stats_time_start_change();
+
                 } else if (template == 'costs') {
+                    app.stats_time_start = "last365";
                     app.currentSortDir = 'asc'
-                    app.sort_only('combined_heat_unit_cost');
+                    app.currentSortColumn = 'combined_heat_unit_cost';
+                    app.stats_time_start_change();
                 }
                 resize();
             },
@@ -758,6 +763,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 }
                 if (key=='hp_output') {
                     return val + ' kW';
+                }
+                if (key=='floor_area') {
+                    return val + ' m2';
                 }
                 if (key=='mid_metering') {
                     if (val==1) {
