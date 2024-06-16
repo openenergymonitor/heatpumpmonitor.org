@@ -30,11 +30,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     <p v-if="mode=='user'">Add, edit and view systems associated with your account.</p>
                     <p v-if="mode=='admin'">Add, edit and view all systems.</p>
                     
-                    <p v-if="mode=='public' && showContent">Here you can see a variety of installations monitored with OpenEnergyMonitor, and compare detailed statistics to see how performance can vary.</p>
-                    <p v-if="mode=='public' && showContent">If you're monitoring a heat pump with <b>emoncms</b> and the My Heat Pump app, <a href="<?php echo $path; ?>/user/login">login</a> to add your details.</p>
-                    <p v-if="mode=='public' && showContent">To join in with discussion of the results, or for support please use the <a href="https://community.openenergymonitor.org/tag/heatpumpmonitor">OpenEnergyMonitor forums.</a></p> 
-                    
-                    <button v-if="mode!='public'" class="btn btn-primary" @click="create">Add new system</button>            
+                    <button v-if="mode!='public'" class="btn btn-primary" @click="create">Add new system</button>
                 </div>
 
                         
@@ -44,7 +40,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
                         <select class="form-control" v-model="stats_time_start" @change="stats_time_start_change" style="width:130px">
                             <option value="all">All</option>
-                            <option value="last7">Last 7 days</option> 
+                            <option value="last7">Last 7 days</option>
                             <option value="last30">Last 30 days</option>
                             <option value="last90">Last 90 days</option>
                             <option value="last365">Last 365 days</option>
@@ -65,7 +61,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <input class="form-control" name="query" v-model="filterKey" style="width:100px" onchange="draw_chart()">
 
                         <div class="input-group-text">Min days</div>
-                        <input class="form-control" name="query" v-model="minDays" style="width:100px">  
+                        <input class="form-control" name="query" v-model="minDays" style="width:100px">
                     </div>
                     
       
@@ -130,12 +126,12 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                       </li>
                       
                       <li class="list-group-item">
-                        <div style="color:#666; float:right"> (<span v-html="num_mid"></span>)</div>           
+                        <div style="color:#666; float:right"> (<span v-html="num_mid"></span>)</div>
                         <input class="form-check-input me-1" type="checkbox" value="" id="show_mid_id" v-model="show_mid">
                         <label class="form-check-label stretched-link" for="show_mid_id">MID metering</label>
                       </li>
                       <li class="list-group-item">
-                        <div style="color:#666; float:right"> (<span v-html="num_non_mid"></span>)</div>           
+                        <div style="color:#666; float:right"> (<span v-html="num_non_mid"></span>)</div>
                         <input class="form-check-input me-1" type="checkbox" value="" id="show_non_mid_id" v-model="show_non_mid">
                         <label class="form-check-label stretched-link" for="show_non_mid_id">Other metering</label>
                       </li>
@@ -154,7 +150,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <span style="color:#666; float:right"> (<span v-html="num_other_metering"></span>)</span>
                         <input class="form-check-input me-1" type="checkbox" value="" id="show_other_metering_id" v-model="show_other_metering">
                         <label class="form-check-label stretched-link" for="show_other_metering_id">Other metering </label>
-                      </li> 
+                      </li>
                       -->
                       <li class="list-group-item">
                         <div style="color:#666; float:right"> (<span v-html="num_flagged"></span>)</div>
@@ -214,7 +210,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             </a>
                             <a :href="system.url" target="_blank" v-if="showContent">
                                 <button class="btn btn-secondary btn-sm" title="Dashboard"><i class="fa fa-chart-bar" style="color: #ffffff;"></i></button>
-                            </a> 
+                            </a>
                         </td>
                     </tr>
                 </table>
@@ -265,42 +261,42 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     for (var z in categories) {
         let category = categories[z];
         
-        stats_columns[category+'_elec_kwh_per_m2'] = { 
-            name: "Electric kWh/m²", 
-            heading: "Elec kWh/m²", 
-            group: "Stats: "+category_names[category], 
-            helper: "Electricity consumption per m²", 
-            unit: "kWh/m²", 
-            dp: 1 
+        stats_columns[category+'_elec_kwh_per_m2'] = {
+            name: "Electric kWh/m²",
+            heading: "Elec kWh/m²",
+            group: "Stats: "+category_names[category],
+            helper: "Electricity consumption per m²",
+            unit: "kWh/m²",
+            dp: 1
         };
         
-        stats_columns[category+'_heat_kwh_per_m2'] = { 
-            name: "Heat kWh/m²", 
-            heading: "Heat kWh/m²", 
-            group: "Stats: "+category_names[category], 
-            helper: "Electricity consumption per m²", 
-            unit: "kWh/m²", 
-            dp: 1 
+        stats_columns[category+'_heat_kwh_per_m2'] = {
+            name: "Heat kWh/m²",
+            heading: "Heat kWh/m²",
+            group: "Stats: "+category_names[category],
+            helper: "Electricity consumption per m²",
+            unit: "kWh/m²",
+            dp: 1
         };
         
-        stats_columns[category+'_cost'] = { 
-            name: "Cost", 
-            heading: "Cost", 
-            group: "Stats: "+category_names[category], 
-            helper: "Electricity cost", 
-            unit: "", 
+        stats_columns[category+'_cost'] = {
+            name: "Cost",
+            heading: "Cost",
+            group: "Stats: "+category_names[category],
+            helper: "Electricity cost",
+            unit: "",
             prepend: "£",
-            dp: 0 
+            dp: 0
         };
         
-        stats_columns[category+'_heat_unit_cost'] = { 
-            name: "Heat p/kWh", 
-            heading: "Heat<br>p/kWh", 
-            group: "Stats: "+category_names[category], 
-            helper: "Heat unit cost", 
-            unit: "p/kWh", 
-            dp: 1 
-        };        
+        stats_columns[category+'_heat_unit_cost'] = {
+            name: "Heat p/kWh",
+            heading: "Heat<br>p/kWh",
+            group: "Stats: "+category_names[category],
+            helper: "Heat unit cost",
+            unit: "p/kWh",
+            dp: 1
+        };
     }
     
     // add stats_columns to columns
@@ -406,7 +402,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 } else if (template == 'heatpumpfabric') {
                     app.stats_time_start = "last365";
                     app.currentSortDir = 'asc';
-                    app.currentSortColumn = 'combined_elec_kwh_per_m2';                    
+                    app.currentSortColumn = 'combined_elec_kwh_per_m2';
                     app.stats_time_start_change();
 
                 } else if (template == 'costs') {
@@ -431,7 +427,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             },
             remove: function(index) {
                 if (confirm("Are you sure you want to delete system: " + this.systems[index].location + "?")) {
-                    // axios delete 
+                    // axios delete
                     let systemid = this.systems[index].id;
                     axios.get(path+'system/delete?id=' + systemid)
                         .then(response => {
@@ -536,10 +532,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     this.stats_time_end = 'only';
                 } else {
                     let start_index = this.available_months_start.indexOf(this.stats_time_start);
-                    this.available_months_end = this.available_months_start.slice(0,start_index); 
+                    this.available_months_end = this.available_months_start.slice(0,start_index);
 
                     if (this.stats_time_end!='only') {
-                        this.stats_time_end = this.available_months_end[0]; 
+                        this.stats_time_end = this.available_months_end[0];
                     }
                 }
                 
@@ -700,7 +696,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     }
                 
                     return (val/(24*3600)).toFixed(0)+" days"+flag;
-                }             
+                }
 
                 if (key=='installer_logo') {
                     if (val!=null && val!='') {
@@ -822,7 +818,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         
                         return (days<=360) ? 'partial ' : '';
                     } else if (this.stats_time_start=='last90') {
-                        return (days<=72) ? 'partial ' : '';                    
+                        return (days<=72) ? 'partial ' : '';
                     } else if (this.stats_time_start=='last30') {
                         return (days<=27) ? 'partial ' : '';
                     } else if (this.stats_time_start=='last7') {
@@ -877,11 +873,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 /*if (this.show_class2_heat && this.show_class1_elec) {
                     if (row.heat_meter_class2 && row.elec_meter_class1) {
                         show = true;
-                    } 
+                    }
                 } else {
                     if (this.show_class2_heat && row.heat_meter_class2) {
                         show = true;
-                    }      
+                    }
                     if (this.show_class1_elec && row.elec_meter_class1) {
                         show = true;
                     }
@@ -936,7 +932,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         */
                     }
                 }
-            }         
+            }
        },
         filters: {
             toFixed: function(val, dp) {
@@ -995,13 +991,13 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         if (heat_meter!=null && heat_meter.indexOf("class 2")!=-1) {
             app.systems[i].heat_meter_class2 = true;
         } else {
-            app.systems[i].heat_meter_class2 = false;   
+            app.systems[i].heat_meter_class2 = false;
         }
         
         if (elec_meter!=null && elec_meter.indexOf("class 1")!=-1) {
             app.systems[i].elec_meter_class1 = true;
         } else {
-            app.systems[i].elec_meter_class1 = false;   
+            app.systems[i].elec_meter_class1 = false;
         }
     }
 
@@ -1071,13 +1067,13 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 enabled: false
             },
             series: [ ],
-            xaxis: { 
+            xaxis: {
                 categories: [],
                 title: {
                     text: 'Location'
                 }
             },
-            yaxis: { 
+            yaxis: {
                 title: {
                     text: 'COP / SCOP'
                 }
@@ -1150,7 +1146,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 app.selected_columns = ['location', 'hp_type', 'hp_model', 'hp_output', 'combined_data_length', 'combined_cop'];
                 app.showContent = true;
             }
-        } 
+        }
     }
 
 </script>
