@@ -40,3 +40,6 @@ if ($mysqli->connect_error) {
 }
 // Set charset to utf8
 $mysqli->set_charset("utf8");
+
+$redis = new Redis();
+$connected = $redis->connect('localhost');

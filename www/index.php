@@ -106,6 +106,11 @@ switch ($route->controller) {
         require "Modules/system/system_controller.php";
         $output = system_controller();
         break;
+
+    case "timeseries":
+        require "Modules/timeseries/timeseries_controller.php";
+        $output = timeseries_controller();
+        break;
         
     case "api":
         $route->format = "json";

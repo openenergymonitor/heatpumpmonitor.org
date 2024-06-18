@@ -7,12 +7,17 @@ class SystemStats
 {
     private $mysqli;
     private $system;
+    private $redis;
+    
     public $schema = array();
 
     public function __construct($mysqli,$system)
     {
         $this->mysqli = $mysqli;
         $this->system = $system;
+        
+        global $redis;
+        $this->redis = $redis;
 
         $schema = array();
         require "Modules/system/system_schema.php";
@@ -66,6 +71,65 @@ class SystemStats
         $output->apikey = $readkey;
 
         return $output;
+    }
+    
+    public function get_system_config_with_meta($userid, $systemid)
+    {
+        if ($result = $this->redis->get("appconfig:$systemid")) {
+            $config = json_decode($result);
+            $config->config_cache = true;
+            return $config;
+        }
+            
+        // get config if owned by user or public
+        $userid = (int) $userid;
+        $result = $this->mysqli->query("SELECT url FROM system_meta WHERE id='$systemid' AND ((share=1 AND published=1) OR userid='$userid')");
+        if (!$row = $result->fetch_object()) {
+            return array("success"=>false, "message"=>"System does not exist");   
+        }
+
+        $url_parts = parse_url($row->url);
+        $server = $url_parts['scheme'] . '://' . $url_parts['host'];
+        // check if url was to /app/view instead of username
+        if (preg_match('/^(.*)\/app\/view$/', $url_parts['path'], $matches)) {
+            $getconfig = "$server$matches[1]/app/getconfigmeta";
+        } else {
+            $getconfig = $server . $url_parts['path'] . "/app/getconfigmeta";
+        }
+        // if url has query string, pull out the readkey
+        $readkey = '';
+        if (isset($url_parts['query'])) {
+            parse_str($url_parts['query'], $url_args);
+            if (isset($url_args['readkey'])) {
+                $readkey = $url_args['readkey'];
+                $getconfig .= '?' . $url_parts['query'];
+            }
+        }
+        
+        if ($server != "https://emoncms.org" && $server != "http://emoncms.org") {
+            return array("success"=>false, "message"=>"API only supported by systems hosted on emoncms.org");
+        }
+
+        try {
+            $result = file_get_contents($getconfig);
+        } catch (Exception $e) {
+            return array("success"=>false, "message"=>"Empty response from detailed data server");
+        }
+    
+        $config = json_decode($result);  
+        
+        if (!$config) {
+            return array("success"=>false, "message"=>"Empty response from detailed data server");
+        }
+
+        $config->server = $server;
+        $config->apikey = $readkey;
+        if ($config->apikey=="") $config->apikey = false;
+
+        $this->redis->set("appconfig:$systemid",json_encode($config));
+        $this->redis->expire("appconfig:$systemid",10);
+
+        return $config;
     }
 
     public function load_from_url($url, $start = false, $end = false, $api = 'getstats2')
