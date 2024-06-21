@@ -178,6 +178,15 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     <button type="button" class="btn btn-secondary" @click="stats_time_start='all'; stats_time_start_change()">All</button>
                 </div>
                 -->
+                
+                <div class="input-group" v-if="selected_template=='costs'">
+                    <span class="input-group-text">Tariff</span>
+                    <select class="form-select" style="max-width:150px" v-model="tariff_mode" @change="tariff_mode_changed">
+                        <option value="flat">Price cap</option>
+                        <option value="agile">Agile</option>
+                        <option value="user">User entered</option>
+                    </select>
+                </div>
 
                 <table id="custom" class="table table-striped table-sm mt-3">
                     <tr>
@@ -253,6 +262,15 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     // remove stats_columns id & timestmap
     delete stats_columns.id;
     delete stats_columns.timestamp;
+
+    stats_columns['selected_unit_rate'] = { 
+        name: "Elec p/kWh", 
+        heading: "Elec<br>p/kWh", 
+        group: "Unit rates",
+        helper: "Selected electricity unit rate", 
+        unit: "p/kWh", 
+        dp: 1 
+    };   
 
     // post process columns
     var categories = ['combined','running','space','water'];
@@ -340,7 +358,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     template_views['heatpumpfabric']['narrow'] = ['installer_logo', 'hp_model', 'hp_output', 'combined_elec_kwh_per_m2'];
 
     template_views['costs'] = {}
-    template_views['costs']['wide'] = ['installer_logo', 'training', 'location' , 'hp_type', 'hp_model', 'hp_output', 'electricity_tariff', 'electricity_tariff_unit_rate_all', 'combined_cop', 'combined_heat_unit_cost', 'combined_cost', 'learnmore'];
+    template_views['costs']['wide'] = ['installer_logo', 'training', 'location' , 'hp_type', 'hp_model', 'hp_output', 'electricity_tariff', 'selected_unit_rate', 'combined_cop', 'combined_heat_unit_cost', 'combined_cost', 'learnmore'];
     template_views['costs']['narrow'] = ['installer_logo', 'training', 'hp_model', 'hp_output', 'combined_heat_unit_cost', 'learnmore'];
 
     // Available months
@@ -395,9 +413,69 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             num_non_mid: 0,
             num_class2_heat: 0,
             num_class1_elec: 0,
-            num_other_metering: 0
+            num_other_metering: 0,
+            tariff_mode: 'user'
         },
         methods: {
+            tariff_mode_changed: function() {
+                this.tariff_calc();
+                // sort by heat unit cost
+                app.currentSortDir = 'asc';
+                app.currentSortColumn = 'combined_heat_unit_cost';
+                app.sort_only('combined_heat_unit_cost');
+            },
+ 
+            tariff_calc: function() {
+
+                for (var i = 0; i < app.systems.length; i++) {
+                    if (this.tariff_mode == 'flat') {
+                        app.systems[i].selected_unit_rate = 23.22;
+                        // remove electricity_tariff from selected columns
+                        if (app.selected_columns.includes('electricity_tariff')) {
+                            app.selected_columns.splice(app.selected_columns.indexOf('electricity_tariff'), 1);
+                        }
+                    } else if (this.tariff_mode == 'agile') {
+                        app.systems[i].selected_unit_rate = app.systems[i].unit_rate_agile;
+                        // remove electricity_tariff from selected columns
+                        if (app.selected_columns.includes('electricity_tariff')) {
+                            app.selected_columns.splice(app.selected_columns.indexOf('electricity_tariff'), 1);
+                        }
+                    } else if (this.tariff_mode == 'user') {
+                        app.systems[i].selected_unit_rate = app.systems[i].electricity_tariff_unit_rate_all;
+                        // add electricity_tariff to selected columns if not already there
+                        if (!app.selected_columns.includes('electricity_tariff')) {
+                            // add after hp_model
+                            app.selected_columns.splice(app.selected_columns.indexOf('hp_model')+1, 0, 'electricity_tariff');
+                        }
+                    }
+
+                    // recalculate costs
+                    // for each category
+                    let categories = ['combined','running','space','water'];
+                    for (var z in categories) {
+                        let category = categories[z];
+
+                        // cost
+                        if (app.systems[i].selected_unit_rate==0) {
+                            app.systems[i].selected_unit_rate = 23.22;
+                        }
+                        let cost = app.systems[i][category+"_elec_kwh"] * app.systems[i].selected_unit_rate * 0.01;
+                        cost = cost.toFixed(columns[category+'_cost']['dp'])*1;
+                        if (cost === 0) cost = null;
+                        app.systems[i][category+"_cost"] = cost;
+
+                        // unitcost
+                        if (app.systems[i][category+"_cop"]>0) {
+                            let unitcost = app.systems[i].selected_unit_rate / app.systems[i][category+"_cop"];
+                            unitcost = unitcost.toFixed(columns[category+'_heat_unit_cost']['dp'])*1;
+                            if (unitcost === 0) unitcost = null;
+                            app.systems[i][category+"_heat_unit_cost"] = unitcost;
+                        } else {
+                            app.systems[i][category+"_heat_unit_cost"] = null;
+                        }
+                    }
+                }
+            },
             template_view: function(template) {
                 this.selected_template = template;
                 if (template == 'topofthescops') {
@@ -636,25 +714,6 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                         app.systems[i][category+"_elec_kwh_per_m2"] = null;
                                         app.systems[i][category+"_heat_kwh_per_m2"] = null;
                                     }
-
-                                    // cost
-                                    if (app.systems[i].electricity_tariff_unit_rate_all==0) {
-                                        app.systems[i].electricity_tariff_unit_rate_all = 26;
-                                    }
-                                    let cost = app.systems[i][category+"_elec_kwh"] * app.systems[i].electricity_tariff_unit_rate_all * 0.01;
-                                    cost = cost.toFixed(columns[category+'_cost']['dp'])*1;
-                                    if (cost === 0) cost = null;
-                                    app.systems[i][category+"_cost"] = cost;
-
-                                    // unitcost
-                                    if (app.systems[i][category+"_cop"]>0) {
-                                        let unitcost = app.systems[i].electricity_tariff_unit_rate_all / app.systems[i][category+"_cop"];
-                                        unitcost = unitcost.toFixed(columns[category+'_heat_unit_cost']['dp'])*1;
-                                        if (unitcost === 0) unitcost = null;
-                                        app.systems[i][category+"_heat_unit_cost"] = unitcost;
-                                    } else {
-                                        app.systems[i][category+"_heat_unit_cost"] = null;
-                                    }
                                 }
 
                             } else {
@@ -665,6 +724,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                 app.systems[i]['combined_data_length'] = 0;
                             }
                         }
+
+                        app.tariff_calc();
+
                         // sort
                         app.sort_only(app.currentSortColumn);
                         if (app.chart_enable) draw_chart();

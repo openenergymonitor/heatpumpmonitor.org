@@ -89,6 +89,11 @@ class SystemStats
         }
 
         $url_parts = parse_url($row->url);
+
+        if (!isset($url_parts['scheme']) || !isset($url_parts['host']) || !isset($url_parts['path'])) {
+            return array("success"=>false, "message"=>"Invalid URL"); 
+        }
+
         $server = $url_parts['scheme'] . '://' . $url_parts['host'];
         // check if url was to /app/view instead of username
         if (preg_match('/^(.*)\/app\/view$/', $url_parts['path'], $matches)) {
@@ -112,6 +117,7 @@ class SystemStats
 
         try {
             $result = file_get_contents($getconfig);
+            print $getconfig;
         } catch (Exception $e) {
             return array("success"=>false, "message"=>"Empty response from detailed data server");
         }
@@ -408,6 +414,7 @@ class SystemStats
         $totals['combined']['cooling_kwh'] = 0;
         $totals['combined']['starts'] = 0;
         $totals['from_energy_feeds'] = array('elec_kwh'=>0,'heat_kwh'=>0);
+        $totals['agile_cost'] = 0;
 
         // Quality
         $quality_fields = array('elec','heat','flowT','returnT','outsideT','roomT');
@@ -438,6 +445,9 @@ class SystemStats
             $totals['combined']['cooling_kwh'] += $row->combined_cooling_kwh;
             $totals['from_energy_feeds']['elec_kwh'] += $row->from_energy_feeds_elec_kwh;
             $totals['from_energy_feeds']['heat_kwh'] += $row->from_energy_feeds_heat_kwh;
+
+            $agile_cost = $row->unit_rate_agile * 0.01 * $totals['from_energy_feeds']['elec_kwh'];
+            $totals['agile_cost'] += $agile_cost;
             
             $days++;
         }
@@ -509,6 +519,10 @@ class SystemStats
             $stats['quality_'.$field] = $quality[$field];
         }
 
+        $stats['unit_rate_agile'] = null;
+        if ($totals['from_energy_feeds']['elec_kwh'] > 0) {
+            $stats['unit_rate_agile'] = round(100*$totals['agile_cost'] / $totals['from_energy_feeds']['elec_kwh'],1);
+        }
         return $stats;
     }
 

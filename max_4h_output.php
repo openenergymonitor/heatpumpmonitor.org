@@ -5,7 +5,7 @@ chdir("$dir/www");
 require "Lib/load_database.php";
 
 require("Modules/user/user_model.php");
-$user = new User($mysqli);
+$user = new User($mysqli,false);
 
 require ("Modules/system/system_model.php");
 $system = new System($mysqli);
