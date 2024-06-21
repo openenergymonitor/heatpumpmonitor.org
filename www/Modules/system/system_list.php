@@ -247,6 +247,35 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 <script>
 
+    // hash is of format #mode=costs&tariff=agile&filter=HG
+    var hash = window.location.hash;
+    const decoded = decodeHash(hash);
+    console.log(decoded);
+
+    var filterKey = '';
+    if (decoded.filter!=undefined) filterKey = decoded.filter;
+
+    var minDays = 72;
+    var stats_time_start = 'last90';
+    var selected_template = 'topofthescops';
+    
+    if (decoded.mode!=undefined && decoded.mode =='costs') {
+        selected_template = 'costs';
+        stats_time_start = 'last365';
+        minDays = 290;
+    }
+
+    if (decoded.mode!=undefined && decoded.mode =='heatpumpfabric') {
+        selected_template = 'heatpumpfabric';
+        stats_time_start = 'last365';
+        minDays = 290;
+    }
+
+    var tariff_mode = 'flat';
+    if (decoded.tariff!=undefined && (decoded.tariff=='flat' || decoded.tariff=='agile' || decoded.tariff=='user')) {
+        tariff_mode = decoded.tariff;
+    }
+
     var columns = <?php echo json_encode($columns); ?>;
     var stats_columns = <?php echo json_encode($stats_columns); ?>;
 
@@ -372,7 +401,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     
     var mode = "<?php echo $mode; ?>";
     
-    var minDays = 72;
+    
     if (mode!='public') minDays = 0;
     
     var showFlagged = true;
@@ -391,17 +420,17 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             currentSortColumn: 'combined_cop',
             currentSortDir: 'desc',
             // stats time selection
-            stats_time_start: "last90",
+            stats_time_start: stats_time_start,
             stats_time_end: "only",
             stats_time_range: false,
             available_months_start: months,
             available_months_end: months,
-            filterKey: window.location.hash.replace(/^#/, ''),
+            filterKey: filterKey,
             minDays: minDays,
             showContent: true,
             show_field_selector: false,
             public_mode_enabled: public_mode_enabled,
-            selected_template: 'topofthescops',
+            selected_template: selected_template,
             showFlagged: showFlagged,
             show_mid: true,
             show_non_mid: true,
@@ -414,7 +443,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             num_class2_heat: 0,
             num_class1_elec: 0,
             num_other_metering: 0,
-            tariff_mode: 'user'
+            tariff_mode: tariff_mode
         },
         methods: {
             tariff_mode_changed: function() {
@@ -499,6 +528,15 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     app.currentSortColumn = 'combined_heat_unit_cost';
                     app.stats_time_start_change();
                 }
+
+                // append to url
+                // include tariff_mode if template is costs
+                if (template == 'costs') {
+                    window.location.hash = 'mode='+template+'&tariff='+app.tariff_mode;
+                } else {
+                    window.location.hash = 'mode='+template;
+                }
+
                 resize();
             },
             create: function() {
@@ -1219,6 +1257,27 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 app.showContent = true;
             }
         } 
+    }
+
+    function decodeHash(hash) {
+        // Remove the leading '#' if present
+        if (hash.startsWith('#')) {
+            hash = hash.substring(1);
+        }
+
+        // Split the hash into key-value pairs
+        const pairs = hash.split('&');
+        
+        // Create an empty object to hold the result
+        const result = {};
+
+        // Iterate over each pair and split it into key and value
+        pairs.forEach(pair => {
+            const [key, value] = pair.split('=');
+            result[key] = value;
+        });
+
+        return result;
     }
 
 </script>
