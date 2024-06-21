@@ -459,6 +459,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 app.currentSortDir = 'asc';
                 app.currentSortColumn = 'combined_heat_unit_cost';
                 app.sort_only('combined_heat_unit_cost');
+
+                window.location.hash = 'mode='+this.selected_template+'&tariff='+app.tariff_mode;
             },
  
             tariff_calc: function() {
