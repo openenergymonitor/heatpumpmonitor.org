@@ -181,9 +181,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 
                 <div class="input-group" v-if="selected_template=='costs'">
                     <span class="input-group-text">Tariff</span>
-                    <select class="form-select" style="max-width:150px" v-model="tariff_mode" @change="tariff_mode_changed">
+                    <select class="form-select" style="max-width:200px" v-model="tariff_mode" @change="tariff_mode_changed">
                         <option value="flat">Price cap</option>
-                        <option value="agile">Agile</option>
+                        <option value="agile">Octopus Agile</option>
+                        <option value="ovohp">OVO Heat Pump Plus</option>
                         <option value="user">User entered</option>
                     </select>
                 </div>
@@ -278,7 +279,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     }
 
     var tariff_mode = 'flat';
-    if (decoded.tariff!=undefined && (decoded.tariff=='flat' || decoded.tariff=='agile' || decoded.tariff=='user')) {
+    if (decoded.tariff!=undefined && (decoded.tariff=='flat' || decoded.tariff=='agile' || decoded.tariff=='ovohp' || decoded.tariff=='user')) {
         tariff_mode = decoded.tariff;
     }
 
@@ -473,6 +474,14 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         }
                     } else if (this.tariff_mode == 'agile') {
                         app.systems[i].selected_unit_rate = app.systems[i].unit_rate_agile;
+                        // remove electricity_tariff from selected columns
+                        if (app.selected_template == 'costs') {
+                            if (app.selected_columns.includes('electricity_tariff')) {
+                                app.selected_columns.splice(app.selected_columns.indexOf('electricity_tariff'), 1);
+                            }
+                        }
+                    } else if (this.tariff_mode == 'ovohp') {
+                        app.systems[i].selected_unit_rate = 15.0;
                         // remove electricity_tariff from selected columns
                         if (app.selected_template == 'costs') {
                             if (app.selected_columns.includes('electricity_tariff')) {
