@@ -179,7 +179,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 </div>
                 -->
                 
-                <div class="input-group" v-if="selected_template=='costs'">
+                <div class="input-group mt-3" v-if="selected_template=='costs'">
                     <span class="input-group-text">Tariff</span>
                     <select class="form-select" style="max-width:200px" v-model="tariff_mode" @change="tariff_mode_changed">
                         <option value="flat">Price cap</option>
