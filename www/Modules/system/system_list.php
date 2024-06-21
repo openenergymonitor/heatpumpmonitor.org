@@ -978,6 +978,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 return true;
             },
 
+            // Filter systems with combined_cop <= 0
+            filterCop(row) {
+                return row.combined_cop > 0;
+            },
+
             filterDays(row) {
                 if (this.minDays==null || this.minDays=='' || isNaN(this.minDays)) this.minDays = 0;
                 this.minDays = parseInt(this.minDays);
@@ -1078,6 +1083,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             fSystems: function () {
             
                 var filtered_nodes_days = this.systems.filter(this.filterNodes).filter(this.filterDays);
+
+                // if public mode only show systems with data
+                if (this.mode=='public') {
+                    filtered_nodes_days = filtered_nodes_days.filter(this.filterCop);
+                }
                 
                 this.system_count(filtered_nodes_days);
             
