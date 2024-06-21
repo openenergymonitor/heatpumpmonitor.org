@@ -258,17 +258,23 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     var minDays = 72;
     var stats_time_start = 'last90';
     var selected_template = 'topofthescops';
+    var currentSortColumn = 'combined_cop';
+    var currentSortDir = 'desc';
     
     if (decoded.mode!=undefined && decoded.mode =='costs') {
         selected_template = 'costs';
         stats_time_start = 'last365';
         minDays = 290;
+        currentSortColumn = 'combined_heat_unit_cost';
+        currentSortDir = 'asc';
     }
 
     if (decoded.mode!=undefined && decoded.mode =='heatpumpfabric') {
         selected_template = 'heatpumpfabric';
         stats_time_start = 'last365';
         minDays = 290;
+        currentSortColumn = 'combined_elec_kwh_per_m2';
+        currentSortDir = 'asc';
     }
 
     var tariff_mode = 'flat';
@@ -417,8 +423,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             column_groups: column_groups,
             show_field_group: show_field_group,
             selected_columns: [],
-            currentSortColumn: 'combined_cop',
-            currentSortDir: 'desc',
+            currentSortColumn: currentSortColumn,
+            currentSortDir: currentSortDir,
             // stats time selection
             stats_time_start: stats_time_start,
             stats_time_end: "only",
