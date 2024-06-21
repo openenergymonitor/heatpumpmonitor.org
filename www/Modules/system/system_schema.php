@@ -777,7 +777,11 @@ $schema['system_stats_daily'] = array(
     'quality_roomT' => array('type' => 'float', 'name'=>'Quality roomT', 'group'=>'Quality', 'dp'=>1, 'unit'=>'%'),
 
     // Unit rates
-    'unit_rate_agile' => array('type' => 'float', 'name'=>'Unit rate agile', 'group'=>'Unit rates', 'dp'=>1, 'unit'=>'p/kWh')
+    'unit_rate_agile' => array('type' => 'float', 'name'=>'Unit rate agile', 'group'=>'Unit rates', 'dp'=>1, 'unit'=>'p/kWh'),
+    'unit_rate_cosy' => array('type' => 'float', 'name'=>'Unit rate cosy', 'group'=>'Unit rates', 'dp'=>1, 'unit'=>'p/kWh'),
+    'unit_rate_go' => array('type' => 'float', 'name'=>'Unit rate GO', 'group'=>'Unit rates', 'dp'=>1, 'unit'=>'p/kWh')
+
+
 );
 
 // Copy the same structure for aggregated stats

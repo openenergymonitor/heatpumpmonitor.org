@@ -183,8 +183,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     <span class="input-group-text">Tariff</span>
                     <select class="form-select" style="max-width:200px" v-model="tariff_mode" @change="tariff_mode_changed">
                         <option value="flat">Price cap</option>
+                        <option value="ovohp">OVO Heat Pump Plus</option>   
                         <option value="agile">Octopus Agile</option>
-                        <option value="ovohp">OVO Heat Pump Plus</option>
+                        <option value="cosy">Octopus Cosy</option>
+                        <option value="go">Octopus GO</option>
                         <option value="user">User entered</option>
                     </select>
                 </div>
@@ -279,7 +281,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     }
 
     var tariff_mode = 'flat';
-    if (decoded.tariff!=undefined && (decoded.tariff=='flat' || decoded.tariff=='agile' || decoded.tariff=='ovohp' || decoded.tariff=='user')) {
+    var options = ['flat','agile','cosy','go','ovohp','user']
+    if (decoded.tariff!=undefined && options.includes(decoded.tariff)) {
         tariff_mode = decoded.tariff;
     }
 
@@ -476,6 +479,22 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         }
                     } else if (this.tariff_mode == 'agile') {
                         app.systems[i].selected_unit_rate = app.systems[i].unit_rate_agile;
+                        // remove electricity_tariff from selected columns
+                        if (app.selected_template == 'costs') {
+                            if (app.selected_columns.includes('electricity_tariff')) {
+                                app.selected_columns.splice(app.selected_columns.indexOf('electricity_tariff'), 1);
+                            }
+                        }
+                    } else if (this.tariff_mode == 'cosy') {
+                        app.systems[i].selected_unit_rate = app.systems[i].unit_rate_cosy;
+                        // remove electricity_tariff from selected columns
+                        if (app.selected_template == 'costs') {
+                            if (app.selected_columns.includes('electricity_tariff')) {
+                                app.selected_columns.splice(app.selected_columns.indexOf('electricity_tariff'), 1);
+                            }
+                        }
+                    } else if (this.tariff_mode == 'go') {
+                        app.systems[i].selected_unit_rate = app.systems[i].unit_rate_go;
                         // remove electricity_tariff from selected columns
                         if (app.selected_template == 'costs') {
                             if (app.selected_columns.includes('electricity_tariff')) {

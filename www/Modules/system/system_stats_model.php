@@ -117,7 +117,6 @@ class SystemStats
 
         try {
             $result = file_get_contents($getconfig);
-            print $getconfig;
         } catch (Exception $e) {
             return array("success"=>false, "message"=>"Empty response from detailed data server");
         }
@@ -415,6 +414,8 @@ class SystemStats
         $totals['combined']['starts'] = 0;
         $totals['from_energy_feeds'] = array('elec_kwh'=>0,'heat_kwh'=>0);
         $totals['agile_cost'] = 0;
+        $totals['cosy_cost'] = 0;
+        $totals['go_cost'] = 0;
 
         // Quality
         $quality_fields = array('elec','heat','flowT','returnT','outsideT','roomT');
@@ -448,6 +449,12 @@ class SystemStats
 
             $agile_cost = $row->unit_rate_agile * 0.01 * $totals['from_energy_feeds']['elec_kwh'];
             $totals['agile_cost'] += $agile_cost;
+
+            $cosy_cost = $row->unit_rate_cosy * 0.01 * $totals['from_energy_feeds']['elec_kwh'];
+            $totals['cosy_cost'] += $cosy_cost;
+
+            $go_cost = $row->unit_rate_go * 0.01 * $totals['from_energy_feeds']['elec_kwh'];
+            $totals['go_cost'] += $go_cost;
             
             $days++;
         }
@@ -520,9 +527,15 @@ class SystemStats
         }
 
         $stats['unit_rate_agile'] = null;
+        $stats['unit_rate_cosy'] = null;
+        $stats['unit_rate_go'] = null;
+
         if ($totals['from_energy_feeds']['elec_kwh'] > 0) {
             $stats['unit_rate_agile'] = round(100*$totals['agile_cost'] / $totals['from_energy_feeds']['elec_kwh'],1);
+            $stats['unit_rate_cosy'] = round(100*$totals['cosy_cost'] / $totals['from_energy_feeds']['elec_kwh'],1);
+            $stats['unit_rate_go'] = round(100*$totals['go_cost'] / $totals['from_energy_feeds']['elec_kwh'],1);
         }
+
         return $stats;
     }
 
