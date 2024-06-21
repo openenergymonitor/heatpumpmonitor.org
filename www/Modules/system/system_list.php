@@ -431,21 +431,27 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     if (this.tariff_mode == 'flat') {
                         app.systems[i].selected_unit_rate = 23.22;
                         // remove electricity_tariff from selected columns
-                        if (app.selected_columns.includes('electricity_tariff')) {
-                            app.selected_columns.splice(app.selected_columns.indexOf('electricity_tariff'), 1);
+                        if (app.selected_template == 'costs') {
+                            if (app.selected_columns.includes('electricity_tariff')) {
+                                app.selected_columns.splice(app.selected_columns.indexOf('electricity_tariff'), 1);
+                            }
                         }
                     } else if (this.tariff_mode == 'agile') {
                         app.systems[i].selected_unit_rate = app.systems[i].unit_rate_agile;
                         // remove electricity_tariff from selected columns
-                        if (app.selected_columns.includes('electricity_tariff')) {
-                            app.selected_columns.splice(app.selected_columns.indexOf('electricity_tariff'), 1);
+                        if (app.selected_template == 'costs') {
+                            if (app.selected_columns.includes('electricity_tariff')) {
+                                app.selected_columns.splice(app.selected_columns.indexOf('electricity_tariff'), 1);
+                            }
                         }
                     } else if (this.tariff_mode == 'user') {
                         app.systems[i].selected_unit_rate = app.systems[i].electricity_tariff_unit_rate_all;
                         // add electricity_tariff to selected columns if not already there
-                        if (!app.selected_columns.includes('electricity_tariff')) {
-                            // add after hp_model
-                            app.selected_columns.splice(app.selected_columns.indexOf('hp_model')+1, 0, 'electricity_tariff');
+                        if (app.selected_template == 'costs') {
+                            if (!app.selected_columns.includes('electricity_tariff')) {
+                                // add after hp_model
+                                app.selected_columns.splice(app.selected_columns.indexOf('hp_model')+1, 0, 'electricity_tariff');
+                            }
                         }
                     }
 
