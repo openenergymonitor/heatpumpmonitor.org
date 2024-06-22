@@ -308,7 +308,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         group: "Unit rates",
         helper: "Selected electricity unit rate", 
         unit: "p/kWh", 
-        dp: 1 
+        dp: 1
     };   
 
     // post process columns
@@ -356,9 +356,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             group: "Stats: "+category_names[category], 
             helper: "Heat unit cost", 
             unit: "p/kWh", 
-            dp: 1 
+            dp: 2 
         };        
     }
+
+    
     
     // add stats_columns to columns
     for (var key in stats_columns) {
@@ -552,6 +554,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 if (template == 'topofthescops') {
                     app.currentSortDir = 'desc'
                     app.sort_only('combined_cop');
+                    app.columns['combined_cop'].dp = 1;
                 } else if (template == 'heatpumpfabric') {
                     app.stats_time_start = "last365";
                     app.currentSortDir = 'asc';
@@ -562,6 +565,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     app.stats_time_start = "last365";
                     app.currentSortDir = 'asc'
                     app.currentSortColumn = 'combined_heat_unit_cost';
+                    app.columns['combined_cop'].dp = 2;
                     app.stats_time_start_change();
                 }
 
