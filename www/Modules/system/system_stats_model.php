@@ -536,6 +536,10 @@ class SystemStats
             $stats['unit_rate_go'] = round(100*$totals['go_cost'] / $totals['from_energy_feeds']['elec_kwh'],1);
         }
 
+        if ($stats['unit_rate_agile'] === 0) $stats['unit_rate_agile'] = null;
+        if ($stats['unit_rate_cosy'] === 0) $stats['unit_rate_cosy'] = null;
+        if ($stats['unit_rate_go'] === 0) $stats['unit_rate_go'] = null;
+
         return $stats;
     }
 

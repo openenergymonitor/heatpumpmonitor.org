@@ -527,8 +527,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         let category = categories[z];
 
                         // cost
-                        if (app.systems[i].selected_unit_rate==0) {
-                            app.systems[i].selected_unit_rate = 23.22;
+                        if (app.systems[i].selected_unit_rate==0 || app.systems[i].selected_unit_rate==null) {
+                            app.systems[i].selected_unit_rate = null;
                         }
                         let cost = app.systems[i][category+"_elec_kwh"] * app.systems[i].selected_unit_rate * 0.01;
                         cost = cost.toFixed(columns[category+'_cost']['dp'])*1;
@@ -640,8 +640,15 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 this.systems.sort((a, b) => {
                     let modifier = 1;
                     if (this.currentSortDir == 'desc') modifier = -1;
-                    if (a[column] < b[column]) return -1 * modifier;
-                    if (a[column] > b[column]) return 1 * modifier;
+
+                    let aValue = a[column];
+                    let bValue = b[column];
+
+                    if (aValue === null || aValue === undefined) aValue = this.currentSortDir == 'desc' ? -Infinity : Infinity;
+                    if (bValue === null || bValue === undefined) bValue = this.currentSortDir == 'desc' ? -Infinity : Infinity;
+
+                    if (aValue < bValue) return -1 * modifier;
+                    if (aValue > bValue) return 1 * modifier;
                     return 0;
                 });
             },
