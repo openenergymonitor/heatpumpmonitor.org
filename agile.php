@@ -51,7 +51,6 @@ $start = $starts['last365'];
 $start = floor($start/$interval)*$interval;
 $end = ceil($end/$interval)*$interval;
 
-
 $average = 0;
 $delta = 1;
 $timeformat = "notime";
@@ -94,7 +93,7 @@ foreach ($data as $row) {
     $userid = (int) $row->userid;
     $systemid = (int) $row->id;
 
-    //if ($systemid!=2) continue;
+    // if ($systemid!=2) continue;
 
     print $systemid."\n";
     
@@ -128,6 +127,11 @@ foreach ($data as $row) {
             $sum_cost_cosy = array();
             $sum_cost_go = array();
 
+            $months_kwh = array();
+            $months_agile_cost = array();
+            $months_cosy_cost = array();
+            $months_go_cost = array();
+
             $periods = array('last7','last30','last90','last365');
             foreach ($periods as $period) {
                 $sum_kwh[$period] = 0;
@@ -152,6 +156,27 @@ foreach ($data as $row) {
                             $sum_cost_go[$period] += $kwh*$unit_cost_go;
                         }
                     }
+
+                    // Allocate to months by start time
+                    $date->setTimestamp($time);
+                    // get timestamp of start of month
+                    $date->modify("midnight first day of this month");
+                    // 00:00:00
+                    $date->setTime(0,0,0);
+
+                    $month = $date->getTimestamp();
+
+                    if (!isset($months_kwh[$month])) {
+                        $months_kwh[$month] = 0;
+                        $months_agile_cost[$month] = 0;
+                        $months_cosy_cost[$month] = 0;
+                        $months_go_cost[$month] = 0;
+                    }
+
+                    $months_kwh[$month] += $kwh;
+                    $months_agile_cost[$month] += $kwh*$unit_cost_agile;
+                    $months_cosy_cost[$month] += $kwh*$unit_cost_cosy;
+                    $months_go_cost[$month] += $kwh*$unit_cost_go;
                 }
             }
 
@@ -171,6 +196,30 @@ foreach ($data as $row) {
                     $mysqli->query("UPDATE system_stats_".$period."_v2 SET `unit_rate_agile` = '$unit_cost_agile_vat' WHERE `id` = $systemid");
                     $mysqli->query("UPDATE system_stats_".$period."_v2 SET `unit_rate_cosy` = '$unit_cost_cosy' WHERE `id` = $systemid");
                     $mysqli->query("UPDATE system_stats_".$period."_v2 SET `unit_rate_go` = '$unit_cost_go' WHERE `id` = $systemid");
+
+                }
+            }
+
+            // Monthly data
+            foreach ($months_kwh as $month => $kwh) {
+                if ($kwh>0) {
+                    $unit_cost_agile = $months_agile_cost[$month]/$kwh;
+                    $unit_cost_agile_vat = $unit_cost_agile*1.05*100;
+
+                    $unit_cost_cosy = $months_cosy_cost[$month]/$kwh*100;
+
+                    $unit_cost_go = $months_go_cost[$month]/$kwh*100;
+
+                    $date->setTimestamp($month);
+                    $monthstr = $date->format('M Y');
+
+                    print "$monthstr Agile: £".number_format($months_agile_cost[$month],2).", ".number_format($kwh,2)." kWh, ".number_format($unit_cost_agile_vat,3)." p/kWh\n";
+                    print "$monthstr Cosy: £".number_format($months_cosy_cost[$month],2).", ".number_format($kwh,2)." kWh, ".number_format($unit_cost_cosy,3)." p/kWh\n";
+                    print "$monthstr Go: £".number_format($months_go_cost[$month],2).", ".number_format($kwh,2)." kWh, ".number_format($unit_cost_go,3)." p/kWh\n";
+
+                    $mysqli->query("UPDATE system_stats_monthly_v2 SET `unit_rate_agile` = '$unit_cost_agile_vat' WHERE `id` = $systemid AND `timestamp` = $month");
+                    $mysqli->query("UPDATE system_stats_monthly_v2 SET `unit_rate_cosy` = '$unit_cost_cosy' WHERE `id` = $systemid AND `timestamp` = $month");
+                    $mysqli->query("UPDATE system_stats_monthly_v2 SET `unit_rate_go` = '$unit_cost_go' WHERE `id` = $systemid AND `timestamp` = $month");
 
                 }
             }
