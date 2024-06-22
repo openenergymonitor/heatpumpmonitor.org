@@ -1116,7 +1116,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
                 // if public mode only show systems with data
                 if (this.mode=='public') {
-                    filtered_nodes_days = filtered_nodes_days.filter(this.filterCop);
+                    //filtered_nodes_days = filtered_nodes_days.filter(this.filterCop);
                 }
                 
                 this.system_count(filtered_nodes_days);
