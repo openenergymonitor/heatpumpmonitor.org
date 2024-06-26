@@ -279,9 +279,9 @@ if (isset($_GET['id'])) {
 
         $.ajax({
             dataType: "json", 
-            url: "api/histogram/"+app.histogram_type,
+            url: path+"histogram/"+app.histogram_type,
             data: {
-                'system': system.id, 
+                'id': system.id, 
                 'start': date_str_to_time(system.start), 
                 'end': date_str_to_time(system.end),
                 'x_min': app.x_min,
