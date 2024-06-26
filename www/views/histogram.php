@@ -1,5 +1,5 @@
 <?php
-$id = 1;
+$id = 2;
 if (isset($_GET['id'])) {
     $id = $_GET['id'];
 }
@@ -110,8 +110,8 @@ if (isset($_GET['id'])) {
         }
     });
 
-    var default_start = "2022-05-01";
-    var default_end = "2023-05-01";
+    var default_start = "2023-10-01";
+    var default_end = "2024-04-01";
     var colours = ["#fec601","#ea7317","#73bfb8","#3da5d9","#2364aa"];
 
     var app = new Vue({

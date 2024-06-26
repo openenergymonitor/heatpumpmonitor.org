@@ -1,9 +1,3 @@
-<?php
-$id = 1;
-if (isset($_GET['id'])) {
-    $id = $_GET['id'];
-}
-?>
 <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
@@ -59,7 +53,7 @@ if (isset($_GET['id'])) {
 </div>
 
 <script>
-    var id = <?php echo $id; ?>;
+    var id = <?php echo $systemid; ?>;
     
     var colours = ["#fec601","#ea7317","#73bfb8","#3da5d9","#2364aa"];
 

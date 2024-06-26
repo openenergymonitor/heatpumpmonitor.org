@@ -69,10 +69,28 @@ switch ($route->controller) {
         ));
         break;
 
+    case "daily":
+        $route->format = "html";
+
+        $systemid = 2;
+        if (isset($_GET['id'])) $systemid = (int) $_GET['id'];
+        
+        $output = view("views/daily.php", array(
+            "userid"=>$session['userid'],
+            "systemid"=>$systemid,
+            "stats_schema"=>$system_stats->schema['system_stats_daily']  
+        ));
+        break;
+
     case "monthly":
         $route->format = "html";
+        
+        $systemid = 2;
+        if (isset($_GET['id'])) $systemid = (int) $_GET['id'];
+        
         $output = view("views/monthly.php", array(
             "userid"=>$session['userid'],
+            "systemid"=>$systemid,   
             'system_stats_monthly'=>$system_stats->schema['system_stats_monthly_v2']
         ));
         break;
