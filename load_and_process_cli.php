@@ -23,6 +23,8 @@ logger("############################################");
 logger("Settings:");
 logger("- directory: $dir");
 
+$starttimer = time();
+
 $single_system = false;
 if (isset($argv[1])) {
     $single_system = (int) $argv[1];
@@ -338,6 +340,10 @@ function process_monthly_stats($systemlist, $single_system, $reload) {
         }
     }
     logger("- processed monthly systems: ".$processed_systems);
+
+    global $starttimer;
+    $elapsed = time()-$starttimer;
+    logger("- ".$elapsed);
 }
 
 function logger($message) {

@@ -225,6 +225,7 @@
                 for (var i = 0; i < data[app.selected_xaxis].length; i++) {
                     var x = data[app.selected_xaxis][i][1];
                     var y = data[app.selected_yaxis][i][1];
+                    if (x===0 && y===0) continue;
                     data['series'].push([x, y, i]);
                 }
                 draw();

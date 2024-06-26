@@ -93,7 +93,7 @@ foreach ($data as $row) {
     $userid = (int) $row->userid;
     $systemid = (int) $row->id;
 
-    // if ($systemid!=2) continue;
+    //if ($systemid!=2) continue;
 
     print $systemid."\n";
     
