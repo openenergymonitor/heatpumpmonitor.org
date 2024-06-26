@@ -129,33 +129,6 @@ switch ($route->controller) {
         require "Modules/histogram/histogram_controller.php";
         $output = histogram_controller();
         break;
-
-    case "api":
-        $route->format = "json";
-        
-        if (isset($_GET['system'])) {
-            $config = $system_stats->get_system_config($session['userid'], (int) $_GET['system']);
-
-            if ($route->action=="all") {
-                $start = $_GET['start'];
-                $end = $_GET['end'];
-                $interval = $_GET['interval']; 
-                $feeds = array($config->elec, $config->heat, $config->outsideT, $config->flowT, $config->returnT);
-                $apikeystr = "";
-                if ($config->apikey!="") $apikeystr = "&apikey=".$config->apikey;
-                $result = json_decode(file_get_contents("$config->server/feed/data.json?ids=".implode(",",$feeds)."&start=$start&end=$end&interval=$interval&average=1&skipmissing=0&timeformat=notime".$apikeystr));
-                
-                $output = array(
-                    "elec"=>$result[0]->data,
-                    "heat"=>$result[1]->data,
-                    "outsideT"=>$result[2]->data,
-                    "flowT"=>$result[3]->data,
-                    "returnT"=>$result[4]->data
-                );
-            }
-        }
-            
-        break;
 }
 
 switch ($route->format) {

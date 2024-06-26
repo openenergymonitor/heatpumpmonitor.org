@@ -100,10 +100,10 @@ if (id) {
     ];
 } else {
     selected_systems = [
-        {color:"#0000ff", id:1, start: start_date, end: end_date, time_changed: false, data: false},
+        // {color:"#0000ff", id:1, start: start_date, end: end_date, time_changed: false, data: false},
         {color:"#ff0000", id:2, start: start_date, end: end_date, time_changed: false, data: false}
     ];
 }
 </script>
 
-<script src="views/compare.js?v=9"></script>
+<script src="views/compare.js?v=13"></script>

@@ -179,12 +179,12 @@ function draw_chart() {
             profile[t]=0;
         }
                 
-        for (var z in data['elec']) {
-            let elec = data['elec'][z];
-            let heat = data['heat'][z];
-            let outsideT = data['outsideT'][z];
-            let flowT = data['flowT'][z];
-            let returnT = data['returnT'][z];
+        for (var z in data['heatpump_elec']) {
+            let elec = data['heatpump_elec'][z];
+            let heat = data['heatpump_heat'][z];
+            let outsideT = data['heatpump_outsideT'][z];
+            let flowT = data['heatpump_flowT'][z];
+            let returnT = data['heatpump_returnT'][z];
                  
             if (app.mode=="cop_vs_dt") {
                 if (elec!=null && heat!=null && outsideT!=null && flowT!=null && elec>0 && heat>0) {
@@ -289,9 +289,22 @@ function load_all() {
 
 function load_system_data(idx) {
   var system = app.selected_systems[idx];
+
+  var params = {
+    id: system.id,
+    feeds: ["heatpump_elec","heatpump_heat","heatpump_outsideT","heatpump_flowT","heatpump_returnT"].join(","),
+    start: date_str_to_time(system.start),
+    end: date_str_to_time(system.end),
+    interval: app.interval,
+    average: 1,
+    delta: 0,
+    timeformat: "notime"
+  }
+
   $.ajax({
     dataType: "json", 
-    url: "api/all?system="+system.id+"&start="+date_str_to_time(system.start)+"&end="+date_str_to_time(system.end)+"&interval="+app.interval, 
+    url: "timeseries/data",
+    data: params,
     async:false, 
     success: function(system_data) {
       app.selected_systems[idx].data = system_data;
