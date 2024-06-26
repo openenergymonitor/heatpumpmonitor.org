@@ -91,7 +91,7 @@ switch ($route->controller) {
     case "heatloss":
         $route->format = "html";
 
-        $systemid = 1;
+        $systemid = 2;
         if (isset($_GET['id'])) $systemid = (int) $_GET['id'];
         
         $output = view("views/heatloss.php", array(
@@ -135,8 +135,7 @@ switch ($route->controller) {
         $route->format = "html";
         $output = view("views/about.php", array(
             "userid"=>$session['userid'],
-            "number_of_systems"=>$system->count_public()
-            
+            "number_of_systems"=>$system->count_public()    
         ));
         break;
         

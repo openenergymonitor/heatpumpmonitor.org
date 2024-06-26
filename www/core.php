@@ -17,7 +17,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 // no direct access
 // defined('EMONCMS_EXEC') or die('Restricted access');
 
-function is_https() {
+function is_https()
+{
     // Detect if we are running HTTPS or proxied HTTPS
     if (server('HTTPS') == 'on') {
         // Web server is running native HTTPS
@@ -31,16 +32,16 @@ function is_https() {
     return false;
 }
 
-function get_application_path($manual_domain=false)
+function get_application_path($manual_domain = false)
 {
     if (is_https()) {
         $proto = "https";
     } else {
         $proto = "http";
     }
-    
+
     if ($manual_domain) {
-        return "$proto://".$manual_domain."/";
+        return "$proto://" . $manual_domain . "/";
     }
 
     if (isset($_SERVER['HTTP_X_FORWARDED_HOST'])) {
@@ -71,7 +72,7 @@ function view($filepath, array $args = array())
  * @param string $index name of $_GET item
  *
  **/
-function get($index,$error_if_missing=false,$default=null)
+function get($index, $error_if_missing = false, $default = null)
 {
     $val = $default;
     if (isset($_GET[$index])) {
@@ -80,9 +81,9 @@ function get($index,$error_if_missing=false,$default=null)
         header('Content-Type: text/plain');
         die("missing $index parameter");
     }
-    if(!is_null($val)){
-    $val = stripslashes($val);
-	}
+    if (!is_null($val)) {
+        $val = stripslashes($val);
+    }
     return $val;
 }
 /**
@@ -91,7 +92,7 @@ function get($index,$error_if_missing=false,$default=null)
  * @param string $index name of $_POST item
  *
  **/
-function post($index,$error_if_missing=false,$default=null)
+function post($index, $error_if_missing = false, $default = null)
 {
     $val = $default;
     if (isset($_POST[$index])) {
@@ -109,13 +110,13 @@ function post($index,$error_if_missing=false,$default=null)
         header('Content-Type: text/plain');
         die("missing $index parameter");
     }
-    
+
     if (is_array($val)) {
         $val = array_map("stripslashes", $val);
-    }	
-	if(!is_null($val)){
+    }
+    if (!is_null($val)) {
         $val = stripslashes($val);
-	}
+    }
     return $val;
 }
 /**
@@ -124,20 +125,18 @@ function post($index,$error_if_missing=false,$default=null)
  * @param string $index name of $_POST or $_GET item
  *
  **/
-function prop($index,$error_if_missing=false,$default=null)
+function prop($index, $error_if_missing = false, $default = null)
 {
     $val = $default;
     if (isset($_GET[$index])) {
         $val = $_GET[$index];
-    }
-    else if (isset($_POST[$index])) {
+    } else if (isset($_POST[$index])) {
         $val = $_POST[$index];
-    }
-    else if ($error_if_missing) {
+    } else if ($error_if_missing) {
         header('Content-Type: text/plain');
         die("missing $index parameter");
     }
-    
+
     if (is_array($val)) {
         $val = array_map("stripslashes", $val);
     } else {
@@ -148,12 +147,12 @@ function prop($index,$error_if_missing=false,$default=null)
 
 function request_header($index)
 {
-   $val = null;
-   $headers = apache_request_headers();
-   if (isset($headers[$index])) {
+    $val = null;
+    $headers = apache_request_headers();
+    if (isset($headers[$index])) {
         $val = $headers[$index];
-  }
-  return $val;
+    }
+    return $val;
 }
 
 
@@ -168,12 +167,12 @@ function server($index)
 
 function delete($index)
 {
-    parse_str(file_get_contents("php://input"), $_DELETE);//create array with posted (DELETE) method) values
+    parse_str(file_get_contents("php://input"), $_DELETE); //create array with posted (DELETE) method) values
     $val = null;
     if (isset($_DELETE[$index])) {
         $val = $_DELETE[$index];
     }
-    
+
     if (is_array($val)) {
         $val = array_map("stripslashes", $val);
     } else {
@@ -183,12 +182,12 @@ function delete($index)
 }
 function put($index)
 {
-    parse_str(file_get_contents("php://input"), $_PUT);//create array with posted (PUT method) values
+    parse_str(file_get_contents("php://input"), $_PUT); //create array with posted (PUT method) values
     $val = null;
     if (isset($_PUT[$index])) {
         $val = $_PUT[$index];
     }
-    
+
     if (is_array($val)) {
         $val = array_map("stripslashes", $val);
     } else {
@@ -200,15 +199,15 @@ function put($index)
 function http_request($method, $url, $data)
 {
     $options = array();
-    
-    if ($method=="GET") {
+
+    if ($method == "GET") {
         $urlencoded = http_build_query($data);
         $url = "$url?$urlencoded";
-    } elseif ($method=="POST") {
+    } elseif ($method == "POST") {
         $options[CURLOPT_POST] = 1;
         $options[CURLOPT_POSTFIELDS] = $data;
     }
-    
+
     $options[CURLOPT_URL] = $url;
     $options[CURLOPT_RETURNTRANSFER] = 1;
     $options[CURLOPT_CONNECTTIMEOUT] = 2;
@@ -223,7 +222,7 @@ function http_request($method, $url, $data)
 
 function emoncms_error($message)
 {
-    return array("success"=>false, "message"=>$message);
+    return array("success" => false, "message" => $message);
 }
 
 // ---------------------------------------------------------------------------------------------------------
@@ -248,7 +247,8 @@ function get_client_ip_env()
 // ---------------------------------------------------------------------------------------------------------
 // Generate secure key
 // ---------------------------------------------------------------------------------------------------------
-function generate_secure_key($length) {
+function generate_secure_key($length)
+{
     if (function_exists('random_bytes')) {
         return bin2hex(random_bytes($length));
     } else {
