@@ -1,6 +1,6 @@
 <?php
 
-$heatpumpmonitor_host = "https://dev.heatpumpmonitor.org";
+$heatpumpmonitor_host = "https://heatpumpmonitor.org";
 
 $dir = dirname(__FILE__);
 chdir("$dir/www");
@@ -53,6 +53,11 @@ $system_class = new System($mysqli);
 require ("Modules/system/system_stats_model.php");
 $system_stats_class = new SystemStats($mysqli,$system_class);
 
+// -------------------------------------------------------------------------------------
+// 1. Create users
+// -------------------------------------------------------------------------------------
+$load_summaries = true;
+
 // Get list of userid's
 $users = array();
 foreach ($systems as $system) {
@@ -67,6 +72,7 @@ foreach ($users as $userid => $location) {
     $email = "example@heatpumpmonitor.org";
     $password = "password";
 
+    // Make first user admin
     if ($index==0) {
         $admin = 1;
         $username = "admin";
@@ -84,10 +90,15 @@ foreach ($users as $userid => $location) {
     $stmt->bind_param("issssii", $userid, $username, $hash, $email, $salt, $created, $admin);
     $stmt->execute();
     $stmt->close();
+    
+    $index++;
 }
 print "- Created ".count($users)." users\n";
 
-// Create systems
+// -------------------------------------------------------------------------------------
+// 2. Create systems
+// -------------------------------------------------------------------------------------
+
 foreach ($systems as $system) {
     $mysqli->query("INSERT INTO system_meta (id,userid) VALUES ('$system->id', '$system->userid')");
 
@@ -101,42 +112,95 @@ foreach ($systems as $system) {
 $mysqli->query("UPDATE system_meta SET published=1");
 print "- Created ".count($systems)." systems\n";
 
+// -------------------------------------------------------------------------------------
+// 3. Load stats summaries
+// -------------------------------------------------------------------------------------
+if ($load_summaries) {
+    $tables = ["last7","last30","last90","last365","all"];
 
-// Initialize cURL session to download the CSV
-$apiUrl = 'https://dev.heatpumpmonitor.org/system/stats/export/daily';
-$ch = curl_init();
-curl_setopt($ch, CURLOPT_URL, $apiUrl);
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-$csvData = curl_exec($ch);
-curl_close($ch);
+    foreach ($tables as $table) {
+        print "- Loading $table stats summary ";
 
-// Temporarily save CSV data to a file
-$tempFilePath = tempnam(sys_get_temp_dir(), 'csv');
-file_put_contents($tempFilePath, $csvData);
+        $data = file_get_contents("$heatpumpmonitor_host/system/stats/$table");
+        $stats = json_decode($data,true);
+        if ($stats==null) die("Error: could not load $table data from heatpumpmonitor.org");
 
-// Open the temporary file for reading
-if (($handle = fopen($tempFilePath, 'r')) !== FALSE) {
-
-    // Skip the header row
-    $header = fgetcsv($handle, 2000, ",");
-
-    $row_count = 0;
-    // Read the rest of the file
-    while (($data = fgetcsv($handle, 2000, ",")) !== FALSE) {
-        // Build an associative array from the CSV data
-        $row = array();
-        foreach ($header as $i => $field) {
-            $row[$field] = $data[$i];
+        foreach ($stats as $system) {
+            $system_stats_class->save_stats_table("system_stats_".$table."_v2",$system);
         }
-
-        // Save the data to the database
-        $system_stats_class->save_day($row['id'], $row);
-        $row_count++;
-
-        // print a . every 1000 rows
-        if ($row_count % 1000 == 0) {
-            print ".";
-        }
+        print count($stats)." systems\n";
     }
 }
+
+// -------------------------------------------------------------------------------------
+// 4. Load monthly summaries
+// -------------------------------------------------------------------------------------
+if ($load_summaries) {
+    foreach ($systems as $system) {
+        print "- Loading monthly stats for system: $system->id ";
+        // https://heatpumpmonitor.org/system/stats/monthly?id=2
+        $data = file_get_contents("$heatpumpmonitor_host/system/stats/monthly?id=$system->id");
+        $stats = json_decode($data,true);
+        if ($stats==null) {
+            print "Error: could not load monthly data from heatpumpmonitor.org\n";
+            print $data;
+            continue;
+        }
+        foreach ($stats as $month) {
+            $system_stats_class->save_stats_table('system_stats_monthly_v2',$month);
+        }
+        print count($stats)." months\n";
+    }
+}
+
+// -------------------------------------------------------------------------------------
+// 5. Load daily data
+// -------------------------------------------------------------------------------------
+
+foreach ($systems as $system) {
+    $id = $system->id;
+
+    print "- Loading daily stats for system: $id ";
+    $days = 0;
+
+    // Initialize cURL session to download the CSV
+    $apiUrl = 'https://heatpumpmonitor.org/system/stats/export/daily?id='.$id;
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $apiUrl);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    $csvData = curl_exec($ch);
+    curl_close($ch);
+
+    // Temporarily save CSV data to a file
+    $tempFilePath = tempnam(sys_get_temp_dir(), 'csv');
+    file_put_contents($tempFilePath, $csvData);
+
+    // Open the temporary file for reading
+    if (($handle = fopen($tempFilePath, 'r')) !== FALSE) {
+
+        // Skip the header row
+        $header = fgetcsv($handle, 2000, ",");
+
+        // Read the rest of the file
+        while (($data = fgetcsv($handle, 2000, ",")) !== FALSE) {
+            // Build an associative array from the CSV data
+            $row = array();
+            foreach ($header as $i => $field) {
+                $row[$field] = $data[$i];
+            }
+
+            // Save the data to the database
+            $system_stats_class->save_day($row['id'], $row);
+            $days++;
+
+            // print a . every 1000 rows
+            if ($days % 100 == 0) {
+                print ".";
+            }
+        }
+    }
+    print " $days days\n";
+}
+
+print "Done\n";
