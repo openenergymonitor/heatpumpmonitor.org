@@ -45,6 +45,7 @@ services:
       - "LOAD_MONTHLY_STATS=0"
       # Use only when required, this is even slower and uses server bandwidth
       - "LOAD_DAILY_STATS=0"
+    # working_dir: /var/www/heatpumpmonitororg  # Set the working directory
     entrypoint: "php /var/load_dev_env_data.php"
     depends_on:
       db:
