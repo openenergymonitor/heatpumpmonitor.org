@@ -33,8 +33,18 @@ services:
       # Use default enviroment variables file for dev
       - 'default.docker-env'
     environment:
-      # Use this to control if the data should be refreshed. Set it to 0 if you don't want it to refresh
-      - "LOAD_DATA=1"
+      # Clear database before loading data
+      - "RELOAD_ALL=0"
+      # Load the users
+      - "LOAD_USERS=1"
+      # Load system meta data
+      - "LOAD_SYSTEM_META=1"
+      # Loading running stats is enough to provide the list of systems
+      - "LOAD_RUNNING_STATS=1"
+      # Use only when required, this is slow and uses server bandwidth
+      - "LOAD_MONTHLY_STATS=0"
+      # Use only when required, this is even slower and uses server bandwidth
+      - "LOAD_DAILY_STATS=0"
     entrypoint: "php /var/load_dev_env_data.php"
     depends_on:
       db:
