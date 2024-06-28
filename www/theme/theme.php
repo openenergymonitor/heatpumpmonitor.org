@@ -75,7 +75,15 @@ $navigation = array(
 
 <script>
     var path = "<?php echo $path; ?>";
-    var public_mode_enabled = <?php echo (int) $settings['public_mode_enabled']; ?>;
+    <?php $is_public_mode_enabled=false;
+    if ( file_exists("settings.php") ){
+        require "settings.php";
+        if(isset($settings) && !is_null($settings)){
+            $is_public_mode_enabled = $settings['public_mode_enabled'];
+        }
+    }
+    ?>
+    var public_mode_enabled = <?php echo (int) $is_public_mode_enabled; ?>;
 </script>
 
 <body class="d-flex flex-column min-vh-100">
@@ -89,7 +97,7 @@ $navigation = array(
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <span class="navbar-text navbar-text-desktop">An open source initiative to share and compare heat pump performance data.</span>
  
-                    <?php if ($settings['public_mode_enabled'] || $session['userid']) { ?>
+                    <?php if ($is_public_mode_enabled || $session['userid']) { ?>
                     <ul class="navbar-nav ms-auto">
                         <li class="nav-item"><a class="nav-link " href="<?php echo $path; ?>" title="Home"><i class="fas fa-home"></i> <span class="nav-item-text">Home</span></a></li>
                     </ul>

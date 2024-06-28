@@ -43,7 +43,15 @@ $session = $user->emon_session_start();
 // Default route
 if ($route->controller=="") {
     // If public mode is enabled, show public systems
-    if ($settings['public_mode_enabled']) {
+    $is_public_mode_enabled=false;
+    if ( file_exists("settings.php") ){
+        require "settings.php";
+        if(isset($settings) && !is_null($settings)){
+            $is_public_mode_enabled = $settings['public_mode_enabled'];
+        }
+    }
+
+    if ($is_public_mode_enabled ) {
         $route->controller = "system";
         $route->action = "list";
         $route->subaction = "public";
