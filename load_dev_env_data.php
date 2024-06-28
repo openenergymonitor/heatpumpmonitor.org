@@ -11,6 +11,8 @@ $heatpumpmonitor_host = "https://heatpumpmonitor.org";
 // Change to www directory
 $dir = dirname(__FILE__);
 chdir("$dir/www");
+chdir("/var/www/heatpumpmonitororg");
+
 
 // Load the database
 require "Lib/load_database.php";
@@ -101,8 +103,10 @@ if ($reload_all) {
     while ($row = $result->fetch_row()) {
         $mysqli->query("DROP TABLE IF EXISTS `$row[0]`");
     }
-    db_schema_setup($mysqli, $schema, true);
 }
+
+db_schema_setup($mysqli, $schema, true);
+
 
 // -------------------------------------------------------------------------------------
 // 2. Create users

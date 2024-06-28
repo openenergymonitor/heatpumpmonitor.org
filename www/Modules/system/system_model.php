@@ -260,7 +260,7 @@ class System
                 $this->send_change_notification($userid,$systemid,$change_log,true);
             }
 
-            $this->computed_fields($systemid);
+            // $this->computed_fields($systemid);
 
             // Update last updated time
             $now = time();
