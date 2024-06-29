@@ -1,42 +1,42 @@
 <?php
 
 define('EMONCMS_EXEC', 1);
-
 error_reporting(E_ALL);
 ini_set('display_errors', 'on');
 
-if ( file_exists("settings.php") ){
+// Very basic loading of settings.php
+// no thourough checking that setting keys as available here
+// assumes settings file follows the structure given in the example.
+
+// settings.php should not be present when using a docker environment
+
+if (file_exists("settings.php")) {
     require "settings.php";
     if (!isset($settings["sql"])) {
         echo "No sql settings found in settings.php<br />";
         die();
     }
     
-    $mysqli = @new mysqli(
-        $settings["sql"]["server"],
-        $settings["sql"]["username"],
-        $settings["sql"]["password"],
-        $settings["sql"]["database"],
-        $settings["sql"]["port"]
-    );
+    // Just providing a notice to the user here rather than automatic switchover to using env variables.
+    if (isset($_ENV["DOCKER_ENV"])) {
+        die("Please remove settings.php to use docker environment.");
+    }
     
-}else{
-    $mysqli = @new mysqli(
-        $_ENV["MYSQL_HOST"],
-        $_ENV["MYSQL_USER"],
-        $_ENV["MYSQL_PASSWORD"],
-        $_ENV["MYSQL_DATABASE"],
-        $_ENV["MYSQL_PORT"]
-    );
+} else if (file_exists("env.settings.php")) {
+    require "env.settings.php";
 }
 
+$mysqli = @new mysqli(
+    $settings["sql"]["server"],
+    $settings["sql"]["username"],
+    $settings["sql"]["password"],
+    $settings["sql"]["database"],
+    $settings["sql"]["port"]
+);
+    
 
 if ($mysqli->connect_error) {
-    echo "Can't connect to database, please verify credentials/configuration in settings.ini<br />";
-    if ($settings["display_errors"]) {
-        echo "Error message: <b>" . $mysqli->connect_error . "</b>";
-    }
-    die();
+    die("Can't connect to database, please check mysql credentials in settings.php");
 }
 // Set charset to utf8
 $mysqli->set_charset("utf8");
