@@ -28,9 +28,8 @@ $date = date('F Y');
 <ul>
 <li><a href="https://community.openenergymonitor.org">Community Forum</a>
 <li><a href="mailto: hello@openenergymonitor.zendesk.com"> hello@openenergymonitor.zendesk.com</a></li>
-<li><a href="tell:+441286800870">+44(0)1248800870</a></li>
+<li><a href="tell:+441286800870">+44(0)1286800870</a></li>
 </ul>
-
 
             </div>
         </div>
