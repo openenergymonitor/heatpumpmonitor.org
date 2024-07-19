@@ -27,8 +27,8 @@ $date = date('F Y');
 <p>Contact us:</p>
 <ul>
 <li><a href="https://community.openenergymonitor.org">Community Forum</a>
-<li><a href="mailto: hello@openenergymonitor.zendesk.com"> hello@openenergymonitor.zendesk.com</a></li>
-<li><a href="tell:+441286800870">+44(0)1286800870</a></li>
+<li>Email: <a href="mailto: hello@openenergymonitor.zendesk.com"> hello@openenergymonitor.zendesk.com</a></li>
+<li>Phone/WhatsApp: <a href="tell:+441286800870">+44(0)1286800870</a></li>
 </ul>
 
             </div>
