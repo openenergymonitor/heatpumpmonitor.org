@@ -15,6 +15,25 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         position: sticky;
         top: 20px;
     }
+    .SPF4 {
+        font-size:14px;
+        color:green;
+    }
+
+    .SPF3 {
+        font-size:14px;
+        color:orange;
+    }
+
+    .SPF2 {
+        font-size:14px;
+        color:orange;
+    }
+    
+    .SPF1 {
+        font-size:14px;
+        color:red;
+    }
 </style>
 
 <div id="app" class="bg-light">
@@ -297,6 +316,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     
     columns['training'] = { name: "Combined", heading: "Training", group: "Training", helper: "Training" };
     columns['learnmore'] = { name: "Combined", heading: "", group: "Learn more" };
+    columns['boundary'] = { name: "Boundary", heading: "", group: "Metering" };
+    
     
     // remove stats_columns id & timestmap
     delete stats_columns.id;
@@ -391,7 +412,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     // Template views
     var template_views = {}
     template_views['topofthescops'] = {}
-    template_views['topofthescops']['wide'] = ['location', 'installer_logo', 'installer_name', 'training', 'hp_type', 'hp_model', 'hp_output', 'combined_data_length', 'combined_cop', 'mid_metering', 'learnmore'];
+    template_views['topofthescops']['wide'] = ['location', 'installer_logo', 'installer_name', 'training', 'hp_type', 'hp_model', 'hp_output', 'combined_data_length', 'combined_cop', 'boundary' , 'mid_metering', 'learnmore'];
     template_views['topofthescops']['narrow'] = ['installer_logo', 'training', 'hp_model', 'hp_output', 'combined_cop', 'learnmore'];
 
     template_views['heatpumpfabric'] = {}
@@ -418,11 +439,59 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     
     var showFlagged = true;
     if (mode=='public') showFlagged = false;
+    
+    var systems = <?php echo json_encode($systems); ?>;
+
+    // Set boundary
+    for (var i = 0; i < systems.length; i++) {
+    
+        var type = systems[i].hp_type;
+        var aux = systems[i].metering_inc_boost;
+        var pumps = systems[i].metering_inc_central_heating_pumps;
+        var brine = systems[i].metering_inc_brine_pumps;
+        var controls = systems[i].metering_inc_controls;
+        var legionella = systems[i].legionella_frequency;
+        
+        var boundary_code = 1;
+                
+        if (type == "Ground Source" || type == "Water Source") {
+            if (brine) boundary_code = 2;
+            if (brine && (aux || legionella=='Disabled')) boundary_code = 3;
+            if (brine && (aux || legionella=='Disabled') && pumps) boundary_code = 4;
+        }
+        
+        else if (type == "Air Source") {
+            boundary_code = 2;
+            if (aux || legionella=='Disabled') boundary_code = 3;
+            if ((aux || legionella=='Disabled') && pumps) boundary_code = 4;      
+        }
+        
+        else if (type == "Air-to-Air") {
+            boundary_code = 2;
+        }
+        
+        if (type == "Ground Source" || type == "Water Source") { 
+            if (boundary_code==1) systems[i].boundary = "<span class='SPF1' title='Includes:\n- Heat pump compressor only'>SPF1</span>";
+            else if (boundary_code==2) systems[i].boundary = "<span class='SPF2' title='Includes:\n- Compressor and brine pump'>SPF2</span>";
+            else if (boundary_code==3) systems[i].boundary = "<span class='SPF3' title='Includes:\n- Compressor and brine pump\n- Booster and immersion heater (if installed & used)'>SPF3</span>";
+            else if (boundary_code==4) systems[i].boundary = "<span class='SPF4' title='Includes:\n- Compressor and brine pump\n- Booster and immersion heater (if installed & used)\n- Central heating pumps & fans (if applicable)'>SPF4</span>";  
+        }
+        
+        if (type == "Air Source" || type == "Air-to-Air") {
+            if (boundary_code==1) systems[i].boundary = "<span class='SPF1' title='Includes:\n- Heat pump compressor only'>SPF1</span>";
+            else if (boundary_code==2) systems[i].boundary = "<span class='SPF2' title='Includes:\n- Outside unit'>SPF2</span>";
+            else if (boundary_code==3) systems[i].boundary = "<span class='SPF3' title='Includes:\n- Outside unit\n- Booster and immersion heater (if installed & used)'>SPF3</span>";
+            else if (boundary_code==4) systems[i].boundary = "<span class='SPF4' title='Includes:\n- Outside unit\n- Booster and immersion heater (if installed & used)\n- Central heating pumps & fans (if applicable)'>SPF4</span>";  
+        }
+        
+        systems[i].boundary_code = boundary_code;    
+    }                            
+
 
     var app = new Vue({
         el: '#app',
         data: {
-            systems: <?php echo json_encode($systems); ?>,
+            systems: systems,
             mode: "<?php echo $mode; ?>",
             chart_enable: false,
             columns: columns,
@@ -838,7 +907,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             },
             column_format: function (system,key) {
                 var val = system[key];
-
+                
                 if (key=='last_updated' || key=='data_start') {
                     return time_ago(val,' ago');
                 }
@@ -961,7 +1030,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 // node.since is unix time in seconds
                 if (column=='combined_cop' || column=='since' || column=='combined_data_length' || column=='quality_elec') {
                 
-
+                    if (system.boundary_code!=4) {
+                        return 'partial';
+                    }
                     
                     if (system.mid_metering==0) {
                         return 'partial';
