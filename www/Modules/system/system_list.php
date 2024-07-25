@@ -473,14 +473,14 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         if (type == "Ground Source" || type == "Water Source") { 
             if (boundary_code==1) systems[i].boundary = "<span class='SPF1' title='Includes:\n- Heat pump compressor only'>SPF1</span>";
             else if (boundary_code==2) systems[i].boundary = "<span class='SPF2' title='Includes:\n- Compressor and brine pump'>SPF2</span>";
-            else if (boundary_code==3) systems[i].boundary = "<span class='SPF3' title='Includes:\n- Compressor and brine pump\n- Booster and immersion heater (if installed & used)'>SPF3</span>";
+            else if (boundary_code==3) systems[i].boundary = "<span class='SPF3' title='Includes:\n- Compressor and brine pump\n- Booster and immersion heater (if installed & used)\n\nDoes not include:\n- Central heating pumps & fans'>SPF3</span>";
             else if (boundary_code==4) systems[i].boundary = "<span class='SPF4' title='Includes:\n- Compressor and brine pump\n- Booster and immersion heater (if installed & used)\n- Central heating pumps & fans (if applicable)'>SPF4</span>";  
         }
         
         if (type == "Air Source" || type == "Air-to-Air") {
             if (boundary_code==1) systems[i].boundary = "<span class='SPF1' title='Includes:\n- Heat pump compressor only'>SPF1</span>";
-            else if (boundary_code==2) systems[i].boundary = "<span class='SPF2' title='Includes:\n- Outside unit'>SPF2</span>";
-            else if (boundary_code==3) systems[i].boundary = "<span class='SPF3' title='Includes:\n- Outside unit\n- Booster and immersion heater (if installed & used)'>SPF3</span>";
+            else if (boundary_code==2) systems[i].boundary = "<span class='SPF2' title='Includes:\n- Outside unit only'>SPF2</span>";
+            else if (boundary_code==3) systems[i].boundary = "<span class='SPF3' title='Includes:\n- Outside unit\n- Booster and immersion heater (if installed & used)\n\nDoes not include:\n- Central heating pumps & fans'>SPF3</span>";
             else if (boundary_code==4) systems[i].boundary = "<span class='SPF4' title='Includes:\n- Outside unit\n- Booster and immersion heater (if installed & used)\n- Central heating pumps & fans (if applicable)'>SPF4</span>";  
         }
         
