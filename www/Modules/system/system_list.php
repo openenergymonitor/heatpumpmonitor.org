@@ -316,7 +316,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     
     columns['training'] = { name: "Combined", heading: "Training", group: "Training", helper: "Training" };
     columns['learnmore'] = { name: "Combined", heading: "", group: "Learn more" };
-    columns['boundary'] = { name: "Boundary", heading: "", group: "Metering" };
+    columns['boundary'] = { name: "Boundary", heading: "Hx", group: "Metering" };
     
     
     // remove stats_columns id & timestmap
