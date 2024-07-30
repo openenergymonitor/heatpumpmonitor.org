@@ -28,7 +28,9 @@ Load public data from heatpumpmonitor.org to create functioning development envi
 
 Login using 'Self hosted data' and username and password: admin:admin
 
-## Install using Docker
+## Run using Docker
 
     docker compose build
     docker compose up
+
+Site should now be running on http://localhost:8080
