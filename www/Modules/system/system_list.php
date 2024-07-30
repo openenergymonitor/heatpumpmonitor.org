@@ -15,22 +15,22 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         position: sticky;
         top: 20px;
     }
-    .SPF4 {
+    .H4 {
         font-size:14px;
         color:green;
     }
 
-    .SPF3 {
+    .H3 {
         font-size:14px;
         color:orange;
     }
 
-    .SPF2 {
+    .H2 {
         font-size:14px;
         color:orange;
     }
     
-    .SPF1 {
+    .H1 {
         font-size:14px;
         color:red;
     }
@@ -471,17 +471,17 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         }
         
         if (type == "Ground Source" || type == "Water Source") { 
-            if (boundary_code==1) systems[i].boundary = "<span class='SPF1' title='Includes:\n- Heat pump compressor only'>SPF1</span>";
-            else if (boundary_code==2) systems[i].boundary = "<span class='SPF2' title='Includes:\n- Compressor and brine pump'>SPF2</span>";
-            else if (boundary_code==3) systems[i].boundary = "<span class='SPF3' title='Includes:\n- Compressor and brine pump\n- Booster and immersion heater (if installed & used)\n\nDoes not include:\n- Central heating pumps & fans'>SPF3</span>";
-            else if (boundary_code==4) systems[i].boundary = "<span class='SPF4' title='Includes:\n- Compressor and brine pump\n- Booster and immersion heater (if installed & used)\n- Central heating pumps & fans (if applicable)'>SPF4</span>";  
+            if (boundary_code==1) systems[i].boundary = "<span class='H1' title='Includes:\n- Heat pump compressor only'>H1</span>";
+            else if (boundary_code==2) systems[i].boundary = "<span class='H2' title='Includes:\n- Compressor and brine pump'>H2</span>";
+            else if (boundary_code==3) systems[i].boundary = "<span class='H3' title='Includes:\n- Compressor and brine pump\n- Booster and immersion heater (if installed & used)\n\nDoes not include:\n- Central heating pumps & fans'>H3</span>";
+            else if (boundary_code==4) systems[i].boundary = "<span class='H4' title='Includes:\n- Compressor and brine pump\n- Booster and immersion heater (if installed & used)\n- Central heating pumps & fans (if applicable)'>H4</span>";  
         }
         
         if (type == "Air Source" || type == "Air-to-Air") {
-            if (boundary_code==1) systems[i].boundary = "<span class='SPF1' title='Includes:\n- Heat pump compressor only'>SPF1</span>";
-            else if (boundary_code==2) systems[i].boundary = "<span class='SPF2' title='Includes:\n- Outside unit only'>SPF2</span>";
-            else if (boundary_code==3) systems[i].boundary = "<span class='SPF3' title='Includes:\n- Outside unit\n- Booster and immersion heater (if installed & used)\n\nDoes not include:\n- Central heating pumps & fans'>SPF3</span>";
-            else if (boundary_code==4) systems[i].boundary = "<span class='SPF4' title='Includes:\n- Outside unit\n- Booster and immersion heater (if installed & used)\n- Central heating pumps & fans (if applicable)'>SPF4</span>";  
+            if (boundary_code==1) systems[i].boundary = "<span class='H1' title='Includes:\n- Heat pump compressor only'>H1</span>";
+            else if (boundary_code==2) systems[i].boundary = "<span class='H2' title='Includes:\n- Outside unit only'>H2</span>";
+            else if (boundary_code==3) systems[i].boundary = "<span class='H3' title='Includes:\n- Outside unit\n- Booster and immersion heater (if installed & used)\n\nDoes not include:\n- Central heating pumps & fans'>H3</span>";
+            else if (boundary_code==4) systems[i].boundary = "<span class='H4' title='Includes:\n- Outside unit\n- Booster and immersion heater (if installed & used)\n- Central heating pumps & fans (if applicable)'>H4</span>";  
         }
         
         systems[i].boundary_code = boundary_code;    
