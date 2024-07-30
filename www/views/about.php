@@ -20,11 +20,20 @@ $date = date('F Y');
 
 <p>The site is a useful peer-to-peer learning resource used by both customers and installers wishing to understand how to design, install and optimise heat pumps for high performance and low running costs.</p>
 
-<p>Systems marked with 'MID' use billing grade MID approved Class 1 electricity metering and Class 2 heat metering equipment.</p>
+<H5>Accuracy</H5>
+<p>Systems marked with 'MID' use billing grade MID approved Class 1 electricity metering and Class 2 heat metering equipment. These are the same meters used by RHI and other heat pump monitoring trials.</p>
 
-<p>The majority of systems are monitored using the <a href="https://shop.openenergymonitor.com/level-3-heat-pump-monitoring-bundle-emonhp/"> OpenEnergyMonitor Level 3 Monitoring Bundle</a>.</p>
+<p>The SPF (Seasonal Performance Factor) boundary i.e what's included in the monitoring is stated next to each system. The SPF boundaries are defined as follows:</p>
+<ul>
+  <li>SPF1: Only includes the energy input to the heat pump (compressor energy)</li>
+  <li>SPF2: Includes the energy input to the heat pump and the auxiliary devices such as circulation pumps</li>
+  <li>SPF3: Includes all energy inputs from SPF2 plus additional auxiliary energy such as backup or immersion heaters</li>
+  <li>SPF4: Covers all energy inputs from SPF3, but also includes energy consumption for domestic hot water preparation and distribution</li>
+</ul>
 
-<p>Contact us:</p>
+<p>The majority of systems SPF3 or SPF4 and are monitored using the <a href="https://shop.openenergymonitor.com/level-3-heat-pump-monitoring-bundle-emonhp/"> OpenEnergyMonitor Level 3 Monitoring Bundle</a>.</p>
+
+<h5>Contact us</h5>
 <ul>
 <li><a href="https://community.openenergymonitor.org">Community Forum</a>
 <li>Email: <a href="mailto: hello@openenergymonitor.zendesk.com"> hello@openenergymonitor.zendesk.com</a></li>
