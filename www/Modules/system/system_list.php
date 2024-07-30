@@ -412,7 +412,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     // Template views
     var template_views = {}
     template_views['topofthescops'] = {}
-    template_views['topofthescops']['wide'] = ['location', 'installer_logo', 'installer_name', 'training', 'hp_type', 'hp_model', 'hp_output', 'combined_data_length', 'combined_cop', 'boundary' , 'mid_metering', 'learnmore'];
+    template_views['topofthescops']['wide'] = ['location', 'installer_logo', 'installer_name', 'training', 'hp_type', 'hp_model', 'hp_output', 'combined_data_length', 'combined_cop', 'water_cop', 'boundary' , 'mid_metering', 'learnmore'];
     template_views['topofthescops']['narrow'] = ['installer_logo', 'training', 'hp_model', 'hp_output', 'combined_cop', 'learnmore'];
 
     template_views['heatpumpfabric'] = {}

@@ -753,7 +753,7 @@ $schema['system_stats_daily'] = array(
     // Water heating
     'water_elec_kwh' => array('type' => 'float', 'name'=>'Electricity consumption', 'group'=>'Stats: Water heating', 'dp'=>0, 'unit'=>'kWh'),
     'water_heat_kwh' => array('type' => 'float', 'name'=>'Heat output', 'group'=>'Stats: Water heating', 'dp'=>0, 'unit'=>'kWh'),
-    'water_cop' => array('type' => 'float', 'name'=>'COP', 'heading'=>"Water<br>COP", 'group'=>'Stats: Water heating', 'dp'=>1, 'unit'=>''),
+    'water_cop' => array('type' => 'float', 'name'=>'COP', 'heading'=>"DHW", 'group'=>'Stats: Water heating', 'dp'=>1, 'unit'=>''),
     'water_data_length' => array('type' => 'float', 'name'=>'Data length', 'group'=>'Stats: Water heating', 'dp'=>0, 'unit'=>''),
     'water_elec_mean' => array('type' => 'float', 'name'=>'Elec mean', 'group'=>'Stats: Water heating', 'dp'=>0, 'unit'=>'W'),
     'water_heat_mean' => array('type' => 'float', 'name'=>'Heat mean', 'group'=>'Stats: Water heating', 'dp'=>0, 'unit'=>'W'),
