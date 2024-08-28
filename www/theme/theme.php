@@ -87,7 +87,7 @@ $navigation = array(
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="collapse navbar-collapse" id="navbarNav">
-                    <span class="navbar-text navbar-text-desktop">An open source initiative to share and compare heat pump performance data.</span>
+                    <span class="navbar-text navbar-text-desktop">An open-source initiative to share and compare heat pump performance data</span>
  
                     <?php if ($settings['public_mode_enabled'] || $session['userid']) { ?>
                     <ul class="navbar-nav ms-auto">
@@ -100,10 +100,10 @@ $navigation = array(
                                 <i class="fas fa-chart-line"></i>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="avatarDropdown">
-                                <li><a class="dropdown-item" href="<?php echo $path; ?>heatloss">Heat demand tool</a></li>                                      
+                                <li><a class="dropdown-item" href="<?php echo $path; ?>heatloss">Heat demand tool</a></li>
                                 <li><a class="dropdown-item" href="<?php echo $path; ?>daily">Daily</a></li>
                                 <li><a class="dropdown-item" href="<?php echo $path; ?>monthly">Monthly</a></li>
-                                <li><a class="dropdown-item" href="<?php echo $path; ?>compare">Compare</a></li>   
+                                <li><a class="dropdown-item" href="<?php echo $path; ?>compare">Compare</a></li>
                                 <li><a class="dropdown-item" href="<?php echo $path; ?>histogram">Histogram</a></li>
 
                             </ul>
@@ -130,7 +130,7 @@ $navigation = array(
                                         </li>
                                         <li><a class="dropdown-item" href="<?php echo $path; ?>user/admin">Admin users</a></li>
                                         <li><a class="dropdown-item" href="<?php echo $path; ?>system/list/admin">Admin systems</a></li>
-                                        <li><a class="dropdown-item" href="<?php echo $path; ?>system/log">Change log</a></li>                                      
+                                        <li><a class="dropdown-item" href="<?php echo $path; ?>system/log">Change log</a></li>
                                     <?php } ?>
                                     <li>
                                         <hr class="dropdown-divider">
