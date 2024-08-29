@@ -49,8 +49,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     <p v-if="mode=='user'">Add, edit and view systems associated with your account.</p>
                     <p v-if="mode=='admin'">Add, edit and view all systems</p>
                     
-                    <p v-if="mode=='public' && showContent">If you're monitoring a heat pump with <a href="https://emoncms.org">Emoncms.org</a> login to add your system</p>
-                    <p v-if="mode=='public' && showContent">Join the discussions on the <a href="https://community.openenergymonitor.org/c/hardware/heatpump/47">OpenEnergyMonitor Forum</a></p>
+                    <p v-if="mode=='public' && showContent">If you're monitoring a heat pump with <a href="https://openenergymonitor.org">OpenEnergyMonitor</a> login to add your system</p>
+                    <p v-if="mode=='public' && showContent">Join the discussion on the <a href="https://community.openenergymonitor.org/c/hardware/heatpump/47">Forum</a></p>
                     
                     <button v-if="mode!='public'" class="btn btn-primary" @click="create">Add new system</button>
                 </div>
