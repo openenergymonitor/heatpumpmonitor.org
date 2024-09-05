@@ -100,7 +100,17 @@ if (isset($_GET['id'])) {
         url: path+"system/list/public.json", 
         async: false, 
         success: function(result) { 
+
+            /* Order by location */
+            result.sort(function(a,b) {
+                if (a.location < b.location) return -1;
+                if (a.location > b.location) return 1;
+                return 0;
+            });
+
             system_list = result; 
+
+
 
             // map by id
             for (var i=0; i<system_list.length; i++) {
@@ -112,6 +122,21 @@ if (isset($_GET['id'])) {
 
     var default_start = "2023-10-01";
     var default_end = "2024-04-01";
+
+    // get current date e.g 2023-10-01
+    var date = new Date();
+    var yyyy_start = date.getFullYear()-1;
+    var yyyy_end = date.getFullYear();
+    var mm = date.getMonth()+1;
+    if (mm<10) mm = "0"+mm;
+    var dd = date.getDate();
+    if (dd<10) dd = "0"+dd;
+    default_start = yyyy_start+"-"+mm+"-"+dd;
+    default_end = yyyy_end+"-"+mm+"-"+dd;
+
+
+
+
     var colours = ["#fec601","#ea7317","#73bfb8","#3da5d9","#2364aa"];
 
     var app = new Vue({
@@ -128,7 +153,8 @@ if (isset($_GET['id'])) {
             months: ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
             xaxis_title: "COP",
             x_min: 1.0,
-            x_max: 8.0
+            x_max: 8.0,
+            average_x_values: []
         },
         methods: {
             change_histogram_type: function() {
@@ -262,7 +288,30 @@ if (isset($_GET['id'])) {
             options.series.bars.barWidth = 0.1;
         }
 
+        // Add markings for average x values
+        options.grid.markings = [];
+        for (var i=0; i<app.selected_systems.length; i++) {
+            var avg_x = app.average_x_values[i];
+            var color = app.selected_systems[i].color;
+            if (avg_x!=undefined) {
+                options.grid.markings.push({xaxis: {from: avg_x, to: avg_x}, color: color});
+            }
+        }
+
         var chart = $.plot("#placeholder", app.selected_systems, options);
+
+        // Add vertical line for average x values
+        for (var i=0; i<app.selected_systems.length; i++) {
+            var avg_x = app.average_x_values[i];
+            if (avg_x!=undefined) {
+
+                var o = chart.pointOffset({ x: avg_x, y: 0});
+                var top = chart.getPlotOffset().top + 5 + i*20;
+
+                chart.getPlaceholder().append("<div style='position:absolute;left:" + (o.left + 8) + "px;top:" + top + "px;color:#666;font-size:smaller'>Weighted average: "+avg_x.toFixed(2)+"</div>");
+
+            }
+        }
     }
 
     // Load system data
@@ -295,10 +344,23 @@ if (isset($_GET['id'])) {
                 }
                 let data = [];
                 let index = 0;
+                let sum = 0;
+                let sum_y = 0;
+
                 for (var i=result.min; i<=result.max; i+=result.div) {
                     data.push([i, result.data[index]]);
+
+                    sum += i * result.data[index];
+                    sum_y += result.data[index];
+
                     index++;
                 }
+
+                // Calculate average x value
+                let avg_x = sum / sum_y;
+                console.log("system: "+system.id+", average x: "+avg_x);
+                app.average_x_values[idx] = avg_x;
+
                 app.selected_systems[idx].data = data;
 
                 options.series.bars.barWidth = result.div;
@@ -339,7 +401,39 @@ if (isset($_GET['id'])) {
 
     function date_str_to_time(str) {
         return (new Date(str+" 00:00:00")).getTime()*0.001;
-}
+    }
+
+    // Add tooltip
+    var previousPoint = null;
+    $("#placeholder").bind("plothover", function (event, pos, item) {
+        if (item) {
+            if (previousPoint != item.dataIndex) {
+                previousPoint = item.dataIndex;
+                
+                $("#tooltip").remove();
+                var x = item.datapoint[0].toFixed(2),
+                    y = item.datapoint[1].toFixed(2);
+                
+                showTooltip(item.pageX, item.pageY, x+", "+y);
+            }
+        } else {
+            $("#tooltip").remove();
+            previousPoint = null;            
+        }
+    });
+
+    function showTooltip(x, y, contents) {
+        $('<div id="tooltip">' + contents + '</div>').css( {
+            position: 'absolute',
+            display: 'none',
+            top: y - 30,
+            left: x + 5,
+            border: '1px solid #fdd',
+            padding: '2px',
+            'background-color': '#fee',
+            opacity: 0.80
+        }).appendTo("body").fadeIn(200);
+    }
 
 
 </script>

@@ -97,9 +97,9 @@ class SystemStats
         $server = $url_parts['scheme'] . '://' . $url_parts['host'];
         // check if url was to /app/view instead of username
         if (preg_match('/^(.*)\/app\/view$/', $url_parts['path'], $matches)) {
-            $getconfig = "$server$matches[1]/app/getconfigmeta";
+            $getconfig = "$server$matches[1]/app/getconfigmeta.json";
         } else {
-            $getconfig = $server . $url_parts['path'] . "/app/getconfigmeta";
+            $getconfig = $server . $url_parts['path'] . "/app/getconfigmeta.json";
         }
         // if url has query string, pull out the readkey
         $readkey = '';
@@ -118,13 +118,22 @@ class SystemStats
         try {
             $result = file_get_contents($getconfig);
         } catch (Exception $e) {
-            return array("success"=>false, "message"=>"Empty response from detailed data server");
+            return array(
+                "success"=>false, 
+                "message"=>"Empty response from detailed data server",
+                "url"=>$getconfig
+            );
         }
     
         $config = json_decode($result);  
         
         if (!$config) {
-            return array("success"=>false, "message"=>"Empty response from detailed data server");
+            return array(
+                "success"=>false, 
+                "message"=>"Empty response from detailed data server",
+                "url"=>$getconfig
+            );
+
         }
 
         $config->server = $server;
