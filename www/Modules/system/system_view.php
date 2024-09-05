@@ -35,7 +35,8 @@ global $settings;
             </div>
             <button class="btn btn-primary mb-3"  @click="open_emoncms_dashboard" v-if="system.url!=''"><span class="d-none d-lg-inline-block">Emoncms</span> Dashboard</button>
             <button class="btn btn-secondary mb-3"  @click="open_heatloss_tool" v-if="system.url!=''" >Heat demand <span class="d-none d-lg-inline-block">tool</span></button>  
-            <button class="btn btn-secondary mb-3"  @click="open_monthly_tool" v-if="system.url!=''" >Monthly</button>  
+            <button class="btn btn-secondary mb-3"  @click="open_monthly_tool" v-if="system.url!=''" >Monthly</button>
+            <button class="btn btn-secondary mb-3"  @click="open_daily_tool" v-if="system.url!=''" >Daily</button>
             <button class="btn btn-secondary mb-3"  @click="open_compare_tool" v-if="system.url!=''" >Compare</button>              
             <button class="btn btn-secondary mb-3"  @click="open_histogram_tool" v-if="system.url!=''" >Histogram</button>  
             <button class="btn btn-warning mb-3" style="margin-left:10px" v-if="admin && mode=='view'" @click="mode='edit'">Edit</button>
@@ -428,6 +429,9 @@ global $settings;
             },
             open_monthly_tool: function() {
                 window.location = path+"monthly?id="+app.system.id;
+            },
+            open_daily_tool: function() {
+                window.location = path+"daily?id="+app.system.id;
             },
             open_histogram_tool: function() {
                 window.location = path+"histogram?id="+app.system.id;

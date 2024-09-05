@@ -60,6 +60,34 @@
         <div class="row" style="margin-right:-5px">
             <div id="placeholder" style="width:100%;height:600px; margin-bottom:20px"></div>
         </div>
+
+        <!-- min max y axis -->
+        <div class="row">
+            <div class="col-lg-3">
+                <div class="input-group mb-3">
+                    <span class="input-group-text">Min Y-axis</span>
+                    <input type="text" class="form-control" v-model="min_yaxis" @change="draw">
+                </div>
+            </div>
+            <div class="col-lg-3">
+                <div class="input-group mb-3">
+                    <span class="input-group-text">Max Y-axis</span>
+                    <input type="text" class="form-control" v-model="max_yaxis" @change="draw">
+                </div>
+            </div>
+            <div class="col-lg-3">
+                <div class="input-group mb-3">
+                    <span class="input-group-text">Min X-axis</span>
+                    <input type="text" class="form-control" v-model="min_xaxis" @change="draw">
+                </div>
+            </div>
+            <div class="col-lg-3">
+                <div class="input-group mb-3">
+                    <span class="input-group-text">Max X-axis</span>
+                    <input type="text" class="form-control" v-model="max_xaxis" @change="draw">
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -88,6 +116,34 @@
     var systemid_map = {};
     var max_heat = 0;
 
+    var selected_xaxis = 'running_outsideT_mean';
+    var selected_yaxis = 'running_flowT_mean';
+    var min_yaxis = 'auto';
+    var max_yaxis = 'auto';
+    var min_xaxis = 'auto';
+    var max_xaxis = 'auto';
+
+    // Get URL parameters
+    var urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('x')) {
+        selected_xaxis = urlParams.get('x');
+    }
+    if (urlParams.has('y')) {
+        selected_yaxis = urlParams.get('y');
+    }
+    if (urlParams.has('min_yaxis')) {
+        min_yaxis = urlParams.get('min_yaxis');
+    }
+    if (urlParams.has('max_yaxis')) {
+        max_yaxis = urlParams.get('max_yaxis');
+    }
+    if (urlParams.has('min_xaxis')) {
+        min_xaxis = urlParams.get('min_xaxis');
+    }
+    if (urlParams.has('max_xaxis')) {
+        max_xaxis = urlParams.get('max_xaxis');
+    }
+
     var app = new Vue({
         el: '#app',
         data: {
@@ -97,8 +153,14 @@
             stats_schema: stats_schema,
             stats_schema_grouped: stats_schema_grouped,
             // Selection
-            selected_xaxis: 'combined_outsideT_mean',
-            selected_yaxis: 'combined_starts'
+            selected_xaxis: selected_xaxis,
+            selected_yaxis: selected_yaxis,
+            // Y-axis
+            min_yaxis: min_yaxis,
+            max_yaxis: max_yaxis,
+            // X-axis
+            min_xaxis: min_xaxis,
+            max_xaxis: max_xaxis,
         },
         methods: {
             change_system: function() {
@@ -114,6 +176,7 @@
                 z += direction;
                 if (z >= 0 && z < app.system_list.length) {
                     app.systemid = app.system_list[z].id;
+
                     load();
                 }
             }
@@ -212,7 +275,7 @@
                         continue;
                     }
 
-                    var timestamp = parts[0] * 1000;
+                    var timestamp = parts[1] * 1000;
 
                     for (var j = 1; j < parts.length; j++) {
                         let value = parts[j] * 1;
@@ -234,6 +297,32 @@
     }
 
     function draw() {
+
+        // Save selected_xaxis and selected_yaxis to URL
+
+        var newurl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?id=' + app.systemid;
+
+        if (app.selected_xaxis != 'running_outsideT_mean') {
+            newurl += '&x=' + app.selected_xaxis;
+        }
+
+        if (app.selected_yaxis != 'running_flowT_mean') {
+            newurl += '&y=' + app.selected_yaxis;
+        }
+
+        if (app.min_yaxis != 'auto') {
+            newurl += '&min_yaxis=' + app.min_yaxis;
+        }
+        if (app.max_yaxis != 'auto') {
+            newurl += '&max_yaxis=' + app.max_yaxis;
+        }
+        if (app.min_xaxis != 'auto') {
+            newurl += '&min_xaxis=' + app.min_xaxis;
+        }
+        if (app.max_xaxis != 'auto') {
+            newurl += '&max_xaxis=' + app.max_xaxis;
+        }
+        window.history.pushState({ path: newurl }, '', newurl);
 
         var xaxis_label = stats_schema[app.selected_xaxis].group.replace("Stats: ","") + ": " + stats_schema[app.selected_xaxis].name;
         if (stats_schema[app.selected_xaxis].unit != "") xaxis_label += " (" + stats_schema[app.selected_xaxis].unit + ")";
@@ -261,6 +350,20 @@
                 show: true
             }
         };
+
+        if (app.min_yaxis != 'auto') {
+            options.yaxis.min = app.min_yaxis * 1;
+        }
+        if (app.max_yaxis != 'auto') {
+            options.yaxis.max = app.max_yaxis * 1;
+        }
+        if (app.min_xaxis != 'auto') {
+            options.xaxis.min = app.min_xaxis * 1;
+        }
+        if (app.max_xaxis != 'auto') {
+            options.xaxis.max = app.max_xaxis * 1;
+        }
+
 
         var series = [{
             data: data['series'],
