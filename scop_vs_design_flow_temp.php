@@ -59,72 +59,69 @@ $end = $date->getTimestamp();
 $date->modify("-365 days");
 $start = $date->getTimestamp();
 
+$mode = "running";
+
 foreach ($systems as $system) {
-    $daily = $system_stats->get_daily($system->id,$start,$end,"timestamp,combined_cop,running_flowT_mean,running_outsideT_mean,combined_flowT_mean,combined_heat_mean");
+    $daily = $system_stats->get_daily($system->id,$start,$end,"timestamp,".$mode."_cop,".$mode."_flowT_mean,".$mode."_outsideT_mean,combined_flowT_mean,combined_heat_mean");
     // response is csv data, first line is headers
     $daily = explode("\n",$daily);
+
+    $keys = explode(",",$daily[0]);
+    $key_length = count($keys);
+
     $daily = array_slice($daily,1);
+    
 
     // Find coldest day
-    $coldest = array("timestamp" => null, "outside" => null, "flow" => null, "cop" => null, "combined_flow" => null, "combined_heat" => null);
+    $coldest = false;
+    
     foreach ($daily as $line) {
 
-        $line = explode(",",$line);
+        $values = explode(",",$line);
 
-        if (count($line) < 2) {
+        if (count($values) != $key_length) {
+            continue;
+            
+        }
+
+        $keyval = array();
+        foreach ($keys as $i => $key) {
+            $key = trim($key);
+            $keyval[$key] = 1*$values[$i];
+        }
+
+        if ($keyval["timestamp"]<$start || $keyval["timestamp"]>$end) {
             continue;
         }
 
-        $timestamp = $line[0];
-        $cop = $line[1];
-        $flow = $line[2];
-        $outside = $line[3];
-        $combined_flow = $line[4];
-        $combined_heat = $line[5];
-
-        if ($timestamp<$start || $timestamp>$end) {
+        if ($keyval[$mode."_cop"] == 0) {
             continue;
         }
 
-        if ($cop == 0) {
-            continue;
+        if (!$coldest) {
+            $coldest = $keyval;
         }
 
-        if ($coldest["outside"] === null) {
-            $coldest["timestamp"] = $timestamp;
-            $coldest["outside"] = $outside;
-            $coldest["flow"] = $flow;
-            $coldest["cop"] = $cop;
-            $coldest["combined_flow"] = $combined_flow;
-            $coldest["combined_heat"] = $combined_heat;
-        }
-
-        if ($outside < $coldest["outside"]) {
-            $coldest["timestamp"] = $timestamp;
-            $coldest["outside"] = $outside;
-            $coldest["flow"] = $flow;
-            $coldest["cop"] = $cop;
-            $coldest["combined_flow"] = $combined_flow;
-            $coldest["combined_heat"] = $combined_heat;
+        if ($keyval[$mode."_outsideT_mean"] < $coldest[$mode."_outsideT_mean"]) {
+            $coldest = $keyval;
         }
     }
 
-    $system->coldest_outside = $coldest["outside"];
-    $system->coldest_flow = $coldest["flow"];
-    $system->coldest_cop = $coldest["cop"];
-    $system->coldest_timestamp = $coldest["timestamp"];
-    $system->coldest_combined_flow = $coldest["combined_flow"];
-    $system->coldest_combined_heat = $coldest["combined_heat"];
+    $system->coldest = $coldest;
 
 }
 
-
-print "ID,Location,HP Output,HP Model,Design Flow Temp,Design Outside Temp,Combined COP,Coldest heat,Coldest Outside,Coldest Flow,Coldest COP,Coldest Combined Flow,Coldest Date\n";
+// Print headers
+print "id,location,hp_output,hp_model,flow_temp,design_temp,".$mode."_cop,combined_heat,".$mode."_outsideT,".$mode."_flowT,space_cop,combined_flowT,weighted_average,date\n";
 
 // Print all systems
 foreach ($systems as $system) {
 
-    $diff = $system->coldest_flow - $system->coldest_combined_flow;
+    if (!isset($system->coldest) || !$system->coldest) {
+        continue;
+    }
+
+    $diff = $system->coldest[$mode."_flowT_mean"] - $system->coldest["combined_flowT_mean"];
     // abs
     $diff = abs($diff);
 
@@ -133,7 +130,7 @@ foreach ($systems as $system) {
     }
 
     // skip if coldest_flow = 0
-    if ($system->coldest_flow == 0 || $system->coldest_outside == 0) {
+    if ($system->coldest[$mode."_flowT_mean"] == 0 || $system->coldest[$mode."_outsideT_mean"] == 0) {
         continue;
     }
 
@@ -158,16 +155,40 @@ foreach ($systems as $system) {
     $line[] = number_format($system->design_temp,1, ".", "");
 
     $line[] = number_format($system->combined_cop,2, ".", "");
-    $line[] = round($system->coldest_combined_heat);
+    $line[] = round($system->coldest["combined_heat_mean"],1);
 
-    $line[] = number_format($system->coldest_outside,1, ".", "");
-    $line[] = number_format($system->coldest_flow,1, ".", "");
-    $line[] = number_format($system->coldest_cop,2, ".", "");
-    $line[] = number_format($system->coldest_combined_flow,1, ".", "");
+    $line[] = number_format($system->coldest[$mode."_outsideT_mean"],1, ".", "");
+    $line[] = number_format($system->coldest[$mode."_flowT_mean"],1, ".", "");
+    $line[] = number_format($system->coldest[$mode."_cop"],2, ".", "");
+    $line[] = number_format($system->coldest["combined_flowT_mean"],1, ".", "");
+
+    // Get weighted average flow temp from histogram tool
+    $url = "https://heatpumpmonitor.org/histogram/kwh_at_flow_minus_outside?id=$system->id&start=$start&end=$end&x_min=0&x_max=60";
+
+    $data = file_get_contents($url);
+    $data = json_decode($data,true);
+
+    $avg_x = 0;
+
+    if (isset($data["data"])) {
+        $sum = 0;
+        $sum_y = 0;
+
+        foreach ($data["data"] as $i => $y) {
+            $x = $data["min"] + $i*$data["div"];
+            $sum += $x * $y;
+            $sum_y += $y;
+        }
+
+        $avg_x = $sum / $sum_y;
+    }
+
+    $line[] = number_format($avg_x,1, ".", "");
+
     // print date use datetime
     $date = new DateTime();
     $date->setTimezone(new DateTimeZone('Europe/London'));
-    $date->setTimestamp($system->coldest_timestamp);
+    $date->setTimestamp($system->coldest["timestamp"]);
 
     $line[] = $date->format("Y-m-d");
     print implode(",",$line)."\n";

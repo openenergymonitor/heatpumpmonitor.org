@@ -23,7 +23,9 @@ if (isset($_GET['id'])) {
 
                 <select class="form-control" v-model="histogram_type" @change="change_histogram_type">
                     <option value="kwh_at_cop">COP vs kWh heat delivered</option>
-                    <option value="kwh_at_temperature">Flow temperature vs kWh heat delivered</option>
+                    <option value="kwh_at_flow">Flow temperature vs kWh heat delivered</option>
+                    <option value="kwh_at_outside">Outside temperature vs kWh heat delivered</option>  
+                    <option value="kwh_at_flow_minus_outside">Flow minus outside temperature vs kWh heat delivered</option>
                     <!--<option value="flow_temp_curve">Flow temperature curve</option>-->
                 </select>
                 <br>
@@ -163,10 +165,18 @@ if (isset($_GET['id'])) {
                     this.xaxis_title = "COP";
                     this.x_min = 1.0;
                     this.x_max = 8.0;
-                } else {
+                } else if (this.histogram_type == "kwh_at_flow") {
                     this.xaxis_title = "Flow temperature";
                     this.x_min = 20;
                     this.x_max = 55;
+                } else if (this.histogram_type == "kwh_at_outside") {
+                    this.xaxis_title = "Outside temperature";
+                    this.x_min = -10;
+                    this.x_max = 20;
+                } else if (this.histogram_type == "kwh_at_flow_minus_outside") {
+                    this.xaxis_title = "Flow minus outside temperature";
+                    this.x_min = 0;
+                    this.x_max = 60;
                 }
 
                 for (var i=0; i<app.selected_systems.length; i++) {
@@ -368,8 +378,12 @@ if (isset($_GET['id'])) {
                 // changes x axis label
                 if (app.histogram_type=="kwh_at_cop") {
                     options.xaxis.axisLabel = "COP";
-                } else if (app.histogram_type=="kwh_at_temperature") {
+                } else if (app.histogram_type=="kwh_at_flow") {
                     options.xaxis.axisLabel = "Flow temperature (°C)";
+                } else if (app.histogram_type=="kwh_at_outside") {
+                    options.xaxis.axisLabel = "Outside temperature (°C)";
+                } else if (app.histogram_type=="kwh_at_flow_minus_outside") {
+                    options.xaxis.axisLabel = "Flow minus outside temperature (°K)";
                 } else if (app.histogram_type=="flow_temp_curve") {
                     options.xaxis.axisLabel = "Outside temperature (°C)";
                 }

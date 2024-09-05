@@ -41,7 +41,7 @@ function histogram_controller() {
     }
 
     // Get kWh vs temperature histogram
-    if ($route->action=="kwh_at_temperature") {
+    if ($route->action=="kwh_at_flow") {
         $route->format = "json";
         // Parameters
         $params = array(
@@ -56,6 +56,49 @@ function histogram_controller() {
         );
         if ($config->apikey!="") $params['apikey'] = $config->apikey;
         $result = file_get_contents("$config->server/histogram/data/kwh_at_temperature?".http_build_query($params));
+        $output = json_decode($result);
+        if ($output==null) $output = $result;
+        return $output;
+    }
+    
+    // Get kWh vs temperature histogram
+    if ($route->action=="kwh_at_outside") {
+        $route->format = "json";
+        // Parameters
+        $params = array(
+            "power"=>$config->heat,
+            "temperature"=>$config->outsideT,
+            "start"=>$_GET['start'],
+            "end"=>$_GET['end'],
+            "div"=>0.5,
+            "interval"=>300,
+            "x_min"=>$_GET['x_min'],
+            "x_max"=>$_GET['x_max']
+        );
+        if ($config->apikey!="") $params['apikey'] = $config->apikey;
+        $result = file_get_contents("$config->server/histogram/data/kwh_at_temperature?".http_build_query($params));
+        $output = json_decode($result);
+        if ($output==null) $output = $result;
+        return $output;
+    }
+    
+    // Get kWh vs temperature histogram
+    if ($route->action=="kwh_at_flow_minus_outside") {
+        $route->format = "json";
+        // Parameters
+        $params = array(
+            "power"=>$config->heat,
+            "flow"=>$config->flowT,
+            "outside"=>$config->outsideT,
+            "start"=>$_GET['start'],
+            "end"=>$_GET['end'],
+            "div"=>0.5,
+            "interval"=>300,
+            "x_min"=>$_GET['x_min'],
+            "x_max"=>$_GET['x_max']
+        );
+        if ($config->apikey!="") $params['apikey'] = $config->apikey;
+        $result = file_get_contents("$config->server/histogram/data/kwh_at_flow_minus_outside?".http_build_query($params));
         $output = json_decode($result);
         if ($output==null) $output = $result;
         return $output;

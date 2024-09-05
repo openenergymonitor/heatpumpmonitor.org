@@ -95,9 +95,11 @@ class SystemStats
         }
 
         $server = $url_parts['scheme'] . '://' . $url_parts['host'];
+
         // check if url was to /app/view instead of username
         if (preg_match('/^(.*)\/app\/view$/', $url_parts['path'], $matches)) {
             $getconfig = "$server$matches[1]/app/getconfigmeta.json";
+            $server .= $matches[1];
         } else {
             $getconfig = $server . $url_parts['path'] . "/app/getconfigmeta.json";
         }
@@ -112,7 +114,7 @@ class SystemStats
         }
         
         if ($server != "https://emoncms.org" && $server != "http://emoncms.org") {
-            return array("success"=>false, "message"=>"API only supported by systems hosted on emoncms.org");
+            // return array("success"=>false, "message"=>"API only supported by systems hosted on emoncms.org");
         }
 
         try {
