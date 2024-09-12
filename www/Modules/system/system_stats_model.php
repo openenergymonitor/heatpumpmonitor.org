@@ -196,6 +196,86 @@ class SystemStats
         }
     }
 
+    public function process_data($url, $timeout = 5) {
+        # decode the url to separate out any args
+        $url_parts = parse_url($url);
+        if (!isset($url_parts['scheme']) || !isset($url_parts['host']) || !isset($url_parts['path'])) {
+            return array("success" => false, "message" => "Invalid URL"); 
+        }
+        $server = $url_parts['scheme'] . '://' . $url_parts['host'];
+
+        # check if url was to /app/view instead of username
+        if (preg_match('/^(.*)\/app\/view$/', $url_parts['path'], $matches)) {
+            $getstats = "$server$matches[1]/app/processdaily.json";
+        } else {
+            $getstats = $server . $url_parts['path'] . "/app/processdaily.json";
+        }
+
+        # if url has query string, pull out the readkey
+        if (isset($url_parts['query'])) {
+            parse_str($url_parts['query'], $url_args);
+            if (isset($url_args['readkey'])) {
+                // $readkey = $url_args['readkey'];
+                $getstats .= '?' . $url_parts['query']."&timeout=$timeout";
+            }
+        } else {
+            $getstats .= "?timeout=$timeout";
+        }        
+        
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $getstats);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+        $result = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        
+        if ($httpCode == 200) { // Check if successful response
+            return json_decode($result,true);
+        } else {
+            return array("success" => false, "message" => $httpCode);
+        }
+    }
+
+    public function enable_daily_mode($url) {
+        # decode the url to separate out any args
+        $url_parts = parse_url($url);
+        if (!isset($url_parts['scheme']) || !isset($url_parts['host']) || !isset($url_parts['path'])) {
+            return array("success" => false, "message" => "Invalid URL"); 
+        }
+        $server = $url_parts['scheme'] . '://' . $url_parts['host'];
+
+        # check if url was to /app/view instead of username
+        if (preg_match('/^(.*)\/app\/view$/', $url_parts['path'], $matches)) {
+            $getstats = "$server$matches[1]/app/enabledailymode.json";
+        } else {
+            $getstats = $server . $url_parts['path'] . "/app/enabledailymode.json";
+        }
+
+        # if url has query string, pull out the readkey
+        if (isset($url_parts['query'])) {
+            parse_str($url_parts['query'], $url_args);
+            if (isset($url_args['readkey'])) {
+                // $readkey = $url_args['readkey'];
+                $getstats .= '?' . $url_parts['query'];
+            }
+        }      
+        
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $getstats);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+        $result = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        
+        if ($httpCode == 200) { // Check if successful response
+            return json_decode($result,true);
+        } else {
+            return array("success" => false, "message" => $httpCode);
+        }
+    }
+
     public function get_data_period($url)
     {
         # decode the url to separate out any args
@@ -207,9 +287,9 @@ class SystemStats
 
         # check if url was to /app/view instead of username
         if (preg_match('/^(.*)\/app\/view$/', $url_parts['path'], $matches)) {
-            $getstats = "$server$matches[1]/app/datastart";
+            $getstats = "$server$matches[1]/app/getdailydatarange";
         } else {
-            $getstats = $server . $url_parts['path'] . "/app/datastart";
+            $getstats = $server . $url_parts['path'] . "/app/getdailydatarange";
         }
 
         # if url has query string, pull out the readkey
@@ -556,7 +636,9 @@ class SystemStats
 
     public function get_daily($systemid, $start, $end, $fields) {
 
-
+        $systemid = (int) $systemid;
+        $start = (int) $start;
+        $end = (int) $end;
 
         // Print header based on system_stats_daily schema
         $all_fields = array();
@@ -583,8 +665,13 @@ class SystemStats
         $date = new DateTime();
         $date->setTimezone(new DateTimeZone('Europe/London'));
 
+        if ($start === false || $end === false) {
+            $where = "WHERE id=$systemid";
+        } else {
+            $where = "WHERE id=$systemid AND timestamp>=$start AND timestamp<$end";
+        }
         // Get data
-        $result = $this->mysqli->query("SELECT $field_select FROM system_stats_daily WHERE id=$systemid ORDER BY timestamp ASC");
+        $result = $this->mysqli->query("SELECT $field_select FROM system_stats_daily $where ORDER BY timestamp ASC");
         while ($row = $result->fetch_object()) {
             $data = array();
             foreach ($valid_fields as $field) {

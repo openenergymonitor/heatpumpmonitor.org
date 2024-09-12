@@ -276,8 +276,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     var filterKey = '';
     if (decoded.filter!=undefined) filterKey = decoded.filter;
 
-    var minDays = 72;
-    var stats_time_start = 'last90';
+    var minDays = 290;
+    var stats_time_start = 'last365';
     var selected_template = 'topofthescops';
     var currentSortColumn = 'combined_cop';
     var currentSortDir = 'desc';
@@ -311,7 +311,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     columns['hp_model'].name = "Make & Model";
     columns['hp_output'].name = "Rating";
     // columns['heatgeek'].name = "Training";
-
+    
     
     columns['training'] = { name: "Combined", heading: "Training", group: "Training", helper: "Training" };
     columns['learnmore'] = { name: "Combined", heading: "", group: "Learn more" };
@@ -386,6 +386,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     for (var key in stats_columns) {
         columns[key] = stats_columns[key];
     }
+    
+    columns['combined_cop'].heading = 'SPF';
 
     for (var key in columns) {
         if (columns[key].heading === undefined) {
@@ -782,19 +784,24 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 
                 if (this.stats_time_start=='last365') {
                     if (this.mode == 'public') this.minDays = 290;
-                    columns['combined_cop'].name = 'SCOP';
+                    columns['combined_cop'].name = 'SPF';
+                    columns['combined_cop'].heading = 'SPF';
                 } else if (this.stats_time_start=='last90') {
                     if (this.mode == 'public') this.minDays = 72;
                     columns['combined_cop'].name = 'COP';
+                    columns['combined_cop'].heading = 'COP';
                 } else if (this.stats_time_start=='last30') {
                     if (this.mode == 'public') this.minDays = 24;
                     columns['combined_cop'].name = 'COP';
+                    columns['combined_cop'].heading = 'COP';
                 } else if (this.stats_time_start=='last7') {
                     if (this.mode == 'public') this.minDays = 5;
                     columns['combined_cop'].name = 'COP';
+                    columns['combined_cop'].heading = 'COP';
                 } else {
                     if (this.mode == 'public') this.minDays = 0;
                     columns['combined_cop'].name = 'COP';
+                    columns['combined_cop'].heading = 'COP';
                 }
                 
                 this.load_system_stats();

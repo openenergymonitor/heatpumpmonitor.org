@@ -65,7 +65,7 @@ global $settings;
                     </div>
                     
                     <div class="col">
-                        <h5>SCOP</h5>
+                        <h5 title="Seasonal performance factor">SPF</h5>
                         <h4>{{ last365.combined_cop | toFixed(1) }}</h4>            
                     </div>    
                 </div>      
@@ -86,7 +86,7 @@ global $settings;
                     </div>
                     
                     <div class="col">
-                        <h5>SCOP</h5>
+                        <h5>COP</h5>
                         <h4>{{ last30.combined_cop | toFixed(1) }}</h4>            
                     </div>    
                 </div>

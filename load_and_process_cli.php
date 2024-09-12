@@ -90,9 +90,30 @@ function load_daily_stats_system($meta, $reload) {
     logger("System: ".$meta->id.", Host: ".$host);
     logger("----------------------------------");
 
+    for ($i=0; $i<100; $i++) {
+        $result = $system_stats->process_data($meta->url,10);
+
+        if ($result == null || !isset($result['days_left'])) {
+            logger("- error loading data");
+            return false;
+        }
+        
+        if ($result['days_left'] <= 0) {
+            logger("- days left: ".$result['days_left']);
+            
+            // Enable daily mode in dashboard
+            $system_stats->enable_daily_mode($meta->url);
+
+            break;
+        } else {
+            logger("- days left: ".$result['days_left']);
+            sleep(1);
+        }
+    }
+
     // get data period
     $result = $system_stats->get_data_period($meta->url);
-    
+
     if (!$result['success']) {
         logger("- error loading data period");
         return false;
@@ -112,7 +133,6 @@ function load_daily_stats_system($meta, $reload) {
 
         $last_start = $start;
         
-        
         // get most recent entry in db
         $result = $mysqli->query("SELECT MAX(timestamp) AS timestamp FROM system_stats_daily WHERE `id`='$systemid'");
         if ($row = $result->fetch_assoc()) {
@@ -126,16 +146,22 @@ function load_daily_stats_system($meta, $reload) {
         $date->setTimezone(new DateTimeZone("Europe/London"));
         $date->setTimestamp($start);
         $date->modify("midnight");
-
         
         $start = $date->getTimestamp();
         $start_str = $date->format("Y-m-d");
+
+        if ($host != "emoncms.org") {
+            //echo "host != emoncms.org\n";
+            //break;
+        }
+
         // +30 days
         if ($host=="emoncms.org") {
-            $date->modify("+30 days");
+            $date->modify("+364 days");
         } else {
             $date->modify("+7 days"); 
         }
+
         $last_end = $end;
         $end = $date->getTimestamp();
         if ($end>$data_end) {
@@ -150,6 +176,11 @@ function load_daily_stats_system($meta, $reload) {
             break;
         }
 
+        if ($end<=$start) {
+            echo "end <= start\n";
+            break;
+        }
+
         if ($x>1) {
             if ($start==$last_start) {
                 echo "start == last_start\n";
@@ -161,15 +192,12 @@ function load_daily_stats_system($meta, $reload) {
             }
         }
 
-
-        if ($result = $system_stats->load_from_url($meta->url, $start, $end, 'getdaily')) 
+        if ($result = $system_stats->load_from_url($meta->url, $start, $end, 'getdailydata')) 
         {
-        
-            print $result."\n";
             // split csv into array, first line is header
             $csv = explode("\n", $result);
             $fields = str_getcsv($csv[0]);
-            if ($fields[0]!="timestamp") {
+            if ($fields[1]!="timestamp") {
                 echo $result;
                 break;
             }
@@ -184,6 +212,7 @@ function load_daily_stats_system($meta, $reload) {
                     for ($j=0; $j<count($fields); $j++) {
                         $row[$fields[$j]] = $values[$j];
                     }
+
                     $system_stats->save_day($systemid, $row);
                     $days++;
                 }
@@ -205,7 +234,7 @@ function process_rolling_stats($systemlist, $single_system, $reload) {
     $date = new DateTime();
     $date->setTimezone(new DateTimeZone('Europe/London'));
     $date->modify("midnight");
-    $end = $date->getTimestamp();
+    $end = $date->getTimestamp()+(3600*24);
 
     $date->modify("-7 days");
     $start_last7 = $date->getTimestamp();

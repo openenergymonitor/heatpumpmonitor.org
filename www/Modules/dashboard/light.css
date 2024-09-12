@@ -1,0 +1,130 @@
+/* -------------------------------------------------------------------
+   Config
+--------------------------------------------------------------------*/
+.app-config-box {
+  border: 1px solid #fff;
+  color: #fff;
+}
+
+.app-config-box-main {
+  border: 1px solid #aaa;
+  color: #fff;
+}
+
+.app-config-description-inner {
+  padding-right: 20px;
+  color: #ccc;
+}
+
+.app-config select {
+  background-color: #333;
+  color: #fff;
+}
+.app-config select optgroup {
+  background-color: #666;
+}
+.app-config input[type=text] {
+  background-color: #333;
+  color: #fff;
+}
+.app-config .icon-app-config {
+  background-image: url("../../../../Lib/bootstrap/img/glyphicons-halflings-white.png");
+  margin-top:5px;
+}
+
+.app-config .feed-auto {
+  color: #ccc;
+}
+
+/* -------------------------------------------------------------------
+   Application
+--------------------------------------------------------------------*/
+body {
+  /*background-color: #f5f5f5;*/
+}
+#app-block {
+  padding:10px;
+}
+
+.app-title {
+  font-weight:bold;
+  font-size:22px;
+  color:#44b3e2;
+}
+
+.app-title-value {
+  font-weight:bold;
+  font-size:52px;
+  color:#44b3e2;
+  line-height: 1.1;
+}
+
+.block-bound {
+  color: #fff;
+  background-color: #ccc;
+}
+
+.block-title {
+  font-weight:bold;
+  padding:10px;
+}
+
+.bluenav {
+  float:right;
+  display:block;
+  border-left: 1px solid rgba(255,255,255,0.5);
+  font-weight:bold;
+  font-size:14px;
+  padding:11px;
+  cursor:pointer;
+  min-width:30px;
+  text-align:center;
+}
+
+.bluenav:hover {
+  background-color:rgba(255,255,255,0.2);
+}
+
+.col1 {
+  width:100%;
+}
+.col1-inner { padding:10px; }
+
+.col2 {
+  width:50%;
+  float:left;
+}
+.col2-inner { padding:10px; }
+
+.navbar-fixed-top {
+    margin-left: 0px;
+    margin-right: 0px;
+}
+
+#footer {
+	background-color: #eee;
+    margin-left: 0px;
+    margin-right: 0px;
+}
+
+@media (max-width: 767px) {
+  body {padding:0};
+}
+
+@media (max-width: 450px) {
+  .row { padding:10px; }
+  .bluenav { font-size:12px; padding:8px; min-width:15px; }
+  .block-title { font-size:12px; padding:8px; }
+  .dmy {display:none}
+  
+  #app-block { padding:5px; }
+  .col2 { width:100%; }
+  .col1-inner { padding:5px; }
+  .col2-inner { padding:5px; }
+}
+
+@media (min-width: 450px) and (max-width: 960px) { 
+  .col2 { width:100%; } 
+}
+
+@media (min-width: 960px) { }

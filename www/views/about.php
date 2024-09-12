@@ -33,7 +33,7 @@ $date = date('F Y');
 
 <p><i>*These ‘boundaries’ have been defined by ‘SEPEMO’ (Seasonal Performance factor and Monitoring) for heat pump systems projects as recorded by the European Heat Pump Association (EHPA).</i></p>
 
-<p>Unless otherwise stated the COP and SCOP figures on the site include combined space heating and DHW, some systems equipped with a DHW status sensor report a separate DHW only COP/SCOP.</p> 
+<p>Unless otherwise stated the COP and SPF/SCOP figures on the site include combined space heating and DHW, some systems equipped with a DHW status sensor report a separate DHW only COP.</p> 
 
 <p>The majority of systems are monitored using the <a href="https://shop.openenergymonitor.com/level-3-heat-pump-monitoring-bundle-emonhp/"> OpenEnergyMonitor Level 3 Monitoring Bundle</a>, which provides 10s datalogging granularity.</p>
 

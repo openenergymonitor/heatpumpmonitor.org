@@ -76,6 +76,11 @@ switch ($route->controller) {
         $output = system_controller();
         break;
 
+    case "dashboard":
+        require "Modules/dashboard/dashboard_controller.php";
+        $output = dashboard_controller();
+        break;
+
     case "timeseries":
         require "Modules/timeseries/timeseries_controller.php";
         $output = timeseries_controller();

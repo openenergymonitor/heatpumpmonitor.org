@@ -1,0 +1,96 @@
+.title1 {
+  font-weight:bold;
+}
+
+.value1 {
+  font-weight:bold;
+  font-size:32px;
+  padding-top:10px;
+  padding-bottom:10px;
+}
+
+.units1 {
+  font-weight:normal;
+  padding-left:4px;
+  display: inline-block;
+  font-size:18px;
+}
+.col1-inner{
+    display: flex;
+    flex-direction: column;
+}
+
+@media (max-width: 450px) {  
+  .title1 { font-size:12px }
+  .value1 { font-size:18px }
+}
+
+.ledgend-box {
+    margin:2px;
+    padding:2px;
+    width:10px;
+    background-color:#aaa;
+}
+
+.ledgend-box-in {
+    width:10px;
+    height:10px;
+    background-color:#ccc;
+}
+
+.myheatpump-top-buttons {
+    display:inline-block; 
+    padding: 10px 15px 10px 15px; 
+    border-left: 1px solid #fff;
+    cursor:pointer;
+}
+
+.sc-white {
+    background-color:#fff;
+}
+
+.sc-grey {
+    background-color:#f3f3f3;
+}
+
+.advanced-options {
+    padding:10px;
+    background-color:#fff;
+    border: 1px solid #ccc;
+    border-bottom: none;
+}
+
+.advanced-options-checkbox {
+  margin-top:-4px !important; 
+  margin-left:7px !important; 
+  margin-right:10px !important;
+}
+
+.cop-title {
+  font-size:16px;
+}
+
+.cop-value {
+  font-size:22px;
+  padding:10px;
+}
+
+.show_stats_category {
+  width:25%; 
+  text-align:center;
+  cursor:pointer;
+}
+
+.show_stats_category:hover {
+  /*border-bottom: 1px solid #000;*/
+  background-color:#fafafa;
+}
+
+#data-error {
+  color:red;
+  float: right;
+  padding:11px;
+  font-size:14px;
+  font-weight:bold;
+  cursor:pointer;
+}

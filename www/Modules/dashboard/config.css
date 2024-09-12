@@ -1,0 +1,58 @@
+
+.app-config-box {
+  margin-bottom:8px;
+  padding: 8px 10px 10px 10px;
+}
+
+.app-config-box-main {
+  margin-bottom:8px;
+  padding:10px;
+}
+
+.app-config-title {
+  color:#0699fa;
+}
+
+.app-config-description {
+  font-size:18px;
+  margin-bottom:20px;
+  color:#ccc
+}
+
+.app-config select {
+  margin:0px;
+  width:85%;
+}
+
+.app-config input[type=text] {
+  margin:0px;
+  margin-top:5px;
+  width:90%;
+}
+
+.app-config .feed-auto {
+  font-size:12px;
+}
+
+.app-config .feed-select-div {
+  margin:0px;
+  margin-top:5px;
+  width:100%;
+}
+
+.app-config .feed-name {
+	margin-right:22px;
+}
+
+#tooltip {
+  position: absolute;
+  display: none;
+  border: 1px solid #545454;
+  border-radius: .1em;
+  padding: .3em .5em;
+  background-color: #333;
+  opacity: .8;
+  top: 0;
+  left: 0;
+  color: white
+}
