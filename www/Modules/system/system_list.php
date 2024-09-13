@@ -252,8 +252,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                   <h5 class="card-header">Totals</h5>
                   <div class="card-body">
                     <p class="card-text">Number of systems in selection: <b>{{ totals.count }}</b></p>
-                    <p class="card-text">Average of individual system COP values: <b>{{ totals.average_cop | toFixed(1) }}</b></p>
-                    <p class="card-text">Average COP based on total sum of heat and electric values: <b>{{ totals.average_cop_kwh | toFixed(1) }}</p>
+                    <p class="card-text">Average of individual system {{ stats_time_start === 'last365' ? 'SPF' : 'COP' }} values: <b>{{ totals.average_cop | toFixed(1) }}</b></p>
+                    <p class="card-text">Average {{ stats_time_start === 'last365' ? 'SPF' : 'COP' }} based on total sum of heat and electric values: <b>{{ totals.average_cop_kwh | toFixed(1) }}</p>
                     <!-- csv export button copy table data to clipboard -->
                     <button class="btn btn-primary" @click="export_csv">Copy table data to clipboard</button>
                     
