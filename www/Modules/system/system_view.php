@@ -28,6 +28,12 @@ global $settings;
     <div style=" background-color:#f0f0f0; padding-top:20px; padding-bottom:10px">
         <div class="container" style="max-width:800px;">
             <div style="float:right" v-if="admin"><a :href="path+'system/log?id='+system.id" class="btn btn-light">Change log</a></div>
+            <div style="float:right; margin-right:10px;" v-if="admin">
+                <a :href="'https://mail.google.com/mail/?view=cm&fs=1&to=<?php echo $email; ?>'" target="_blank" class="btn btn-dark">
+                    <i class="fa fa-envelope" style="color: #ffffff;"></i> Email
+                </a>
+            </div>
+      
 
             <div v-if="system.hp_model!=''">
                 <h3>{{ system.hp_output }} kW, {{ system.hp_model }}</h3>

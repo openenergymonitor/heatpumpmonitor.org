@@ -665,7 +665,7 @@ class SystemStats
         $date = new DateTime();
         $date->setTimezone(new DateTimeZone('Europe/London'));
 
-        if ($start === false || $end === false) {
+        if ($start == false || $end == false) {
             $where = "WHERE id=$systemid";
         } else {
             $where = "WHERE id=$systemid AND timestamp>=$start AND timestamp<$end";

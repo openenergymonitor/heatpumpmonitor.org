@@ -5,7 +5,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 function system_controller() {
 
-    global $session, $route, $system, $mysqli, $system_stats, $settings;
+    global $session, $route, $user, $system, $mysqli, $system_stats, $settings;
 
 
 
@@ -42,11 +42,20 @@ function system_controller() {
         $route->format = "html";
         $systemid = get("id",false);
         $system_data = $system->get($session['userid'],$systemid);
+
+        if ($session['admin']) {
+            $u = $user->get($system_data->userid);
+            $email = $u->email;
+        } else {
+            $email = "";
+        }
+
         return view("Modules/system/system_view.php", array(
             "mode"=>"view", 
             "system_data"=>$system_data, 
             'admin'=>$session['admin'], 
             'schema'=>$system->schema_meta,
+            'email'=>$email,
             'system_stats_monthly'=>$system_stats->schema['system_stats_monthly_v2']
         ));
     }
