@@ -709,6 +709,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 }
                 this.sort_only(column);
                 if (app.chart_enable) draw_chart();
+                this.filter_systems();
             },
             sort_only: function(column) {
                 this.systems.sort((a, b) => {
