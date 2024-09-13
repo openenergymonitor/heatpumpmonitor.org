@@ -80,10 +80,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
                     <div class="input-group" style="margin-top: 12px">
                         <div class="input-group-text">Filter</div>
-                        <input class="form-control" name="query" v-model="filterKey" style="width:100px" onchange="draw_chart()">
+                        <input class="form-control" name="query" v-model="filterKey" style="width:100px" @keyup="filter_systems" onchange="draw_chart()">
 
                         <div class="input-group-text">Min days</div>
-                        <input class="form-control" name="query" v-model="minDays" style="width:100px">
+                        <input class="form-control" name="query" v-model="minDays" style="width:100px" @change="filter_systems">
                     </div>
                     
       
@@ -149,12 +149,12 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                       
                       <li class="list-group-item">
                         <div style="color:#666; float:right"> (<span v-html="num_mid"></span>)</div>
-                        <input class="form-check-input me-1" type="checkbox" value="" id="show_mid_id" v-model="show_mid">
+                        <input class="form-check-input me-1" type="checkbox" value="" id="show_mid_id" v-model="show_mid" @change="filter_systems">
                         <label class="form-check-label stretched-link" for="show_mid_id">MID metering</label>
                       </li>
                       <li class="list-group-item">
                         <div style="color:#666; float:right"> (<span v-html="num_non_mid"></span>)</div>
-                        <input class="form-check-input me-1" type="checkbox" value="" id="show_non_mid_id" v-model="show_non_mid">
+                        <input class="form-check-input me-1" type="checkbox" value="" id="show_non_mid_id" v-model="show_non_mid" @change="filter_systems">
                         <label class="form-check-label stretched-link" for="show_non_mid_id">Other metering</label>
                       </li>
                       <!--
@@ -176,26 +176,25 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                       -->
                       <li class="list-group-item">
                         <div style="color:#666; float:right"> (<span v-html="num_flagged"></span>)</div>
-                        <input class="form-check-input me-1" type="checkbox" value="" id="show_flagged_id" v-model="showFlagged">
+                        <input class="form-check-input me-1" type="checkbox" value="" id="show_flagged_id" v-model="showFlagged" @change="filter_systems">
                         <label class="form-check-label stretched-link" for="show_flagged_id">Metering errors </label>
                       </li>
                     </ul>
                     
                 </div>
             </div>
-            <div class="col-12 col-sm-12 col-md-12 col-lg-12 col-xl-10">
+            <div class="col-12 col-sm-12 col-md-12 col-lg-12 col-xl-10 mt-3">
 
                 <!-- add button group -->
                 <!-- Last 365 days, Last 90 days, Last 30 days, Last 7 days, All -->
-                <!--
+                
                 <div class="btn-group" role="group" aria-label="Basic example">
-                    <button type="button" class="btn btn-primary" @click="stats_time_start='last365'; stats_time_start_change()">Last 365 days</button>
-                    <button type="button" class="btn btn-secondary" @click="stats_time_start='last90'; stats_time_start_change()">Last 90 days</button>
-                    <button type="button" class="btn btn-secondary" @click="stats_time_start='last30'; stats_time_start_change()">Last 30 days</button>
-                    <button type="button" class="btn btn-secondary" @click="stats_time_start='last7'; stats_time_start_change()">Last 7 days</button>
-                    <button type="button" class="btn btn-secondary" @click="stats_time_start='all'; stats_time_start_change()">All</button>
+                    <button type="button" :class="['btn', stats_time_start === 'last365' ? 'btn-primary' : 'btn-outline-primary']" @click="stats_time_start='last365'; stats_time_start_change()">Last 365 days</button>
+                    <button type="button" :class="['btn', stats_time_start === 'last90' ? 'btn-primary' : 'btn-outline-primary']" @click="stats_time_start='last90'; stats_time_start_change()">90 days</button>
+                    <button type="button" :class="['btn', stats_time_start === 'last30' ? 'btn-primary' : 'btn-outline-primary']" @click="stats_time_start='last30'; stats_time_start_change()">30 days</button>
+                    <button type="button" :class="['btn', stats_time_start === 'last7' ? 'btn-primary' : 'btn-outline-primary']" @click="stats_time_start='last7'; stats_time_start_change()">7 days</button>
+                    <button type="button" :class="['btn', stats_time_start === 'all' ? 'btn-primary' : 'btn-outline-primary']" @click="stats_time_start='all'; stats_time_start_change()">All</button>
                 </div>
-                -->
                 
                 <div class="input-group mt-3" v-if="selected_template=='costs'">
                     <span class="input-group-text">Tariff</span>
@@ -493,6 +492,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         el: '#app',
         data: {
             systems: systems,
+            fSystems: [],
             mode: "<?php echo $mode; ?>",
             chart_enable: false,
             columns: columns,
@@ -896,6 +896,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         // sort
                         app.sort_only(app.currentSortColumn);
                         if (app.chart_enable) draw_chart();
+
+                        app.filter_systems();
                         
                     })
                     .catch(error => {
@@ -1050,7 +1052,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     }
                     if (this.stats_time_start=='last365' || this.stats_time_start=='all') {
                         
-                        return (days<=360) ? 'partial ' : '';
+                        return (days<=290) ? 'partial ' : '';
                     } else if (this.stats_time_start=='last90') {
                         return (days<=72) ? 'partial ' : '';
                     } else if (this.stats_time_start=='last30') {
@@ -1171,6 +1173,21 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         */
                     }
                 }
+            },
+
+            filter_systems: function() {
+            
+                var filtered_nodes_days = this.systems.filter(this.filterNodes).filter(this.filterDays);
+
+                // if public mode only show systems with data
+                if (this.mode=='public') {
+                    //filtered_nodes_days = filtered_nodes_days.filter(this.filterCop);
+                }
+                
+                this.system_count(filtered_nodes_days);
+            
+            
+                this.fSystems = filtered_nodes_days.filter(this.filterMetering)
             }
        },
         filters: {
@@ -1187,6 +1204,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         },
 
         computed: {
+            /*
             fSystems: function () {
             
                 var filtered_nodes_days = this.systems.filter(this.filterNodes).filter(this.filterDays);
@@ -1200,7 +1218,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             
             
                 return filtered_nodes_days.filter(this.filterMetering)
-            },
+            },*/
             // calculate total scop of fSystems
             totals: function () {
                 var totals = {
