@@ -373,8 +373,8 @@
             url: path + "system/stats/daily",
             data: {
                 'id': app.systemid,
-                'start': 1,
-                'end': 2,
+                //'start': 1,
+                //'end': 2,
                 'fields': fields.join(',')
             },
             async: true,
