@@ -33,7 +33,7 @@ $date = date('F Y');
 
 <p><i>*These ‘boundaries’ have been defined by ‘SEPEMO’ (Seasonal Performance factor and Monitoring) for heat pump systems projects as recorded by the European Heat Pump Association (EHPA).</i></p>
 
-<p>Unless otherwise stated the COP and SPF/SCOP figures on the site include combined space heating and DHW, some systems equipped with a DHW status sensor report a separate DHW only COP.</p> 
+<p>Unless otherwise stated the COP and SPF/SCOP figures on the site include combined space heating and DHW, some systems equipped with a DHW status sensor report a separate DHW only COP.</p>
 
 <p>The majority of systems are monitored using the <a href="https://shop.openenergymonitor.com/level-3-heat-pump-monitoring-bundle-emonhp/"> OpenEnergyMonitor Level 3 Monitoring Bundle</a>, which provides 10s datalogging granularity.</p>
 
@@ -41,8 +41,27 @@ $date = date('F Y');
 
 <p>The data on this site is licensed under <a href="https://creativecommons.org/licenses/by/4.0">Creative Commons Attribution 4.0 International License</a>.</p>
 
-<p>The source code for the HeatpumpMonitor.org website itself is licensed under <a href="https://www.gnu.org/licenses/agpl-3.0.en.html">GNU Affero General Public License v3.0</a>.</p>
+<p>The <a href="https://github.com/openenergymonitor/heatpumpmonitor.org">source code</a> for the HeatpumpMonitor.org website itself is licensed under <a href="https://www.gnu.org/licenses/agpl-3.0.en.html">GNU Affero General Public License v3.0</a>.</p>
 
+
+<div id="donate-button-container">
+<div id="donate-button"></div>
+<script src="https://www.paypalobjects.com/donate/sdk/donate-sdk.js" charset="UTF-8"></script>
+<script>
+PayPal.Donation.Button({
+env:'production',
+hosted_button_id:'GAD9PC7TE9BJA',
+image: {
+src:'https://www.paypalobjects.com/en_GB/i/btn/btn_donate_SM.gif',
+alt:'Donate with PayPal button',
+title:'PayPal - The safer, easier way to pay online!',
+}
+}).render('#donate-button');
+</script>
+</div>
+<br>
+
+ 
 <h5>Contact us</h5>
 <ul>
 <li><a href="https://community.openenergymonitor.org">Community Forum</a>
