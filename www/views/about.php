@@ -37,6 +37,12 @@ $date = date('F Y');
 
 <p>The majority of systems are monitored using the <a href="https://shop.openenergymonitor.com/level-3-heat-pump-monitoring-bundle-emonhp/"> OpenEnergyMonitor Level 3 Monitoring Bundle</a>, which provides 10s datalogging granularity.</p>
 
+<h5>Licence</h5>
+
+<p>The data on this site is licensed under <a href="https://creativecommons.org/licenses/by/4.0">Creative Commons Attribution 4.0 International License</a>.</p>
+
+<p>The source code for the HeatpumpMonitor.org website itself is licensed under <a href="https://www.gnu.org/licenses/agpl-3.0.en.html">GNU Affero General Public License v3.0</a>.</p>
+
 <h5>Contact us</h5>
 <ul>
 <li><a href="https://community.openenergymonitor.org">Community Forum</a>

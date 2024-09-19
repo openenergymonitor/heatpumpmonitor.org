@@ -18,6 +18,7 @@ function system_controller() {
                 "system_data"=>$system_data, 
                 'admin'=>$session['admin'], 
                 'schema'=>$system->schema_meta,
+                'email'=>"",
                 'system_stats_monthly'=>$system_stats->schema['system_stats_monthly_v2']
             ));
         }
