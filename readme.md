@@ -30,7 +30,7 @@ Login using 'Self hosted data' and username and password: admin:admin
 
 ## Run using Docker
 
-    docker compose build
-    docker compose up
+    docker-compose build
+    docker-compose up
 
 Site should now be running on http://localhost:8080
