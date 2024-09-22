@@ -237,6 +237,56 @@ class SystemStats
         }
     }
 
+    public function clear_daily($url) {
+
+        global $settings;
+        $clearkey = $settings['clearkey'];
+
+        # decode the url to separate out any args
+        $url_parts = parse_url($url);
+        if (!isset($url_parts['scheme']) || !isset($url_parts['host']) || !isset($url_parts['path'])) {
+            return array("success" => false, "message" => "Invalid URL"); 
+        }
+        $server = $url_parts['scheme'] . '://' . $url_parts['host'];
+
+        // Only allow emoncms.org
+        if ($url_parts['host'] != 'emoncms.org') {
+            return array("success" => false, "message" => "Invalid URL"); 
+        }
+
+        # check if url was to /app/view instead of username
+        if (preg_match('/^(.*)\/app\/view$/', $url_parts['path'], $matches)) {
+            $getstats = "$server$matches[1]/app/cleardaily.json";
+        } else {
+            $getstats = $server . $url_parts['path'] . "/app/cleardaily.json";
+        }
+
+        # if url has query string, pull out the readkey
+        if (isset($url_parts['query'])) {
+            parse_str($url_parts['query'], $url_args);
+            if (isset($url_args['readkey'])) {
+                // $readkey = $url_args['readkey'];
+                $getstats .= '?' . $url_parts['query']."&clearkey=$clearkey";
+            }
+        } else {
+            $getstats .= "?clearkey=$clearkey";
+        }  
+        
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $getstats);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+        $result = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        
+        if ($httpCode == 200) { // Check if successful response
+            return json_decode($result,true);
+        } else {
+            return array("success" => false, "message" => $httpCode);
+        }
+    }
+
     public function enable_daily_mode($url) {
         # decode the url to separate out any args
         $url_parts = parse_url($url);

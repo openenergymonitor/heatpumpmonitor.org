@@ -90,6 +90,12 @@ function load_daily_stats_system($meta, $reload) {
     logger("System: ".$meta->id.", Host: ".$host);
     logger("----------------------------------");
 
+    if ($reload !== false) {
+        // Clearing daily data on data server
+        $result = $system_stats->clear_daily($meta->url);
+        print json_encode($result)."\n";
+    }
+
     for ($i=0; $i<100; $i++) {
         $result = $system_stats->process_data($meta->url,10);
 
