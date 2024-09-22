@@ -205,6 +205,8 @@ global $settings;
             <div class="card-body">
                 <p>Manually reload system data from Emoncms dashboard</p>
                 <button type="button" class="btn btn-primary" @click="loadstats" :disabled="disable_loadstats">Reload</button>
+
+                <pre id="reload_log" style="display:none; background-color:#300a24; color:#fff; padding:10px; margin-top:20px; border-radius: 5px;"></pre>
             </div>
         </div>
     </div>
@@ -318,6 +320,8 @@ global $settings;
             system_stats_monthly_by_group[row.group][key] = row;
         }
     }
+
+    var reload_interval = null;
 
     var app = new Vue({
         el: '#app',
@@ -451,6 +455,26 @@ global $settings;
                     .then(function(response) {
                         alert(response.data.message);
                         app.disable_loadstats = false;
+
+                        // start periodic check for reload log
+                        app.reloadlog();
+                        reload_interval = setInterval(function() {
+                            app.reloadlog();
+                        }, 5000);
+                    });
+            },
+            reloadlog: function() {
+                axios.get(path + 'system/reloadlog?id=' + app.system.id)
+                    .then(function(response) {
+                        if (response.data) {
+                            document.getElementById('reload_log').innerHTML = response.data;
+                            document.getElementById('reload_log').style.display = 'block';
+
+                            // check for string 'processed monthly systems' in log to stop
+                            if (response.data.indexOf('processed monthly systems') > -1) {
+                                clearInterval(reload_interval);
+                            }
+                        }
                     });
             }
         },

@@ -250,7 +250,7 @@ function system_controller() {
 
     if ($route->action=="loadstats") {
         $route->format = "json";
-        return array("success"=>false, "message"=>"Reloading stats temporarily disabled");
+        // return array("success"=>false, "message"=>"Reloading stats temporarily disabled");
 
         if ($session['userid']) {
             $systemid = get("id",false);
@@ -266,8 +266,30 @@ function system_controller() {
             }
             fclose($fp);
             
-            shell_exec("php /home/oem/hpmon_main/load_and_process_cli.php $systemid all > /dev/null 2>&1 &");
+            shell_exec("php /home/oem/hpmon_main/load_and_process_cli.php $systemid all > /var/log/hpmon/reload$systemid.log 2>&1 &");
             return array("success"=>false, "message"=>"Loading data and processing in background, check back in 5 minutes.");
+        }
+    }
+
+    // Load reload log
+    if ($route->action=="reloadlog") {
+        $route->format = "text";
+
+        if ($session['userid']) {
+            $systemid = (int) get("id",false);
+            
+            // Check if user has access
+            if ($system->has_access($session['userid'],$systemid)==false) {
+                return array("success"=>false, "message"=>"Invalid access");
+            }
+
+            // check if file exists
+            if (file_exists("/var/log/hpmon/reload$systemid.log")) {
+                $log = file_get_contents("/var/log/hpmon/reload$systemid.log");
+                return $log;
+            } else {
+                return "No log file found";
+            }
         }
     }
 

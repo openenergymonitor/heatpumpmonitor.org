@@ -93,7 +93,12 @@ function load_daily_stats_system($meta, $reload) {
     if ($reload !== false) {
         // Clearing daily data on data server
         $result = $system_stats->clear_daily($meta->url);
-        print json_encode($result)."\n";
+        if (isset($result['success']) && $result['success']) {
+            logger("- daily data cleared");
+        } else {
+            logger("- error clearing daily data");
+            return false;
+        }
     }
 
     for ($i=0; $i<100; $i++) {
