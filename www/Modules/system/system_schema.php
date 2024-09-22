@@ -763,6 +763,19 @@ $schema['system_stats_daily'] = array(
     'water_roomT_mean' => array('type' => 'float', 'name'=>'RoomT mean', 'group'=>'Stats: Water heating', 'dp'=>1, 'unit'=>'°C'),
     'water_prc_carnot' => array('type' => 'float', 'name'=>'% Carnot', 'group'=>'Stats: Water heating', 'dp'=>1, 'unit'=>'%'),
 
+    // Cooling
+    'cooling_elec_kwh' => array('type' => 'float', 'name'=>'Electricity consumption', 'group'=>'Stats: Cooling', 'dp'=>0, 'unit'=>'kWh'),
+    'cooling_heat_kwh' => array('type' => 'float', 'name'=>'Heat output', 'group'=>'Stats: Cooling', 'dp'=>0, 'unit'=>'kWh'),
+    'cooling_cop' => array('type' => 'float', 'name'=>'COP', 'heading'=>"Cooling<br>COP", 'group'=>'Stats: Cooling', 'dp'=>1, 'unit'=>''),
+    'cooling_data_length' => array('type' => 'float', 'name'=>'Data length', 'group'=>'Stats: Cooling', 'dp'=>0, 'unit'=>''),
+    'cooling_elec_mean' => array('type' => 'float', 'name'=>'Elec mean', 'group'=>'Stats: Cooling', 'dp'=>0, 'unit'=>'W'),
+    'cooling_heat_mean' => array('type' => 'float', 'name'=>'Heat mean', 'group'=>'Stats: Cooling', 'dp'=>0, 'unit'=>'W'),
+    'cooling_flowT_mean' => array('type' => 'float', 'name'=>'FlowT mean', 'group'=>'Stats: Cooling', 'dp'=>1, 'unit'=>'°C'),
+    'cooling_returnT_mean' => array('type' => 'float', 'name'=>'ReturnT mean', 'group'=>'Stats: Cooling', 'dp'=>1, 'unit'=>'°C'),
+    'cooling_outsideT_mean' => array('type' => 'float', 'name'=>'OutsideT mean', 'group'=>'Stats: Cooling', 'dp'=>1, 'unit'=>'°C'),
+    'cooling_roomT_mean' => array('type' => 'float', 'name'=>'RoomT mean', 'group'=>'Stats: Cooling', 'dp'=>1, 'unit'=>'°C'),
+    'cooling_prc_carnot' => array('type' => 'float', 'name'=>'% Carnot', 'group'=>'Stats: Cooling', 'dp'=>1, 'unit'=>'%'),
+
     // from energy feeds
     'from_energy_feeds_elec_kwh' => array('type' => 'float', 'name'=>'Electricity consumption', 'group'=>'From energy feeds', 'dp'=>0, 'unit'=>'kWh'),
     'from_energy_feeds_heat_kwh' => array('type' => 'float', 'name'=>'Heat output', 'group'=>'From energy feeds', 'dp'=>0, 'unit'=>'kWh'),
@@ -775,6 +788,9 @@ $schema['system_stats_daily'] = array(
     'quality_returnT' => array('type' => 'float', 'name'=>'Quality returnT', 'group'=>'Quality', 'dp'=>1, 'unit'=>'%'),
     'quality_outsideT' => array('type' => 'float', 'name'=>'Quality outsideT', 'group'=>'Quality', 'dp'=>1, 'unit'=>'%'),
     'quality_roomT' => array('type' => 'float', 'name'=>'Quality roomT', 'group'=>'Quality', 'dp'=>1, 'unit'=>'%'),
+
+    // Errors
+    'error_air' => array('type' => 'int(11)', 'name'=>'Air error', 'group'=>'Errors', 'dp'=>0, 'unit'=>'s'),
 
     // Unit rates
     'unit_rate_agile' => array('type' => 'float', 'name'=>'Unit rate agile', 'group'=>'Unit rates', 'dp'=>1, 'unit'=>'p/kWh'),
