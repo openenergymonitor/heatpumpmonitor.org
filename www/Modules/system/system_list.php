@@ -1010,6 +1010,12 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     if (val==null) return '';
                     return val + ' p/kWh';
                 }
+
+                if (key=='error_air') {
+                    // convert seconds to hours
+                    if (val==null) return '';
+                    return (val/3600).toFixed(0) + ' hrs';
+                }
                 
                 if (stats_columns[key]!=undefined) {
                     if (isNaN(val) || val == null) {
