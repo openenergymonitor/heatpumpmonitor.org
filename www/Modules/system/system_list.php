@@ -7,8 +7,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script src="https://cdn.plot.ly/plotly-2.16.1.min.js"></script>
 <script src="Lib/clipboard.js"></script>
+<script src="Modules/system/system_list_chart.js?v=13"></script>
 
 <style>
     .sticky {
@@ -80,7 +81,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
                     <div class="input-group" style="margin-top: 12px">
                         <div class="input-group-text">Filter</div>
-                        <input class="form-control" name="query" v-model="filterKey" style="width:100px" @keyup="filter_systems" onchange="draw_chart()">
+                        <input class="form-control" name="query" v-model="filterKey" style="width:100px" @keyup="filter_systems">
 
                         <div class="input-group-text">Min days</div>
                         <input class="form-control" name="query" v-model="minDays" style="width:100px" @change="filter_systems">
@@ -92,12 +93,6 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         </div>
 
 
-    </div>
-
-    <div class="container-fluid" style="background-color:#fff; border-bottom:1px solid #ccc" v-show="chart_enable">
-        <div class="row">
-            <div id="chart"></div>
-        </div>
     </div>
 
     <div class="container-fluid">
@@ -195,7 +190,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     <button type="button" :class="['btn', stats_time_start === 'last7' ? 'btn-primary' : 'btn-outline-primary']" @click="stats_time_start='last7'; stats_time_start_change()">7 days</button>
                     <button type="button" :class="['btn', stats_time_start === 'all' ? 'btn-primary' : 'btn-outline-primary']" @click="stats_time_start='all'; stats_time_start_change()">All</button>
                 </div>
-                
+                                
                 <div class="input-group mt-3" v-if="selected_template=='costs'">
                     <span class="input-group-text">Tariff</span>
                     <select class="form-select" style="max-width:200px" v-model="tariff_mode" @change="tariff_mode_changed">
@@ -206,6 +201,54 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <option value="go">Octopus GO</option>
                         <option value="user">User entered</option>
                     </select>
+                </div>
+
+                <div class="card mt-3" v-show="chart_enable">
+                    <h5 class="card-header">Data explorer</h5>
+                    <div class="card-body">
+
+                        <!-- row with x and y axis selection -->
+                        <div class="row">
+
+                            <!-- X-axis grouped by group -->
+                            <div class="col-lg-4">
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text">X-axis</span>
+                                    <select class="form-control" v-model="selected_xaxis" @change="draw_scatter">
+                                        <optgroup v-for="(group, group_name) in column_groups" :label="group_name">
+                                            <option v-for="row in group" :value="row.key" v-if="row.name">{{ row.name }}</option>
+                                        </optgroup>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Y-axis grouped by group -->
+                            <div class="col-lg-4">
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text">Y-axis</span>
+                                    <select class="form-control" v-model="selected_yaxis" @change="draw_scatter">
+                                        <optgroup v-for="(group, group_name) in column_groups" :label="group_name">
+                                            <option v-for="row in group" :value="row.key" v-if="row.name">{{ row.name }}</option>
+                                        </optgroup>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Colour map -->
+                            <div class="col-lg-4">
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text">Colour map</span>
+                                    <select class="form-control" v-model="selected_color" @change="draw_scatter">
+                                        <optgroup v-for="(group, group_name) in column_groups" :label="group_name">
+                                            <option v-for="row in group" :value="row.key" v-if="row.name">{{ row.name }}</option>
+                                        </optgroup>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <p>{{ chart_info }}</p>
+                        <div id="chart"></div>
+                    </div>
                 </div>
 
                 <table id="custom" class="table table-striped table-sm mt-3">
@@ -255,10 +298,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     <p class="card-text">Average of individual system {{ stats_time_start === 'last365' ? 'SPF' : 'COP' }} values: <b>{{ totals.average_cop | toFixed(1) }}</b></p>
                     <p class="card-text">Average {{ stats_time_start === 'last365' ? 'SPF' : 'COP' }} based on total sum of heat and electric values: <b>{{ totals.average_cop_kwh | toFixed(1) }}</p>
                     <!-- csv export button copy table data to clipboard -->
-                    <button class="btn btn-primary" @click="export_csv">Copy table data to clipboard</button>
-                    
+                    <button class="btn btn-primary" @click="export_csv">Copy table data to clipboard</button>                    
                   </div>
-                </div>
+                </div>                
             </div>
         </div>
 
@@ -316,6 +358,14 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     columns['learnmore'] = { name: "Combined", heading: "", group: "Learn more" };
     columns['boundary'] = { name: "Boundary", heading: "Hx", group: "Metering" };
     
+
+    // Calculate oversizing factor
+    columns['oversizing_factor'] = {
+        name: 'Oversizing Factor',
+        heading: 'Oversizing',
+        group: 'Heat pump',
+        helper: 'Oversizing factor'
+    };
     
     // remove stats_columns id & timestmap
     delete stats_columns.id;
@@ -404,7 +454,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         column_groups[column.group].push({key: key, name: column.name, helper: column.helper});
         show_field_group[column.group] = false;
     }
-    
+
     columns['installer_logo'].heading = "";
     columns['mid_metering'].heading = "MID";
     columns['electricity_tariff_unit_rate_all'].heading = "Elec<br>p/kWh";
@@ -487,6 +537,15 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         systems[i].boundary_code = boundary_code;
     }
 
+    for (var z in systems) {
+        let system = systems[z];
+        let oversizing_factor = 0;
+        if (system['measured_heat_loss']>0 && system['hp_max_output']>0) {
+            oversizing_factor = system['hp_max_output'] / system['measured_heat_loss'];
+        }
+        systems[z]['oversizing_factor'] = oversizing_factor;
+    }
+
 
     var app = new Vue({
         el: '#app',
@@ -525,7 +584,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             num_class2_heat: 0,
             num_class1_elec: 0,
             num_other_metering: 0,
-            tariff_mode: tariff_mode
+            tariff_mode: tariff_mode,
+            selected_xaxis: 'running_flowT_mean',
+            selected_yaxis: 'combined_cop',
+            selected_color: 'combined_heat_kwh',
+            chart_info: '',
         },
         methods: {
             tariff_mode_changed: function() {
@@ -708,7 +771,6 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     }
                 }
                 this.sort_only(column);
-                if (app.chart_enable) draw_chart();
                 this.filter_systems();
             },
             sort_only: function(column) {
@@ -896,7 +958,6 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
                         // sort
                         app.sort_only(app.currentSortColumn);
-                        if (app.chart_enable) draw_chart();
 
                         app.filter_systems();
                         
@@ -910,7 +971,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 
                 if (this.chart_enable) {
                     setTimeout(function() {
-                        draw_chart();
+                        draw_scatter();
                     }, 200);
                 }
             },
@@ -1195,6 +1256,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             
             
                 this.fSystems = filtered_nodes_days.filter(this.filterMetering)
+
+                if (this.chart_enable) {
+                    draw_scatter();
+                }
             }
        },
         filters: {
@@ -1269,8 +1334,6 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             app.systems[i].elec_meter_class1 = false;
         }
     }
-
-    init_chart();
     
     app.load_system_stats();
     app.sort_only('combined_cop');
@@ -1320,73 +1383,6 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             stickyCard.classList.remove("sticky");
         }
     });
-
-    function init_chart() {
-        chart_options = {
-            colors_style_guidlines: ['#29ABE2'],
-            colors: ['#29AAE3'],
-            chart: {
-                type: 'bar',
-                height: 500,
-                toolbar: {
-                    show: false
-                }
-            },
-            dataLabels: {
-                enabled: false
-            },
-            series: [ ],
-            xaxis: {
-                categories: [],
-                title: {
-                    text: 'Location'
-                }
-            },
-            yaxis: {
-                title: {
-                    text: 'COP / SCOP'
-                }
-            }
-        };
-        // y-axis label
-
-        chart = new ApexCharts(document.querySelector("#chart"), chart_options);
-        chart.render();
-    }
-
-    function draw_chart() {
-        if (!app.chart_enable) return;
-
-        var x = [];
-        var y = [];
-        
-        if (columns[app.currentSortColumn]!=undefined) {
-        
-            for (var i = 0; i < app.fSystems.length; i++) {
-                let val = app.fSystems[i][app.currentSortColumn];
-                if (isNaN(val)) continue;
-                if (val==undefined) continue;
-                if (val==null) continue;
-                
-                if (columns[app.currentSortColumn]['dp']!=undefined) {
-                    val = val.toFixed(columns[app.currentSortColumn]['dp']+1);
-                }
-                
-                x.push(app.fSystems[i].location);
-                y.push(val);
-            }
-
-            chart_options.xaxis.categories = x;
-            chart_options.yaxis[0].title.text = columns[app.currentSortColumn]['name'];
-            
-            chart_options.series = [{
-                name: app.currentSortColumn,
-                data: y
-            }];
-
-            chart.updateOptions(chart_options);
-        }
-    }
 
     window.addEventListener('resize', function(event) {
         resize();
@@ -1438,5 +1434,4 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
         return result;
     }
-
 </script>
