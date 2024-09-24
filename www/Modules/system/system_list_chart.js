@@ -100,12 +100,7 @@ function draw_scatter()
         margin: { t: 10 },
         dragmode: false,  // Disable the drag-to-zoom feature
         showlegend: false,
-        margin: {
-            l: 50,  // Left margin
-            r: 0,  // Right margin (reduced)
-            t: 0,  // Top margin
-            b: 40   // Bottom margin
-        },
+        margin: { t: 10, r: 10 }
     };
 
     var config = { displayModeBar: false };
