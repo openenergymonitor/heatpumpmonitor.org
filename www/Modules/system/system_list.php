@@ -145,30 +145,18 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                       <li class="list-group-item">
                         <div style="color:#666; float:right"> (<span v-html="num_mid"></span>)</div>
                         <input class="form-check-input me-1" type="checkbox" value="" id="show_mid_id" v-model="show_mid" @change="filter_systems">
-                        <label class="form-check-label stretched-link" for="show_mid_id">MID metering</label>
+                        <label class="form-check-label stretched-link" for="show_mid_id">Full MID metering</label>
                       </li>
                       <li class="list-group-item">
                         <div style="color:#666; float:right"> (<span v-html="num_non_mid"></span>)</div>
                         <input class="form-check-input me-1" type="checkbox" value="" id="show_non_mid_id" v-model="show_non_mid" @change="filter_systems">
                         <label class="form-check-label stretched-link" for="show_non_mid_id">Other metering</label>
                       </li>
-                      <!--
                       <li class="list-group-item">
-                        <div style="color:#666; float:right"> (<span v-html="num_class2_heat"></span>)</div>
-                        <input class="form-check-input me-1" type="checkbox" value="" id="show_class2_heat" v-model="show_class2_heat">
-                        <label class="form-check-label stretched-link" for="show_class2_heat">Class 2 Heat metering </label>
+                        <div style="color:#666; float:right"> (<span v-html="num_hp_integration"></span>)</div>
+                        <input class="form-check-input me-1" type="checkbox" value="" id="show_hp_integration_id" v-model="show_hp_integration" @change="filter_systems">
+                        <label class="form-check-label stretched-link" for="show_hp_integration_id">Heatpump integration</label>
                       </li>
-                      <li class="list-group-item">
-                        <div style="color:#666; float:right"> (<span v-html="num_class1_elec"></span>)</div>
-                        <input class="form-check-input me-1" type="checkbox" value="" id="show_class1_elec" v-model="show_class1_elec">
-                        <label class="form-check-label stretched-link" for="show_class1_elec">Class 1 Electric metering </label>
-                      </li>
-                      <li class="list-group-item">
-                        <span style="color:#666; float:right"> (<span v-html="num_other_metering"></span>)</span>
-                        <input class="form-check-input me-1" type="checkbox" value="" id="show_other_metering_id" v-model="show_other_metering">
-                        <label class="form-check-label stretched-link" for="show_other_metering_id">Other metering </label>
-                      </li>
-                      -->
                       <li class="list-group-item">
                         <div style="color:#666; float:right"> (<span v-html="num_flagged"></span>)</div>
                         <input class="form-check-input me-1" type="checkbox" value="" id="show_flagged_id" v-model="showFlagged" @change="filter_systems">
@@ -543,6 +531,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         if (system['measured_heat_loss']>0 && system['hp_max_output']>0) {
             oversizing_factor = system['hp_max_output'] / system['measured_heat_loss'];
         }
+        
+        if (oversizing_factor != null) {
+            oversizing_factor = oversizing_factor.toFixed(1)*1;
+        }
+        
         systems[z]['oversizing_factor'] = oversizing_factor;
     }
 
@@ -574,13 +567,15 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             selected_template: selected_template,
             showFlagged: showFlagged,
             show_mid: true,
-            show_non_mid: true,
+            show_non_mid: false,
+            show_hp_integration: false,
             show_class2_heat: true,
             show_class1_elec: true,
             show_other_metering: true,
             num_flagged: 0,
             num_mid: 0,
             num_non_mid: 0,
+            num_hp_integration: 0,
             num_class2_heat: 0,
             num_class1_elec: 0,
             num_other_metering: 0,
@@ -1175,27 +1170,14 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 if (this.show_mid && row.mid_metering) {
                     show = true;
                 }
-                if (this.show_non_mid && !row.mid_metering) {
+                if (this.show_non_mid && !row.mid_metering && row.heat_meter != 'Heat pump integration') {
                     show = true;
                 }
+                if (this.show_hp_integration && !row.mid_metering && row.heat_meter == 'Heat pump integration') {
+                    show = true;
+                }
+
                 
-                /*if (this.show_class2_heat && this.show_class1_elec) {
-                    if (row.heat_meter_class2 && row.elec_meter_class1) {
-                        show = true;
-                    }
-                } else {
-                    if (this.show_class2_heat && row.heat_meter_class2) {
-                        show = true;
-                    }
-                    if (this.show_class1_elec && row.elec_meter_class1) {
-                        show = true;
-                    }
-                //}
-                if (this.show_other_metering) {
-                    if (!row.heat_meter_class2 && !row.elec_meter_class1) {
-                        show = true;
-                    }
-                }*/
                 if (this.showFlagged && row.data_flag) {
                     show = true;
                 } else {
@@ -1211,6 +1193,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 this.num_flagged = 0
                 this.num_mid = 0
                 this.num_non_mid = 0
+                this.num_hp_integration = 0
                 this.num_class2_heat = 0
                 this.num_class1_elec = 0
                 this.num_other_metering = 0
@@ -1223,7 +1206,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         if (systems[i].mid_metering) {
                             this.num_mid ++;
                         } else {
-                            this.num_non_mid ++;
+                            if (systems[i].heat_meter == 'Heat pump integration') {
+                                this.num_hp_integration ++;
+                            } else {
+                                this.num_non_mid ++;
+                            }
                         }
                         
                         /*

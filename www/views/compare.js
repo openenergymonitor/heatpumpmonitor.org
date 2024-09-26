@@ -217,6 +217,12 @@ function draw_chart() {
                     y.push(heat / elec)
                     size.push(heat * 0.002)
                 }
+            } else if (app.mode == "flow_vs_outside") {
+                if (heat!=null && flowT != null && outsideT != null && heat > 0) {
+                    x.push(outsideT)
+                    y.push(flowT)
+                    size.push(heat * 0.002)
+                }
             } else if (app.mode == "heat_vs_outside") {
                 if (heat != null && outsideT != null && heat > 0) {
                     x.push(outsideT)
@@ -254,6 +260,7 @@ function draw_chart() {
             "cop_vs_flow": { xaxis: "Flow temperature", yaxis: "COP" },
             "cop_vs_return": { xaxis: "Return temperature", yaxis: "COP" },
             "cop_vs_carnot": { xaxis: "Ideal Carnot COP", yaxis: "COP" },
+            "flow_vs_outside": { xaxis: "Outside temperature", yaxis: "Flow temperature" },     
             "heat_vs_outside": { xaxis: "Outside temperature", yaxis: "Heat" },
             "elec_vs_outside": { xaxis: "Outside temperature", yaxis: "Elec" },
             "profile": { xaxis: "Time of day", yaxis: "Elec" }

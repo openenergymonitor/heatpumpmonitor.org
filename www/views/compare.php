@@ -28,6 +28,7 @@ if (isset($_GET['id'])) {
                         <option value="cop_vs_flow">COP vs Flow temperature</option>
                         <option value="cop_vs_return">COP vs Return temperature</option>
                         <option value="cop_vs_carnot">COP vs Carnot COP</option>
+                        <option value="flow_vs_outside">Flow temperature vs Outside temperature</option>
                         <option value="heat_vs_outside">Heat output vs Outside temperature</option>
                         <option value="elec_vs_outside">Electric input vs Outside temperature</option>
                         <option value="profile">Average Profile</option>
@@ -35,6 +36,7 @@ if (isset($_GET['id'])) {
 
                     <div class="input-group-text">Interval</div>
                     <select class="form-control" v-model="interval" @change="change_interval">
+                        <option value="1800">Half hourly</option>  
                         <option value="3600">Hourly</option>
                         <option value="86400">Daily</option>
                     </select>
@@ -106,4 +108,4 @@ if (id) {
 }
 </script>
 
-<script src="views/compare.js?v=13"></script>
+<script src="views/compare.js?v=15"></script>

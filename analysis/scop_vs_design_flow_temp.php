@@ -18,21 +18,17 @@ require ("Modules/system/system_stats_model.php");
 $system_stats = new SystemStats($mysqli,$system);
 $stats = $system_stats->get_last365(false);
 
+// Add in stats data to systems
 $systems_with_stats = array();
-
 foreach ($systems as $system) {
-
     if (isset($stats[$system->id])) {
         $systemstats = $stats[$system->id];
-
         foreach ($systemstats as $key => $stat) {
             $system->$key = $stat;
         }
-
         $systems_with_stats[] = $system;
     }
 }
-
 $systems = $systems_with_stats;
 
 // Order systems by combined_cop
