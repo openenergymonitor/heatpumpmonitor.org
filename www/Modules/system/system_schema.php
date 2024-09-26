@@ -516,7 +516,7 @@ $schema['system_meta'] = array(
     ),
 
     /* ----------------------------- Electricity tariff ----------------------------- */
-
+    
     'electricity_tariff' => array(
         'type' => 'varchar(64)', 
         'editable' => true, 
@@ -639,7 +639,8 @@ $schema['system_meta'] = array(
             'Ista Ultego heat meter (class 2)',
             'Sika or Grundfos VFS flow meter',
             'Heat pump integration',
-            'Other heat meter'
+            'Other heat meter',
+            'No heat meter'
         )
     ),
 
