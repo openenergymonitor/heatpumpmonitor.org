@@ -187,7 +187,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <option value="agile">Octopus Agile</option>
                         <option value="cosy">Octopus Cosy</option>
                         <option value="go">Octopus GO</option>
-                        <option value="user">User entered</option>
+                        <!--<option value="user">User entered</option>-->
                     </select>
                 </div>
 
@@ -328,7 +328,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     }
 
     var tariff_mode = 'flat';
-    var options = ['flat','agile','cosy','go','ovohp','user']
+    var options = ['flat','agile','cosy','go','ovohp']
     if (decoded.tariff!=undefined && options.includes(decoded.tariff)) {
         tariff_mode = decoded.tariff;
     }
@@ -445,7 +445,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
     columns['installer_logo'].heading = "";
     columns['mid_metering'].heading = "MID";
-    columns['electricity_tariff_unit_rate_all'].heading = "Elec<br>p/kWh";
+    // columns['electricity_tariff_unit_rate_all'].heading = "Elec<br>p/kWh";
     
     // Template views
     var template_views = {}
@@ -639,6 +639,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                 app.selected_columns.splice(app.selected_columns.indexOf('electricity_tariff'), 1);
                             }
                         }
+                    }
+                    /*
                     } else if (this.tariff_mode == 'user') {
                         app.systems[i].selected_unit_rate = app.systems[i].electricity_tariff_unit_rate_all;
                         // add electricity_tariff to selected columns if not already there
@@ -648,7 +650,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                 app.selected_columns.splice(app.selected_columns.indexOf('hp_model')+1, 0, 'electricity_tariff');
                             }
                         }
-                    }
+                    }*/
 
                     // recalculate costs
                     // for each category
@@ -1062,10 +1064,12 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     }
                 }
                 
+                /*
                 if (key=='electricity_tariff_unit_rate_all') {
                     if (val==null) return '';
                     return val + ' p/kWh';
                 }
+                */
 
                 if (key=='error_air') {
                     // convert seconds to hours

@@ -516,7 +516,7 @@ $schema['system_meta'] = array(
     ),
 
     /* ----------------------------- Electricity tariff ----------------------------- */
-    
+    /*
     'electricity_tariff' => array(
         'type' => 'varchar(64)', 
         'editable' => true, 
@@ -543,7 +543,7 @@ $schema['system_meta'] = array(
         'group' => 'Tariff & Generation', 
         'unit' => 'p/kWh'
     ),
-    /*
+
     'electricity_tariff_unit_rate_hp' => array(
         'type' => 'float', 
         'editable' => true, 
@@ -560,7 +560,7 @@ $schema['system_meta'] = array(
         'optional' => true, 
         'name' => 'Annual solar PV generation',
         'helper' => 'If applicable', 
-        'group' => 'Tariff & Generation', 
+        'group' => 'Generation', 
         'unit' => 'kWh'
     ),
 
@@ -569,7 +569,7 @@ $schema['system_meta'] = array(
         'editable' => true, 
         'optional' => true, 
         'name' => 'Solar PV self consumption', 
-        'group' => 'Tariff & Generation', 
+        'group' => 'Generation', 
         'unit' => '%'
     ),
 
@@ -578,7 +578,7 @@ $schema['system_meta'] = array(
         'editable' => true, 
         'optional' => true, 
         'name' => 'Solar PV divert to hot water immersion', 
-        'group' => 'Tariff & Generation'
+        'group' => 'Generation'
     ),
 
     'battery_storage_capacity' => array(
@@ -587,7 +587,7 @@ $schema['system_meta'] = array(
         'optional' => true, 
         'name' => 'Battery storage capacity', 
         'helper' => 'If applicable',
-        'group' => 'Tariff & Generation', 
+        'group' => 'Generation', 
         'unit' => 'kWh'
     ),
 
@@ -610,11 +610,11 @@ $schema['system_meta'] = array(
         'name' => 'Electric meter', 
         'group' => 'Metering',
         'options' => array(
-            'OpenEnergyMonitor EmonPi v1, EmonTx3 or earlier',
-            'OpenEnergyMonitor EmonPi v2, EmonTx4 or newer',
             'SDM120 Modbus/MBUS Single Phase (class 1)',
             'SDM220 Modbus/MBUS Single Phase (class 1)',
             'SDM630 Modbus/MBUS Three Phase (class 1)',
+            'OpenEnergyMonitor EmonPi v1, EmonTx3 or earlier',
+            'OpenEnergyMonitor EmonPi v2, EmonTx4 or newer',
             'Other Modbus/MBUS meter (class 1)',
             'Other pulse output meter (class 1)',
             'Heat pump integration',
@@ -629,10 +629,10 @@ $schema['system_meta'] = array(
         'name' => 'Heat meter', 
         'group' => 'Metering',
         'options' => array(
+            'Axioma Qalcosonic heat meter (class 2)',
             'Sontex heat meter (class 2)',
             'Kamstrup heat meter (class 2)',
             'Sharky heat meter (class 2)',
-            'Axioma Qalcosonic heat meter (class 2)',
             'SensoStar heat meter (class 2)',
             'Itron heat meter (class 2)',
             'Danfoss Sono heat meter (class 2)',
