@@ -558,6 +558,7 @@ class SystemStats
         $totals['cosy_cost'] = 0;
         $totals['go_cost'] = 0;
         $totals['error_air'] = 0;
+        $totals['error_air_kwh'] = 0;
 
         // Quality
         $quality_fields = array('elec','heat','flowT','returnT','outsideT','roomT');
@@ -599,6 +600,7 @@ class SystemStats
             $totals['go_cost'] += $go_cost;
 
             $totals['error_air'] += $row->error_air;
+            $totals['error_air_kwh'] += $row->error_air_kwh;
             
             $days++;
         }
@@ -671,6 +673,7 @@ class SystemStats
         }
 
         $stats['error_air'] = $totals['error_air'];
+        $stats['error_air_kwh'] = $totals['error_air_kwh'];
 
         $stats['unit_rate_agile'] = null;
         $stats['unit_rate_cosy'] = null;
