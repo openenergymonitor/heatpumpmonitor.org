@@ -394,7 +394,7 @@ $schema['system_meta'] = array(
         'type' => 'int(11)', 
         'editable' => true, 
         'optional' => false, 
-        'name' => 'Detailed assessment space heat demand',
+        'name' => 'Assessed space heat demand',
         'group' => 'Property', 
         'helper' => 'E.g as given in detailed installer assessment',
         'unit' => 'kWh/year'
@@ -404,12 +404,12 @@ $schema['system_meta'] = array(
         'type' => 'int(11)', 
         'editable' => true, 
         'optional' => false, 
-        'name' => 'Detailed assessment water heat demand',
+        'name' => 'Assessed water heat demand',
         'group' => 'Property', 
         'helper' => 'E.g as given in detailed installer assessment',
         'unit' => 'kWh/year'
     ),
-
+    /*
     'EPC_spaceheat_demand' => array(
         'type' => 'int(11)', 
         'editable' => true, 
@@ -428,7 +428,7 @@ $schema['system_meta'] = array(
         'group' => 'Property', 
         'helper' => 'As given on the EPC',
         'unit' => 'kWh/year'
-    ),
+    ),*/
 
     'heat_loss' => array(
         'type' => 'float', 
