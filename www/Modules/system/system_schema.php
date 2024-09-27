@@ -3,7 +3,15 @@
 $schema['system_meta'] = array(
 
     // Form meta data
-    'id' => array('type' => 'int(11)', 'Null' => false, 'Key' => 'PRI', 'Extra' => 'auto_increment', 'editable' => false),
+    'id' => array(
+        'type' => 'int(11)', 
+        'Null' => false, 
+        'Key' => 'PRI', 
+        'Extra' => 'auto_increment', 
+        'editable' => false,
+        'name' => 'ID',
+        'group' => 'Overview'
+    ),
     'userid' => array('type' => 'int(11)', 'editable' => false),
     'published' => array('type' => 'tinyint(1)', 'editable' => false, 'optional' => false, 'name' => 'Published', 'group' => 'Overview'),
     'last_updated' => array('type' => 'int(11)', 'editable' => false, 'name' => 'Last updated', 'group' => 'Overview'),

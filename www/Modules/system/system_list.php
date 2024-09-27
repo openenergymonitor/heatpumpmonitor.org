@@ -743,8 +743,20 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     this.selected_columns.splice(this.selected_columns.indexOf(column), 1);
                     return;
                 }
-                this.selected_columns.push(column);
-                // this.sort(column, 'desc');
+                if (column == 'id') {
+                    // place at the front
+                    this.selected_columns.unshift(column);
+                } else {
+                    this.selected_columns.push(column);
+                }
+
+                /*
+                var newurl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+                newurl += '?columns=' + this.selected_columns.join(',');
+                // add hash if present
+                if (window.location.hash) newurl += window.location.hash;
+
+                window.history.pushState({ path: newurl }, '', newurl);*/
 
             },
             toggle_field_group: function(group) {
