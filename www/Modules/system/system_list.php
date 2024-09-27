@@ -9,7 +9,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
 <script src="https://cdn.plot.ly/plotly-2.16.1.min.js"></script>
 <script src="Lib/clipboard.js"></script>
-<script src="<?php echo $path; ?>Modules/system/system_list_chart.js?v=14"></script>
+<script src="<?php echo $path; ?>Modules/system/system_list_chart.js?v=15"></script>
 
 <style>
     .sticky {
@@ -81,7 +81,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
                     <div class="input-group" style="margin-top: 12px">
                         <div class="input-group-text">Filter</div>
-                        <input class="form-control" name="query" v-model="filterKey" style="width:100px" @keyup="filter_systems">
+                        <input class="form-control" name="query" v-model="filterKey" style="width:100px" @keyup="filter_systems" @change="url_update('filterKey')">
 
                         <div class="input-group-text">Min days</div>
                         <input class="form-control" name="query" v-model="minDays" style="width:100px" @change="filter_systems">
@@ -297,10 +297,32 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 <script>
 
-    // hash is of format #mode=costs&tariff=agile&filter=HG
-    var hash = window.location.hash;
-    const decoded = decodeHash(hash);
-    console.log(decoded);
+    // Get URL parameters
+    var urlParams = new URLSearchParams(window.location.search);
+    var decoded = {};
+
+    if (urlParams.has('mode')) {
+        decoded.mode = urlParams.get('mode');
+    }
+    if (urlParams.has('tariff')) {
+        decoded.tariff = urlParams.get('tariff');
+    }
+    if (urlParams.has('filter')) {
+        decoded.filter = urlParams.get('filter');
+    }
+
+    // Arrays to hold user added and removed columns
+    var added_columns = [];
+    var removed_columns = [];
+
+    // Load from url ?add= and rm=
+    if (urlParams.has('add')) {
+        added_columns = urlParams.get('add').split(',');
+    }
+    if (urlParams.has('rm')) {
+        removed_columns = urlParams.get('rm').split(',');
+    }
+
 
     var filterKey = '';
     if (decoded.filter!=undefined) filterKey = decoded.filter;
@@ -461,6 +483,25 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     template_views['costs']['wide'] = ['installer_logo', 'training', 'location' , 'hp_type', 'hp_model', 'hp_output', 'electricity_tariff', 'selected_unit_rate', 'combined_cop', 'combined_heat_unit_cost', 'combined_cost', 'learnmore'];
     template_views['costs']['narrow'] = ['installer_logo', 'training', 'hp_model', 'hp_output', 'combined_heat_unit_cost', 'learnmore'];
 
+    // add to template views
+    for (var key in template_views) {
+        for (var view in template_views[key]) {
+            for (var i in added_columns) {
+                if (added_columns[i] == 'id') {
+                    template_views[key][view].unshift('id');
+                } else {
+                    template_views[key][view].push(added_columns[i]);
+                }
+            }
+            for (var i in removed_columns) {
+                var index = template_views[key][view].indexOf(removed_columns[i]);
+                if (index > -1) {
+                    template_views[key][view].splice(index, 1);
+                }
+            }
+        }
+    }
+
     // Available months
     // Aug 2023, Jul 2023, Jun 2023 etc for 12 months
     var months = [];
@@ -593,7 +634,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 app.currentSortColumn = 'combined_heat_unit_cost';
                 app.sort_only('combined_heat_unit_cost');
 
-                window.location.hash = 'mode='+this.selected_template+'&tariff='+app.tariff_mode;
+                var url = new URL(window.location.href);
+                url.searchParams.set('mode', this.selected_template);
+                url.searchParams.set('tariff', this.tariff_mode);
+                var decodedUrl = decodeURIComponent(url.toString());
+                window.history.pushState({}, '', decodedUrl);
             },
  
             tariff_calc: function() {
@@ -702,9 +747,18 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 // append to url
                 // include tariff_mode if template is costs
                 if (template == 'costs') {
-                    window.location.hash = 'mode='+template+'&tariff='+app.tariff_mode;
+                    var url = new URL(window.location.href);
+                    url.searchParams.set('mode', template);
+                    url.searchParams.set('tariff', app.tariff_mode);
+                    var decodedUrl = decodeURIComponent(url.toString());
+                    window.history.pushState({}, '', decodedUrl);
                 } else {
-                    window.location.hash = 'mode='+template;
+                    var url = new URL(window.location.href);
+                    url.searchParams.set('mode', template);
+                    // remove tariff from url
+                    url.searchParams.delete('tariff');
+                    var decodedUrl = decodeURIComponent(url.toString());
+                    window.history.pushState({}, '', decodedUrl);                
                 }
 
                 resize();
@@ -739,24 +793,50 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 }
             },
             select_column: function(column) {
+                console.log('select column: ' + column);
+
                 if (this.selected_columns.includes(column)) {
                     this.selected_columns.splice(this.selected_columns.indexOf(column), 1);
-                    return;
-                }
-                if (column == 'id') {
-                    // place at the front
-                    this.selected_columns.unshift(column);
+
+                    // remove from added_columns if present
+                    // else add to removed_columns
+                    if (added_columns.includes(column)) {
+                        added_columns.splice(added_columns.indexOf(column), 1);
+                    } else {
+                        removed_columns.push(column);
+                    }
+
                 } else {
-                    this.selected_columns.push(column);
+                    // ADD column (add to start if id)
+                    if (column == 'id') {
+                        this.selected_columns.unshift(column);
+                    } else {
+                        this.selected_columns.push(column);
+                    }
+
+                    // remove from removed_columns if present
+                    // else add to added_columns
+                    if (removed_columns.includes(column)) {
+                        removed_columns.splice(removed_columns.indexOf(column), 1);
+                    } else {
+                        added_columns.push(column);
+                    }
                 }
 
-                /*
-                var newurl = window.location.protocol + "//" + window.location.host + window.location.pathname;
-                newurl += '?columns=' + this.selected_columns.join(',');
-                // add hash if present
-                if (window.location.hash) newurl += window.location.hash;
-
-                window.history.pushState({ path: newurl }, '', newurl);*/
+                // save selected columns to url
+                var url = new URL(window.location.href);
+                if (added_columns.length > 0) {
+                    url.searchParams.set('add', added_columns.join(','));
+                } else {
+                    url.searchParams.delete('add');
+                }
+                if (removed_columns.length > 0) {
+                    url.searchParams.set('rm', removed_columns.join(','));
+                } else {
+                    url.searchParams.delete('rm');
+                }
+                var decodedUrl = decodeURIComponent(url.toString());
+                window.history.pushState({}, '', decodedUrl);
 
             },
             toggle_field_group: function(group) {
@@ -1263,6 +1343,22 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 if (this.chart_enable) {
                     draw_scatter();
                 }
+            },
+            url_update(key) {
+                console.log('url update: ' + key);
+                if (key == 'filterKey') {
+                    // set url param filter
+                    var url = new URL(window.location.href);
+                    url.searchParams.set('filter', encodeURIComponent(this.filterKey));
+                    var decodedUrl = decodeURIComponent(url.toString());
+                    window.history.pushState({}, '', decodedUrl);
+                } else if (key == 'minDays') {
+                    // set url param minDays
+                    var url = new URL(window.location.href);
+                    url.searchParams.set('minDays', this.minDays);
+                    var decodedUrl = decodeURIComponent(url.toString());
+                    window.history.pushState({}, '', decodedUrl);
+                }
             }
        },
         filters: {
@@ -1376,17 +1472,6 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         // return day + " " + months[month-1] + " " + year;
     }
 
-    window.addEventListener("scroll", function() {
-        var scroll = window.pageYOffset;
-        var threshold = 200; // Change this to the desired threshold in pixels
-        var stickyCard = document.querySelector(".sticky-card");
-        if (scroll >= threshold) {
-            stickyCard.classList.add("sticky");
-        } else {
-            stickyCard.classList.remove("sticky");
-        }
-    });
-
     window.addEventListener('resize', function(event) {
         resize();
     }, true);
@@ -1394,12 +1479,13 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     function resize(first = false) {
         var width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
 
-        if (app.mode == 'public') {
+        if (app.mode != 'admin') {
             if (width<800) {
                 app.selected_columns = template_views[app.selected_template]['narrow'];
                 app.showContent = false;
                 if (first) app.show_field_selector = false;
                 app.columns['training'].heading = "";
+                
             } else {
                 app.selected_columns = template_views[app.selected_template]['wide'];
                 app.showContent = true;
@@ -1417,24 +1503,12 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         }
     }
 
-    function decodeHash(hash) {
-        // Remove the leading '#' if present
-        if (hash.startsWith('#')) {
-            hash = hash.substring(1);
-        }
 
-        // Split the hash into key-value pairs
-        const pairs = hash.split('&');
-        
-        // Create an empty object to hold the result
-        const result = {};
+    // event listener for change of URL params
+    window.addEventListener('popstate', function(event) {
+        // reload page
+        // apply changes here directly in future
+        location.reload();
+    }); 
 
-        // Iterate over each pair and split it into key and value
-        pairs.forEach(pair => {
-            const [key, value] = pair.split('=');
-            result[key] = value;
-        });
-
-        return result;
-    }
 </script>

@@ -175,8 +175,17 @@ function calculate_determination_coefficient(x, y, m, b) {
 }
 
 function resizeChart() {
+    if (!app.chart_enable) {   
+        return;
+    }
+
     var chartDiv = document.getElementById('chart');
     var width = chartDiv.offsetWidth;
+
+    if (!width) {
+        return;
+    }
+
     var height = width * 0.4;
 
     if (height < 400) {
