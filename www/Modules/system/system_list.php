@@ -265,8 +265,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             <span v-if="!system.published" class="badge bg-secondary">Waiting for review</span>
                         </td>
                         <td v-if="mode!='public'">
-                            <button class="btn btn-warning btn-sm" @click="edit(index)" title="Edit"><i class="fa fa-edit" style="color: #ffffff;"></i></button>
-                            <button class="btn btn-danger btn-sm" @click="remove(index)" title="Delete"><i class="fa fa-trash" style="color: #ffffff;"></i></button>
+                            <a :href="'<?php echo $path;?>system/edit?id='+system.id">
+                                <button class="btn btn-warning btn-sm" title="Edit"><i class="fa fa-edit" style="color: #ffffff;"></i></button>
+                            </a>
+                            <button class="btn btn-danger btn-sm" @click="remove(system.id)" title="Delete"><i class="fa fa-trash" style="color: #ffffff;"></i></button>
                         </td>
                         <td>
                             <a :href="'<?php echo $path;?>system/view?id='+system.id">
@@ -282,7 +284,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 <div class="card">
                   <h5 class="card-header">Totals</h5>
                   <div class="card-body">
-                    <p class="card-text">Number of systems in selection: <b>{{ totals.count }}</b></p>
+                    <p class="card-text">Number of systems in selection: <b>{{ totals.listed_system_count }}</b></p>
                     <p class="card-text">Average of individual system {{ stats_time_start === 'last365' ? 'SPF' : 'COP' }} values: <b>{{ totals.average_cop | toFixed(1) }}</b></p>
                     <p class="card-text">Average {{ stats_time_start === 'last365' ? 'SPF' : 'COP' }} based on total sum of heat and electric values: <b>{{ totals.average_cop_kwh | toFixed(1) }}</p>
                     <!-- csv export button copy table data to clipboard -->
@@ -367,6 +369,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     columns['training'] = { name: "Combined", heading: "Training", group: "Training", helper: "Training" };
     columns['learnmore'] = { name: "Combined", heading: "", group: "Learn more" };
     columns['boundary'] = { name: "Boundary", heading: "Hx", group: "Metering" };
+    columns['data_flag'].heading = "";
     
 
     // Calculate oversizing factor
@@ -472,7 +475,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     // Template views
     var template_views = {}
     template_views['topofthescops'] = {}
-    template_views['topofthescops']['wide'] = ['location', 'installer_logo', 'installer_name', 'training', 'hp_type', 'hp_model', 'hp_output', 'combined_data_length', 'combined_cop', 'water_cop', 'boundary' , 'mid_metering', 'learnmore'];
+    template_views['topofthescops']['wide'] = ['location', 'installer_logo', 'installer_name', 'training', 'hp_type', 'hp_model', 'hp_output', 'combined_data_length', 'data_flag', 'combined_cop', 'water_cop', 'boundary' , 'mid_metering', 'learnmore'];
     template_views['topofthescops']['narrow'] = ['installer_logo', 'training', 'hp_model', 'hp_output', 'combined_cop', 'learnmore'];
 
     template_views['heatpumpfabric'] = {}
@@ -580,6 +583,13 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         systems[z]['oversizing_factor'] = oversizing_factor;
     }
 
+    var show_non_mid = false;
+    var show_hp_integration = false;
+
+    if (mode!='public') {
+        show_non_mid = true;
+        show_hp_integration = true;
+    }
 
     var app = new Vue({
         el: '#app',
@@ -608,11 +618,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             selected_template: selected_template,
             showFlagged: showFlagged,
             show_mid: true,
-            show_non_mid: false,
-            show_hp_integration: false,
+            show_non_mid: show_non_mid,
+            show_hp_integration: show_hp_integration,
             show_class2_heat: true,
             show_class1_elec: true,
-            show_other_metering: true,
             num_flagged: 0,
             num_mid: 0,
             num_non_mid: 0,
@@ -771,14 +780,13 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 let systemid = this.systems[index].id;
                 window.location = path+"system/view?id=" + systemid;
             },
-            edit: function(index) {
-                let systemid = this.systems[index].id;
-                window.location = path+"system/edit?id=" + systemid;
-            },
-            remove: function(index) {
+            remove: function(systemid) {
+
+                // find system
+                var index = this.systems.findIndex(x => x.id === systemid);
+
                 if (confirm("Are you sure you want to delete system: " + this.systems[index].location + "?")) {
                     // axios delete
-                    let systemid = this.systems[index].id;
                     axios.get(path+'system/delete?id=' + systemid)
                         .then(response => {
                             if (response.data.success) {
@@ -1074,13 +1082,34 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     return time_ago(val);
                 }
                 if (key=='combined_data_length') {
-                
+                    return (val/(24*3600)).toFixed(0)+" days";
+                }
+
+                if (key=='data_flag') {
+
                     var flag = "";
                     if (system['data_flag']) {
-                        flag = "<i class='fas fa-exclamation-circle' style='color: #FFD43B; margin-left:10px; cursor:pointer' title='"+system['data_flag_note']+"'></i>";
+
+
+                        var note = system.data_flag_note;
+                        // trim and to lower case
+                        note = note.trim().toLowerCase();
+
+                        var color = "#FFD43B";
+                        if (note == 'heat meter air error') {
+                            // blue
+                            color = "#4f8baa"; 
+                        } else if (note == 'invalid url') {
+                            // grey
+                            color = "#808080";
+                        } else if (note == 'no heat data') {
+                            // red
+                            color = "#ff0000";
+                        }
+
+                        flag = "<i class='fas fa-exclamation-circle' style='color: "+color+"; margin-left:10px; cursor:pointer' title='"+system['data_flag_note']+"'></i>";
                     }
-                
-                    return (val/(24*3600)).toFixed(0)+" days"+flag;
+                    return flag;
                 }
 
                 if (key=='installer_logo') {
@@ -1334,6 +1363,16 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 if (this.mode=='public') {
                     //filtered_nodes_days = filtered_nodes_days.filter(this.filterCop);
                 }
+
+                if (app.mode == 'admin') {
+                    // Filter out shared systems .share = 0
+                    filtered_nodes_days = filtered_nodes_days.filter(function(row) {
+                        if (row.share == 0) return true;
+                        if (row.published == 0) return true;
+                        if  (row.data_flag) return true;
+                        return false;
+                    });
+                }
                 
                 this.system_count(filtered_nodes_days);
             
@@ -1397,7 +1436,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     elec_kwh: 0,
                     heat_kwh: 0,
                     average_cop_kwh: 0,
-                    count: 0
+                    count: 0,
+                    listed_system_count: 0
                 };
                 var count = 0;
                 for (var i = 0; i < this.fSystems.length; i++) {
@@ -1407,6 +1447,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         totals.heat_kwh += this.fSystems[i].combined_heat_kwh;
                         totals.count++;
                     }
+                    totals.listed_system_count++;
                 }
                 totals.average_cop = totals.average_cop / totals.count;
                 totals.average_cop_kwh = totals.heat_kwh / totals.elec_kwh;
@@ -1497,7 +1538,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 app.showContent = false;
                 if (first) app.show_field_selector = false;
             } else {
-                app.selected_columns = ['location', 'hp_type', 'hp_model', 'hp_output', 'combined_data_length', 'combined_cop'];
+                app.selected_columns = ['location', 'hp_type', 'hp_model', 'hp_output', 'combined_data_length', 'data_flag', 'combined_cop', 'boundary'];
                 app.showContent = true;
             }
         }
