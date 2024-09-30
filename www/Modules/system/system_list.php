@@ -262,7 +262,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             <span v-if="system.share" class="badge bg-success">Shared</span>
                             <span v-if="!system.share" class="badge bg-danger">Private</span>
                             <span v-if="system.published" class="badge bg-success">Published</span>
-                            <span v-if="!system.published" class="badge bg-secondary">Waiting for review</span>
+                            <span v-if="!system.published && !system.data_flag" class="badge bg-warning">Waiting for review</span>
+                            <span v-if="!system.published && system.data_flag" class="badge bg-secondary">Not published</span>
                         </td>
                         <td v-if="mode!='public'">
                             <a :href="'<?php echo $path;?>system/edit?id='+system.id">
@@ -785,7 +786,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 // find system
                 var index = this.systems.findIndex(x => x.id === systemid);
 
-                if (confirm("Are you sure you want to delete system: " + this.systems[index].location + "?")) {
+                if (confirm("Are you sure you want to delete system: " + systemid + " "+ this.systems[index].location + "?")) {
                     // axios delete
                     axios.get(path+'system/delete?id=' + systemid)
                         .then(response => {
@@ -1102,7 +1103,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         } else if (note == 'invalid url') {
                             // grey
                             color = "#808080";
-                        } else if (note == 'no heat data') {
+                        } else if (note == 'no heat data' || note == 'no electric data') {
                             // red
                             color = "#ff0000";
                         }
