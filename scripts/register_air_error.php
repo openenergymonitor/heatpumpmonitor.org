@@ -34,6 +34,13 @@ usort($systems, function($a, $b) {
 });
 
 foreach ($systems as $system) {
+
+    // Remove Heat meter air error flag from all systems
+    if ($system->data_flag_note == "Heat meter air error") {
+        $mysqli->query("UPDATE system_meta SET data_flag = 0, data_flag_note = '' WHERE id = $system->id");
+    }
+
+    /*
     // Contidions for updating data_flag and data_flag_note
     if ($system->error_air == 0) {
         if ($system->data_flag) {
@@ -54,4 +61,5 @@ foreach ($systems as $system) {
     } else {
         $mysqli->query("UPDATE system_meta SET data_flag = 0, data_flag_note = '' WHERE id = $system->id");
     }
+        */
 }
