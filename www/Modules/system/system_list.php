@@ -1045,23 +1045,27 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                 // Auto flag air errors if error_air_kwh / combined_elec_kwh > 0.1
                                 if (app.systems[i].error_air_kwh!=null && app.systems[i].error_air_kwh>0) {
                                     if (app.systems[i].combined_elec_kwh!=null && app.systems[i].combined_elec_kwh>0) {
-                                        if (app.systems[i].error_air_kwh / app.systems[i].combined_elec_kwh >= 0.04) {
-                                            let prc = (app.systems[i].error_air_kwh / app.systems[i].combined_elec_kwh * 100).toFixed(1);
 
-                                            let electric_not_including_air_error = app.systems[i].combined_elec_kwh - app.systems[i].error_air_kwh;
-                                            let cop_not_including_air_error = 0;
-                                            if (electric_not_including_air_error>0) {
-                                                cop_not_including_air_error = app.systems[i].combined_heat_kwh / electric_not_including_air_error;
-                                            }
-                                            let difference = app.systems[i].combined_cop - cop_not_including_air_error;
+                                        let prc = (app.systems[i].error_air_kwh / app.systems[i].combined_elec_kwh * 100).toFixed(1);
+
+                                        let electric_not_including_air_error = app.systems[i].combined_elec_kwh - app.systems[i].error_air_kwh;
+                                        let cop_not_including_air_error = 0;
+                                        if (electric_not_including_air_error>0) {
+                                            cop_not_including_air_error = app.systems[i].combined_heat_kwh / electric_not_including_air_error;
+                                        }
+                                        let difference = app.systems[i].combined_cop - cop_not_including_air_error;
+                                        // abs difference
+                                        let abs_difference = Math.abs(difference);
+
+                                        if (abs_difference > 0.1) {
 
                                             let note = 'Heat meter air error\n';
                                             note += (app.systems[i].error_air / 3600).toFixed(0) + " hours, ";
                                             note += (app.systems[i].error_air_kwh).toFixed(0) + " kWh electric\n";
                                             note += "% of electric consumption: " + prc + "%\n";
-                                            note += "COP listed: " + app.systems[i].combined_cop.toFixed(1) + "\n";
-                                            note += "COP not including air error: " + cop_not_including_air_error.toFixed(1)+"\n";
-                                            note += "Difference: " + difference.toFixed(1);
+                                            note += "COP listed: " + app.systems[i].combined_cop.toFixed(2) + "\n";
+                                            note += "COP not including air error: " + cop_not_including_air_error.toFixed(2)+"\n";
+                                            note += "Difference: " + difference.toFixed(2);
 
                                             app.systems[i].data_flag = 1;
                                             app.systems[i].data_flag_note = note;
