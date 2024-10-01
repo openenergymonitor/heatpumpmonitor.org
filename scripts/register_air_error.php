@@ -35,11 +35,23 @@ usort($systems, function($a, $b) {
 
 foreach ($systems as $system) {
     // Contidions for updating data_flag and data_flag_note
-    if ($system->error_air == 0) continue;
-    // if ($system->error_air < 3600) continue;
-    // if ($system->data_flag_note != "") continue;
+    if ($system->error_air == 0) {
+        if ($system->data_flag) {
+            print "System: " . $system->id." ".$system->data_flag_note . "\n";
+        }
+        continue;
+    }
+    if ($system->data_flag_note != "" && $system->data_flag_note != "Heat meter air error") continue;
 
-    echo $system->id . "\t" . $system->error_air . "\t". $system->data_flag. "\t". $system->data_flag_note. "\n";
+    $cop = $system->combined_heat_kwh / $system->combined_elec_kwh;
+    $cop_nc_error = $system->combined_heat_kwh / ($system->combined_elec_kwh - $system->error_air_kwh);
+    $diff = abs($cop - $cop_nc_error);
+
+    echo $system->id . "\t" . $system->error_air . "\t". $system->data_flag. "\t". number_format($cop,2) . "\t". number_format($cop_nc_error,2) . "\t". number_format($diff,2) . "\t". $system->data_flag_note. "\n";
     // Update database entry with data_flag = 1 and data_flag_note = "Heat meter air error"
-    // $mysqli->query("UPDATE system_meta SET data_flag = 1, data_flag_note = 'Heat meter air error' WHERE id = $system->id");
+    if ($diff > 0.2) {
+        $mysqli->query("UPDATE system_meta SET data_flag = 1, data_flag_note = 'Heat meter air error' WHERE id = $system->id");
+    } else {
+        $mysqli->query("UPDATE system_meta SET data_flag = 0, data_flag_note = '' WHERE id = $system->id");
+    }
 }
