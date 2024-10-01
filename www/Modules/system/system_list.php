@@ -81,10 +81,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
                     <div class="input-group" style="margin-top: 12px">
                         <div class="input-group-text">Filter</div>
-                        <input class="form-control" name="query" v-model="filterKey" style="width:100px" @keyup="filter_systems" @change="url_update('filterKey')">
+                        <input class="form-control" name="query" v-model="filterKey" style="width:100px" @change="filter_systems">
 
                         <div class="input-group-text">Min days</div>
-                        <input class="form-control" name="query" v-model="minDays" style="width:100px" @keyup="filter_systems" @change="url_update('minDays')">
+                        <input class="form-control" name="query" v-model="minDays" style="width:100px" @change="filter_systems">
                     </div>
                     
       
@@ -148,18 +148,18 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <label class="form-check-label stretched-link" for="show_mid_id">Full MID metering</label>
                       </li>
                       <li class="list-group-item">
-                        <div style="color:#666; float:right"> (<span v-html="num_non_mid"></span>)</div>
-                        <input class="form-check-input me-1" type="checkbox" value="" id="show_non_mid_id" v-model="show_non_mid" @change="filter_systems">
-                        <label class="form-check-label stretched-link" for="show_non_mid_id">Other metering</label>
+                        <div style="color:#666; float:right"> (<span v-html="num_other"></span>)</div>
+                        <input class="form-check-input me-1" type="checkbox" value="" id="show_other_id" v-model="show_other" @change="filter_systems">
+                        <label class="form-check-label stretched-link" for="show_other_id">Other metering</label>
                       </li>
                       <li class="list-group-item">
-                        <div style="color:#666; float:right"> (<span v-html="num_hp_integration"></span>)</div>
-                        <input class="form-check-input me-1" type="checkbox" value="" id="show_hp_integration_id" v-model="show_hp_integration" @change="filter_systems">
-                        <label class="form-check-label stretched-link" for="show_hp_integration_id">Heatpump integration</label>
+                        <div style="color:#666; float:right"> (<span v-html="num_hpint"></span>)</div>
+                        <input class="form-check-input me-1" type="checkbox" value="" id="show_hpint_id" v-model="show_hpint" @change="filter_systems">
+                        <label class="form-check-label stretched-link" for="show_hpint_id">Heatpump integration</label>
                       </li>
                       <li class="list-group-item">
                         <div style="color:#666; float:right"> (<span v-html="num_flagged"></span>)</div>
-                        <input class="form-check-input me-1" type="checkbox" value="" id="show_flagged_id" v-model="showFlagged" @change="filter_systems">
+                        <input class="form-check-input me-1" type="checkbox" value="" id="show_flagged_id" v-model="show_errors" @change="filter_systems">
                         <label class="form-check-label stretched-link" for="show_flagged_id">Metering errors </label>
                       </li>
                     </ul>
@@ -299,6 +299,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 </div>
 
 <script>
+    // public, admin, user
+    var mode = "<?php echo $mode; ?>";
+
 
     var default_settings = {
         mode: 'topofthescops',
@@ -307,8 +310,21 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         add: '',
         rm: '',
         filter: '',
-        tariff: 'flat'
+        tariff: 'flat',
+        mid: 1,
+        other: 0,
+        hpint: 0,
+        errors: 0
     };
+
+    if (mode != 'public') {
+        default_settings.mid = 1;
+        default_settings.other = 1;
+        default_settings.hpint = 1;
+        default_settings.errors = 1;
+        default_settings.minDays = 0;
+    }
+
     var page_settings = JSON.parse(JSON.stringify(default_settings));
 
     // Apply these again
@@ -354,6 +370,14 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
     minDays = parseInt(page_settings.minDays);
     if (minDays < 0) minDays = 0;
+
+    // validate mid, other, hpint, errors boolean
+    var metering = ['mid','other','hpint','errors'];
+    for (var i in metering) {
+        if (page_settings[metering[i]] == '1') page_settings[metering[i]] = 1;
+        else page_settings[metering[i]] = 0;
+    }
+
     
     if (page_settings.mode =='costs') {
         selected_template = 'costs';
@@ -372,8 +396,21 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         tariff_mode = page_settings.tariff;
     }
 
+    var show_errors = false;
+    if (page_settings.errors == 1) show_errors = true;
+
+    var show_mid = false;
+    if (page_settings.mid == 1) show_mid = true;
+
+    var show_other = false;
+    if (page_settings.other == 1) show_other = true;
+
+    var show_hpint = false;
+    if (page_settings.hpint == 1) show_hpint = true;
+    
     var columns = <?php echo json_encode($columns); ?>;
     var stats_columns = <?php echo json_encode($stats_columns); ?>;
+    var systems = <?php echo json_encode($systems); ?>;
 
     columns['hp_type'].name = "Source";
     columns['hp_model'].name = "Make & Model";
@@ -457,8 +494,6 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         };
     }
 
-    
-    
     // add stats_columns to columns
     for (var key in stats_columns) {
         columns[key] = stats_columns[key];
@@ -528,16 +563,6 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         months.push(d.toLocaleString('default', { month: 'short' }) + ' ' + d.getFullYear());
         d.setMonth(d.getMonth() - 1);
     }
-    
-    var mode = "<?php echo $mode; ?>";
-    
-    
-    if (mode!='public') minDays = 0;
-    
-    var showFlagged = true;
-    if (mode=='public') showFlagged = false;
-    
-    var systems = <?php echo json_encode($systems); ?>;
 
     // Set boundary
     for (var i = 0; i < systems.length; i++) {
@@ -598,14 +623,6 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         systems[z]['oversizing_factor'] = oversizing_factor;
     }
 
-    var show_non_mid = false;
-    var show_hp_integration = false;
-
-    if (mode!='public') {
-        show_non_mid = true;
-        show_hp_integration = true;
-    }
-
     var app = new Vue({
         el: '#app',
         data: {
@@ -631,16 +648,16 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             show_field_selector: false,
             public_mode_enabled: public_mode_enabled,
             selected_template: selected_template,
-            showFlagged: showFlagged,
-            show_mid: true,
-            show_non_mid: show_non_mid,
-            show_hp_integration: show_hp_integration,
-            show_class2_heat: true,
-            show_class1_elec: true,
+
+            show_mid: show_mid,
+            show_other: show_other,
+            show_hpint: show_hpint,
+            show_errors: show_errors,
+
             num_flagged: 0,
             num_mid: 0,
-            num_non_mid: 0,
-            num_hp_integration: 0,
+            num_other: 0,
+            num_hpint: 0,
             num_class2_heat: 0,
             num_class1_elec: 0,
             num_other_metering: 0,
@@ -1278,15 +1295,15 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 if (this.show_mid && row.mid_metering) {
                     show = true;
                 }
-                if (this.show_non_mid && !row.mid_metering && row.heat_meter != 'Heat pump integration') {
+                if (this.show_other && !row.mid_metering && row.heat_meter != 'Heat pump integration') {
                     show = true;
                 }
-                if (this.show_hp_integration && !row.mid_metering && row.heat_meter == 'Heat pump integration') {
+                if (this.show_hpint && !row.mid_metering && row.heat_meter == 'Heat pump integration') {
                     show = true;
                 }
 
                 
-                if (this.showFlagged && row.data_flag) {
+                if (this.show_errors && row.data_flag) {
                     show = true;
                 } else {
                     if (row.data_flag) {
@@ -1300,8 +1317,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 // Count flagged systems
                 this.num_flagged = 0
                 this.num_mid = 0
-                this.num_non_mid = 0
-                this.num_hp_integration = 0
+                this.num_other = 0
+                this.num_hpint = 0
                 this.num_class2_heat = 0
                 this.num_class1_elec = 0
                 this.num_other_metering = 0
@@ -1315,9 +1332,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             this.num_mid ++;
                         } else {
                             if (systems[i].heat_meter == 'Heat pump integration') {
-                                this.num_hp_integration ++;
+                                this.num_hpint ++;
                             } else {
-                                this.num_non_mid ++;
+                                this.num_other ++;
                             }
                         }
                         
@@ -1342,13 +1359,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             
                 var filtered_nodes_days = this.systems.filter(this.filterNodes).filter(this.filterDays);
 
-                // if public mode only show systems with data
-                if (this.mode=='public') {
-                    //filtered_nodes_days = filtered_nodes_days.filter(this.filterCop);
-                }
-
                 if (app.mode == 'admin') {
-                    // Filter out shared systems .share = 0
+                    // Only show systems that are private, awaiting approval or have error flag
                     filtered_nodes_days = filtered_nodes_days.filter(function(row) {
                         if (row.share == 0) return true;
                         if (row.published == 0) return true;
@@ -1359,12 +1371,13 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 
                 this.system_count(filtered_nodes_days);
             
-            
                 this.fSystems = filtered_nodes_days.filter(this.filterMetering)
 
                 if (this.chart_enable) {
                     draw_scatter();
                 }
+
+                this.url_update();
             },
             url_update(field_keys) {
 
@@ -1377,6 +1390,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 // - rm         (removed_columns)
                 // - filter     (app.filterKey)
                 // - tariff     (app.tariff_mode)
+                // - mid        (app.show_mid)
+                // - other      (app.show_other)
+                // - hpint      (app.show_hpint)
+                // - errors     (app.show_errors)
 
                 var settings = {
                     mode: this.selected_template,
@@ -1385,7 +1402,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     add: added_columns.join(','),
                     rm: removed_columns.join(','),
                     filter: this.filterKey,
-                    tariff: this.tariff_mode
+                    tariff: this.tariff_mode,
+                    mid: 1*this.show_mid,
+                    other: 1*this.show_other,
+                    hpint: 1*this.show_hpint,
+                    errors: 1*this.show_errors
                 };
 
                 if (settings.mode != 'costs') {
