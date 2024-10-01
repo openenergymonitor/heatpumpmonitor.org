@@ -250,8 +250,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn==column"></i>
                         </th>
                         <th v-if="mode!='public' && public_mode_enabled">Status</th>
-                        <th v-if="mode!='public'">Actions</th>
-                        <th :style="(showContent)?'width:80px':'width:20px'">View</th>
+                        <th v-if="mode=='public'" :style="(showContent)?'width:80px':'width:20px'">View</th>
+                        <th v-if="mode!='public'" :style="(showContent)?'width:120px':'width:20px'"></th>
+
                     </tr>
                     <tr v-for="(system,index) in fSystems" v-if="mode!='public' || (mode=='public' && system.combined_data_length!=0)">
                         <td v-if="mode=='admin'">{{ system.id }}</td>
@@ -265,19 +266,26 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             <span v-if="!system.published && !system.data_flag" class="badge bg-warning">Waiting for review</span>
                             <span v-if="!system.published && system.data_flag" class="badge bg-secondary">Not published</span>
                         </td>
-                        <td v-if="mode!='public'">
-                            <a :href="'<?php echo $path;?>system/edit?id='+system.id">
-                                <button class="btn btn-warning btn-sm" title="Edit"><i class="fa fa-edit" style="color: #ffffff;"></i></button>
-                            </a>
-                            <button class="btn btn-danger btn-sm" @click="remove(system.id)" title="Delete"><i class="fa fa-trash" style="color: #ffffff;"></i></button>
-                        </td>
                         <td>
-                            <a :href="'<?php echo $path;?>system/view?id='+system.id">
+                            <!--View button-->
+                            <a :href="'<?php echo $path;?>system/view?id='+system.id" v-if="mode=='public'">
                                 <button class="btn btn-primary btn-sm" title="Summary"><i class="fa fa-list-alt" style="color: #ffffff;"></i></button>
                             </a>
+
+                            <!--Dashboard-->
                             <a :href="system.url" target="_blank" v-if="showContent">
                                 <button class="btn btn-secondary btn-sm" title="Dashboard"><i class="fa fa-chart-bar" style="color: #ffffff;"></i></button>
                             </a>
+
+                            <!--Edit button-->
+                            <a :href="'<?php echo $path;?>system/edit?id='+system.id" v-if="mode!='public'">
+                                <button class="btn btn-warning btn-sm" title="Edit"><i class="fa fa-edit" style="color: #ffffff;"></i></button>
+                            </a>
+
+                            <!--Delete button-->
+                            <button v-if="mode!='public'" class="btn btn-danger btn-sm" @click="remove(system.id)" title="Delete"><i class="fa fa-trash" style="color: #ffffff;"></i></button>
+
+
                         </td>
                     </tr>
                 </table>
@@ -1057,7 +1065,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                         // abs difference
                                         let abs_difference = Math.abs(difference);
 
-                                        if (abs_difference > 0.1) {
+                                        if (abs_difference > 0.125) {
 
                                             let note = 'Heat meter air error\n';
                                             note += (app.systems[i].error_air / 3600).toFixed(0) + " hours, ";
