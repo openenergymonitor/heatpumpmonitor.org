@@ -84,7 +84,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <input class="form-control" name="query" v-model="filterKey" style="width:100px" @keyup="filter_systems" @change="url_update('filterKey')">
 
                         <div class="input-group-text">Min days</div>
-                        <input class="form-control" name="query" v-model="minDays" style="width:100px" @change="filter_systems">
+                        <input class="form-control" name="query" v-model="minDays" style="width:100px" @keyup="filter_systems" @change="url_update('minDays')">
                     </div>
                     
       
@@ -300,62 +300,76 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 <script>
 
-    // Get URL parameters
-    var urlParams = new URLSearchParams(window.location.search);
-    var decoded = {};
+    var default_settings = {
+        mode: 'topofthescops',
+        period: 'last365',
+        minDays: 290,
+        add: '',
+        rm: '',
+        filter: '',
+        tariff: 'flat'
+    };
+    var page_settings = JSON.parse(JSON.stringify(default_settings));
 
-    if (urlParams.has('mode')) {
-        decoded.mode = urlParams.get('mode');
-    }
-    if (urlParams.has('tariff')) {
-        decoded.tariff = urlParams.get('tariff');
-    }
-    if (urlParams.has('filter')) {
-        decoded.filter = urlParams.get('filter');
-    }
-
-    // Arrays to hold user added and removed columns
-    var added_columns = [];
-    var removed_columns = [];
-
-    // Load from url ?add= and rm=
-    if (urlParams.has('add')) {
-        added_columns = urlParams.get('add').split(',');
-    }
-    if (urlParams.has('rm')) {
-        removed_columns = urlParams.get('rm').split(',');
-    }
-
-
-    var filterKey = '';
-    if (decoded.filter!=undefined) filterKey = decoded.filter;
-
-    var minDays = 290;
-    var stats_time_start = 'last365';
-    var selected_template = 'topofthescops';
+    // Apply these again
+    var selected_template = default_settings.mode;
+    var stats_time_start = default_settings.period;
+    var minDays = default_settings.minDays;
+    var filterKey = default_settings.filter;
+    // not yet added
     var currentSortColumn = 'combined_cop';
     var currentSortDir = 'desc';
+
+    var periods_available = ['last365','last90','last30','last7','all'];
+
+    var default_minDays = {
+        'last365': 290,
+        'last90': 72,
+        'last30': 24,
+        'last7': 5,
+        'all': 0
+    }
+
+
+    // Get URL parameters
+    var urlParams = new URLSearchParams(window.location.search);
+    for (var key in default_settings) {
+        if (urlParams.has(key)) {
+            page_settings[key] = urlParams.get(key);
+        }
+    }
+
+    // Map these across to the main variables
+    var added_columns = [];
+    if (page_settings.add) added_columns = page_settings.add.split(',');
+    var removed_columns = [];
+    if (page_settings.rm) removed_columns = page_settings.rm.split(',');
+    var filterKey = page_settings.filter;
+
+    // Validate and apply period
+    if (periods_available.includes(page_settings.period)) {
+        stats_time_start = page_settings.period;
+        minDays = default_minDays[page_settings.period];
+    }
+
+    minDays = parseInt(page_settings.minDays);
+    if (minDays < 0) minDays = 0;
     
-    if (decoded.mode!=undefined && decoded.mode =='costs') {
+    if (page_settings.mode =='costs') {
         selected_template = 'costs';
-        stats_time_start = 'last365';
-        minDays = 290;
         currentSortColumn = 'combined_heat_unit_cost';
         currentSortDir = 'asc';
     }
-
-    if (decoded.mode!=undefined && decoded.mode =='heatpumpfabric') {
+    else if (page_settings.mode =='heatpumpfabric') {
         selected_template = 'heatpumpfabric';
-        stats_time_start = 'last365';
-        minDays = 290;
         currentSortColumn = 'combined_elec_kwh_per_m2';
         currentSortDir = 'asc';
     }
 
     var tariff_mode = 'flat';
     var options = ['flat','agile','cosy','go','ovohp']
-    if (decoded.tariff!=undefined && options.includes(decoded.tariff)) {
-        tariff_mode = decoded.tariff;
+    if (options.includes(page_settings.tariff)) {
+        tariff_mode = page_settings.tariff;
     }
 
     var columns = <?php echo json_encode($columns); ?>;
@@ -644,11 +658,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 app.currentSortColumn = 'combined_heat_unit_cost';
                 app.sort_only('combined_heat_unit_cost');
 
-                var url = new URL(window.location.href);
-                url.searchParams.set('mode', this.selected_template);
-                url.searchParams.set('tariff', this.tariff_mode);
-                var decodedUrl = decodeURIComponent(url.toString());
-                window.history.pushState({}, '', decodedUrl);
+                app.url_update();
             },
  
             tariff_calc: function() {
@@ -741,35 +751,20 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     app.sort_only('combined_cop');
                     app.columns['combined_cop'].dp = 1;
                 } else if (template == 'heatpumpfabric') {
-                    app.stats_time_start = "last365";
+                    // app.stats_time_start = "last365";
                     app.currentSortDir = 'asc';
                     app.currentSortColumn = 'combined_elec_kwh_per_m2';
                     app.stats_time_start_change();
 
                 } else if (template == 'costs') {
-                    app.stats_time_start = "last365";
+                    // app.stats_time_start = "last365";
                     app.currentSortDir = 'asc'
                     app.currentSortColumn = 'combined_heat_unit_cost';
                     app.columns['combined_cop'].dp = 2;
                     app.stats_time_start_change();
                 }
 
-                // append to url
-                // include tariff_mode if template is costs
-                if (template == 'costs') {
-                    var url = new URL(window.location.href);
-                    url.searchParams.set('mode', template);
-                    url.searchParams.set('tariff', app.tariff_mode);
-                    var decodedUrl = decodeURIComponent(url.toString());
-                    window.history.pushState({}, '', decodedUrl);
-                } else {
-                    var url = new URL(window.location.href);
-                    url.searchParams.set('mode', template);
-                    // remove tariff from url
-                    url.searchParams.delete('tariff');
-                    var decodedUrl = decodeURIComponent(url.toString());
-                    window.history.pushState({}, '', decodedUrl);                
-                }
+                app.url_update();
 
                 resize();
             },
@@ -832,21 +827,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     }
                 }
 
-                // save selected columns to url
-                var url = new URL(window.location.href);
-                if (added_columns.length > 0) {
-                    url.searchParams.set('add', added_columns.join(','));
-                } else {
-                    url.searchParams.delete('add');
-                }
-                if (removed_columns.length > 0) {
-                    url.searchParams.set('rm', removed_columns.join(','));
-                } else {
-                    url.searchParams.delete('rm');
-                }
-                var decodedUrl = decodeURIComponent(url.toString());
-                window.history.pushState({}, '', decodedUrl);
-
+                app.url_update();
             },
             toggle_field_group: function(group) {
                 // hide all
@@ -944,28 +925,29 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 }
                 
                 if (this.stats_time_start=='last365') {
-                    if (this.mode == 'public') this.minDays = 290;
+                    if (this.mode == 'public') this.minDays = default_minDays['last365'];
                     columns['combined_cop'].name = 'SPF';
                     columns['combined_cop'].heading = 'SPF';
                 } else if (this.stats_time_start=='last90') {
-                    if (this.mode == 'public') this.minDays = 72;
+                    if (this.mode == 'public') this.minDays = default_minDays['last90'];
                     columns['combined_cop'].name = 'COP';
                     columns['combined_cop'].heading = 'COP';
                 } else if (this.stats_time_start=='last30') {
-                    if (this.mode == 'public') this.minDays = 24;
+                    if (this.mode == 'public') this.minDays = default_minDays['last30'];
                     columns['combined_cop'].name = 'COP';
                     columns['combined_cop'].heading = 'COP';
                 } else if (this.stats_time_start=='last7') {
-                    if (this.mode == 'public') this.minDays = 5;
+                    if (this.mode == 'public') this.minDays = default_minDays['last7'];
                     columns['combined_cop'].name = 'COP';
                     columns['combined_cop'].heading = 'COP';
                 } else {
-                    if (this.mode == 'public') this.minDays = 0;
+                    if (this.mode == 'public') this.minDays = default_minDays['all'];
                     columns['combined_cop'].name = 'COP';
                     columns['combined_cop'].heading = 'COP';
                 }
                 
                 this.load_system_stats();
+                this.url_update();
             },
             stats_time_end_change: function () {
                 this.load_system_stats();
@@ -1384,21 +1366,42 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     draw_scatter();
                 }
             },
-            url_update(key) {
-                console.log('url update: ' + key);
-                if (key == 'filterKey') {
-                    // set url param filter
-                    var url = new URL(window.location.href);
-                    url.searchParams.set('filter', encodeURIComponent(this.filterKey));
-                    var decodedUrl = decodeURIComponent(url.toString());
-                    window.history.pushState({}, '', decodedUrl);
-                } else if (key == 'minDays') {
-                    // set url param minDays
-                    var url = new URL(window.location.href);
-                    url.searchParams.set('minDays', this.minDays);
-                    var decodedUrl = decodeURIComponent(url.toString());
-                    window.history.pushState({}, '', decodedUrl);
+            url_update(field_keys) {
+
+                // Supported url params
+                //
+                // - mode       (app.selected_template)
+                // - period     (app.stats_time_start)
+                // - minDays    (app.minDays)
+                // - add        (added_columns)
+                // - rm         (removed_columns)
+                // - filter     (app.filterKey)
+                // - tariff     (app.tariff_mode)
+
+                var settings = {
+                    mode: this.selected_template,
+                    period: this.stats_time_start,
+                    minDays: this.minDays,
+                    add: added_columns.join(','),
+                    rm: removed_columns.join(','),
+                    filter: this.filterKey,
+                    tariff: this.tariff_mode
+                };
+
+                if (settings.mode != 'costs') {
+                    settings.tariff = default_settings.tariff;
                 }
+
+                var url = new URL(window.location.href);
+                for (var key in settings) {
+                    if (settings[key] != default_settings[key]) {
+                        url.searchParams.set(key, settings[key]);
+                    } else {
+                        url.searchParams.delete(key);
+                    }
+                }
+                var decodedUrl = decodeURIComponent(url.toString());
+                window.history.pushState({}, '', decodedUrl);   
             }
        },
         filters: {
