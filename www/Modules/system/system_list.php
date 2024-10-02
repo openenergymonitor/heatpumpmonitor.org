@@ -352,8 +352,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         'last30': 24,
         'last7': 5,
         'all': 0
-    }
-
+    };
 
     // Get URL parameters
     var urlParams = new URLSearchParams(window.location.search);
@@ -1139,6 +1138,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         if (note.indexOf('heat meter air error') > -1) {
                             // blue
                             color = "#4f8baa"; 
+                        } else if (note == 'temperature sensor offset error') {
+                            // orange
+                            color = "#FFA500";
                         } else if (note == 'invalid url') {
                             // grey
                             color = "#808080";
@@ -1254,7 +1256,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     }
                 
                     if (stats_columns[key]['dp']!=undefined) {
-                        return prepend+val.toFixed(stats_columns[key]['dp'])+unit;
+                        return "<span title='"+val.toFixed(stats_columns[key]['dp']+1)+"'>"+prepend+val.toFixed(stats_columns[key]['dp'])+unit+"</span>";
                     }
                 }
                 
