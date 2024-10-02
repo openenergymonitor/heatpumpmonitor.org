@@ -3,6 +3,7 @@
 defined('EMONCMS_EXEC') or die('Restricted access');
 
 $enable_register = false;
+$emoncmsorg_only = true;
 
 ?>
 
@@ -54,7 +55,7 @@ $enable_register = false;
 
                 <button type="button" class="btn btn-primary" @click="login" v-if="mode!='register'">Login</button>
                 <?php if ($enable_register) { ?><button type="button" class="btn btn-primary" @click="register" v-if="mode=='register'">Register</button><?php } ?>
-                <button type="button" class="btn btn-light" @click="mode=false" v-if="public_mode_enabled">Cancel</button>
+                <?php if (!$emoncmsorg_only) { ?><button type="button" class="btn btn-light" @click="mode=false" v-if="public_mode_enabled">Cancel</button><?php } ?>
                 <?php if ($enable_register) { ?><button type="button" class="btn btn-light" v-if="mode!='emoncmsorg' && mode!='register' && public_mode_enabled" @click="mode='register'">Register</button> <?php } ?>
                 <!--<a href="#" v-if="mode=='selfhost'">Forgot password</a>-->
             </div>
@@ -71,6 +72,8 @@ $enable_register = false;
 
     document.body.style.backgroundColor = "#1d8dbc";
 
+    var emoncmsorg_only = <?php echo $emoncmsorg_only ? "true" : "false"; ?>;
+
     var app = new Vue({
         el: '#app',
         data: {
@@ -80,7 +83,7 @@ $enable_register = false;
             email: "",
             error: false,
             success: false,
-            mode: false,
+            mode: 'emoncmsorg',
             public_mode_enabled: public_mode_enabled
         },
         methods: {
@@ -88,6 +91,12 @@ $enable_register = false;
                 const params = new URLSearchParams();
                 params.append('username', this.username);
                 params.append('password', this.password);
+                if (emoncmsorg_only) {
+                    params.append('emoncmsorg', 0);
+                } else {
+                    params.append('emoncmsorg', this.mode == "emoncmsorg" ? 1 : 0);
+                }
+
                 params.append('emoncmsorg', this.mode == "emoncmsorg" ? 1 : 0);
 
                 axios.post(path + "user/login.json", params)
