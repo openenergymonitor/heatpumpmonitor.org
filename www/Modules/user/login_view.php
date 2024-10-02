@@ -1,6 +1,9 @@
 <?php
 // no direct access
 defined('EMONCMS_EXEC') or die('Restricted access');
+
+$enable_register = false;
+
 ?>
 
 <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
@@ -35,6 +38,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     <input type="password" class="form-control" v-model="password">
                 </div>
 
+                <?php if ($enable_register) { ?>
                 <div v-if="mode=='register'">
                     <label>Repeat password</label>
                     <div class="input-group mb-3">
@@ -46,11 +50,12 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <input type="text" class="form-control" v-model="email">
                     </div>
                 </div>
+                <?php } ?>
 
                 <button type="button" class="btn btn-primary" @click="login" v-if="mode!='register'">Login</button>
-                <button type="button" class="btn btn-primary" @click="register" v-if="mode=='register'">Register</button>
+                <?php if ($enable_register) { ?><button type="button" class="btn btn-primary" @click="register" v-if="mode=='register'">Register</button><?php } ?>
                 <button type="button" class="btn btn-light" @click="mode=false" v-if="public_mode_enabled">Cancel</button>
-                <button type="button" class="btn btn-light" v-if="mode!='emoncmsorg' && mode!='register' && public_mode_enabled" @click="mode='register'">Register</button>
+                <?php if ($enable_register) { ?><button type="button" class="btn btn-light" v-if="mode!='emoncmsorg' && mode!='register' && public_mode_enabled" @click="mode='register'">Register</button> <?php } ?>
                 <!--<a href="#" v-if="mode=='selfhost'">Forgot password</a>-->
             </div>
 

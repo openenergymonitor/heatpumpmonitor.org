@@ -18,6 +18,10 @@ function user_controller() {
         }
     }
 
+    /*
+
+    // Disable non emoncms.org user registration
+
     if ($route->action=="register") {
         $route->format = "json";
         $password1 = post("password");
@@ -33,7 +37,7 @@ function user_controller() {
         $key = get('key',true);
         $result = $user->verify_email($email,$key);
         return view("Modules/user/login_view.php", array("result"=>$result));  
-    }
+    }*/
 
     if ($route->action=="view" && $session['userid']) {
         return view("Modules/user/account_view.php", array('account'=>$user->get($session['userid'])));  
