@@ -17,15 +17,16 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         <table class="table table-striped">
             <thead>
                 <tr>
-                    <th scope="col">ID</th>
-                    <th scope="col">Username</th>
-                    <th scope="col">Name</th>   
-                    <th scope="col">Email</th>
-                    <th scope="col">Emoncms.org</th>
-                    <th scope="col">Admin</th>
-                    <th scope="col">Created</th>
-                    <th scope="col">Last login</th>
-                    <th scope="col">Welcome email</th>
+                    <th scope="col" @click="sort_list('id')">ID</th>
+                    <th scope="col" @click="sort_list('username')">Username</th>
+                    <th scope="col" @click="sort_list('name')">Name</th>   
+                    <th scope="col" @click="sort_list('email')">Email</th>
+                    <th scope="col" @click="sort_list('emoncmsorg_link')">Emoncms.org</th>
+                    <th scope="col" @click="sort_list('admin')">Admin</th>
+                    <th scope="col" @click="sort_list('created')">Created</th>
+                    <th scope="col" @click="sort_list('last_login')">Last login</th>
+                    <th scope="col" @click="sort_list('welcome_email_sent')">Welcome email</th>
+                    <th scope="col" @click="sort_list('systems')">Systems</th>
                     <th scope="col">Actions</th>
                 </tr>
             </thead>
@@ -40,6 +41,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     <td style="font-size:14px">{{ user.created | formatTime }}</td>
                     <td style="font-size:14px">{{ user.last_login | formatTime }}</td>
                     <td style="font-size:14px">{{ user.welcome_email_sent | formatTime }}</td>
+                    <td>{{ user.systems }}</td>
                     <td>
                         <button class="btn btn-primary btn-sm" v-on:click="switch_user(user.id)">Switch</button>
 
@@ -59,7 +61,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     var app = new Vue({
         el: '#app',
         data: {
-            users: users
+            users: users,
+            sort_by: 'systems',
+            sort_order: 'desc'
         },
         methods: {
             switch_user: function(userid) {
@@ -100,6 +104,25 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         console.log(error);
                     });
                 }
+            },
+            sort_list: function(key) {
+                if (this.sort_by==key) {
+                    if (this.sort_order=='asc') {
+                        this.sort_order = 'desc';
+                    } else {
+                        this.sort_order = 'asc';
+                    }
+                } else {
+                    this.sort_by = key;
+                    this.sort_order = 'asc';
+                }
+                this.users.sort(function(a,b) {
+                    if (app.sort_order=='asc') {
+                        return a[app.sort_by] > b[app.sort_by];
+                    } else {
+                        return a[app.sort_by] < b[app.sort_by];
+                    }
+                });
             }
         },
         filters: {

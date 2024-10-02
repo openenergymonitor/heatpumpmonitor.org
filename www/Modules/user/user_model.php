@@ -500,6 +500,13 @@ class User
                 $row->emoncmsorg_link = '';
             }
 
+            $row->id = (int) $row->id;
+
+            // Count number of systems in system_meta
+            $result2 = $this->mysqli->query("SELECT id FROM system_meta WHERE userid='$row->id'");
+            $row->systems = $result2->num_rows;
+
+
             $row->admin = $row->admin ? 'Yes' : '';
             $users[] = $row;
         }
