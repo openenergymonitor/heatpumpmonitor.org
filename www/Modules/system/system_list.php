@@ -1121,6 +1121,16 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     return time_ago(val);
                 }
                 if (key=='combined_data_length') {
+                    // Calculate as % of period
+                    if (val==null) return '';
+                    /*
+                    let dp = 0;
+                    let append_prc = "<span style='font-size:14px'>%</span>";
+                    if (this.stats_time_start=='last7') return (100*val/(7*24*3600)).toFixed(dp) + append_prc;
+                    else if (this.stats_time_start=='last30') return (100*val/(30*24*3600)).toFixed(dp) + append_prc;
+                    else if (this.stats_time_start=='last90') return (100*val/(90*24*3600)).toFixed(dp) + append_prc;
+                    else if (this.stats_time_start=='last365') return (100*val/(365*24*3600)).toFixed(dp) + append_prc;
+                    */
                     return (val/(24*3600)).toFixed(0)+" days";
                 }
 
