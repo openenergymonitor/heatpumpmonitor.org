@@ -1,7 +1,7 @@
 <?php
 // no direct access
 defined('EMONCMS_EXEC') or die('Restricted access');
-global $settings;
+global $settings, $session;
 ?>
 <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
@@ -142,7 +142,7 @@ global $settings;
         </div>
     </div>
 
-    <div class="container mt-3" style="max-width:800px" v-if="mode=='edit'">
+    <div class="container mt-3" style="max-width:800px" v-if="mode=='edit' && session_userid==system.userid">
         <div class="card mt-3">
             <h5 class="card-header">Select Emoncms.org dashboard</h5>
             <div class="card-body">
@@ -152,16 +152,11 @@ global $settings;
                     <option v-for="(app,index) in available_apps" :value="app.id" :disabled="app.in_use==1">{{ app.username }}: {{ app.name }} {{ app.in_use_msg }}</option>
                 </select>
 
-                <div class="input-group mt-3" v-if="admin">
-                    <span class="input-group-text">URL (Admin only)</span>
-                    <input type="text" class="form-control" v-model="system.url">
-                </div>
             </div>
         </div>
     </div>
 
     <div class="container mt-3" style="max-width:800px">
-
         <div class="row" v-if="system.url!=''">
             <p v-if="mode=='view'">Information about this system.</p>
             <div v-if="mode=='edit'">
@@ -183,6 +178,11 @@ global $settings;
                 </div>
                 
                 <hr class="mt-3">
+            </div>
+
+            <div class="input-group mt-3" v-if="admin">
+                <span class="input-group-text">URL Admin only</span>
+                <input type="text" class="form-control" v-model="system.url">
             </div>
 
             <table class="table mt-3">
@@ -307,6 +307,7 @@ global $settings;
     var app = new Vue({
         el: '#app',
         data: {
+            session_userid: <?php echo $session['userid']; ?>,
             form_type: form_type,
             new_app_selection: '',
             available_apps: [],
