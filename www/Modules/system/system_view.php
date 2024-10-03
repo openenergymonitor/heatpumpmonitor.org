@@ -142,7 +142,7 @@ global $settings, $session;
         </div>
     </div>
 
-    <div class="container mt-3" style="max-width:800px" v-if="mode=='edit' && session_userid==system.userid">
+    <div class="container mt-3" style="max-width:800px" v-if="mode=='edit' && (session_userid==system.userid || !system.userid)">
         <div class="card mt-3">
             <h5 class="card-header">Select Emoncms.org dashboard</h5>
             <div class="card-body">
