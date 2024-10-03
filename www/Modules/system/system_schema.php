@@ -34,7 +34,8 @@ $schema['system_meta'] = array(
         'optional' => true, 
         'name' => 'Installer', 
         'group' => 'Overview',
-        'helper' => 'Optional. If you are not the installer we recommend asking the installer if they are happy with their name being displayed. Self install is also an option..'
+        'helper' => 'Optional. If you are not the installer we recommend asking the installer if they are happy with their name being displayed. Self install is also an option..',
+        'basic' => true
     ),
 
     'installer_url' => array(
@@ -42,7 +43,8 @@ $schema['system_meta'] = array(
         'editable' => true, 
         'optional' => true, 
         'name' => 'Installer URL', 
-        'group' => 'Overview'
+        'group' => 'Overview',
+        'basic' => true
     ),
     
     'installer_logo' => array(
@@ -60,7 +62,8 @@ $schema['system_meta'] = array(
         'editable' => true, 
         'optional' => true, 
         'name' => 'Heat Geek Mastery', 
-        'group' => 'Training'
+        'group' => 'Training',
+        //'basic' => true
     ),
     
     'ultimaterenewables' => array(
@@ -68,7 +71,8 @@ $schema['system_meta'] = array(
         'editable' => true, 
         'optional' => true, 
         'name' => 'Ultimate Renewables Pro', 
-        'group' => 'Training'
+        'group' => 'Training',
+        //'basic' => true
     ),
     
     'heatingacademy' => array(
@@ -76,7 +80,8 @@ $schema['system_meta'] = array(
         'editable' => true, 
         'optional' => true, 
         'name' => 'Heating Academy Hydronics', 
-        'group' => 'Training'
+        'group' => 'Training',
+        //'basic' => true
     ),
     
     'betateach' => array(
@@ -84,7 +89,8 @@ $schema['system_meta'] = array(
         'editable' => true, 
         'optional' => true, 
         'name' => 'BetaTalk', 
-        'group' => 'Learn more'
+        'group' => 'Learn more',
+        //'basic' => true
     ),
     
     'youtube' => array(
@@ -92,7 +98,8 @@ $schema['system_meta'] = array(
         'editable' => true, 
         'optional' => true, 
         'name' => 'YouTube', 
-        'group' => 'Learn more'
+        'group' => 'Learn more',
+        //'basic' => true
     ),
 
     'url' => array(
@@ -115,14 +122,6 @@ $schema['system_meta'] = array(
 
     /* ------------------------------ Heat pump system ----------------------------- */
 
-    'hp_model' => array(
-        'type' => 'varchar(64)', 
-        'editable' => true, 
-        'optional' => false, 
-        'name' => 'Heat pump make & model',
-        'group' => 'Heat pump'
-    ),
-
     'hp_type' => array(
         'type' => 'varchar(64)', 
         'editable' => true, 
@@ -130,6 +129,14 @@ $schema['system_meta'] = array(
         'name' => 'Heat pump type', 
         'group' => 'Heat pump', 
         'options'=>array('Air Source','Ground Source','Water Source','Air-to-Air','Other')
+    ),
+
+    'hp_model' => array(
+        'type' => 'varchar(64)', 
+        'editable' => true, 
+        'optional' => false, 
+        'name' => 'Heat pump make & model',
+        'group' => 'Heat pump'
     ),
 
     'hp_output' => array(
@@ -149,7 +156,8 @@ $schema['system_meta'] = array(
         'name' => 'Heat pump max output', 
         'helper' => 'Maximum output as given on the datasheet for expected design flow temperature',
         'group' => 'Heat pump',
-        'unit' => 'kW'
+        'unit' => 'kW',
+        'hide_on_form' => true
     ),
 
     'hp_max_output_test' => array(
@@ -166,7 +174,7 @@ $schema['system_meta'] = array(
     'refrigerant' => array(
         'type' => 'varchar(64)', 
         'editable' => true, 
-        'optional' => false, 
+        'optional' => true, 
         'name' => 'Refrigerant', 
         'group' => 'Heat pump', 
         'options'=>array('R290','R32','CO2','R410A','R210A','R134A','R407C','R454C')
@@ -214,7 +222,7 @@ $schema['system_meta'] = array(
     'new_radiators' => array(
         'type' => 'tinyint(1)', 
         'editable' => true, 
-        'optional' => false, 
+        'optional' => true, 
         'name' => 'New radiators', 
         'group' => 'Space heating'
     ),
@@ -222,7 +230,7 @@ $schema['system_meta'] = array(
     'old_radiators' => array(
         'type' => 'tinyint(1)', 
         'editable' => true, 
-        'optional' => false, 
+        'optional' => true, 
         'name' => 'Old radiators', 
         'group' => 'Space heating'
     ),
@@ -230,7 +238,7 @@ $schema['system_meta'] = array(
     'fan_coil_radiators' => array(
         'type' => 'tinyint(1)', 
         'editable' => true, 
-        'optional' => false, 
+        'optional' => true, 
         'name' => 'Fan coil radiators', 
         'group' => 'Space heating'
     ),
@@ -238,7 +246,7 @@ $schema['system_meta'] = array(
     'UFH' => array(
         'type' => 'tinyint(1)', 
         'editable' => true, 
-        'optional' => false, 
+        'optional' => true, 
         'name' => 'Underfloor heating', 
         'group' => 'Space heating'
     ),
@@ -282,17 +290,6 @@ $schema['system_meta'] = array(
         'unit' => '°C'
     ),
 
-    'flow_temp_typical' => array(
-        'type' => 'float', 
-        'editable' => true, 
-        'optional' => false, 
-        'name' => 
-        'Typical flow temperature', 
-        'helper' => "Typical flow temperature (e.g 35°C at 6°C)",
-        'group' => 'Heat pump controls', 
-        'unit' => '°C @ 6°C'
-    ),
-
     'wc_curve' => array(
         'type' => 'float', 
         'editable' => true, 
@@ -314,7 +311,7 @@ $schema['system_meta'] = array(
     'zone_number' => array(
         'type' => 'int(11)', 
         'editable' => true, 
-        'optional' => false, 
+        'optional' => true, 
         'name' => 'Number of zones', 
         'group' => 'Heat pump controls'
     ),
@@ -322,7 +319,7 @@ $schema['system_meta'] = array(
     'space_heat_control_type' => array(
         'type' => 'varchar(64)', 
         'editable' => true, 
-        'optional' => false, 
+        'optional' => true, 
         'name' => 'Space heat control type', 
         'group' => 'Heat pump controls', 
         'options'=>array(
@@ -339,7 +336,7 @@ $schema['system_meta'] = array(
     'dhw_control_type' => array(
         'type' => 'varchar(64)', 
         'editable' => true, 
-        'optional' => false, 
+        'optional' => true, 
         'name' => 'DHW control type', 
         'group' => 'Heat pump controls',
         'options' => array(
@@ -355,9 +352,9 @@ $schema['system_meta'] = array(
     'dhw_target_temperature' => array(
         'type' => 'float', 
         'editable' => true, 
-        'optional' => false, 
+        'optional' => true, 
         'name' => 'DHW target temperature', 
-        'group' => 'Heat pump controls', 
+        'group' => 'Hot water',
         'unit' => '°C'
     ),
 
@@ -366,20 +363,30 @@ $schema['system_meta'] = array(
         'editable' => true, 
         'optional' => false, 
         'name' => 'Legionella frequency', 
-        'group' => 'Heat pump controls',
+        'group' => 'Hot water',
         'options' => array('Daily', 'Weekly', 'Fornightly', 'Monthly', 'Other', 'Flexible', 'Disabled', 'No cylinder')
     ),
 
     'legionella_target_temperature' => array(
         'type' => 'float', 
         'editable' => true, 
-        'optional' => false, 
+        'optional' => true, 
         'name' => 'Legionella target temperature', 
-        'group' => 'Heat pump controls', 
+        'group' => 'Hot water',
         'unit' => '°C'
     ),
 
     /* --------------------------------- Property --------------------------------- */
+
+    'heat_loss' => array(
+        'type' => 'float', 
+        'editable' => true, 
+        'optional' => false, 
+        'name' => 'Heat loss at design temperature', 
+        'group' => 'Property',
+        'helper' => 'E.g as given in detailed installer assessment', 
+        'unit' => 'kW @ -3°C'
+    ),
 
     'property' => array(
         'type' => 'varchar(64)', 
@@ -399,25 +406,24 @@ $schema['system_meta'] = array(
         'unit' => 'm²'
     ),
 
-    'heat_demand' => array(
-        'type' => 'int(11)', 
+    'age' => array(
+        'type' => 'varchar(64)',
         'editable' => true, 
         'optional' => false, 
-        'name' => 'Assessed space heat demand',
-        'group' => 'Property', 
-        'helper' => 'E.g as given in detailed installer assessment',
-        'unit' => 'kWh/year'
+        'name' => 'Age', 
+        'group' => 'Property',
+        'options' => array('2012 or newer', '1983 to 2011', '1940 to 1982', '1900 to 1939', 'Pre-1900')
     ),
 
-    'water_heat_demand' => array(
-        'type' => 'int(11)', 
+    'insulation' => array(
+        'type' => 'varchar(64)',
         'editable' => true, 
         'optional' => false, 
-        'name' => 'Assessed water heat demand',
-        'group' => 'Property', 
-        'helper' => 'E.g as given in detailed installer assessment',
-        'unit' => 'kWh/year'
+        'name' => 'Insulation level', 
+        'group' => 'Property',
+        'options' => array('Passivhaus', 'Fully insulated walls, floors and loft', 'Some insulation in walls and loft', 'Cavity wall, plus some loft insulation', 'Non-insulated cavity wall', 'Solid walls')
     ),
+
     /*
     'EPC_spaceheat_demand' => array(
         'type' => 'int(11)', 
@@ -439,32 +445,24 @@ $schema['system_meta'] = array(
         'unit' => 'kWh/year'
     ),*/
 
-    'heat_loss' => array(
-        'type' => 'float', 
+    'heat_demand' => array(
+        'type' => 'int(11)', 
         'editable' => true, 
-        'optional' => false, 
-        'name' => 'Heat loss at design temperature', 
-        'group' => 'Property',
-        'helper' => 'E.g as given in detailed installer assessment', 
-        'unit' => 'kW @ -3°C'
+        'optional' => true, 
+        'name' => 'Assessed space heat demand',
+        'group' => 'Property', 
+        'helper' => 'E.g as given in detailed installer assessment',
+        'unit' => 'kWh/year'
     ),
 
-    'age' => array(
-        'type' => 'varchar(64)', 
+    'water_heat_demand' => array(
+        'type' => 'int(11)', 
         'editable' => true, 
-        'optional' => false, 
-        'name' => 'Age', 
-        'group' => 'Property',
-        'options' => array('2012 or newer', '1983 to 2011', '1940 to 1982', '1900 to 1939', 'Pre-1900')
-    ),
-
-    'insulation' => array(
-        'type' => 'varchar(64)', 
-        'editable' => true, 
-        'optional' => false, 
-        'name' => 'Insulation level', 
-        'group' => 'Property',
-        'options' => array('Passivhaus', 'Fully insulated walls, floors and loft', 'Some insulation in walls and loft', 'Cavity wall, plus some loft insulation', 'Non-insulated cavity wall', 'Solid walls')
+        'optional' => true, 
+        'name' => 'Assessed water heat demand',
+        'group' => 'Property', 
+        'helper' => 'E.g as given in detailed installer assessment',
+        'unit' => 'kWh/year'
     ),
 
     /*
@@ -698,7 +696,8 @@ $schema['system_meta'] = array(
         'editable' => true, 
         'optional' => true, 
         'name' => 'Any other notes or comments', 
-        'group' => 'Notes'
+        'group' => 'Notes',
+        'basic' => true
     ),
     
     'data_flag' => array('type' => 'tinyint(1)', 'editable' => true, 'optional' => true, 'name' => 'Data issue flag', 'group' => 'Metering'),

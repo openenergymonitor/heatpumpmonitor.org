@@ -221,7 +221,7 @@ global $settings;
                 </select>
 
                 <div class="input-group mt-3" v-if="admin">
-                    <span class="input-group-text">URL</span>
+                    <span class="input-group-text">URL (Admin only)</span>
                     <input type="text" class="form-control" v-model="system.url">
                 </div>
             </div>
@@ -230,18 +230,37 @@ global $settings;
 
     <div class="container mt-3" style="max-width:800px">
 
-
         <div class="row" v-if="system.url!=''">
-            <h4>Form data</h4>
-            <p>Information about this system...</p>
-            <table class="table">
+            <p v-if="mode=='view'">Information about this system.</p>
+            <div v-if="mode=='edit'">
+                <p>Please complete this form to provide valuable context about the system, which will help others interpret the monitored data effectively and enable richer data analysis.<br><br>We encourage you to fill out the entire form, as it offers the most comprehensive understanding for others. However, if time is limited or you lack some information, you may opt for the 'Basic & Required' option to keep it simple.</p>
+                <hr>
+                <div class="row">
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" v-model="form_type" value="basic">
+                            <label>Keep it simple (basic and required fields)</label>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" v-model="form_type" value="full">
+                            <label>I've got time (we would really appreciate it!)</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <hr class="mt-3">
+            </div>
+
+            <table class="table mt-3">
                 <tbody v-for="group,group_name in schema_groups">
                     <tr>
                         <th style="background-color:#f0f0f0;">{{ group_name }}</th>
                         <td style="background-color:#f0f0f0;"></td>
                         <td style="background-color:#f0f0f0;"></td>
                     </tr>
-                    <tr v-for="(field,key) in group" v-if="field.editable && key!='share' && !field.hide_on_form">
+                    <tr v-for="(field,key) in group" v-if="field.editable && key!='share' && !field.hide_on_form && (form_type=='full' || !field.optional || field.basic)">
                         <td>
                             <span>{{ field.name }}</span> <span v-if="!field.optional && mode=='edit'" style="color:#aa0000">*</span>
                         </td>
@@ -346,14 +365,22 @@ global $settings;
 
     var reload_interval = null;
 
+    var system = <?php echo json_encode($system_data); ?>;
+
+    var form_type = 'basic';
+    if (system.id) {
+        form_type = 'full';
+    }
+
     var app = new Vue({
         el: '#app',
         data: {
+            form_type: form_type,
             new_app_selection: '',
             available_apps: [],
             path: path,
             mode: "<?php echo $mode; ?>", // edit, view
-            system: <?php echo json_encode($system_data); ?>,
+            system: system,
             monthly: [],
             last30: [],
             last365: [],
