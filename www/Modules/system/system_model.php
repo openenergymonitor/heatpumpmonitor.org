@@ -543,4 +543,71 @@ class System
         }
         return $list;
     }
+
+    // get available apps
+    public function available_apps($userid) {
+        $userid = (int) $userid;
+
+        // Get this username
+        $result = $this->mysqli->query("SELECT username FROM users WHERE id='$userid'");
+        $row = $result->fetch_object();
+        $username = $row->username;
+
+        // Get emoncmsorg apikey
+        $result = $this->mysqli->query("SELECT * FROM emoncmsorg_link WHERE userid='$userid'");
+        if (!$row = $result->fetch_object()) {
+            return array();
+        }
+
+        // Master account
+        $myheatpump_apps = $this->append_app_list(array(), $username, $row->emoncmsorg_apikey_read);
+
+        // Get sub accounts
+        $result = file_get_contents("https://emoncms.org/account/list.json?apikey=$row->emoncmsorg_apikey_write");
+        if (!$result) return $myheatpump_apps;
+
+        $accounts = json_decode($result);
+        if (!$accounts) return $myheatpump_apps;
+        
+        foreach ($accounts as $account) {
+            $myheatpump_apps = $this->append_app_list($myheatpump_apps, $account->username, $account->apikey_read);
+        }
+
+        return $myheatpump_apps;
+    }
+
+    private function append_app_list($myheatpump_apps, $username, $readkey) {
+        $result = file_get_contents("https://emoncms.org/app/list.json?apikey=".$readkey);
+        if (!$result) return $myheatpump_apps;
+
+        $apps = json_decode($result);
+        if (!$apps) return $myheatpump_apps;
+
+        foreach ($apps as $app) {
+            if ($app->app=="myheatpump") {
+                $app->username = $username;
+                // Generate url
+                $url = "https://emoncms.org/app/view?name=".$app->name."&readkey=".$readkey;
+                $app->url = $url;
+
+                // Check if app is already added, skip if it is
+                $result = $this->mysqli->query("SELECT id FROM system_meta WHERE url='$url'");
+                if ($result->num_rows>0) {
+                    $app->in_use = 1;
+                } else {
+                    $app->in_use = 0;
+                }
+
+                $myheatpump_apps[] = array(
+                    "id" => (int) $app->id,
+                    "username" => $app->username,
+                    "name" => $app->name,
+                    "url" => $app->url,
+                    "public" => (int) $app->public,
+                    "in_use" => $app->in_use
+                );
+            }
+        }
+        return $myheatpump_apps;
+    }
 }

@@ -27,33 +27,32 @@ global $settings;
 <div id="app" class="bg-light">
     <div style=" background-color:#f0f0f0; padding-top:20px; padding-bottom:10px">
         <div class="container" style="max-width:800px;">
-            <div style="float:right" v-if="admin"><a :href="path+'system/log?id='+system.id" class="btn btn-light">Change log</a></div>
-            <div style="float:right; margin-right:10px;" v-if="admin">
+            <div style="float:right" v-if="admin && system.id"><a :href="path+'system/log?id='+system.id" class="btn btn-light">Change log</a></div>
+            <div style="float:right; margin-right:10px;" v-if="admin && system.id">
                 <a :href="'https://mail.google.com/mail/?view=cm&fs=1&to=<?php echo $email; ?>'" target="_blank" class="btn btn-dark">
                     <i class="fa fa-envelope" style="color: #ffffff;"></i> Email
                 </a>
             </div>
-      
 
             <div v-if="system.hp_model!=''">
                 <h3>{{ system.hp_output }} kW, {{ system.hp_model }}</h3>
                 <p>{{ system.location }}, <span v-if="system.installer_name"><a :href="system.installer_url">{{ system.installer_name }}</a></span></p>
             </div>
-            <button class="btn btn-primary mb-3"  @click="open_emoncms_dashboard" v-if="system.url!=''"><span class="d-none d-lg-inline-block">Emoncms</span> Dashboard</button>
-            <button class="btn btn-secondary mb-3"  @click="open_heatloss_tool" v-if="system.url!=''" >Heat demand <span class="d-none d-lg-inline-block">tool</span></button>  
-            <button class="btn btn-secondary mb-3"  @click="open_monthly_tool" v-if="system.url!=''" >Monthly</button>
-            <button class="btn btn-secondary mb-3"  @click="open_daily_tool" v-if="system.url!=''" >Daily</button>
-            <button class="btn btn-secondary mb-3"  @click="open_compare_tool" v-if="system.url!=''" >Compare</button>              
-            <button class="btn btn-secondary mb-3"  @click="open_histogram_tool" v-if="system.url!=''" >Histogram</button>  
+            <button class="btn btn-primary mb-3"  @click="open_emoncms_dashboard" v-if="system.id"><span class="d-none d-lg-inline-block">Emoncms</span> Dashboard</button>
+            <button class="btn btn-secondary mb-3"  @click="open_heatloss_tool" v-if="system.id" >Heat demand <span class="d-none d-lg-inline-block">tool</span></button>  
+            <button class="btn btn-secondary mb-3"  @click="open_monthly_tool" v-if="system.id" >Monthly</button>
+            <button class="btn btn-secondary mb-3"  @click="open_daily_tool" v-if="system.id" >Daily</button>
+            <button class="btn btn-secondary mb-3"  @click="open_compare_tool" v-if="system.id" >Compare</button>              
+            <button class="btn btn-secondary mb-3"  @click="open_histogram_tool" v-if="system.id" >Histogram</button>  
             <button class="btn btn-warning mb-3" style="margin-left:10px" v-if="admin && mode=='view'" @click="mode='edit'">Edit</button>
-            <button class="btn btn-light mb-3" style="margin-left:10px" v-if="admin && mode=='edit'" @click="mode='view'">Cancel</button>
+            <!--<button class="btn btn-light mb-3" style="margin-left:10px" v-if="admin && mode=='edit'" @click="mode='view'">Cancel</button>-->
 
-            <h3 v-if="system.hp_model==''">New System</h3>
+            <h3 v-if="!system.id">New System</h3>
         </div>
     </div>
     <br>
 
-    <div class="container mt-3" style="max-width:800px" v-if="last365!=undefined && last30!=undefined">
+    <div class="container mt-3" style="max-width:800px" v-if="system.url!='' && last365!=undefined && last30!=undefined">
 
 
         <div class="card mt-3" v-if="last30.combined_data_length!=last365.combined_data_length">
@@ -200,7 +199,7 @@ global $settings;
     </div>
 
     <div class="container mt-3" style="max-width:800px">
-        <div class="card mt-3" v-if="mode=='edit' && system.url!=''">
+        <div class="card mt-3" v-if="mode=='edit' && system.id">
             <h5 class="card-header">Reload system data</h5>
             <div class="card-body">
                 <p>Manually reload system data from Emoncms dashboard</p>
@@ -211,8 +210,25 @@ global $settings;
         </div>
     </div>
 
+    <div class="container mt-3" style="max-width:800px" v-if="mode=='edit'">
+        <div class="card mt-3">
+            <h5 class="card-header">Select Emoncms.org dashboard</h5>
+            <div class="card-body">
+
+                <div>
+                    <select class="form-select"  style="width:100%" v-model="new_app_selection" @change="load_app">
+                        <option value="">PLEASE SELECT</option>
+                        <option v-for="(app,index) in available_apps" :value="app.id" :disabled="app.in_use==1">{{ app.username }}: {{ app.name }} {{ app.in_use_msg }}</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="container mt-3" style="max-width:800px">
-        <div class="row">
+
+
+        <div class="row" v-if="system.url!=''">
             <h4>Form data</h4>
             <p>Information about this system...</p>
             <table class="table">
@@ -256,7 +272,7 @@ global $settings;
 
         </div>
     </div>
-    <div style=" background-color:#eee; padding-top:20px; padding-bottom:10px" v-if="mode=='edit'">
+    <div style=" background-color:#eee; padding-top:20px; padding-bottom:10px" v-if="mode=='edit' && system.url!=''">
         <div class="container" style="max-width:800px;">
             <?php if ($settings['public_mode_enabled']) { ?>
             <div class="row">
@@ -296,6 +312,10 @@ global $settings;
     </div>
 </div>
 <script>
+
+    // set page background color bg-light
+    document.body.style.backgroundColor = "#f8f9fa";
+
     var schema = <?php echo json_encode($schema); ?>;
     // arrange by group
     var schema_groups = {};
@@ -326,6 +346,8 @@ global $settings;
     var app = new Vue({
         el: '#app',
         data: {
+            new_app_selection: '',
+            available_apps: [],
             path: path,
             mode: "<?php echo $mode; ?>", // edit, view
             system: <?php echo json_encode($system_data); ?>,
@@ -476,6 +498,20 @@ global $settings;
                             }
                         }
                     });
+            },
+            load_app: function() {
+                var app_id = app.new_app_selection;
+
+                var selected_app = null;
+                for (var appx in app.available_apps) {
+                    if (app.available_apps[appx].id == app_id) {
+                        selected_app = app.available_apps[appx];
+                        app.system.url = selected_app.url;
+                    }
+                }
+            },
+            load_data: function() {
+                alert(system.url);
             }
         },
     });
@@ -567,4 +603,31 @@ global $settings;
 
         chart.updateOptions(chart_options);
     }
+
+    // Load available apps
+    if (app.mode == 'edit') {
+        axios.get(path + 'system/available')
+            .then(function(response) {
+                // Add in_use_msg
+                for (var appx in response.data) {
+                    if (app.system.url == response.data[appx].url) {
+                        app.new_app_selection = response.data[appx].id;
+                        continue;
+                    }
+
+                    if (response.data[appx].in_use == 1) {
+                        response.data[appx].in_use_msg = ' (in use)';
+                    } else {
+                        response.data[appx].in_use_msg = '';
+                    }
+                }
+
+                app.available_apps = response.data;
+                console.log(app.available_apps);
+            })
+            .catch(function(error) {
+                console.log(error);
+            });
+    }
+
 </script>

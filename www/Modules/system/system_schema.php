@@ -101,7 +101,8 @@ $schema['system_meta'] = array(
         'optional' => false, 
         'name' => 'MyHeatpump App URL',
         'helper' => 'Requires an account on emoncms.org, or a self-hosted instance of emoncms',
-        'group' => 'Overview'
+        'group' => 'Overview',
+        'hide_on_form' => true
     ),
 
     'share' => array(
