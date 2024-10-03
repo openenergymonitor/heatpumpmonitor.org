@@ -215,11 +215,14 @@ global $settings;
             <h5 class="card-header">Select Emoncms.org dashboard</h5>
             <div class="card-body">
 
-                <div>
-                    <select class="form-select"  style="width:100%" v-model="new_app_selection" @change="load_app">
-                        <option value="">PLEASE SELECT</option>
-                        <option v-for="(app,index) in available_apps" :value="app.id" :disabled="app.in_use==1">{{ app.username }}: {{ app.name }} {{ app.in_use_msg }}</option>
-                    </select>
+                <select class="form-select"  style="width:100%" v-model="new_app_selection" @change="load_app">
+                    <option value="">PLEASE SELECT</option>
+                    <option v-for="(app,index) in available_apps" :value="app.id" :disabled="app.in_use==1">{{ app.username }}: {{ app.name }} {{ app.in_use_msg }}</option>
+                </select>
+
+                <div class="input-group mt-3" v-if="admin">
+                    <span class="input-group-text">URL</span>
+                    <input type="text" class="form-control" v-model="system.url">
                 </div>
             </div>
         </div>
