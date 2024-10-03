@@ -38,115 +38,51 @@ global $settings;
                 <h3>{{ system.hp_output }} kW, {{ system.hp_model }}</h3>
                 <p>{{ system.location }}, <span v-if="system.installer_name"><a :href="system.installer_url">{{ system.installer_name }}</a></span></p>
             </div>
-            <button class="btn btn-primary mb-3"  @click="open_emoncms_dashboard" v-if="system.id"><span class="d-none d-lg-inline-block">Emoncms</span> Dashboard</button>
-            <button class="btn btn-secondary mb-3"  @click="open_heatloss_tool" v-if="system.id" >Heat demand <span class="d-none d-lg-inline-block">tool</span></button>  
-            <button class="btn btn-secondary mb-3"  @click="open_monthly_tool" v-if="system.id" >Monthly</button>
-            <button class="btn btn-secondary mb-3"  @click="open_daily_tool" v-if="system.id" >Daily</button>
-            <button class="btn btn-secondary mb-3"  @click="open_compare_tool" v-if="system.id" >Compare</button>              
-            <button class="btn btn-secondary mb-3"  @click="open_histogram_tool" v-if="system.id" >Histogram</button>  
+            <a v-if="system.id" :href="system.url"><button class="btn btn-primary mb-3"><span class="d-none d-lg-inline-block">Emoncms</span> Dashboard</button></a>
+            <a v-if="system.id" :href="path+'heatloss?id='+system.id"><button class="btn btn-secondary mb-3">Heat demand <span class="d-none d-lg-inline-block">tool</span></button></a>
+            <a v-if="system.id" :href="path+'monthly?id='+system.id"><button class="btn btn-secondary mb-3">Monthly</button></a>
+            <a v-if="system.id" :href="path+'daily?id='+system.id"><button class="btn btn-secondary mb-3">Daily</button></a>
+            <a v-if="system.id" :href="path+'compare?id='+system.id"><button class="btn btn-secondary mb-3">Compare</button></a>              
+            <a v-if="system.id" :href="path+'histogram?id='+system.id"><button class="btn btn-secondary mb-3">Histogram</button></a>
             <button class="btn btn-warning mb-3" style="margin-left:10px" v-if="admin && mode=='view'" @click="mode='edit'">Edit</button>
-            <!--<button class="btn btn-light mb-3" style="margin-left:10px" v-if="admin && mode=='edit'" @click="mode='view'">Cancel</button>-->
 
-            <h3 v-if="!system.id">New System</h3>
+            <h3 v-if="!system.id">Add New System</h3>
         </div>
     </div>
     <br>
 
-    <div class="container mt-3" style="max-width:800px" v-if="system.url!='' && last365!=undefined && last30!=undefined">
+    <div class="container mt-3" style="max-width:800px" v-if="system.url!='' && all!=undefined && last30!=undefined">
 
 
-        <div class="card mt-3" v-if="last30.combined_data_length!=last365.combined_data_length">
-            <h5 class="card-header">Last 365 days</h5>
+        <div class="card mt-3" v-if="last30.combined_data_length!=all.combined_data_length">
+            <h5 class="card-header">All data</h5>
             <div class="card-body">
                 <div class="row" style="text-align:center">
                     <div class="col">
                         <h5>Electric</h5>
-                        <h4>{{ last365.combined_elec_kwh | toFixed(0) }} kWh</h4>
+                        <h4>{{ all.combined_elec_kwh | toFixed(0) }} kWh</h4>
                     </div>
                     
                     <div class="col">
                         <h5>Heat Output</h5>
-                        <h4>{{ last365.combined_heat_kwh | toFixed(0) }} kWh</h4>
+                        <h4>{{ all.combined_heat_kwh | toFixed(0) }} kWh</h4>
                     </div>
                     
                     <div class="col">
-                        <h5 title="Seasonal performance factor">SPF</h5>
-                        <h4>{{ last365.combined_cop | toFixed(1) }}</h4>            
-                    </div>    
-                </div>      
-            </div>
-        </div>
-        <div class="card mt-3">
-        <h5 class="card-header">Last 30 days</h5>
-            <div class="card-body">
-                <div class="row" style="text-align:center">
-                    <div class="col">
-                        <h5>Electric</h5>
-                        <h4>{{ last30.combined_elec_kwh | toFixed(0) }} kWh</h4>
+                        <h5 title="Seasonal performance factor">COP</h5>
+                        <h4>{{ all.combined_cop | toFixed(1) }}</h4>            
                     </div>
-                    
+
                     <div class="col">
-                        <h5>Heat Output</h5>
-                        <h4>{{ last30.combined_heat_kwh | toFixed(0) }} kWh</h4>
-                    </div>
-                    
-                    <div class="col">
-                        <h5>COP</h5>
-                        <h4>{{ last30.combined_cop | toFixed(1) }}</h4>            
-                    </div>    
-                </div>
-                <hr>
-                <div class="row" style="text-align:center">
-                    <div class="col">
-                        Stats when running
-                    </div>  
-                </div>
-                <div class="row mt-2" style="text-align:center">
-                    <div class="col">
-                        <b>Electric</b><br>
-                        {{ last30.running_elec_kwh | toFixed(0) }} kWh
-                    </div>  
-                    <div class="col">
-                        <b>Heat</b><br>
-                        {{ last30.running_heat_kwh | toFixed(0) }} kWh
-                    </div>
-                    <div class="col">
-                        <b>COP</b><br>
-                        {{ last30.running_cop | toFixed(1) }}
-                    </div>  
-                    <div class="col">
-                        <b>FlowT</b><br>
-                        {{ last30.running_flowT_mean | toFixed(1) }} °C
-                    </div>
-                    <div class="col">
-                        <b>OutsideT</b><br>
-                        {{ last30.running_outsideT_mean | toFixed(1) }} °C
-                    </div>
-                    <div class="col">
-                        <b>Carnot</b><br>
-                        {{ last30.running_prc_carnot }}%
+                        <h5 title="Data coverage">Data</h5>
+                        <h4>{{ all.combined_data_length | formatDays }} days</h4>
                     </div>
                 </div>      
             </div>
         </div>
 
         <div class="card mt-3">
-            <h5 class="card-header">Monthly data</h5>
-            <div class="card-body">
-                <div class="input-group mb-3"> 
-                    <span class="input-group-text">Chart mode</span>
-                    <select class="form-control" v-model="chart_yaxis" @change="change_chart_mode">
-                        <optgroup v-for="(group, group_name) in system_stats_monthly_by_group" :label="group_name">
-                            <option v-for="(row,key) in group" :value="key">{{ row.name }}</option>
-                        </optgroup>
-                    </select>
-                </div>
-                <div id="chart"></div>
-            </div>
-        </div>    
-
-        <div class="card mt-3">
-            <h5 class="card-header">Data Quality</h5>
+            <h5 class="card-header">Data Coverage</h5>
             <div class="card-body">
                 <p>100% is full data coverage, 0% is no data</p>
                 <div class="quality-bound">
@@ -191,11 +127,7 @@ global $settings;
                 </table>
             </div>
             </div>
-        </div>   
-
-
-
-
+        </div>
     </div>
 
     <div class="container mt-3" style="max-width:800px">
@@ -383,7 +315,7 @@ global $settings;
             system: system,
             monthly: [],
             last30: [],
-            last365: [],
+            all: [],
             schema_groups: schema_groups,
 
             show_error: false,
@@ -480,27 +412,6 @@ global $settings;
             cancel: function() {
                 window.location.href = path + 'system/list/public';
             },
-            change_chart_mode: function() {
-                draw_chart();
-            },
-            open_emoncms_dashboard: function() {
-                window.open(app.system.url);
-            },
-            open_heatloss_tool: function() {
-                window.location = path+"heatloss?id="+app.system.id;
-            },
-            open_monthly_tool: function() {
-                window.location = path+"monthly?id="+app.system.id;
-            },
-            open_daily_tool: function() {
-                window.location = path+"daily?id="+app.system.id;
-            },
-            open_histogram_tool: function() {
-                window.location = path+"histogram?id="+app.system.id;
-            },
-            open_compare_tool: function() {
-                window.location = path+"compare?id="+app.system.id;
-            },
             loadstats: function() {
                 app.disable_loadstats = true;
                 axios.get(path + 'system/loadstats?id=' + app.system.id)
@@ -546,55 +457,19 @@ global $settings;
         },
     });
 
-    // CHART
-
-    chart_options = {
-        colors_style_guidlines: ['#29ABE2'],
-        colors: ['#29AAE3'],
-        chart: {
-            type: 'bar',
-            height: 300,
-            toolbar: {
-                show: false
-            }
-        },
-        dataLabels: {
-            enabled: false
-        },
-        series: [],
-        xaxis: {
-            categories: [],
-            type: 'datetime',
-            labels: {
-                datetimeUTC: false,
-                // format month and year
-                formatter: function(value, timestamp, opts) {
-                    return new Date(timestamp).toLocaleDateString('default', { month: 'short', year: 'numeric' });
-                }
-            }
-        },
-        yaxis: {
-            title: {
-                text: 'COP'
-            }
-        }
-    };
-    chart = new ApexCharts(document.querySelector("#chart"), chart_options);
-    chart.render();
-
     axios.get(path + 'system/monthly?id=' + app.system.id)
         .then(function(response) {
             app.monthly = response.data;
-            draw_chart();
+            // draw_chart();
 
         })
         .catch(function(error) {
             console.log(error);
         });
 
-    axios.get(path + 'system/stats/last365?id=' + app.system.id)
+    axios.get(path + 'system/stats/all?id=' + app.system.id)
         .then(function(response) {
-            app.last365 = response.data[app.system.id];
+            app.all = response.data[app.system.id];
         })
         .catch(function(error) {
             console.log(error);
@@ -607,32 +482,6 @@ global $settings;
         .catch(function(error) {
             console.log(error);
         });
-
-    function draw_chart() {
-
-        var x = [];
-        var y = [];
-
-        // 12 months of dummy data peak in winter
-        for (var i = 0; i < app.monthly.length; i++) {
-            x.push(app.monthly[i]['timestamp'] * 1000);
-            y.push(app.monthly[i][app.chart_yaxis]);
-        }
-
-        chart_options.xaxis.categories = x;
-        chart_options.series = [{
-            name: system_stats_monthly[app.chart_yaxis].name,
-            data: y
-        }];
-
-        chart_options.yaxis = {
-            title: {
-                text: system_stats_monthly[app.chart_yaxis].name
-            }
-        }
-
-        chart.updateOptions(chart_options);
-    }
 
     // Load available apps
     if (app.mode == 'edit') {
