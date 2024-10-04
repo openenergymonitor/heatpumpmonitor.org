@@ -88,8 +88,13 @@ class System
             // if editable
             if ($schema_row['editable']) {
                 $form_data->$key = '';
-                if ($schema_row["code"]=='i') $form_data->$key = (int) $form_data->$key;
-                if ($schema_row["code"]=='d') $form_data->$key = (float) $form_data->$key;   
+                // set default value
+                if (isset($schema_row['default'])) {
+                    $form_data->$key = $schema_row['default'];
+                }
+
+                //if ($schema_row["code"]=='i') $form_data->$key = (int) $form_data->$key;
+                //if ($schema_row["code"]=='d') $form_data->$key = (float) $form_data->$key;
             }
         }
         $form_data->id = false;

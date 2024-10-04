@@ -109,7 +109,7 @@ $schema['system_meta'] = array(
         'name' => 'MyHeatpump App URL',
         'helper' => 'Requires an account on emoncms.org, or a self-hosted instance of emoncms',
         'group' => 'Overview',
-        'hide_on_form' => true,
+        'show' => false,
         'show_to_admin' => true
     ),
 
@@ -118,7 +118,8 @@ $schema['system_meta'] = array(
         'editable' => true, 
         'optional' => false, 
         'name' => 'Share', 
-        'group' => 'Overview'
+        'group' => 'Overview',
+        'show' => false
     ),
 
     /* ------------------------------ Heat pump system ----------------------------- */
@@ -158,14 +159,14 @@ $schema['system_meta'] = array(
         'helper' => 'Maximum output as given on the datasheet for expected design flow temperature',
         'group' => 'Heat pump',
         'unit' => 'kW',
-        'hide_on_form' => true
+        'show' => false
     ),
 
     'hp_max_output_test' => array(
         'type' => 'float', 
         'editable' => true, 
         'optional' => true,
-        'hide_on_form' => true,
+        'show' => false,
         'name' => 'Heat pump max output test', 
         'helper' => 'Maximum output recorded over 2-3 defrost cycles using HeatpumpMonitor data',
         'group' => 'Heat pump',
@@ -181,45 +182,72 @@ $schema['system_meta'] = array(
         'options'=>array('R290','R32','CO2','R410A','R210A','R134A','R407C','R454C')
     ),
 
-    /* --------------------------- Hot water cylinders -------------------------- */
-
-    'dhw_method' => array(
-        'type' => 'varchar(64)', 
+    'uses_backup_heater' => array(
+        'type' => 'tinyint(1)', 
         'editable' => true, 
         'optional' => false, 
-        'name' => 'Hot water method', 
-        'group' => 'Hot water', 
+        'name' => 'Heat pump backup heater installed and in use',
+        'group' => 'Heat pump'
+    ),
+
+    /* ------------------------------ Space heating ----------------------------- */
+
+    'flow_temp' => array(
+        'type' => 'float', 
+        'editable' => true, 
+        'optional' => false, 
+        'name' => 'Design flow temperature', 
+        'group' => 'Space heating',
+        'helper' => "Design flow temperature (e.g 45°C at -3°C)",
+        'unit' => '°C'
+    ),
+
+    'design_temp' => array(
+        'type' => 'float', 
+        'editable' => true, 
+        'optional' => false, 
+        'name' => 'Outside design temperature', 
+        'group' => 'Space heating',
+        'helper' => "E.g -3°C",
+        'unit' => '°C'
+    ),
+
+    'wc_curve' => array(
+        'type' => 'float', 
+        'editable' => true, 
+        'optional' => true, 
+        'name' => 'Weather compensation curve', 
+        'group' => 'Space heating',
+        'helper' => '(if known e.g 0.6)'
+    ),
+
+
+    'space_heat_control_type' => array(
+        'type' => 'varchar(64)', 
+        'editable' => true, 
+        'optional' => true, 
+        'name' => 'Space heat control type', 
+        'group' => 'Space heating',
         'options'=>array(
-            'None',
-            'Cylinder with coil',
-            'Cylinder with plate heat exchanger', 
-            'Thermal store (heat exchanger on output)',
-            'Phase change store',
-            'Other'
+            'Pure weather compensation, no room influence', 
+            'Weather compensation with a little room influence', 
+            'Weather compensation with significant room influence',
+            'Weather compensation with simple set point control',
+            'Room influence only (e.g Auto adapt)', 
+            'Manual flow temperature control',
+            'Custom controller'
         )
     ),
 
-    'cylinder_volume' => array(
-        'type' => 'float', 
+    'zone_number' => array(
+        'type' => 'int(11)', 
         'editable' => true, 
         'optional' => true, 
-        'name' => 'Cylinder volume',
-        'helper' => 'If applicable',
-        'group' => 'Hot water', 
-        'unit' => 'litres'
+        'name' => 'Number of zones', 
+        'group' => 'Space heating',
+        'default' => 1
     ),
-
-    'dhw_coil_hex_area' => array(
-        'type' => 'float', 
-        'editable' => true, 
-        'optional' => true, 
-        'name' => 'Coil or heat exchanger area', 
-        'group' => 'Hot water', 
-        'unit' => 'm²'
-    ),
-
-    /* ------------------------------ Heat emitters ----------------------------- */
-
+    
     'new_radiators' => array(
         'type' => 'tinyint(1)', 
         'editable' => true, 
@@ -269,85 +297,42 @@ $schema['system_meta'] = array(
         'group' => 'Space heating',
         'helper' => "A volumiser is a 2-pipe tank that adds more water volume to the system to reduce cycling"
     ),
-    /* ------------------------------ System controls ----------------------------- */
 
-    'flow_temp' => array(
-        'type' => 'float', 
-        'editable' => true, 
-        'optional' => false, 
-        'name' => 'Design flow temperature', 
-        'group' => 'Heat pump controls',
-        'helper' => "Design flow temperature (e.g 45°C at -3°C)",
-        'unit' => '°C'
-    ),
+    /* --------------------------- Hot water cylinders -------------------------- */
 
-    'design_temp' => array(
-        'type' => 'float', 
-        'editable' => true, 
-        'optional' => false, 
-        'name' => 'Outside design temperature', 
-        'group' => 'Heat pump controls',
-        'helper' => "E.g -3°C",
-        'unit' => '°C'
-    ),
-
-    'wc_curve' => array(
-        'type' => 'float', 
-        'editable' => true, 
-        'optional' => true, 
-        'name' => 'Weather compensation curve', 
-        'group' => 'Heat pump controls',
-        'helper' => '(if known e.g 0.6)'
-    ),
-
-    'freeze' => array(
+    'dhw_method' => array(
         'type' => 'varchar(64)', 
         'editable' => true, 
         'optional' => false, 
-        'name' => 'Freeze protection', 
-        'group' => 'Heat pump controls',
-        'options' => array('Glycol/water mixture', 'Anti-freeze valves', 'Central heat pump water circulation')
-    ),
-    
-    'zone_number' => array(
-        'type' => 'int(11)', 
-        'editable' => true, 
-        'optional' => true, 
-        'name' => 'Number of zones', 
-        'group' => 'Heat pump controls'
-    ),
-    
-    'space_heat_control_type' => array(
-        'type' => 'varchar(64)', 
-        'editable' => true, 
-        'optional' => true, 
-        'name' => 'Space heat control type', 
-        'group' => 'Heat pump controls', 
+        'name' => 'Hot water method', 
+        'group' => 'Hot water', 
         'options'=>array(
-            'Pure weather compensation, no room influence', 
-            'Weather compensation with a little room influence', 
-            'Weather compensation with significant room influence',
-            'Weather compensation with simple set point control',
-            'Room influence only (e.g Auto adapt)', 
-            'Manual flow temperature control',
-            'Custom controller'
+            'None',
+            'Cylinder with coil',
+            'Cylinder with plate heat exchanger', 
+            'Thermal store (heat exchanger on output)',
+            'Phase change store',
+            'Other'
         )
     ),
 
-    'dhw_control_type' => array(
-        'type' => 'varchar(64)', 
+    'cylinder_volume' => array(
+        'type' => 'float', 
         'editable' => true, 
         'optional' => true, 
-        'name' => 'DHW control type', 
-        'group' => 'Heat pump controls',
-        'options' => array(
-            'Daily scheduled heat up of tank', 
-            'Twice daily scheduled heat up of tank', 
-            'Automatic top up of tank if temperature drops by 3-6C', 
-            'Automatic top up of tank if temperature drops by 6-10C', 
-            'Manual control of tank temperature',
-            'Not applicable'
-        )
+        'name' => 'Cylinder volume',
+        'helper' => 'If applicable',
+        'group' => 'Hot water', 
+        'unit' => 'litres'
+    ),
+
+    'dhw_coil_hex_area' => array(
+        'type' => 'float', 
+        'editable' => true, 
+        'optional' => true, 
+        'name' => 'Coil or heat exchanger area', 
+        'group' => 'Hot water', 
+        'unit' => 'm²'
     ),
 
     'dhw_target_temperature' => array(
@@ -357,6 +342,22 @@ $schema['system_meta'] = array(
         'name' => 'DHW target temperature', 
         'group' => 'Hot water',
         'unit' => '°C'
+    ),
+
+    'dhw_control_type' => array(
+        'type' => 'varchar(64)', 
+        'editable' => true, 
+        'optional' => true, 
+        'name' => 'DHW control type', 
+        'group' => 'Hot water',
+        'options' => array(
+            'Daily scheduled heat up of tank', 
+            'Twice daily scheduled heat up of tank', 
+            'Automatic top up of tank if temperature drops by 3-6C', 
+            'Automatic top up of tank if temperature drops by 6-10C', 
+            'Manual control of tank temperature',
+            'Not applicable'
+        )
     ),
 
     'legionella_frequency' => array(
@@ -375,6 +376,26 @@ $schema['system_meta'] = array(
         'name' => 'Legionella target temperature', 
         'group' => 'Hot water',
         'unit' => '°C'
+    ),
+
+    'legionella_immersion' => array(
+        'type' => 'tinyint(1)', 
+        'editable' => true, 
+        'optional' => false, 
+        'name' => 'Legionella cycle uses immersion heater', 
+        'group' => 'Hot water'
+    ),
+
+    /* --------------------------------- Other --------------------------------- */
+
+
+    'freeze' => array(
+        'type' => 'varchar(64)', 
+        'editable' => true, 
+        'optional' => false, 
+        'name' => 'Freeze protection', 
+        'group' => 'Misc',
+        'options' => array('Glycol/water mixture', 'Anti-freeze valves', 'Central heat pump water circulation')
     ),
 
     /* --------------------------------- Property --------------------------------- */
@@ -483,7 +504,7 @@ $schema['system_meta'] = array(
         'type' => 'float', 
         'editable' => true, 
         'optional' => true,
-        'hide_on_form' => true,
+        'show' => false,
         'name' => 'Measured base DT', 
         'group' => 'Measured heat demand',
         'helper' => 'Use the heatpumpmonitor heat loss tool to fill this in once you have enough data', 
@@ -494,7 +515,7 @@ $schema['system_meta'] = array(
         'type' => 'float', 
         'editable' => true, 
         'optional' => true, 
-        'hide_on_form' => true,
+        'show' => false,
         'name' => 'Measured design DT', 
         'group' => 'Measured heat demand',
         'helper' => 'Use the heatpumpmonitor heat loss tool to fill this in once you have enough data', 
@@ -505,7 +526,7 @@ $schema['system_meta'] = array(
         'type' => 'float', 
         'editable' => true, 
         'optional' => true, 
-        'hide_on_form' => true,
+        'show' => false,
         'name' => 'Measured heat demand', 
         'group' => 'Measured heat demand',
         'helper' => 'Use the heatpumpmonitor heat loss tool to fill this in once you have enough data',
@@ -516,7 +537,7 @@ $schema['system_meta'] = array(
         'type' => 'float', 
         'editable' => true, 
         'optional' => true, 
-        'hide_on_form' => true,
+        'show' => false,
         'name' => 'Measured heat demand range', 
         'group' => 'Measured heat demand',
         'helper' => 'Use the heatpumpmonitor heat loss tool to fill this in once you have enough data',
@@ -607,8 +628,9 @@ $schema['system_meta'] = array(
         'optional' => false, 
         'name' => 'MID Metering', 
         'heading' => 'MID',
-        'helper' => 'Tick if electric meter is class 1 and heat meter at least class 2',
-        'group' => 'Metering'
+        'helper' => 'Automatically selected if electric meter is class 1 and heat meter at least class 2',
+        'group' => 'Metering',
+        'disabled' => true
     ),
 
     'electric_meter' => array(
@@ -656,7 +678,15 @@ $schema['system_meta'] = array(
         'type' => 'tinyint(1)', 
         'editable' => true, 
         'optional' => false, 
-        'name' => 'Includes booster & immersion heater', 
+        'name' => 'Includes backup heater', 
+        'group' => 'Metering'
+    ),
+
+    'metering_inc_immersion' => array(
+        'type' => 'tinyint(1)', 
+        'editable' => true, 
+        'optional' => false, 
+        'name' => 'Includes immersion heater', 
         'group' => 'Metering'
     ),
 
@@ -664,7 +694,15 @@ $schema['system_meta'] = array(
         'type' => 'tinyint(1)', 
         'editable' => true, 
         'optional' => false, 
-        'name' => 'Includes central heating pumps', 
+        'name' => 'Includes primary circulation pump', 
+        'group' => 'Metering'
+    ),
+
+    'metering_inc_secondary_heating_pumps' => array(
+        'type' => 'tinyint(1)', 
+        'editable' => true, 
+        'optional' => false, 
+        'name' => 'Includes secondary circulation pump/s', 
         'group' => 'Metering'
     ),
 

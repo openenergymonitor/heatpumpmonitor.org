@@ -51,10 +51,10 @@ global $settings, $session;
     </div>
     <br>
 
-    <div class="container mt-3" style="max-width:800px" v-if="system.url!='' && all!=undefined && last30!=undefined">
+    <div class="container mt-3" style="max-width:800px" v-if="system.url!='' && all!=undefined">
 
 
-        <div class="card mt-3" v-if="last30.combined_data_length!=all.combined_data_length">
+        <div class="card mt-3" v-if="all.combined_data_length">
             <h5 class="card-header">All data</h5>
             <div class="card-body">
                 <div class="row" style="text-align:center">
@@ -165,14 +165,14 @@ global $settings, $session;
                 <div class="row">
                     <div class="col">
                         <div class="form-check">
-                            <input class="form-check-input" type="radio" v-model="form_type" value="basic">
+                            <input class="form-check-input" type="radio" v-model="form_type" value="basic" @change="filter_schema_groups">
                             <label>Keep it simple (basic and required fields)</label>
                         </div>
                     </div>
                     <div class="col">
                         <div class="form-check">
-                            <input class="form-check-input" type="radio" v-model="form_type" value="full">
-                            <label>I've got time (we would really appreciate it!)</label>
+                            <input class="form-check-input" type="radio" v-model="form_type" value="full" @change="filter_schema_groups">
+                            <label>I've got time (full form)</label>
                         </div>
                     </div>
                 </div>
@@ -186,13 +186,13 @@ global $settings, $session;
             </div>
 
             <table class="table mt-3">
-                <tbody v-for="group,group_name in schema_groups">
+                <tbody v-for="group,group_name in filtered_schema_groups">
                     <tr>
                         <th style="background-color:#f0f0f0;">{{ group_name }}</th>
                         <td style="background-color:#f0f0f0;"></td>
                         <td style="background-color:#f0f0f0;"></td>
                     </tr>
-                    <tr v-for="(field,key) in group" v-if="field.editable && key!='share' && !field.hide_on_form && (form_type=='full' || !field.optional || field.basic)">
+                    <tr v-for="(field,key) in group">
                         <td>
                             <span>{{ field.name }}</span> <span v-if="!field.optional && mode=='edit'" style="color:#aa0000">*</span>
                         </td>
@@ -203,16 +203,16 @@ global $settings, $session;
                         </td>
                         <td>
                             <span v-if="field.type=='tinyint(1)'">
-                                <input type="checkbox" v-model="system[key]" :disabled="mode=='view'">
+                                <input type="checkbox" v-model="system[key]" :disabled="mode=='view' || field.disabled" @change="filter_schema_groups">
                             </span>
                             <span v-if="field.type!='tinyint(1)'">
                                 <!-- Edit mode text input -->
                                 <div class="input-group" v-if="mode=='edit' && !field.options">
-                                    <input class="form-control" type="text" v-model="system[key]">
+                                    <input class="form-control" type="text" v-model="system[key]" @change="filter_schema_groups">
                                     <span class="input-group-text" v-if="field.unit">{{ field.unit }}</span>
                                 </div>
                                 <!-- View mode select input -->
-                                <select class="form-control" v-if="mode=='edit' && field.options" v-model="system[key]">
+                                <select class="form-control" v-if="mode=='edit' && field.options" v-model="system[key]" @change="filter_schema_groups">
                                     <option v-for="option in field.options">{{ option }}</option>
                                 </select>
                                 <!-- View mode text -->
@@ -274,7 +274,7 @@ global $settings, $session;
     // arrange by group
     var schema_groups = {};
     for (var key in schema) {
-        if (schema[key].group && schema[key].editable && !schema[key].hide_on_form) {
+        if (schema[key].group && schema[key].editable) {
             if (!schema_groups[schema[key].group]) {
                 schema_groups[schema[key].group] = {};
             }
@@ -315,9 +315,9 @@ global $settings, $session;
             mode: "<?php echo $mode; ?>", // edit, view
             system: system,
             monthly: [],
-            last30: [],
             all: [],
             schema_groups: schema_groups,
+            filtered_schema_groups: {},
 
             show_error: false,
             show_success: false,
@@ -454,9 +454,113 @@ global $settings, $session;
             },
             load_data: function() {
                 alert(system.url);
+            },
+
+            rules: function() {
+
+                // Only show brine pumps for ground source and water source
+                this.schema_groups['Metering']['metering_inc_brine_pumps'].show = (app.system.hp_type == 'Ground Source' || app.system.hp_type == 'Water Source') ? true : false;
+
+                switch (app.system.dhw_method) {
+                    case 'None':
+                    case 'Other':
+                    case '':
+                        this.schema_groups['Hot water']['cylinder_volume'].show = false;
+                        this.schema_groups['Hot water']['dhw_coil_hex_area'].show = false;
+                        this.schema_groups['Hot water']['dhw_target_temperature'].show = false;
+                        this.schema_groups['Hot water']['dhw_control_type'].show = false;
+                        this.schema_groups['Hot water']['legionella_frequency'].show = false;
+                        this.system.legionella_frequency = '';
+                        break;
+                    case "Cylinder with coil":
+                        this.schema_groups['Hot water']['cylinder_volume'].show = true;
+                        this.schema_groups['Hot water']['dhw_coil_hex_area'].show = true;
+                        this.schema_groups['Hot water']['dhw_target_temperature'].show = true;
+                        this.schema_groups['Hot water']['dhw_control_type'].show = true;
+                        this.schema_groups['Hot water']['legionella_frequency'].show = true;
+                        break;
+                    case "Cylinder with plate heat exchanger":
+                        this.schema_groups['Hot water']['cylinder_volume'].show = true;
+                        this.schema_groups['Hot water']['dhw_coil_hex_area'].show = true;
+                        this.schema_groups['Hot water']['dhw_target_temperature'].show = true;
+                        this.schema_groups['Hot water']['dhw_control_type'].show = true;
+                        this.schema_groups['Hot water']['legionella_frequency'].show = true;
+                        break;
+                    case "Thermal store (heat exchanger on output)":
+                        this.schema_groups['Hot water']['cylinder_volume'].show = true;
+                        this.schema_groups['Hot water']['dhw_coil_hex_area'].show = true;
+                        this.schema_groups['Hot water']['dhw_target_temperature'].show = true;
+                        this.schema_groups['Hot water']['dhw_control_type'].show = true;
+                        this.schema_groups['Hot water']['legionella_frequency'].show = false;
+                        this.system.legionella_frequency = '';
+                        break;
+                    case "Phase change store": 
+                        this.schema_groups['Hot water']['cylinder_volume'].show = false;
+                        this.schema_groups['Hot water']['dhw_coil_hex_area'].show = false;
+                        this.schema_groups['Hot water']['dhw_target_temperature'].show = true;
+                        this.schema_groups['Hot water']['dhw_control_type'].show = true;
+                        this.schema_groups['Hot water']['legionella_frequency'].show = false;
+                        this.system.legionella_frequency = '';
+                        break;
+                }
+
+                this.schema_groups['Hot water']['legionella_target_temperature'].show = (app.system.legionella_frequency != 'Disabled' && app.system.legionella_frequency !='') ? true : false;
+                this.schema_groups['Hot water']['legionella_immersion'].show = (app.system.legionella_frequency != 'Disabled' && app.system.legionella_frequency !='') ? true : false;
+                this.schema_groups['Metering']['metering_inc_immersion'].show = (app.system.legionella_immersion) ? true : false;
+
+                // if 'class 1' string in electric meter type
+                if (app.system.electric_meter.indexOf('class 1') > -1 && app.system.heat_meter.indexOf('class 2') > -1) {
+                    app.system.mid_metering = true;
+                } else {
+                    app.system.mid_metering = false;
+                }
+
+                // If uses_backup_heater, show metering_inc_boost
+                this.schema_groups['Metering']['metering_inc_boost'].show = (app.system.uses_backup_heater) ? true : false;
+
+                // If hydraulic seperation, show metering_inc_secondary_heating_pumps
+                this.schema_groups['Metering']['metering_inc_secondary_heating_pumps'].show = (app.system.hydraulic_separation!='None' && app.system.hydraulic_separation!='') ? true : false;
+
+                // If heat pump type is Air-to-Air
+                if (app.system.hp_type == 'Air-to-Air') {
+                    this.schema_groups['Metering']['metering_inc_central_heating_pumps'].show = false;
+                    this.schema_groups['Misc']['freeze'].show = false;
+                    this.schema_groups['Heat pump']['uses_backup_heater'].show = false;
+                }
+            },
+
+            filter_schema_groups: function() {
+
+                this.rules();
+
+                var filtered_schema_groups = {};
+                for (var group in this.schema_groups) {
+                    var group_schema = this.schema_groups[group];
+                    var filtered_group_schema = {};
+                    var field_count = 0;
+                    for (var key in group_schema) {
+                        var field = group_schema[key];
+
+                        if (field.show == undefined) field.show = true;
+
+                        if (field.editable && field.show && (this.form_type == 'full' || !field.optional || field.basic)) {
+                            filtered_group_schema[key] = field;
+                            field_count++;
+                        }
+                    }
+                    if (field_count > 0) {
+                        filtered_schema_groups[group] = filtered_group_schema;
+                    }
+                }
+                this.filtered_schema_groups = filtered_schema_groups;
             }
         },
     });
+
+    app.filter_schema_groups();
+
+
+
 
     axios.get(path + 'system/monthly?id=' + app.system.id)
         .then(function(response) {
@@ -471,14 +575,6 @@ global $settings, $session;
     axios.get(path + 'system/stats/all?id=' + app.system.id)
         .then(function(response) {
             app.all = response.data[app.system.id];
-        })
-        .catch(function(error) {
-            console.log(error);
-        });
-
-    axios.get(path + 'system/stats/last30?id=' + app.system.id)
-        .then(function(response) {
-            app.last30 = response.data[app.system.id];
         })
         .catch(function(error) {
             console.log(error);
