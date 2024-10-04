@@ -168,6 +168,12 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             </div>
             <div class="col-12 col-sm-12 col-md-12 col-lg-12 col-xl-10 mt-3">
 
+                <div class="btn-group" role="group" aria-label="Basic example" v-if="mode=='admin'" style="float:right">
+                    <button type="button" class="btn btn-primary" @click="toggle_restricted_list">
+                        <i :class="admin_restricted_list?'fa fa-eye':'fa fa-eye-slash'"></i> {{ admin_restricted_list?'Show all systems':'Show restricted' }}
+                    </button>
+                </div>
+
                 <!-- add button group -->
                 <!-- Last 365 days, Last 90 days, Last 30 days, Last 7 days, All -->
                 
@@ -673,6 +679,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             selected_yaxis: 'combined_cop',
             selected_color: 'combined_heat_kwh',
             chart_info: '',
+            admin_restricted_list: true
         },
         methods: {
             tariff_mode_changed: function() {
@@ -1411,7 +1418,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             
                 var filtered_nodes_days = this.systems.filter(this.filterNodes).filter(this.filterDays);
 
-                if (app.mode == 'admin') {
+                if (app.mode == 'admin' && app.admin_restricted_list) {
                     // Only show systems that are private, awaiting approval or have error flag
                     filtered_nodes_days = filtered_nodes_days.filter(function(row) {
                         if (row.share == 0) return true;
@@ -1475,7 +1482,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 }
                 var decodedUrl = decodeURIComponent(url.toString());
                 window.history.pushState({}, '', decodedUrl);   
-            }
+            },
+            toggle_restricted_list: function() {
+                this.admin_restricted_list = !this.admin_restricted_list;
+                this.filter_systems();
+            },
        },
         filters: {
             toFixed: function(val, dp) {
