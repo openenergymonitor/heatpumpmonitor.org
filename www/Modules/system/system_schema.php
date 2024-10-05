@@ -383,7 +383,8 @@ $schema['system_meta'] = array(
         'editable' => true, 
         'optional' => true, 
         'name' => 'Legionella cycle uses immersion heater', 
-        'group' => 'Hot water'
+        'group' => 'Hot water',
+        'basic' => true
     ),
 
     /* --------------------------------- Other --------------------------------- */
