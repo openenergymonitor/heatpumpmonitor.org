@@ -185,7 +185,7 @@ $schema['system_meta'] = array(
     'uses_backup_heater' => array(
         'type' => 'tinyint(1)', 
         'editable' => true, 
-        'optional' => false, 
+        'optional' => true, 
         'name' => 'Heat pump backup heater installed and in use',
         'group' => 'Heat pump'
     ),
@@ -381,7 +381,7 @@ $schema['system_meta'] = array(
     'legionella_immersion' => array(
         'type' => 'tinyint(1)', 
         'editable' => true, 
-        'optional' => false, 
+        'optional' => true, 
         'name' => 'Legionella cycle uses immersion heater', 
         'group' => 'Hot water'
     ),
@@ -579,7 +579,7 @@ $schema['system_meta'] = array(
     'mid_metering' => array(
         'type' => 'tinyint(1)', 
         'editable' => true, 
-        'optional' => false, 
+        'optional' => true, 
         'name' => 'MID Metering', 
         'heading' => 'MID',
         'helper' => 'Automatically selected if electric meter is class 1 and heat meter at least class 2',
@@ -631,57 +631,64 @@ $schema['system_meta'] = array(
     'metering_inc_boost' => array(
         'type' => 'tinyint(1)', 
         'editable' => true, 
-        'optional' => false, 
+        'optional' => true, 
         'name' => 'Includes backup heater', 
-        'group' => 'Metering'
+        'group' => 'Metering',
+        'basic' => true
     ),
 
     'metering_inc_immersion' => array(
         'type' => 'tinyint(1)', 
         'editable' => true, 
-        'optional' => false, 
+        'optional' => true, 
         'name' => 'Includes immersion heater', 
-        'group' => 'Metering'
+        'group' => 'Metering',
+        'basic' => true
     ),
 
     'metering_inc_central_heating_pumps' => array(
         'type' => 'tinyint(1)', 
         'editable' => true, 
-        'optional' => false, 
+        'optional' => true, 
         'name' => 'Includes primary circulation pump', 
-        'group' => 'Metering'
+        'group' => 'Metering',
+        'basic' => true
     ),
 
     'metering_inc_secondary_heating_pumps' => array(
         'type' => 'tinyint(1)', 
         'editable' => true, 
-        'optional' => false, 
+        'optional' => true, 
         'name' => 'Includes secondary circulation pump/s', 
-        'group' => 'Metering'
+        'group' => 'Metering',
+        'basic' => true
     ),
 
     'metering_inc_brine_pumps' => array(
         'type' => 'tinyint(1)', 
         'editable' => true, 
-        'optional' => false, 
+        'optional' => true, 
         'name' => 'Includes ground source brine pumps', 
-        'group' => 'Metering'
+        'group' => 'Metering',
+        'basic' => true
     ),
 
     'metering_inc_controls' => array(
         'type' => 'tinyint(1)', 
         'editable' => true, 
-        'optional' => false, 
+        'optional' => true, 
         'name' => 'Includes indoor controller or other controls', 
-        'group' => 'Metering'
+        'group' => 'Metering',
+        'basic' => true
     ),
     
     'indoor_temperature' => array(
         'type' => 'tinyint(1)',
         'editable' => true, 
-        'optional' => false, 
+        'optional' => true, 
         'name' => 'Includes indoor temperature sensing', 
-        'group' => 'Metering'
+        'group' => 'Metering',
+        'basic' => true
     ),
 
     'notes' => array(
