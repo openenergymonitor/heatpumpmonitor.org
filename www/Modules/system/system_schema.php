@@ -585,7 +585,8 @@ $schema['system_meta'] = array(
         'heading' => 'MID',
         'helper' => 'Automatically selected if electric meter is class 1 and heat meter at least class 2',
         'group' => 'Metering',
-        'disabled' => true
+        'disabled' => true,
+        'basic' => true
     ),
 
     'electric_meter' => array(
