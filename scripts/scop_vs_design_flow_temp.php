@@ -1,6 +1,6 @@
 <?php
 $dir = dirname(__FILE__);
-chdir("$dir/www");
+chdir("$dir/../www");
 
 require "Lib/load_database.php";
 
@@ -180,6 +180,9 @@ foreach ($systems as $system) {
     }
 
     $line[] = number_format($avg_x,1, ".", "");
+
+    // Update system_meta field weighted_average_flow_minus_outside with this value
+    $mysqli->query("UPDATE system_meta SET `weighted_average_flow_minus_outside` = '$avg_x' WHERE `id` = '$system->id'");
 
     // print date use datetime
     $date = new DateTime();

@@ -1276,6 +1276,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         return "<span title='"+val.toFixed(stats_columns[key]['dp']+1)+"'>"+prepend+val.toFixed(stats_columns[key]['dp'])+unit+"</span>";
                     }
                 }
+
+                if (key == 'weighted_average_flow_minus_outside') {
+                    if (val == null || val == 0 ) return '';
+                    return val.toFixed(1);
+                }
                 
                 return val;
             },
