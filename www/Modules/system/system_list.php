@@ -608,6 +608,13 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         
         // Start at 4
         var helper = "";
+
+        if ((type == "Ground Source" || type == "Water Source")) {
+            helper = "- Compressor metered\n";
+        } else {
+            helper = "- Compressor and fan metered\n";
+        }
+
         var boundary_code = 4;
 
         // If hydraulic seperation is used and secondary pumps are not metered then boundary can not be higher than 3
@@ -684,7 +691,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             else if (boundary_code==4) systems[i].boundary = "<span class='H4' title='Includes:\n- Outside unit\n- Booster and immersion heater (if installed & used)\n- Central heating pumps & fans (if applicable)'>H4</span>";
         }*/
 
-        systems[i].boundary = "<span class='H"+boundary_code+"' title='"+helper+"'>H"+boundary_code+"</span>";
+        systems[i].boundary = "<span class='H"+boundary_code+"' title='System boundary H"+boundary_code+"\n"+helper+"'>H"+boundary_code+"</span>";
         
         systems[i].boundary_code = boundary_code;
     }
