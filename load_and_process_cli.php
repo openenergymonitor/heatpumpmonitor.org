@@ -138,6 +138,12 @@ function load_daily_stats_system($meta, $reload) {
 
     if ($reload !== false) {
         $mysqli->query("DELETE FROM system_stats_daily WHERE `id`='$systemid'");
+        $mysqli->query("DELETE FROM system_stats_all_v2 WHERE `id`='$systemid'");
+        $mysqli->query("DELETE FROM system_stats_last365_v2 WHERE `id`='$systemid'");
+        $mysqli->query("DELETE FROM system_stats_last90_v2 WHERE `id`='$systemid'");
+        $mysqli->query("DELETE FROM system_stats_last30_v2 WHERE `id`='$systemid'");
+        $mysqli->query("DELETE FROM system_stats_last7_v2 WHERE `id`='$systemid'");
+        $mysqli->query("DELETE FROM system_stats_monthly_v2 WHERE `id`='$systemid'");
     }
 
     for ($x=0; $x<200; $x++) {

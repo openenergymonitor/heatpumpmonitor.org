@@ -186,8 +186,10 @@ $schema['system_meta'] = array(
         'type' => 'tinyint(1)', 
         'editable' => true, 
         'optional' => true, 
-        'name' => 'Heat pump backup heater installed and in use',
-        'group' => 'Heat pump'
+        'name' => 'Heat pump has backup heater installed and in use',
+        'helper'=> 'This is an inline electric element that can top up the heat pump output mostly for space heating',
+        'group' => 'Heat pump',
+        'basic' => true
     ),
 
     /* ------------------------------ Space heating ----------------------------- */
@@ -643,7 +645,7 @@ $schema['system_meta'] = array(
         'type' => 'tinyint(1)', 
         'editable' => true, 
         'optional' => true, 
-        'name' => 'Includes immersion heater', 
+        'name' => 'Includes DHW immersion heater', 
         'group' => 'Metering',
         'basic' => true
     ),
