@@ -581,30 +581,95 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     for (var i = 0; i < systems.length; i++) {
     
         var type = systems[i].hp_type;
-        var aux = systems[i].metering_inc_boost;
-        var pumps = systems[i].metering_inc_central_heating_pumps;
-        var brine = systems[i].metering_inc_brine_pumps;
-        var controls = systems[i].metering_inc_controls;
+
+        // Brine pump
+        var metering_inc_brine = systems[i].metering_inc_brine_pumps;
+
+        // Backup heater
+        var uses_backup = systems[i].uses_backup_heater;
+        var metering_inc_backup = systems[i].metering_inc_boost;
+
+        // Immersion
         var legionella = systems[i].legionella_frequency;
+        var uses_immersion = systems[i].legionella_immersion;
+        var metering_inc_immersion = systems[i].metering_inc_immersion;
+
+        // Primary pumps
+        var metering_inc_primary_pump = systems[i].metering_inc_central_heating_pumps;
+
+        // Secondary pumps
+        var hydraulic_separation = systems[i].hydraulic_separation;
+        var metering_inc_secondary_pumps = systems[i].metering_inc_secondary_heating_pumps;
+
+        // Controls
+        var controls = systems[i].metering_inc_controls;
+
+        // ---- Boundary logic ----
         
-        var boundary_code = 1;
-                
-        if (type == "Ground Source" || type == "Water Source") {
-            if (brine) boundary_code = 2;
-            if (brine && (aux || legionella=='Disabled')) boundary_code = 3;
-            if (brine && (aux || legionella=='Disabled') && pumps) boundary_code = 4;
+        // Start at 4
+        var helper = "";
+        var boundary_code = 4;
+
+        // If hydraulic seperation is used and secondary pumps are not metered then boundary can not be higher than 3
+        if (hydraulic_separation != 'None' && metering_inc_secondary_pumps==0) {
+            boundary_code = 3;
+            helper += "- Hydraulic separation used but secondary pumps/fans not metered\n";
         }
-        
-        else if (type == "Air Source") {
+
+        if (hydraulic_separation != 'None' && metering_inc_secondary_pumps==1) {
+            helper += "- Hydraulic separation used and secondary pumps/fans metered\n";
+        }
+
+        // If primary pumps are not metered then boundary can not be higher than 3
+        if (!metering_inc_primary_pump) {
+            boundary_code = 3;
+            helper += "- Primary pump not metered\n";
+        } else {
+            helper += "- Primary pump metered\n";
+        }
+
+        // If immersion heater is used and not metered then boundary can not be higher than 2
+        if (uses_immersion == 1 && metering_inc_immersion == 0) {
             boundary_code = 2;
-            if (aux || legionella=='Disabled') boundary_code = 3;
-            if ((aux || legionella=='Disabled') && pumps) boundary_code = 4;
+            helper += "- Immersion heater used but not metered\n";
         }
-        
-        else if (type == "Air-to-Air") {
+        if (uses_immersion == 1 && metering_inc_immersion == 1) {
+            helper += "- Immersion heater used and metered\n";
+        }
+        if (uses_immersion == 0) {
+            helper += "- Immersion heater not installed or used\n";
+        }
+
+        // If backup heater is used and not metered then boundary can not be higher than 2
+        if (uses_backup == 1 && metering_inc_backup == 0) {
             boundary_code = 2;
+            helper += "- Backup heater used but not metered\n";
         }
-        
+        if (uses_backup == 1 && metering_inc_backup == 1) {
+            helper += "- Backup heater used and metered\n";
+        }
+        if (uses_backup == 0) {
+            helper += "- Backup heater not installed or used\n";
+        }
+
+        // If brine pump is used and not metered then boundary can not be higher than 1
+        if ((type == "Ground Source" || type == "Water Source")) {
+            if (metering_inc_brine == 0) {
+                boundary_code = 1;
+                helper += "- Brine pump used but not metered\n";
+            } else {
+                helper += "- Brine pump used and metered\n";
+            }
+        }
+
+        // Air to air is always 2
+        if (type == "Air-to-Air") {
+            boundary_code = 2;
+            helper = "";
+        }
+
+        // -------------------
+        /*
         if (type == "Ground Source" || type == "Water Source") {
             if (boundary_code==1) systems[i].boundary = "<span class='H1' title='Includes:\n- Heat pump compressor only'>H1</span>";
             else if (boundary_code==2) systems[i].boundary = "<span class='H2' title='Includes:\n- Compressor and brine pump'>H2</span>";
@@ -617,7 +682,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             else if (boundary_code==2) systems[i].boundary = "<span class='H2' title='Includes:\n- Outside unit only'>H2</span>";
             else if (boundary_code==3) systems[i].boundary = "<span class='H3' title='Includes:\n- Outside unit\n- Booster and immersion heater (if installed & used)\n\nDoes not include:\n- Central heating pumps & fans'>H3</span>";
             else if (boundary_code==4) systems[i].boundary = "<span class='H4' title='Includes:\n- Outside unit\n- Booster and immersion heater (if installed & used)\n- Central heating pumps & fans (if applicable)'>H4</span>";
-        }
+        }*/
+
+        systems[i].boundary = "<span class='H"+boundary_code+"' title='"+helper+"'>H"+boundary_code+"</span>";
         
         systems[i].boundary_code = boundary_code;
     }
