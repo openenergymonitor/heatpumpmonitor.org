@@ -1563,7 +1563,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     chart: 1*this.chart_enable,
                     selected_xaxis: this.selected_xaxis,
                     selected_yaxis: this.selected_yaxis,
-                    selected_zaxis: this.selected_zaxis,
+                    selected_color: this.selected_color,
                 };
 
                 if (settings.mode != 'costs') {
