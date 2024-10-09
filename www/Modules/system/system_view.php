@@ -527,6 +527,11 @@ global $settings, $session;
                     this.schema_groups['Misc']['freeze'].show = false;
                     this.schema_groups['Heat pump']['uses_backup_heater'].show = false;
                 }
+
+                // If hp_type is Ground Source or Water Source, hide freeze
+                if (app.system.hp_type == 'Ground Source' || app.system.hp_type == 'Water Source') {
+                    this.schema_groups['Misc']['freeze'].show = false;
+                }
             },
 
             filter_schema_groups: function() {

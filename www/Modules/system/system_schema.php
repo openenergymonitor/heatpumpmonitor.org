@@ -398,7 +398,7 @@ $schema['system_meta'] = array(
         'optional' => false, 
         'name' => 'Freeze protection', 
         'group' => 'Misc',
-        'options' => array('Glycol/water mixture', 'Anti-freeze valves', 'Central heat pump water circulation')
+        'options' => array('Glycol/water mixture', 'Anti-freeze valves', 'Central heat pump water circulation','Not applicable')
     ),
 
     /* --------------------------------- Property --------------------------------- */

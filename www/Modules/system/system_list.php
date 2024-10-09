@@ -1223,6 +1223,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
                         var note = system.data_flag_note;
                         // trim and to lower case
+                        if (note == null) {
+                          note = "";
+                        }
                         note = note.trim().toLowerCase();
 
                         var color = "#FFD43B";
