@@ -6,6 +6,8 @@ function draw_scatter()
         return;
     }
 
+    app.url_update();
+
     console.log("Drawing scatter chart");
 
     var trace = {
@@ -37,6 +39,10 @@ function draw_scatter()
         let y = system[app.selected_yaxis];
 
         if (x==0 || y==0) {
+            continue;
+        }
+
+        if (x==null || y==null) {
             continue;
         }
 
@@ -115,10 +121,11 @@ function draw_scatter()
 }
 
 function calculatePearsonCorrelation(x, y) {
-    let n = x.length;
 
     // Calculate the sum of the products of corresponding values
     let sumX = 0, sumY = 0, sumXY = 0, sumXSquare = 0, sumYSquare = 0;
+
+    let n = x.length;
 
     for (let i = 0; i < n; i++) {
         sumX += x[i];
@@ -143,8 +150,9 @@ function calculateLineOfBestFit(dataPoints, min_x) {
     let xSum = 0,
         ySum = 0,
         xySum = 0,
-        xxSum = 0;
-    const n = dataPoints.length;
+        xxSum = 0,
+        n = 0;
+
 
     // Calculate sums
     for (const [x, y] of dataPoints) {
@@ -153,6 +161,7 @@ function calculateLineOfBestFit(dataPoints, min_x) {
             ySum += y;
             xxSum += x * x;
             xySum += x * y;
+            n += 1;
         }
     }
 

@@ -9,7 +9,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
 <script src="https://cdn.plot.ly/plotly-2.16.1.min.js"></script>
 <script src="Lib/clipboard.js"></script>
-<script src="<?php echo $path; ?>Modules/system/system_list_chart.js?v=15"></script>
+<script src="<?php echo $path; ?>Modules/system/system_list_chart.js?v=20"></script>
 
 <style>
     .sticky {
@@ -316,7 +316,6 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     // public, admin, user
     var mode = "<?php echo $mode; ?>";
 
-
     var default_settings = {
         mode: 'topofthescops',
         period: 'last365',
@@ -328,7 +327,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         mid: 1,
         other: 0,
         hpint: 0,
-        errors: 0
+        errors: 0,
+        chart: 0,
+        selected_xaxis: 'running_flowT_mean',
+        selected_yaxis: 'combined_cop',
+        selected_color: 'combined_heat_kwh',
     };
 
     if (mode != 'public') {
@@ -420,6 +423,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
     var show_hpint = false;
     if (page_settings.hpint == 1) show_hpint = true;
+
+    var show_chart = false;
+    if (page_settings.chart == 1) show_chart = true;
     
     var columns = <?php echo json_encode($columns); ?>;
     var stats_columns = <?php echo json_encode($stats_columns); ?>;
@@ -511,6 +517,14 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     for (var key in stats_columns) {
         columns[key] = stats_columns[key];
     }
+
+    // Calculate % demand hot water
+    columns['prc_demand_hot_water'] = {
+        name: '% Demand Hot Water',
+        heading: '%DHW',
+        group: 'Stats: Water heating',
+        helper: 'Percentage of demand for hot water'
+    };
     
     columns['combined_cop'].heading = 'SPF';
 
@@ -675,27 +689,12 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             helper = "";
         }
 
-        // -------------------
-        /*
-        if (type == "Ground Source" || type == "Water Source") {
-            if (boundary_code==1) systems[i].boundary = "<span class='H1' title='Includes:\n- Heat pump compressor only'>H1</span>";
-            else if (boundary_code==2) systems[i].boundary = "<span class='H2' title='Includes:\n- Compressor and brine pump'>H2</span>";
-            else if (boundary_code==3) systems[i].boundary = "<span class='H3' title='Includes:\n- Compressor and brine pump\n- Booster and immersion heater (if installed & used)\n\nDoes not include:\n- Central heating pumps & fans'>H3</span>";
-            else if (boundary_code==4) systems[i].boundary = "<span class='H4' title='Includes:\n- Compressor and brine pump\n- Booster and immersion heater (if installed & used)\n- Central heating pumps & fans (if applicable)'>H4</span>";
-        }
-        
-        if (type == "Air Source" || type == "Air-to-Air") {
-            if (boundary_code==1) systems[i].boundary = "<span class='H1' title='Includes:\n- Heat pump compressor only'>H1</span>";
-            else if (boundary_code==2) systems[i].boundary = "<span class='H2' title='Includes:\n- Outside unit only'>H2</span>";
-            else if (boundary_code==3) systems[i].boundary = "<span class='H3' title='Includes:\n- Outside unit\n- Booster and immersion heater (if installed & used)\n\nDoes not include:\n- Central heating pumps & fans'>H3</span>";
-            else if (boundary_code==4) systems[i].boundary = "<span class='H4' title='Includes:\n- Outside unit\n- Booster and immersion heater (if installed & used)\n- Central heating pumps & fans (if applicable)'>H4</span>";
-        }*/
-
         systems[i].boundary = "<span class='H"+boundary_code+"' title='System boundary H"+boundary_code+"\n"+helper+"'>H"+boundary_code+"</span>";
         
         systems[i].boundary_code = boundary_code;
     }
 
+    // Calculate over-sizing factor
     for (var z in systems) {
         let system = systems[z];
         let oversizing_factor = 0;
@@ -716,7 +715,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             systems: systems,
             fSystems: [],
             mode: "<?php echo $mode; ?>",
-            chart_enable: false,
+            chart_enable: show_chart,
             columns: columns,
             column_groups: column_groups,
             show_field_group: show_field_group,
@@ -749,9 +748,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             num_class1_elec: 0,
             num_other_metering: 0,
             tariff_mode: tariff_mode,
-            selected_xaxis: 'running_flowT_mean',
-            selected_yaxis: 'combined_cop',
-            selected_color: 'combined_heat_kwh',
+            selected_xaxis: page_settings.selected_xaxis,
+            selected_yaxis: page_settings.selected_yaxis,
+            selected_color: page_settings.selected_color,
             chart_info: '',
             admin_restricted_list: true
         },
@@ -1162,6 +1161,12 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                     }
                                 }
 
+                                let prc_demand_hot_water = null;
+                                if (app.systems[i]['water_heat_kwh']>0 && app.systems[i]['space_heat_kwh']>0) {
+                                    prc_demand_hot_water = app.systems[i]['water_heat_kwh'] / (app.systems[i]['water_heat_kwh'] + app.systems[i]['space_heat_kwh']) * 100;
+                                }
+                                app.systems[i]['prc_demand_hot_water'] = prc_demand_hot_water;      
+
                             } else {
                                 // for (var col in stats_columns) {
                                 //    app.systems[i][stats_columns[col]] = 0;
@@ -1185,6 +1190,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             },
             toggle_chart: function() {
                 this.chart_enable = !this.chart_enable;
+
+                app.url_update();
                 
                 if (this.chart_enable) {
                     setTimeout(function() {
@@ -1357,6 +1364,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 if (key == 'weighted_average_flow_minus_outside') {
                     if (val == null || val == 0 ) return '';
                     return val.toFixed(1);
+                }
+
+                if (key == 'prc_demand_hot_water') {
+                    if (val == null || val == 0 ) return '';
+                    return val.toFixed(0) + '%';
                 }
                 
                 return val;
@@ -1547,7 +1559,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     mid: 1*this.show_mid,
                     other: 1*this.show_other,
                     hpint: 1*this.show_hpint,
-                    errors: 1*this.show_errors
+                    errors: 1*this.show_errors,
+                    chart: 1*this.chart_enable,
+                    selected_xaxis: this.selected_xaxis,
+                    selected_yaxis: this.selected_yaxis,
+                    selected_zaxis: this.selected_zaxis,
                 };
 
                 if (settings.mode != 'costs') {
