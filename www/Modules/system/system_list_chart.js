@@ -20,12 +20,7 @@ function draw_scatter()
     };
 
     // Create hover template
-    trace.hovertemplate = 
-        // data point index
-        '%{text}<br>' +
-        columns[app.selected_xaxis].name + ': %{x}<br>' +  // Custom text for x value
-        columns[app.selected_yaxis].name + ': %{y}<br>' +  // Custom text for y value
-        columns[app.selected_color].name + ': %{marker.color}<extra></extra>';        // Custom text for y value
+    trace.hovertemplate = '%{text}';
 
     trace.x = [];
     trace.y = [];
@@ -48,8 +43,32 @@ function draw_scatter()
 
         trace.x.push(x);
         trace.y.push(y);
-        trace.marker.color.push(system[app.selected_color]);
-        trace.text.push("System: "+system.id+", "+system.location+"<br>"+system.hp_output+" kW "+system.hp_model);
+
+        // Is app.selected_color a select item with options
+        if (columns[app.selected_color].options != undefined) {
+            // Get the option index
+            let index = columns[app.selected_color].options.indexOf(system[app.selected_color]);
+            trace.marker.color.push(index);
+        } else {
+            trace.marker.color.push(system[app.selected_color]);
+        }
+
+        if (columns[app.selected_xaxis].dp != undefined) {
+            x = x.toFixed(columns[app.selected_xaxis].dp);
+        }
+
+        if (columns[app.selected_yaxis].dp != undefined) {
+            y = y.toFixed(columns[app.selected_yaxis].dp);
+        }
+
+
+        var tooltip = "System: "+system.id+", "+system.location+"<br>"+system.hp_output+" kW "+system.hp_model+"<br>";
+        tooltip += columns[app.selected_xaxis].name + ": "+x+"<br>";
+        tooltip += columns[app.selected_yaxis].name + ": "+y+"<br>";
+        tooltip += columns[app.selected_color].name + ": "+system[app.selected_color];
+
+       
+        trace.text.push(tooltip);
     }
 
     var data = [trace];

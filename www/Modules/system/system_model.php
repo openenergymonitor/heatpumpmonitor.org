@@ -467,7 +467,9 @@ class System
             if (!isset($row['group']) || !isset($row['name'])) continue;
             $helper = "";
             if (isset($row['helper'])) $helper = $row['helper'];
-            $columns[$key] = array("name"=>$row['name'], "group"=>$row['group'], "helper"=>$helper);
+            $colum = array("name"=>$row['name'], "group"=>$row['group'], "helper"=>$helper);
+            if (isset($row['options'])) $colum['options'] = $row['options'];
+            $columns[$key] = $colum;
         }
         /*
         foreach ($this->schema_stats_monthly as $key=>$row) {
