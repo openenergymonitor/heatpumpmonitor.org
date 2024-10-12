@@ -269,8 +269,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             <span v-if="system.share" class="badge bg-success">Shared</span>
                             <span v-if="!system.share" class="badge bg-danger">Private</span>
                             <span v-if="system.published" class="badge bg-success">Published</span>
-                            <span v-if="!system.published && !system.data_flag" class="badge bg-warning">Waiting for review</span>
-                            <span v-if="!system.published && system.data_flag" class="badge bg-secondary">Not published</span>
+                            <span v-if="system.share && !system.published && !system.data_flag" class="badge bg-warning">Waiting for review</span>
+                            <span v-if="system.share && !system.published && system.data_flag" class="badge bg-secondary">Not published</span>
                         </td>
                         <td>
                             <!--View button-->
