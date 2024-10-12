@@ -228,6 +228,8 @@ function load_daily_stats_system($meta, $reload) {
                     $row = array();
                     for ($j=0; $j<count($fields); $j++) {
                         $row[$fields[$j]] = $values[$j];
+                        // if '' then set to null
+                        if ($row[$fields[$j]]=="") $row[$fields[$j]] = null;
                     }
 
                     $system_stats->save_day($systemid, $row);
