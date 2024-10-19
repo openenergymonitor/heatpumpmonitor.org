@@ -532,6 +532,16 @@ global $settings, $session;
                 if (app.system.hp_type == 'Ground Source' || app.system.hp_type == 'Water Source') {
                     this.schema_groups['Misc']['freeze'].show = false;
                 }
+
+                // IF admin
+                if (app.admin) {
+                    this.schema_groups['Measurements']['measured_max_flow_temp_coldest_day'].show = true;
+                    this.schema_groups['Measurements']['measured_mean_flow_temp_coldest_day'].show = true;
+                    this.schema_groups['Measurements']['measured_outside_temp_coldest_day'].show = true;
+
+
+                }
+
             },
 
             filter_schema_groups: function() {

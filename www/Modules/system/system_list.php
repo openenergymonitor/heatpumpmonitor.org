@@ -9,7 +9,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
 <script src="https://cdn.plot.ly/plotly-2.16.1.min.js"></script>
 <script src="Lib/clipboard.js"></script>
-<script src="<?php echo $path; ?>Modules/system/system_list_chart.js?v=26"></script>
+<script src="<?php echo $path; ?>Modules/system/system_list_chart.js?v=27"></script>
 
 <style>
     .sticky {
@@ -240,7 +240,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                 </div>
                             </div>
                         </div>
-                        <p>{{ chart_info }}</p>
+                        <p>{{ chart_info }} <input type="checkbox" v-model="enable_line_best_fit" @change="draw_scatter"></p>
                         <div id="chart"></div>
                     </div>
                 </div>
@@ -752,6 +752,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             selected_yaxis: page_settings.selected_yaxis,
             selected_color: page_settings.selected_color,
             chart_info: '',
+            enable_line_best_fit: true,
             admin_restricted_list: true
         },
         methods: {

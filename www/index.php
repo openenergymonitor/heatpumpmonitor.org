@@ -118,6 +118,19 @@ switch ($route->controller) {
         ));
         break;
 
+    case "coldest":
+        $route->format = "html";
+
+        $systemid = 2;
+        if (isset($_GET['id'])) $systemid = (int) $_GET['id'];
+        
+        $output = view("views/coldest.php", array(
+            "userid"=>$session['userid'],
+            "systemid"=>$systemid,
+            "stats_schema"=>$system_stats->schema['system_stats_daily']  
+        ));
+        break;
+
     case "monthly":
         $route->format = "html";
         
