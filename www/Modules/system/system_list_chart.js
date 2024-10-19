@@ -82,16 +82,18 @@ function draw_scatter()
     var max_x = Math.max(...trace.x);
 
     // Add line of best fit
-    data.push({
-        type: 'scatter',
-        x: [min_x, max_x],
-        y: [(line.m * min_x) + line.b, (line.m * max_x) + line.b],
-        mode: 'lines',
-        line: {
-            color: "#1f77b4",
-            width: 2
-        }
-    });
+    if (app.enable_line_best_fit) {
+        data.push({
+            type: 'scatter',
+            x: [min_x, max_x],
+            y: [(line.m * min_x) + line.b, (line.m * max_x) + line.b],
+            mode: 'lines',
+            line: {
+                color: "#1f77b4",
+                width: 2
+            }
+        });
+    }
 
     var x_name = columns[app.selected_xaxis].name;
     var y_name = columns[app.selected_yaxis].name;

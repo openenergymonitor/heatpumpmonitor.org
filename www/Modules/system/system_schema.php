@@ -770,6 +770,39 @@ $schema['system_meta'] = array(
         'helper' => '',
         'unit' => '°K',
         'dp' => 1
+    ),
+
+    'measured_mean_flow_temp_coldest_day' => array(
+        'type' => 'float', 
+        'editable' => true, 
+        'optional' => true, 
+        'show' => false,
+        'name' => 'Mean flow temperature when running on coldest day', 
+        'group' => 'Measurements',
+        'helper' => '',
+        'unit' => '°C'
+    ),
+
+    'measured_max_flow_temp_coldest_day' => array(
+        'type' => 'float', 
+        'editable' => true, 
+        'optional' => true, 
+        'show' => false,
+        'name' => 'Max flow temperature for space heating on coldest day', 
+        'group' => 'Measurements',
+        'helper' => '',
+        'unit' => '°C'
+    ),
+
+    'measured_outside_temp_coldest_day' => array(
+        'type' => 'float', 
+        'editable' => true, 
+        'optional' => true, 
+        'show' => false,
+        'name' => 'Outside temperature on coldest day', 
+        'group' => 'Measurements',
+        'helper' => '',
+        'unit' => '°C'
     )
 );
 
