@@ -352,6 +352,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     // not yet added
     var currentSortColumn = 'combined_cop';
     var currentSortDir = 'desc';
+    
+    if (mode == 'admin') {
+        currentSortColumn = 'id';
+    }
 
     var periods_available = ['last365','last90','last30','last7','all'];
 
