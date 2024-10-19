@@ -526,20 +526,25 @@ global $settings, $session;
                     this.schema_groups['Metering']['metering_inc_central_heating_pumps'].show = false;
                     this.schema_groups['Misc']['freeze'].show = false;
                     this.schema_groups['Heat pump']['uses_backup_heater'].show = false;
+                    app.system.freeze = 'Not applicable';
                 }
-
                 // If hp_type is Ground Source or Water Source, hide freeze
-                if (app.system.hp_type == 'Ground Source' || app.system.hp_type == 'Water Source') {
+                else if (app.system.hp_type == 'Ground Source' || app.system.hp_type == 'Water Source') {
                     this.schema_groups['Misc']['freeze'].show = false;
+                    app.system.freeze = 'Not applicable';
                 }
+                // If hp_type is Air-to-Water
+                else {
+                    this.schema_groups['Metering']['metering_inc_central_heating_pumps'].show = true;
+                    this.schema_groups['Misc']['freeze'].show = true;
+                }
+                
 
                 // IF admin
                 if (app.admin) {
                     this.schema_groups['Measurements']['measured_max_flow_temp_coldest_day'].show = true;
                     this.schema_groups['Measurements']['measured_mean_flow_temp_coldest_day'].show = true;
                     this.schema_groups['Measurements']['measured_outside_temp_coldest_day'].show = true;
-
-
                 }
 
             },
