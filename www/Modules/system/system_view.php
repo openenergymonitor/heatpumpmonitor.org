@@ -154,6 +154,15 @@ global $settings, $session;
 
             </div>
         </div>
+
+
+    </div>
+
+    <div class="container mt-3" style="max-width:800px" v-if="mode=='edit'">
+    <div class="input-group mt-3">
+            <span class="input-group-text">URL</span>
+            <input type="text" class="form-control" v-model="system.url" placeholder="Or enter dashboard URL manually here" @change="validate_url">
+        </div>
     </div>
 
     <div class="container mt-3" style="max-width:800px">
@@ -178,11 +187,6 @@ global $settings, $session;
                 </div>
                 
                 <hr class="mt-3">
-            </div>
-
-            <div class="input-group mt-3" v-if="admin">
-                <span class="input-group-text">URL Admin only</span>
-                <input type="text" class="form-control" v-model="system.url">
             </div>
 
             <table class="table mt-3">
@@ -573,6 +577,16 @@ global $settings, $session;
                     }
                 }
                 this.filtered_schema_groups = filtered_schema_groups;
+            },
+
+            validate_url: function() {
+                // Check if URL is valid
+                // url host must be emoncms.org
+                var url = this.system.url;
+                var url_host = new URL(url).host;
+                if (url_host != 'emoncms.org') {
+                    alert('Please enter a valid Emoncms.org dashboard URL');
+                }
             }
         },
     });

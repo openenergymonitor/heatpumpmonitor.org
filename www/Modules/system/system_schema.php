@@ -716,6 +716,29 @@ $schema['system_meta'] = array(
 
     /* ----------------------------- Measurements ----------------------------- */
 
+
+    'measured_emitter_spec' => array(
+        'type' => 'float', 
+        'editable' => true, 
+        'optional' => true,
+        'show' => true,
+        'name' => 'Measured emitter spec', 
+        'group' => 'Measurements',
+        'helper' => 'Measured emitter output at DT50', 
+        'unit' => 'kW @ DT50'
+    ),
+
+    'measured_system_volume' => array(
+        'type' => 'float', 
+        'editable' => true, 
+        'optional' => true,
+        'show' => true,
+        'name' => 'Measured system volume', 
+        'group' => 'Measurements',
+        'helper' => 'Measured system volume from Heatpump dashboard', 
+        'unit' => 'L'
+    ),
+
     'measured_base_DT' => array(
         'type' => 'float', 
         'editable' => true, 
@@ -770,6 +793,30 @@ $schema['system_meta'] = array(
         'helper' => '',
         'unit' => '°K',
         'dp' => 1
+    ),
+
+    'weighted_flow_temp' => array(
+        'type' => 'float', 
+        'editable' => true, 
+        'optional' => true, 
+        'show' => false,
+        'name' => 'Weighted average flow temperature', 
+        'group' => 'Measurements',
+        'helper' => '',
+        'unit' => '°K',
+        'dp' => 1
+    ),
+
+    'weighted_average_ideal_carnot' => array(
+        'type' => 'float', 
+        'editable' => true, 
+        'optional' => true, 
+        'show' => false,
+        'name' => 'Weighted average ideal carnot', 
+        'group' => 'Measurements',
+        'helper' => '',
+        'unit' => '',
+        'dp' => 2
     ),
 
     'measured_mean_flow_temp_coldest_day' => array(

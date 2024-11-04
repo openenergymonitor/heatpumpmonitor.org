@@ -83,6 +83,7 @@ foreach ($systems as $system) {
         $keyval = array();
         foreach ($keys as $i => $key) {
             $key = trim($key);
+            if ($values[$i]==' ') $values[$i] = null;
             $keyval[$key] = 1*$values[$i];
         }
 
