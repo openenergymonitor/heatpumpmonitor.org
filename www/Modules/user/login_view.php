@@ -10,12 +10,11 @@ $emoncmsorg_only = true;
 <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
 
+<!-- Fontawesome CDN Link -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
 
-    <!-- Fontawesome CDN Link -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
-    
 <style>
-    /* Google Font Link */
+/* Google Font Link */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;600;700&display=swap');
 
 * {
@@ -267,9 +266,6 @@ body {
 }
 </style>
 
-  
-
-
 <div id="app" class="containers" style="padding-top:50px; padding-left:20px; padding-bottom: 30px; padding-right:20px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
     <div v-if="!mode">
         <button type="button" class="btn btn-primary btn-lg" style="width:100%" @click="mode='emoncmsorg'">Login with emoncms.org</button>
@@ -363,16 +359,23 @@ body {
     var app = new Vue({
         el: '#app',
         data: {
-            username: "",
-            password: "",
-            password2: "",
-            email: "",
+            username: "",  // The username of the user
+            password: "",  // The password of the user
+            password2: "", // The password re-entered by the user
+            email: "",     // The email of the user
             error: false,
             success: false,
             mode: 'emoncmsorg',
             public_mode_enabled: public_mode_enabled
         },
         methods: {
+            /* The below code is a JavaScript function that handles a login request using Axios to send
+            a POST request to a specified URL with the username, password, and emoncmsorg
+            parameters. Upon receiving a response, it checks if the login was successful based on
+            the "success" property in the response data. If successful, it redirects the user to a
+            specified URL for system listing. If unsuccessful, it sets an error message based on the
+            response data. If there is an error during the request, it logs the error to the
+            console. */
             login: function() {
                 const params = new URLSearchParams();
                 params.append('username', this.username);
@@ -393,6 +396,13 @@ body {
                         console.log(error);
                     });
             },
+            /* The below code is a JavaScript function that is making a POST request to a PHP backend
+            endpoint for user registration. It is sending the username, password, password2, and
+            email as parameters in the request. Upon receiving a response from the server, it checks
+            if the registration was successful. If successful, it may prompt the user to verify
+            their email or redirect them to a user list page. If there is an error during
+            registration, it will display the error message. The code uses Axios for making the HTTP
+            request and handles both successful and error responses. */
             register: function() {
                 const params = new URLSearchParams();
                 params.append('username', this.username);
