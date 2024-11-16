@@ -161,29 +161,27 @@ if (isset($_GET['id'])) {
         },
         methods: {
             change_histogram_type: function() {
+                console.time("Histogram Type Logic Execution Time (Optimized)");//Just to measure execution time to see the performance for the optimized code
 
-                if (this.histogram_type == "kwh_at_cop") {
-                    this.xaxis_title = "COP";
-                    this.x_min = 1.0;
-                    this.x_max = 8.0;
-                } else if (this.histogram_type == "kwh_at_flow") {
-                    this.xaxis_title = "Flow temperature";
-                    this.x_min = 20;
-                    this.x_max = 55;
-                } else if (this.histogram_type == "kwh_at_outside") {
-                    this.xaxis_title = "Outside temperature";
-                    this.x_min = -10;
-                    this.x_max = 20;
-                } else if (this.histogram_type == "kwh_at_flow_minus_outside") {
-                    this.xaxis_title = "Flow minus outside temperature";
-                    this.x_min = 0;
-                    this.x_max = 60;
-                } else if (this.histogram_type == "kwh_at_ideal_carnot") {
-                    this.xaxis_title = "Ideal Carnot COP";
-                    this.x_min = 0;
-                    this.x_max = 20;
-                }
+                //This the precompute logic where it will optimize of selecting histogram type and does not need to go through the multiple conditional check using if loop
+                 const histogramSettings = {
+                    kwh_at_cop: { title: "COP", min: 1.0, max: 8.0 },
+                    kwh_at_flowTemp: { title: "Flow temperature", min: 20, max: 55 },
+                    kwh_at_outsideTemp: { title: "Outside temperature", min: -10, max: 20 },
+                    kwh_at_flow_minus_outside_Temp: { title: "Flow minus outside temperature", min: 0, max: 60 },
+                    kwh_at_ideal_carnot: { title: "Ideal Carnot COP", min: 0, max: 20 }
+                 };
 
+                 //This the Lookup settings for the selected histogram type 
+                const currentSettings = histogramSettings[this.histogram_type];
+                 if (currentSettings) {
+
+                     this.xaxis_title = currentSettings.title;
+                     this.x_min = currentSettings.min;
+                     this.x_max = currentSettings.max;
+                 }
+
+                console.timeEnd("Histogram Type Logic Execution Time (Optimized)") //Just to measure execution time to see the performance for the optimized code
                 for (var i=0; i<app.selected_systems.length; i++) {
                     load_system_data(i);
                 }
@@ -398,17 +396,36 @@ if (isset($_GET['id'])) {
         });
     }
 
-    resize();
-    function resize() {
-        var height = $(window).height() - $("#placeholder").offset().top - 80;
-        $("#placeholder").height(height);
-        draw();
-    }
+   
+    const placeholder = document.querySelector("#placeholder"); // To cache the placeholder element which will reduce repeated DOM queries
 
-    // Expand height of chart to fill available space
-    $(window).resize(function() {
-        resize();
-    });
+    let resizeTimeout;// Optimized resize logic with performance measurement and debouncing
+
+    window.addEventListener("resize", () => {
+    
+        console.time("Resize Event Triggered (Optimized)");//Just to measure the optimized one
+        clearTimeout(resizeTimeout);// Clear the previous timeout if a new resize event occur
+        // Debounce the resize logic
+         resizeTimeout = setTimeout(() => {
+         console.time("Resize Logic Execution Time (Optimized)");//Just to measure the execution time for optimized on
+        const newHeight = window.innerHeight - placeholder.offsetTop - 80;
+        // The height is changed only when it is needed because to avoid redundant DOM updates
+        if (placeholder.style.height !== `${newHeight}px`) {
+            placeholder.style.height = `${newHeight}px`;
+
+            // Just to measure the time taken by the draw function with the optimized logic
+            console.time("Draw Function Execution Time (Optimized)");
+            draw();
+            console.timeEnd("Draw Function Execution Time (Optimized)");
+        }
+
+             console.timeEnd("Resize Logic Execution Time (Optimized)");
+    }, 200); // Debounce interval of 200ms
+
+    // End performance timer for resize event
+    console.timeEnd("Resize Event Triggered (Optimized)");
+});
+
 
     function time_to_date_str(time) {
         var date = new Date(time*1000);
