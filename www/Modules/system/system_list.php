@@ -303,7 +303,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     <p class="card-text">Average of individual system {{ stats_time_start === 'last365' ? 'SPF' : 'COP' }} values: <b>{{ totals.average_cop | toFixed(1) }}</b></p>
                     <p class="card-text">Average {{ stats_time_start === 'last365' ? 'SPF' : 'COP' }} based on total sum of heat and electric values: <b>{{ totals.average_cop_kwh | toFixed(1) }}</p>
                     <!-- csv export button copy table data to clipboard -->
-                    <button class="btn btn-primary" @click="export_csv">Copy table data to clipboard</button>                    
+                    <button class="btn btn-primary" @click="export_csv">Copy table data to clipboard</button>
+                                        <!-- csv_download button -->
+                    <button class="btn btn-primary" @click="download_csv">Download table data as csv file</button>
                   </div>
                 </div>                
             </div>
@@ -1019,6 +1021,57 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 }
                 var csv_string = csv.join("\n");
                 copy_text_to_clipboard(csv_string, 'CSV data copied to clipboard');
+            },
+            download_csv: function() {
+                console.log('downloading csv');
+
+                var csv = [];
+
+                var header = [];
+                for (var i = 0; i < this.selected_columns.length; i++) {
+                    if (this.selected_columns[i] == 'installer_logo') continue;
+                    if (this.selected_columns[i] == 'training') continue;
+                    if (this.selected_columns[i] == 'learnmore') continue;
+                    header.push('"' + this.columns[this.selected_columns[i]].name + '"');
+                }
+                csv.push(header.join(","));
+
+                for (var i = 0; i < this.fSystems.length; i++) {
+                    var row = [];
+                    for (var j = 0; j < this.selected_columns.length; j++) {
+                        if (this.selected_columns[j] == 'installer_logo') continue;
+                        if (this.selected_columns[j] == 'training') continue;
+                        if (this.selected_columns[j] == 'learnmore') continue;
+
+                        var column = this.selected_columns[j];
+                        var value = this.fSystems[i][column];
+                        if (value == null) value = '';
+
+                        if (stats_columns[column] != undefined) {
+                            if (stats_columns[column]['dp'] != undefined && value != null && value != '') {
+                                value = value.toFixed(stats_columns[column]['dp'] + 1);
+                            }
+                        }
+                        row.push('"' + value + '"');
+                    }
+                    csv.push(row.join(","));
+                }
+
+                var csv_string = csv.join("\n");
+
+                // Create a Blob object with the CSV data
+                var blob = new Blob([csv_string], { type: 'text/csv;charset=utf-8;' });
+
+                // Create a link element and trigger the download
+                var link = document.createElement("a");
+                var url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", "exported_data.csv");
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                console.log('CSV file downloaded');
             },
             stats_time_start_change: function () {
                 // change available_months_end to only show months after start
