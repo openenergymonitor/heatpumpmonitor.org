@@ -319,7 +319,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     var default_settings = {
         mode: 'topofthescops',
         period: 'last365',
-        minDays: 290,
+        minDays: 330,
         add: '',
         rm: '',
         filter: '',
@@ -360,7 +360,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     var periods_available = ['last365','last90','last30','last7','all'];
 
     var default_minDays = {
-        'last365': 290,
+        'last365': 330,
         'last90': 72,
         'last30': 24,
         'last7': 5,
@@ -1398,7 +1398,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     }
                     if (this.stats_time_start=='last365' || this.stats_time_start=='all') {
                         
-                        return (days<=290) ? 'partial ' : '';
+                        return (days<=330) ? 'partial ' : '';
                     } else if (this.stats_time_start=='last90') {
                         return (days<=72) ? 'partial ' : '';
                     } else if (this.stats_time_start=='last30') {
