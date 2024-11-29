@@ -24,7 +24,7 @@ foreach ($data as $row) {
         $url_parts = parse_url($url);
         $server = $url_parts['scheme'] . '://' . $url_parts['host'];
 
-        # check if url was to /app/view instead of username
+        # check if url was to /app/view instead of usernam
         if (preg_match('/^(.*)\/app\/view$/', $url_parts['path'], $matches)) {
             $url = "$server$matches[1]/app/getconfig";
         } else {
