@@ -52,7 +52,7 @@ services:
         condition: service_healthy
 
   db:
-    image: mariadb:11.0
+    image: mariadb:11.3
     environment:
       - "MYSQL_HOST=localhost"
       - "MARIADB_AUTO_UPGRADE=1"
