@@ -10,62 +10,344 @@ $emoncmsorg_only = true;
 <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
 
-<div id="app" class="container" style="max-width:380px; padding-top:120px; height:800px;">
+<!-- Fontawesome CDN Link -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
 
-    <div class="card">
-        <div class="card-body bg-light">
+<style>
+/* Google Font Link */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;600;700&display=swap');
 
-            <div v-if="!mode">
-                <button type="button" class="btn btn-primary btn-lg" style="width:100%" @click="mode='emoncmsorg'">Login with emoncms.org</button>
-                <button type="button" class="btn btn-outline-primary btn-lg" style="width:100%; margin-top:10px" @click="mode='selfhost'">Self hosted data</button>
-            </div>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Poppins", sans-serif;
+}
 
-            <div v-else>
-                <div v-if="mode!='register'">
-                    <h1 class="h3 mb-3 fw-normal">Login <span v-if="mode=='emoncmsorg'">with emoncms.org</span><span style="color:#888" v-if="mode=='selfhost'">Self hosted data</span></h1>
-                </div>
-                <div v-if="mode=='register'">
-                    <h1 class="h3 mb-3 fw-normal">Register</h1>
-                    <p>If you already have an emoncms.org account, you can login with that. Click cancel and select Login with emoncms.org.</p>
-                </div>
+body {
+  min-height: 100vh;
+  display: flex;
+  background: #28377c;
+  
+}
 
-                <label>Username</label>
-                <div class="input-group mb-3">
-                    <input type="text" class="form-control" v-model="username">
-                </div>
+.form_container {
+  position: relative;
+  max-width: 850px;
+  width: 100%;
+  background: #fff;
+  padding: 40px 30px;
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+  perspective: 2700px;
+}
 
-                <label>Password</label>
-                <div class="input-group mb-3">
-                    <input type="password" class="form-control" v-model="password">
-                </div>
+.form_container .cover {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  height: 100%;
+  width: 50%;
+  z-index: 98;
+  transition: all 1s ease;
+  transform-origin: left;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+}
 
-                <?php if ($enable_register) { ?>
-                <div v-if="mode=='register'">
-                    <label>Repeat password</label>
-                    <div class="input-group mb-3">
-                        <input type="password" class="form-control" v-model="password2">
-                    </div>
+.form_container #flip:checked ~ .cover {
+  transform: rotateY(-180deg);
+}
 
-                    <label>Email</label>
-                    <div class="input-group mb-3">
-                        <input type="text" class="form-control" v-model="email">
-                    </div>
-                </div>
-                <?php } ?>
+.form_container #flip:checked ~ .forms .login-form {
+  pointer-events: none;
+}
 
-                <button type="button" class="btn btn-primary" @click="login" v-if="mode!='register'">Login</button>
-                <?php if ($enable_register) { ?><button type="button" class="btn btn-primary" @click="register" v-if="mode=='register'">Register</button><?php } ?>
-                <?php if (!$emoncmsorg_only) { ?><button type="button" class="btn btn-light" @click="mode=false" v-if="public_mode_enabled">Cancel</button><?php } ?>
-                <?php if ($enable_register) { ?><button type="button" class="btn btn-light" v-if="mode!='emoncmsorg' && mode!='register' && public_mode_enabled" @click="mode='register'">Register</button> <?php } ?>
-                <!--<a href="#" v-if="mode=='selfhost'">Forgot password</a>-->
-            </div>
+.form_container .cover .front,
+.form_container .cover .back {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+}
 
-            <div class="alert alert-danger" style="margin-top:20px; margin-bottom: 5px;" v-if="error" v-html="error"></div>
-            <div class="alert alert-success" style="margin-top:20px; margin-bottom: 5px;" v-if="success" v-html="success"></div>
+.cover .back {
+  transform: rotateY(180deg);
+}
 
-        </div>
+.form_container .cover img {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+  z-index: 10;
+}
 
+.form_container .cover .text {
+  position: absolute;
+  z-index: 10;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.form_container .cover .text::before {
+  content: '';
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  opacity: 0.5;
+  background: #28377c;
+}
+
+.cover .text .text-1,
+.cover .text .text-2 {
+  z-index: 20;
+  font-size: 26px;
+  font-weight: 600;
+  color: #fff;
+  text-align: center;
+}
+
+.cover .text .text-2 {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.form_container .forms {
+  height: 100%;
+  width: 100%;
+  background: #fff;
+}
+
+.form_container .form-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.form-content .login-form,
+.form-content .signup-form {
+  width: calc(100% / 2 - 25px);
+}
+
+.forms .form-content .title {
+  position: relative;
+  font-size: 24px;
+  font-weight: 500;
+  color: #333;
+}
+
+.forms .form-content .title:before {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  width: 25px;
+  background: #28377c;
+}
+
+.forms .signup-form .title:before {
+  width: 20px;
+}
+
+.forms .form-content .input-boxes {
+  margin-top: 30px;
+}
+
+.forms .form-content .input-box {
+  display: flex;
+  align-items: center;
+  height: 50px;
+  width: 100%;
+  margin: 10px 0;
+  position: relative;
+}
+
+.form-content .input-box input {
+  height: 100%;
+  width: 100%;
+  outline: none;
+  border: none;
+  padding: 0 30px;
+  font-size: 16px;
+  font-weight: 500;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+.form-content .input-box input:focus,
+.form-content .input-box input:valid {
+  border-color: #192351;
+}
+
+.form-content .input-box i {
+  position: absolute;
+  color: #28377c;
+  font-size: 17px;
+}
+
+.forms .form-content .text {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+}
+
+.forms .form-content .text a {
+  text-decoration: none;
+}
+
+.forms .form-content .text a:hover {
+  text-decoration: underline;
+}
+
+.forms .form-content .button {
+  color: #fff;
+  margin-top: 40px;
+}
+
+.forms .form-content .button input {
+  color: #fff;
+  background: #28377c;
+  border-radius: 6px;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.4s ease;
+}
+
+.forms .form-content .button input:hover {
+  background: #495ebe;
+}
+
+.forms .form-content label {
+  color: #495ebe;
+  cursor: pointer;
+}
+
+.forms .form-content label:hover {
+  text-decoration: underline;
+}
+
+.forms .form-content .login-text,
+.forms .form-content .sign-up-text {
+  text-align: center;
+  margin-top: 25px;
+}
+
+.form_container #flip {
+  display: none;
+}
+
+@media (max-width: 730px) {
+  .form_container .cover {
+    display: none;
+  }
+
+  .form-content .login-form,
+  .form-content .signup-form {
+    width: 100%;
+  }
+
+  .form-content .signup-form {
+    display: none;
+  }
+
+  .form_container #flip:checked ~ .forms .signup-form {
+    display: block;
+  }
+
+  .form_container #flip:checked ~ .forms .login-form {
+    display: none;
+  }
+}
+</style>
+
+<div id="app" class="containers" style="padding-top:50px; padding-left:20px; padding-bottom: 30px; padding-right:20px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+    <div v-if="!mode">
+        <button type="button" class="btn btn-primary btn-lg" style="width:100%" @click="mode='emoncmsorg'">Login with emoncms.org</button>
+        <button type="button" class="btn btn-outline-primary btn-lg" style="width:100%; margin-top:10px" @click="mode='selfhost'">Self hosted data</button>
     </div>
+
+    <div v-else class="form_container">
+        <input type="checkbox" id="flip" v-bind:checked="mode=='register'">
+        <div class="cover">
+        <div class="front">
+            <img src="..\..\theme\img\login.png" alt="">
+            <div class="text">
+            <span class="text-1">Monitor your energy <br> with precision</span>
+            <span class="text-2">Stay connected, stay efficient</span>
+            </div>
+        </div>
+        <div class="back">
+            <img class="backImg" src="..\..\theme\img\register.png" alt="">
+            <div class="text">
+            <span class="text-1">Join the energy <br> monitoring revolution</span>
+            <span class="text-2">Get started today</span>
+            </div>
+        </div>
+        </div>
+        <div class="forms">
+            <div class="form-content">
+            <div class="login-form">
+                <div class="title">Login <span style="font-size: 12px;" v-if="mode=='emoncmsorg'">with emoncms.org</span><span style="color:#888; font-size: 12px;" v-if="mode=='selfhost'">Self hosted data</span></div>
+
+            <form @submit.prevent="login">
+                <div class="input-boxes">
+                <div class="input-box ">
+                    <i class="fas fa-envelope"></i>
+                    <input type="text" placeholder="Enter your username" class="form-control" v-model="username" required>
+                </div>
+                <div class="input-box">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" class="form-control" v-model="password" placeholder="Enter your password" required>
+                </div>
+                <div class="text"><a href="#">Forgot password?</a></div>
+                <div class="button input-box">
+                    <input type="submit" value="Login">
+                </div>
+                <div class="text sign-up-text">Don't have an account? <label for="flip">Sigup now</label></div>
+            </div>
+            </form>
+        </div>
+        <div class="signup-form">
+            <div class="title">Signup</div>
+            <form @submit.prevent="register">
+                <div class="input-boxes">
+                <div class="input-box">
+                    <i class="fas fa-user"></i>
+                    <input type="text" placeholder="Enter your username" class="form-control" v-model="username" required>
+                </div>
+                <div class="input-box">
+                    <i class="fas fa-envelope"></i>
+                    <input type="text" class="form-control" placeholder="Enter your email" v-model="email" required>
+                </div>
+                <div class="input-box">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" placeholder="Enter your password" required>
+                </div>
+                <div class="input-box">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" class="form-control" v-model="password2" placeholder="Re-Enter your password" required>
+                </div>
+                <div class="button input-box">
+                    <input type="submit" value="Register">
+                </div>
+                <div class="text sign-up-text">Already have an emoncms.org account? <label for="flip">Login now</label></div>
+            </div>
+            </form>
+            </div>
+        </div>
+    
+
+            <div class="alert alert-danger" style="margin-top:20px; margin-bottom: 5px; width:90%; z-index:150; position: absolute; left: 5px; bottom: 0px;"  v-if="error" v-html="error"></div>
+            <div class="alert alert-success" style="margin-top:20px; margin-bottom: 5px; width:90%; z-index:150; position: absolute; left: 5px; bottom: 0px;" v-if="success" v-html="success"></div>
+    </div>
+</div>
+    
 </div>
 
 <script>
@@ -77,42 +359,50 @@ $emoncmsorg_only = true;
     var app = new Vue({
         el: '#app',
         data: {
-            username: "",
-            password: "",
-            password2: "",
-            email: "",
+            username: "",  // The username of the user
+            password: "",  // The password of the user
+            password2: "", // The password re-entered by the user
+            email: "",     // The email of the user
             error: false,
             success: false,
             mode: 'emoncmsorg',
             public_mode_enabled: public_mode_enabled
         },
         methods: {
+            /* The below code is a JavaScript function that handles a login request using Axios to send
+            a POST request to a specified URL with the username, password, and emoncmsorg
+            parameters. Upon receiving a response, it checks if the login was successful based on
+            the "success" property in the response data. If successful, it redirects the user to a
+            specified URL for system listing. If unsuccessful, it sets an error message based on the
+            response data. If there is an error during the request, it logs the error to the
+            console. */
             login: function() {
                 const params = new URLSearchParams();
                 params.append('username', this.username);
                 params.append('password', this.password);
-                if (emoncmsorg_only) {
-                    params.append('emoncmsorg', 0);
-                } else {
-                    params.append('emoncmsorg', this.mode == "emoncmsorg" ? 1 : 0);
-                }
-
-                params.append('emoncmsorg', this.mode == "emoncmsorg" ? 1 : 0);
+                params.append('emoncmsorg', emoncmsorg_only ? 0 : (this.mode === "emoncmsorg" ? 1 : 0));
 
                 axios.post(path + "user/login.json", params)
-                    .then(function(response) {
+                    .then((response) => {
                         if (response.data.success) {
-                            app.error = false;
+                            this.error = false;
                             window.location.href = path + "system/list/user";
                         } else {
-                            app.error = response.data.message;
-                            app.success = false;
+                            this.error = response.data.message;
+                            this.success = false;
                         }
                     })
-                    .catch(function(error) {
+                    .catch((error) => {
                         console.log(error);
                     });
             },
+            /* The below code is a JavaScript function that is making a POST request to a PHP backend
+            endpoint for user registration. It is sending the username, password, password2, and
+            email as parameters in the request. Upon receiving a response from the server, it checks
+            if the registration was successful. If successful, it may prompt the user to verify
+            their email or redirect them to a user list page. If there is an error during
+            registration, it will display the error message. The code uses Axios for making the HTTP
+            request and handles both successful and error responses. */
             register: function() {
                 const params = new URLSearchParams();
                 params.append('username', this.username);
@@ -121,21 +411,21 @@ $emoncmsorg_only = true;
                 params.append('email', this.email);
 
                 axios.post(path + "user/register.json", params)
-                    .then(function(response) {
+                    .then((response) => {
                         if (response.data.success) {
-                            app.error = false;
-                            if (response.data.verifyemail!=undefined && response.data.verifyemail) {
-                                app.mode = 'login';
-                                app.success = "Registration successful, please check your email to verify your account";
+                            this.error = false;
+                            if (response.data.verifyemail !== undefined && response.data.verifyemail) {
+                                this.mode = 'login';
+                                this.success = "Registration successful, please check your email to verify your account";
                             } else {
-                                window.location.href = path + "system/list/user"
+                                window.location.href = path + "system/list/user";
                             }
                         } else {
-                            app.error = response.data.message;
-                            app.success = false;
+                            this.error = response.data.message;
+                            this.success = false;
                         }
                     })
-                    .catch(function(error) {
+                    .catch((error) => {
                         console.log(error);
                     });
             }
@@ -157,3 +447,4 @@ $emoncmsorg_only = true;
         }
     }
 </script>
+
