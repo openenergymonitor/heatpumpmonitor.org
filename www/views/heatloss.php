@@ -215,16 +215,31 @@
                     }
                 };
 
-                $.ajax({
-                    type: "POST",
-                    url: path + "system/save",
-                    contentType: "application/json",
-                    data: JSON.stringify(data_to_save),
-                    success: function(result) {
+                async function saveData(data_to_save) {
+                    try {
+                        const response = await fetch(`${path}system/save`, {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify(data_to_save)
+                        });
+
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+
+                        const result = await response.json();
                         console.log(result);
                         alert(result.message);
+                    } catch (error) {
+                        console.error('Failed to save data:', error);
+                        alert('An error occurred while saving data. Please try again.');
                     }
-                });
+                }
+
+                // Usage
+                saveData(data_to_save);
             },
             save_capacity_figures: function () {
 
@@ -242,16 +257,36 @@
                     }
                 };
 
-                $.ajax({
-                    type: "POST",
-                    url: path + "system/save",
-                    contentType: "application/json",
-                    data: JSON.stringify(data_to_save),
-                    success: function(result) {
+                console.time("AJAX Call Duration");
+
+                async function saveData(data_to_save) {
+                    console.time("Fetch Call Duration");
+                    try {
+                        const response = await fetch(`${path}system/save`, {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify(data_to_save)
+                        });
+
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+
+                        const result = await response.json();
                         console.log(result);
                         alert(result.message);
+                    } catch (error) {
+                        console.error('Failed to save data:', error);
+                        alert('An error occurred while saving data. Please try again.');
+                    } finally {
+                        console.timeEnd("Fetch Call Duration");
                     }
-                });
+                }
+
+                // Call the function to save data
+                saveData(data_to_save);
             },
             next_system: function(direction) {
                 app.fixed_room_tmp_enable = 0;
@@ -292,14 +327,23 @@
     });
 
     // Load list of systems
-    $.ajax({
-        type: "GET",
-        url: path + "system/list/public.json",
-        success: function(result) {
+    async function loadSystems() {
+        try {
+            const response = await fetch(`${path}system/list/public.json`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
 
             // sort by location
-            result.sort(function(a, b) {
-                // sort by location string
+            result.sort((a, b) => {
                 if (a.location < b.location) return -1;
                 if (a.location > b.location) return 1;
                 return 0;
@@ -308,28 +352,47 @@
             // System list by id
             app.system_list = result;
 
-            for (var z in result) {
+            for (let z in result) {
                 systemid_map[result[z].id] = z;
             }
 
             load();
             resize();
+        } catch (error) {
+            console.error('Failed to load systems:', error);
+            alert('An error occurred while loading systems. Please try again.');
         }
-    });
+    }
+
+    // Call the function to load systems
+    loadSystems();
 
     function load() {
 
         // does this user has write access
-        $.ajax({
-            type: "GET",
-            url: path + "system/hasaccess",
-            data: {
-                'id': app.systemid
-            },
-            success: function(result) {
+        async function checkWriteAccess(systemId) {
+            try {
+                const response = await fetch(`${path}system/hasaccess?id=${systemId}`, {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
                 app.enable_save = 1 * result;
+            } catch (error) {
+                console.error('Failed to check write access:', error);
+                alert('An error occurred while checking write access. Please try again.');
             }
-        });
+        }
+
+        // Call the function to check write access
+        checkWriteAccess(app.systemid);
 
         var z = systemid_map[app.systemid];
 
@@ -367,36 +430,37 @@
             'combined_heat_kwh',
         ];
 
-        $.ajax({
-            // text plain dataType:
-            dataType: "text",
-            url: path + "system/stats/daily",
-            data: {
-                'id': app.systemid,
-                //'start': 1,
-                //'end': 2,
-                'fields': fields.join(',')
-            },
-            async: true,
-            success: function(result) {
-                // split
-                var lines = result.split('\n');
+        async function fetchDailyStats() {
+            try {
+                const response = await fetch(`${path}system/stats/daily?id=${app.systemid}&fields=${fields.join(',')}`, {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.text();
+                const lines = result.split('\n');
 
                 // create data
-                for (var z in fields) {
+                for (let z in fields) {
                     let key = fields[z];
                     data[key] = [];
                 }
 
-                for (var i = 1; i < lines.length; i++) {
-                    var parts = lines[i].split(',');
+                for (let i = 1; i < lines.length; i++) {
+                    let parts = lines[i].split(',');
                     if (parts.length != fields.length) {
                         continue;
                     }
 
-                    var timestamp = parts[0] * 1000;
+                    let timestamp = parts[0] * 1000;
 
-                    for (var j = 1; j < parts.length; j++) {
+                    for (let j = 1; j < parts.length; j++) {
                         let value = parts[j] * 1;
                         // add to data
                         data[fields[j]].push([timestamp, value]);
@@ -404,8 +468,8 @@
                 }
 
                 // Detect if we have valid room temperature data
-                var valid_room_temp = 0;
-                for (var i = 0; i < data[mode + '_roomT_mean'].length; i++) {
+                let valid_room_temp = 0;
+                for (let i = 0; i < data[mode + '_roomT_mean'].length; i++) {
                     if (data[mode + '_roomT_mean'][i][1] > 0) {
                         valid_room_temp = 1;
                         break;
@@ -414,12 +478,12 @@
                 // auto enable fixed room temp if no room temp data
                 if (valid_room_temp == 0) {
                     app.fixed_room_tmp_enable = 1;
-                    alert("No room temperature data found, fixed room temperature enabled\nSet fixed room temperature in the box below (default 20°C)")
+                    alert("No room temperature data found, fixed room temperature enabled\nSet fixed room temperature in the box below (default 20°C)");
                 }
 
                 // Apply fixed room temperature
                 if (app.fixed_room_tmp_enable) {
-                    for (var i = 0; i < data[mode + '_roomT_mean'].length; i++) {
+                    for (let i = 0; i < data[mode + '_roomT_mean'].length; i++) {
                         data[mode + '_roomT_mean'][i][1] = app.fixed_room_tmp;
                     }
                 }
@@ -429,15 +493,15 @@
                 if (max_heat < hp_output) max_heat = hp_output;
                 if (max_heat < hp_max) max_heat = hp_max;
 
-                var total_elec_kwh = 0;
-                var total_heat_kwh = 0;
+                let total_elec_kwh = 0;
+                let total_heat_kwh = 0;
 
                 data['heat_vs_dt'] = [];
-                for (var i = 0; i < data[mode + '_heat_mean'].length; i++) {
+                for (let i = 0; i < data[mode + '_heat_mean'].length; i++) {
                     if (data[mode + '_roomT_mean'][i][1] > 0) {
-                        var x = data[mode + '_roomT_mean'][i][1] - data[mode + '_outsideT_mean'][i][1];
+                        let x = data[mode + '_roomT_mean'][i][1] - data[mode + '_outsideT_mean'][i][1];
                         if (x > 0) {
-                            var y = data[mode + '_heat_mean'][i][1]*0.001;
+                            let y = data[mode + '_heat_mean'][i][1] * 0.001;
                             data['heat_vs_dt'].push([x, y, i]);
 
                             if (y > max_heat) max_heat = y;
@@ -453,8 +517,14 @@
                 app.total_cop = total_heat_kwh / total_elec_kwh;
 
                 draw();
+            } catch (error) {
+                console.error('Failed to fetch daily stats:', error);
+                alert('An error occurred while fetching daily stats. Please try again.');
             }
-        });
+        }
+
+        // Call the function to fetch daily stats
+        fetchDailyStats();
     }
 
     function draw() {
