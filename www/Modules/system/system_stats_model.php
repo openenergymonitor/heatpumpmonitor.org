@@ -532,8 +532,6 @@ class SystemStats
 
         $categories = array('combined','running','space','water','cooling');
 
-        $weight_by_heat = true;
-
         // Totals only
         $totals = array();
         $total_fields = array('elec_kwh','heat_kwh','data_length');
@@ -546,13 +544,11 @@ class SystemStats
         // sum x data_length
         $sum = array();
         $sum_length = array();
-        $sum_heat_kwh = array();
         $sum_fields = array('elec_mean','heat_mean','flowT_mean','returnT_mean','outsideT_mean','roomT_mean','prc_carnot');
         foreach ($categories as $category) {
             foreach ($sum_fields as $field) {
                 $sum[$category][$field] = 0;
                 $sum_length[$category][$field] = 0;
-                $sum_heat_kwh[$category][$field] = 0;
             }
         }
 
@@ -584,13 +580,8 @@ class SystemStats
                 }
                 foreach ($sum_fields as $field) {
                     if ($row->{$category."_".$field} != null) {
-                        if ($weight_by_heat) {
-                            $sum[$category][$field] += $row->{$category."_".$field} * $row->{$category."_heat_kwh"};
-                        } else {
-                            $sum[$category][$field] += $row->{$category."_".$field} * $row->{$category."_data_length"};
-                        }
+                        $sum[$category][$field] += $row->{$category."_".$field} * $row->{$category."_data_length"};
                         $sum_length[$category][$field] += $row->{$category."_data_length"};
-                        $sum_heat_kwh[$category][$field] += $row->{$category."_heat_kwh"};
                     }
                 }
             }
@@ -628,15 +619,8 @@ class SystemStats
         foreach ($categories as $category) {
             foreach ($sum_fields as $field) {
                 $mean[$category][$field] = null;
-
-                if ($weight_by_heat) {
-                    if ($sum_heat_kwh[$category][$field] > 0) {
-                        $mean[$category][$field] = $sum[$category][$field] / $sum_heat_kwh[$category][$field];
-                    }
-                } else {
-                    if ($sum_length[$category][$field] > 0) {
-                        $mean[$category][$field] = $sum[$category][$field] / $sum_length[$category][$field];
-                    }
+                if ($sum_length[$category][$field] > 0) {
+                    $mean[$category][$field] = $sum[$category][$field] / $sum_length[$category][$field];
                 }
             }
         }
