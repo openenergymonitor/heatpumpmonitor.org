@@ -1,6 +1,27 @@
 
 var system_list = [];
-$.ajax({ dataType: "json", url: path + "system/list/public.json", async: false, success: function (result) { system_list = result; } });
+
+async function fetchSystemList() {
+    try {
+        const response = await fetch(`${path}system/list/public.json`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json"
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        system_list = await response.json();
+    } catch (error) {
+        console.error('Failed to fetch system list:', error);
+    }
+}
+
+// Call the function to fetch system list
+fetchSystemList();
 
 var app = new Vue({
     el: '#app',
@@ -294,7 +315,7 @@ function load_all() {
     }
 }
 
-function load_system_data(idx) {
+async function load_system_data(idx) {
     var system = app.selected_systems[idx];
 
     var params = {
@@ -308,16 +329,29 @@ function load_system_data(idx) {
         timeformat: "notime"
     }
 
-    $.ajax({
-        dataType: "json",
-        url: "timeseries/data",
-        data: params,
-        async: false,
-        success: function (system_data) {
-            app.selected_systems[idx].data = system_data;
+    const queryString = new URLSearchParams(params).toString();
+
+    try {
+        const response = await fetch(`timeseries/data?${queryString}`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json"
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
-    });
+
+        const system_data = await response.json();
+        app.selected_systems[idx].data = system_data;
+    } catch (error) {
+        console.error('Failed to load system data:', error);
+    }
 }
+
+// Call the function to load system data
+load_system_data(idx);
 
 function time_to_date_str(time) {
     var date = new Date(time * 1000);
