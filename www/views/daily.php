@@ -190,111 +190,140 @@
     });
 
     // Load list of systems
-    $.ajax({
-        type: "GET",
-        url: path + "system/list/public.json",
-        success: function(result) {
+async function loadSystems() {
+    try {
+        const response = await fetch(`${path}system/list/public.json`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json"
+            }
+        });
 
-            // sort by location
-            result.sort(function(a, b) {
-                // sort by location string
-                if (a.location < b.location) return -1;
-                if (a.location > b.location) return 1;
-                return 0;
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        // sort by location
+        result.sort((a, b) => {
+            if (a.location < b.location) return -1;
+            if (a.location > b.location) return 1;
+            return 0;
+        });
+
+        // System list by id
+        app.system_list = result;
+
+        for (let z in result) {
+            systemid_map[result[z].id] = z;
+        }
+
+        load();
+        resize();
+    } catch (error) {
+        console.error('Failed to load systems:', error);
+        alert('An error occurred while loading systems. Please try again.');
+    }
+}
+
+// Call the function to load systems
+loadSystems();
+
+async function load() {
+    // does this user has write access
+    async function checkWriteAccess(systemId) {
+        try {
+            const response = await fetch(`${path}system/hasaccess?id=${systemId}`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json"
+                }
             });
 
-            // System list by id
-            app.system_list = result;
-
-            for (var z in result) {
-                systemid_map[result[z].id] = z;
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            load();
-            resize();
+            const result = await response.json();
+            app.enable_save = 1 * result;
+        } catch (error) {
+            console.error('Failed to check write access:', error);
+            alert('An error occurred while checking write access. Please try again.');
         }
-    });
-
-    function load() {
-
-        // does this user has write access
-        $.ajax({
-            type: "GET",
-            url: path + "system/hasaccess",
-            data: {
-                'id': app.systemid
-            },
-            success: function(result) {
-                app.enable_save = 1 * result;
-            }
-        });
-
-        var z = systemid_map[app.systemid];
-
-        var fields = [
-            'timestamp',
-            mode + '_heat_mean',
-            mode + '_roomT_mean',
-            mode + '_outsideT_mean',
-            'combined_starts',
-            'running_flowT_mean',
-            'running_returnT_mean',
-            'combined_elec_kwh',
-            'combined_heat_kwh',
-        ];
-
-        $.ajax({
-            // text plain dataType:
-            dataType: "text",
-            url: path + "system/stats/daily",
-            data: {
-                'id': app.systemid
-                // 'start': 1,
-                // 'end': 2,
-                // 'fields': fields.join(',')
-            },
-            async: true,
-            success: function(result) {
-                // split
-                var lines = result.split('\n');
-
-                var fields = lines[0].split(',');
-                for (var z in fields) {
-                    fields[z] = fields[z].trim();
-                }
-                
-                // create data
-                for (var z in fields) {
-                     let key = fields[z];
-                     data[key] = [];
-                }
-
-                for (var i = 1; i < lines.length; i++) {
-                    var parts = lines[i].split(',');
-                    if (parts.length != fields.length) {
-                        continue;
-                    }
-
-                    var timestamp = parts[1] * 1000;
-
-                    for (var j = 1; j < parts.length; j++) {
-                        let value = parts[j] * 1;
-                        // add to data
-                        data[fields[j]].push([timestamp, value]);
-                    }
-                }
-
-                data['series'] = [];
-                for (var i = 0; i < data[app.selected_xaxis].length; i++) {
-                    var x = data[app.selected_xaxis][i][1];
-                    var y = data[app.selected_yaxis][i][1];
-                    if (x===0 && y===0) continue;
-                    data['series'].push([x, y, i]);
-                }
-                draw();
-            }
-        });
     }
+
+    // Call the function to check write access
+    await checkWriteAccess(app.systemid);
+
+    var z = systemid_map[app.systemid];
+
+    var fields = [
+        'timestamp',
+        mode + '_heat_mean',
+        mode + '_roomT_mean',
+        mode + '_outsideT_mean',
+        'combined_starts',
+        'running_flowT_mean',
+        'running_returnT_mean',
+        'combined_elec_kwh',
+        'combined_heat_kwh',
+    ];
+
+    try {
+        const response = await fetch(`${path}system/stats/daily?id=${app.systemid}`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json"
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.text();
+        const lines = result.split('\n');
+
+        var fields = lines[0].split(',');
+        for (let z in fields) {
+            fields[z] = fields[z].trim();
+        }
+        
+        // create data
+        for (let z in fields) {
+             let key = fields[z];
+             data[key] = [];
+        }
+
+        for (let i = 1; i < lines.length; i++) {
+            let parts = lines[i].split(',');
+            if (parts.length != fields.length) {
+                continue;
+            }
+
+            let timestamp = parts[1] * 1000;
+
+            for (let j = 1; j < parts.length; j++) {
+                let value = parts[j] * 1;
+                // add to data
+                data[fields[j]].push([timestamp, value]);
+            }
+        }
+
+        data['series'] = [];
+        for (let i = 0; i < data[app.selected_xaxis].length; i++) {
+            let x = data[app.selected_xaxis][i][1];
+            let y = data[app.selected_yaxis][i][1];
+            if (x === 0 && y === 0) continue;
+            data['series'].push([x, y, i]);
+        }
+        draw();
+    } catch (error) {
+        console.error('Failed to fetch daily stats:', error);
+        alert('An error occurred while fetching daily stats. Please try again.');
+    }
+}
 
     function draw() {
 

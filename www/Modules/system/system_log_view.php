@@ -49,14 +49,28 @@ if (system_id) {
 }
 
 // Load load ajax
-$.ajax({
-      url: path+"system/log.json",
-      data: params,
-      type: "GET",
-      success: function(data) {
-          app.log = data;
+async function loadLog(params) {
+    try {
+        const queryString = new URLSearchParams(params).toString();
+        const response = await fetch(`${path}system/log.json?${queryString}`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json"
+            }
+        });
 
-      }
-});
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        app.log = data;
+    } catch (error) {
+        console.error('Failed to load log:', error);
+    }
+}
+
+// Call the function to load log
+loadLog(params);
 
 </script>

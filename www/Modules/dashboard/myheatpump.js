@@ -85,12 +85,21 @@ const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 
 // ajax request to https://heatpumpmonitor.org/timeseries/available?id=2
-$.ajax({
-    url: path + "timeseries/available",
-    data: { id: config.id },
-    async: true,
-    dataType: "json",
-    success: function (result) {
+async function fetchTimeseriesAvailable() {
+    try {
+        const response = await fetch(`${path}timeseries/available?id=${config.id}`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json"
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+
         if (result == null || result.feeds == undefined) {
             console.log("No timeseries available");
             return;
@@ -99,8 +108,13 @@ $.ajax({
         feeds = result.feeds;
 
         show();
+    } catch (error) {
+        console.error('Failed to fetch timeseries available:', error);
     }
-});
+}
+
+// Call the function to fetch timeseries available
+fetchTimeseriesAvailable();
 
 function show() {
 
