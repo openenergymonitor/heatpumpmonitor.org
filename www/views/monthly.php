@@ -208,4 +208,62 @@
         }
     }
 
+    // How to test testMonthlyApp() function:
+    // 1. Open your browser's Developer Tools (press F12 or right-click > Inspect > Console).
+    // 2. Run the function by calling it directly from the console
+
+    function testMonthlyApp() {
+    console.clear();  // Clear the console for easier reading of the test results
+    
+    // Test 1: Add a new system and check the systems list
+    console.log('--- Test 1: Add New System ---');
+    console.log('Before add_system():', app.selected_systems);
+    app.add_system();  // Add a new system
+    console.log('After add_system():', app.selected_systems);
+
+    // Test 2: Change the system color and check if it updates
+    console.log('--- Test 2: Change System Color ---');
+    console.log('Before color change:', app.selected_systems[0].color);
+    app.selected_systems[0].color = '#ff00ff';  // Change to purple
+    app.change_color();  // Manually trigger the color change
+    console.log('After color change:', app.selected_systems[0].color);
+
+    // Test 3: Change the system selection and check if data updates
+    console.log('--- Test 3: Change System Selection ---');
+    app.selected_systems[0].id = 2;  // Change to a different system ID (assuming system ID 2 exists)
+    app.change_system(0);  // Trigger the system data update
+    console.log('After change_system():', app.selected_systems[0].id);
+    
+    // Test 4: Manually add a data point and redraw the chart
+    console.log('--- Test 4: Add Data Point and Redraw Chart ---');
+    app.selected_systems[0].monthly.push({ timestamp: Date.now(), combined_cop: 5.5 });  // Add new data point
+    draw_chart();  // Manually trigger the chart redrawing
+    console.log('After data point added, chart options:', chart_options);
+
+    // Test 5: Manually trigger chart mode change and verify chart update
+    console.log('--- Test 5: Change Chart Mode ---');
+    app.chart_yaxis = 'another_metric';  // Change to a different metric (ensure it's a valid key)
+    app.change_chart_mode();  // Manually trigger chart mode change
+    console.log('After change_chart_mode():', app.chart_yaxis);
+    console.log('Updated chart options:', chart_options);
+    
+    // Test 6: Check if system list data is loaded
+    console.log('--- Test 6: Load System Data ---');
+    axios.get = function(url) {
+        return new Promise((resolve) => {
+            // Simulate system data
+            setTimeout(() => {
+                resolve({
+                    data: [{ timestamp: Date.now(), combined_cop: 4.8 }]
+                });
+            }, 100);
+        });
+    };
+    
+    app.load_system_data(0);  // Load data for the first system
+    console.log('After load_system_data() mock, system data:', app.selected_systems[0].monthly);
+}
+
+
+
 </script>
