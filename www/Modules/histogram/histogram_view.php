@@ -98,41 +98,30 @@ if (isset($_GET['id'])) {
     
     var system_list = [];
     var system_map = {};
-    async function fetchSystemList() {
-        try {
-            const response = await fetch(`${path}system/list/public.json`, {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json"
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const result = await response.json();
+    $.ajax({
+        dataType: "json", 
+        url: path+"system/list/public.json", 
+        async: false, 
+        success: function(result) { 
 
             /* Order by location */
-            result.sort((a, b) => {
+            result.sort(function(a,b) {
                 if (a.location < b.location) return -1;
                 if (a.location > b.location) return 1;
                 return 0;
             });
 
-            system_list = result;
+            system_list = result; 
+
+
 
             // map by id
-            for (let i = 0; i < system_list.length; i++) {
+            for (var i=0; i<system_list.length; i++) {
                 system_map[system_list[i].id] = i;
             }
-        } catch (error) {
-            console.error('Failed to fetch system list:', error);
-        }
-    }
 
-    // Call the function to fetch system list
-    fetchSystemList();
+        }
+    });
 
     var default_start = "2023-10-01";
     var default_end = "2024-04-01";
@@ -343,86 +332,69 @@ if (isset($_GET['id'])) {
     draw();
 
 
-    async function load_system_data(idx) {
+    function load_system_data(idx) {
         var system = app.selected_systems[idx];
         
-        console.log(system);
+        console.log(system)
 
         var view_start = date_str_to_time(system.start);
 
-        var params = {
-            'id': system.id,
-            'start': date_str_to_time(system.start),
-            'end': date_str_to_time(system.end),
-            'x_min': app.x_min,
-            'x_max': app.x_max,
-        };
-
-        const queryString = new URLSearchParams(params).toString();
-
-        try {
-            const response = await fetch(`${path}histogram/${app.histogram_type}?${queryString}`, {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json"
+        $.ajax({
+            dataType: "json", 
+            url: path+"histogram/"+app.histogram_type,
+            data: {
+                'id': system.id, 
+                'start': date_str_to_time(system.start), 
+                'end': date_str_to_time(system.end),
+                'x_min': app.x_min,
+                'x_max': app.x_max,
+            },
+            async: false, 
+            success: function(result) {
+                if (result.success!=undefined && !result.success) {
+                    alert("Error: "+result.message);
+                    return;
                 }
-            });
+                let data = [];
+                let index = 0;
+                let sum = 0;
+                let sum_y = 0;
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                for (var i=result.min; i<=result.max; i+=result.div) {
+                    data.push([i, result.data[index]]);
+
+                    sum += i * result.data[index];
+                    sum_y += result.data[index];
+
+                    index++;
+                }
+
+                // Calculate average x value
+                let avg_x = sum / sum_y;
+                console.log("system: "+system.id+", average x: "+avg_x);
+                app.average_x_values[idx] = avg_x;
+
+                app.selected_systems[idx].data = data;
+
+                options.series.bars.barWidth = result.div;
+
+                // changes x axis label
+                if (app.histogram_type=="kwh_at_cop") {
+                    options.xaxis.axisLabel = "COP";
+                } else if (app.histogram_type=="kwh_at_flow") {
+                    options.xaxis.axisLabel = "Flow temperature (°C)";
+                } else if (app.histogram_type=="kwh_at_outside") {
+                    options.xaxis.axisLabel = "Outside temperature (°C)";
+                } else if (app.histogram_type=="kwh_at_flow_minus_outside") {
+                    options.xaxis.axisLabel = "Flow minus outside temperature (°K)";
+                } else if (app.histogram_type=="kwh_at_ideal_carnot") {
+                    options.xaxis.axisLabel = "Ideal carnot COP";
+                } else if (app.histogram_type=="flow_temp_curve") {
+                    options.xaxis.axisLabel = "Outside temperature (°C)";
+                }
             }
-
-            const result = await response.json();
-
-            if (result.success != undefined && !result.success) {
-                alert("Error: " + result.message);
-                return;
-            }
-
-            let data = [];
-            let index = 0;
-            let sum = 0;
-            let sum_y = 0;
-
-            for (let i = result.min; i <= result.max; i += result.div) {
-                data.push([i, result.data[index]]);
-
-                sum += i * result.data[index];
-                sum_y += result.data[index];
-
-                index++;
-            }
-
-            // Calculate average x value
-            let avg_x = sum / sum_y;
-            console.log("system: " + system.id + ", average x: " + avg_x);
-            app.average_x_values[idx] = avg_x;
-
-            app.selected_systems[idx].data = data;
-
-            options.series.bars.barWidth = result.div;
-
-            // changes x axis label
-            if (app.histogram_type == "kwh_at_cop") {
-                options.xaxis.axisLabel = "COP";
-            } else if (app.histogram_type == "kwh_at_flow") {
-                options.xaxis.axisLabel = "Flow temperature (°C)";
-            } else if (app.histogram_type == "kwh_at_outside") {
-                options.xaxis.axisLabel = "Outside temperature (°C)";
-            } else if (app.histogram_type == "kwh_at_flow_minus_outside") {
-                options.xaxis.axisLabel = "Flow minus outside temperature (°K)";
-            } else if (app.histogram_type == "kwh_at_ideal_carnot") {
-                options.xaxis.axisLabel = "Ideal carnot COP";
-            } else if (app.histogram_type == "flow_temp_curve") {
-                options.xaxis.axisLabel = "Outside temperature (°C)";
-            }
-        } catch (error) {
-            console.error('Failed to load system data:', error);
-        }
+        });
     }
-
-    // Call the function to load system data
-    load_system_data(idx);
 
    
     const placeholder = document.querySelector("#placeholder"); // To cache the placeholder element which will reduce repeated DOM queries
