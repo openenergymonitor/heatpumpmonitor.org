@@ -1,0 +1,34 @@
+name: PHP CI/CD Workflow for Adaptive Maintenance
+
+on: 
+  push:
+    branches:
+      - main  # Specify your main branch or other branches if needed
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest  # Define the environment 
+
+    strategy:
+      matrix:
+        php-version: [7.4, 8.0, 8.1, 8.2]  # Testing across multiple PHP versions
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2  # Checkout the repository's code
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}  # Use the matrix value to test across different PHP versions
+
+      - name: Install dependencies
+        run: |
+          composer install  # Install dependencies using Composer (for PHP projects)
+
+      - name: Run tests 
+        run: |
+          vendor/bin/phpunit  # Run PHPUnit tests (or your test framework)
