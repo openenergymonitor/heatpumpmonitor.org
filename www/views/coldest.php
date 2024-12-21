@@ -184,12 +184,21 @@
                     }
                 };
 
-                $.ajax({
-                    type: "POST",
-                    url: path + "system/save",
-                    contentType: "application/json",
-                    data: JSON.stringify(data_to_save),
-                    success: function(result) {
+                async function saveSystemData(data_to_save) {
+                    try {
+                        const response = await fetch(`${path}system/save`, {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify(data_to_save)
+                        });
+
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+
+                        const result = await response.json();
                         console.log(result);
                         alert(result.message);
 
@@ -198,8 +207,12 @@
                         app.filtered_system_list[index].measured_max_flow_temp_coldest_day = app.max_flowT;
                         app.filtered_system_list[index].measured_mean_flow_temp_coldest_day = app.mean_flowT;
                         app.filtered_system_list[index].measured_outside_temp_coldest_day = app.mean_outsideT;
+                    } catch (error) {
+                        console.error('Failed to save system data:', error);
                     }
-                });
+                }
+                // Call the function to save system data
+                saveSystemData(data_to_save);
             }
         },
         filters: {
@@ -215,45 +228,60 @@
         }
     });
 
-    // Load list of systems
-    $.ajax({
-        type: "GET",
-        url: path + "system/list/public.json",
-        success: function(result) {
-
-            // System list by id
-            app.system_list = result;
-
-            // Get last365 stats
-            $.ajax({
-                type: "GET",
-                url: path + "system/stats/last365",
-                
-                success: function(result) {
-
-                    // apply stats to each system in system_list
-                    for (var z in app.system_list) {
-                        var id = app.system_list[z].id;
-                        var stats = result[id];
-                        if (stats !== undefined) {
-                            for (var key in stats) {
-                                app.system_list[z][key] = stats[key];
-                            }
-                        }
-                    }
-
-                    app.filter_system_list();
-
-                    load();
-                    resize();
+    async function loadSystems() {
+        try {
+            // Load list of systems
+            const response = await fetch(`${path}system/list/public.json`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json"
                 }
             });
 
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const systemList = await response.json();
+            app.system_list = systemList;
+
+            // Get last365 stats
+            const statsResponse = await fetch(`${path}system/stats/last365`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            });
+
+            if (!statsResponse.ok) {
+                throw new Error(`HTTP error! status: ${statsResponse.status}`);
+            }
+
+            const statsResult = await statsResponse.json();
+
+            // apply stats to each system in system_list
+            for (var z in app.system_list) {
+                var id = app.system_list[z].id;
+                var stats = statsResult[id];
+                if (stats !== undefined) {
+                    for (var key in stats) {
+                        app.system_list[z][key] = stats[key];
+                    }
+                }
+            }
+
+            app.filter_system_list();
+            load();
+            resize();
+        } catch (error) {
+            console.error('Failed to load systems or stats:', error);
         }
-    });
+    }
 
-    function load() {
+    // Call the function to load systems
+    loadSystems();
 
+    async function load() {
         // Set app.max_flowT
         var index = app.find_system(app.systemid);
 
@@ -261,149 +289,170 @@
         app.mean_flowT = app.filtered_system_list[index].measured_mean_flow_temp_coldest_day;
         app.mean_outsideT = app.filtered_system_list[index].measured_outside_temp_coldest_day;
 
-        // does this user has write access
-        $.ajax({
-            type: "GET",
-            url: path + "system/hasaccess",
-            data: {
-                'id': app.systemid
-            },
-            success: function(result) {
-                app.enable_save = 1 * result;
+        try {
+            // does this user has write access
+            const accessResponse = await fetch(`${path}system/hasaccess?id=${app.systemid}`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            });
+
+            if (!accessResponse.ok) {
+                throw new Error(`HTTP error! status: ${accessResponse.status}`);
             }
-        });
 
-        $.ajax({
-            dataType: "text",
-            url: path + "system/stats/daily",
-            data: {
-                'id': app.systemid
-            },
-            async: true,
-            success: function(result) {
-                var lines = result.split('\n');
+            const accessResult = await accessResponse.json();
+            app.enable_save = 1 * accessResult;
 
-                var fields = lines[0].split(',');
-                for (var z in fields) {
-                    fields[z] = fields[z].trim();
+            // Fetch daily stats
+            const statsResponse = await fetch(`${path}system/stats/daily?id=${app.systemid}`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json"
                 }
-                
-                data = [];
-                for (var i = 1; i < lines.length; i++) {
-                    var parts = lines[i].split(',');
-                    if (parts.length != fields.length) {
-                        continue;
-                    }
+            });
 
-                    var day = {};
-
-                    for (var j = 1; j < parts.length; j++) {
-                        let value = parts[j] * 1;
-                        day[fields[j]] = value;
-                    }
-
-                    // filter out days with 0 heat
-                    if (day.combined_heat_kwh == 0) {
-                        continue;
-                    }
-
-                    data.push(day);
-                }
-
-                // Find the 5 coldest days, based on combined_outsideT_mean
-                var coldest_days = [];
-                // Sort by combined_outsideT_mean
-                data.sort(function(a, b) {
-                    return a.combined_outsideT_mean - b.combined_outsideT_mean;
-                });
-                
-                for (var i = 0; i < 6; i++) {
-                    coldest_days.push(data[i]);
-                }
-
-                app.coldest_days = coldest_days;
-
-                // get timestamp of coldest day
-                var timestamp = coldest_days[0].timestamp*1;
-                app.selected_day = timestamp;
-                load_timeseries(timestamp);
+            if (!statsResponse.ok) {
+                throw new Error(`HTTP error! status: ${statsResponse.status}`);
             }
-        });
+
+            const result = await statsResponse.text();
+            var lines = result.split('\n');
+
+            var fields = lines[0].split(',');
+            for (var z in fields) {
+                fields[z] = fields[z].trim();
+            }
+            
+            data = [];
+            for (var i = 1; i < lines.length; i++) {
+                var parts = lines[i].split(',');
+                if (parts.length != fields.length) {
+                    continue;
+                }
+
+                var day = {};
+
+                for (var j = 1; j < parts.length; j++) {
+                    let value = parts[j] * 1;
+                    day[fields[j]] = value;
+                }
+
+                // filter out days with 0 heat
+                if (day.combined_heat_kwh == 0) {
+                    continue;
+                }
+
+                data.push(day);
+            }
+
+            // Find the 5 coldest days, based on combined_outsideT_mean
+            var coldest_days = [];
+            // Sort by combined_outsideT_mean
+            data.sort(function(a, b) {
+                return a.combined_outsideT_mean - b.combined_outsideT_mean;
+            });
+            
+            for (var i = 0; i < 6; i++) {
+                coldest_days.push(data[i]);
+            }
+
+            app.coldest_days = coldest_days;
+
+            // get timestamp of coldest day
+            var timestamp = coldest_days[0].timestamp * 1;
+            app.selected_day = timestamp;
+            load_timeseries(timestamp);
+        } catch (error) {
+            console.error('Failed to load data:', error);
+        }
     }
 
-    function load_timeseries(timestamp) {
+    async function load_timeseries(timestamp) {
         // Load timeseries data
-        $.ajax({
-            type: "GET",
-            url: path + "timeseries/data",
-            data: {
-                'id': app.systemid,
-                'feeds': 'heatpump_flowT,heatpump_returnT,heatpump_dhw',
-                'start': timestamp,
-                'end': timestamp + 24 * 3600,
-                'interval': 60,
-                'average': 1,
-                'timeformat': 'notime'
-            },
-            success: function(result) {
-                var flowT_values = result['heatpump_flowT'];
-                var returnT_values = result['heatpump_returnT'];
-                var dhw_values = false;
-                if (result['heatpump_dhw'] != undefined) {
-                    dhw_values = result['heatpump_dhw'];
+        const params = new URLSearchParams({
+            id: app.systemid,
+            feeds: 'heatpump_flowT,heatpump_returnT,heatpump_dhw',
+            start: timestamp,
+            end: timestamp + 24 * 3600,
+            interval: 60,
+            average: 1,
+            timeformat: 'notime'
+        }).toString();
+
+        try {
+            const response = await fetch(`${path}timeseries/data?${params}`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            var flowT_values = result['heatpump_flowT'];
+            var returnT_values = result['heatpump_returnT'];
+            var dhw_values = false;
+            if (result['heatpump_dhw'] != undefined) {
+                dhw_values = result['heatpump_dhw'];
+            }
+
+            timeseries['flowT'] = [];
+            timeseries['returnT'] = [];
+            timeseries['dhw'] = [];
+
+            var sum = 0;
+            var count = 0;
+            for (var i in flowT_values) {
+                let time = timestamp + i * 60;
+
+                if (flowT_values[i] < -10) {
+                    flowT_values[i] = null;
                 }
 
-                timeseries['flowT'] = [];
-                timeseries['returnT'] = [];
-                timeseries['dhw'] = [];
+                if (returnT_values[i] < -10) {
+                    returnT_values[i] = null;
+                }
 
-                var sum = 0;
-                var count = 0;
-                for (var i in flowT_values) {
-                    let time = timestamp + i * 60;
+                timeseries['flowT'].push([time * 1000, flowT_values[i]]);
+                timeseries['returnT'].push([time * 1000, returnT_values[i]]);
+                if (dhw_values) {
+                    timeseries['dhw'].push([time * 1000, dhw_values[i]]);
+                }
 
-                    if (flowT_values[i] < -10) {
-                        flowT_values[i] = null;
-                    }
+                if (flowT_values[i] != null) {
+                    sum += flowT_values[i];
+                    count++;
+                }
+            }
 
-                    if (returnT_values[i] < -10) {
-                        returnT_values[i] = null;
-                    }
+            // Generate a moving 2 hour average of flowT
+            // interval is 60 seconds
+            // so 60 samples either side
 
-                    timeseries['flowT'].push([time*1000, flowT_values[i]]);
-                    timeseries['returnT'].push([time*1000, returnT_values[i]]);
-                    if (dhw_values) {
-                        timeseries['dhw'].push([time*1000, dhw_values[i]]);
-                    }
-
-                    if (flowT_values[i] != null) {
-                        sum += flowT_values[i];
+            timeseries['flowT_mean'] = [];
+            for (var i = 0; i < timeseries['flowT'].length; i++) {
+                let sum = 0;
+                let count = 0;
+                for (var j = i - 60; j <= i + 60; j++) {
+                    if (j >= 0 && j < timeseries['flowT'].length) {
+                        sum += timeseries['flowT'][j][1];
                         count++;
                     }
                 }
-
-                // Generate a moving 2 hour average of flowT
-                // interval is 60 seconds
-                // so 60 samples either side
-
-                timeseries['flowT_mean'] = [];
-                for (var i = 0; i < timeseries['flowT'].length; i++) {
-                    let sum = 0;
-                    let count = 0;
-                    for (var j = i - 60; j <= i + 60; j++) {
-                        if (j >= 0 && j < timeseries['flowT'].length) {
-                            sum += timeseries['flowT'][j][1];
-                            count++;
-                        }
-                    }
-                    timeseries['flowT_mean'].push([timeseries['flowT'][i][0], sum / count]);
-                }
-
-                app.flowT_mean_window = (sum / count).toFixed(2);
-
-                draw();
+                timeseries['flowT_mean'].push([timeseries['flowT'][i][0], sum / count]);
             }
-        });
+
+            app.flowT_mean_window = (sum / count).toFixed(2);
+
+            draw();
+        } catch (error) {
+            console.error('Failed to load timeseries data:', error);
+        }
     }
 
     function draw() {

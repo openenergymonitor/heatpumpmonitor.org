@@ -273,43 +273,56 @@ function show() {
     // updaterinst = setInterval(updater, 10000);
 
     // Load totals from pre-processed daily data
-    if (config.app.enable_process_daily.value) {
-        $.ajax({
-            url: path + "system/stats/all",
-            data: { id: config.id, apikey: apikey },
-            async: true,
-            dataType: "json",
-            success: function (result) {
-                result = result[config.id];
-
-                if (result.combined_elec_kwh != undefined) {
-                    $("#total_elec").html(Math.round(result.combined_elec_kwh));
-                    $("#total_heat").html(Math.round(result.combined_heat_kwh));
-                    $("#total_cop").html(result.combined_cop.toFixed(2));
+    async function fetchSystemStats() {
+        try {
+            const response = await fetch(`${path}system/stats/all?id=${config.id}&apikey=${apikey}`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json"
                 }
-                /*
-                // same for running
-                if (result.running_elec_kwh != undefined) {
-                    $("#running_elec").html(Math.round(result.running_elec_kwh));
-                    $("#running_heat").html(Math.round(result.running_heat_kwh));
-                    $("#running_cop").html(result.running_cop.toFixed(2));
-                }
-
-                // space
-                if (result.space_elec_kwh != undefined) {
-                    $("#space_elec").html(Math.round(result.space_elec_kwh));
-                    $("#space_heat").html(Math.round(result.space_heat_kwh));
-                    $("#space_cop").html(result.space_cop.toFixed(2));
-                }
-
-                //water 
-                if (result.water_elec_kwh != undefined) {
-                    $("#water_elec").html(Math.round(result.water_elec_kwh));
-                    $("#water_heat").html(Math.round(result.water_heat_kwh));
-                    $("#water_cop").html(result.water_cop.toFixed(2));
-                }*/
+            });
+    
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
-        });
+    
+            const result = await response.json();
+            const data = result[config.id];
+    
+            if (data.combined_elec_kwh != undefined) {
+                $("#total_elec").html(Math.round(data.combined_elec_kwh));
+                $("#total_heat").html(Math.round(data.combined_heat_kwh));
+                $("#total_cop").html(data.combined_cop.toFixed(2));
+            }
+            /*
+            // same for running
+            if (data.running_elec_kwh != undefined) {
+                $("#running_elec").html(Math.round(data.running_elec_kwh));
+                $("#running_heat").html(Math.round(data.running_heat_kwh));
+                $("#running_cop").html(data.running_cop.toFixed(2));
+            }
+    
+            // space
+            if (data.space_elec_kwh != undefined) {
+                $("#space_elec").html(Math.round(data.space_elec_kwh));
+                $("#space_heat").html(Math.round(data.space_heat_kwh));
+                $("#space_cop").html(data.space_cop.toFixed(2));
+            }
+    
+            //water 
+            if (data.water_elec_kwh != undefined) {
+                $("#water_elec").html(Math.round(data.water_elec_kwh));
+                $("#water_heat").html(Math.round(data.water_heat_kwh));
+                $("#water_cop").html(data.water_cop.toFixed(2));
+            }*/
+        } catch (error) {
+            console.error('Failed to fetch system stats:', error);
+        }
+    }
+    
+    // Call the function to fetch system stats if enabled
+    if (config.app.enable_process_daily.value) {
+        fetchSystemStats();
     }
 
     $(".ajax-loader").hide();
@@ -430,7 +443,7 @@ function get_average(name, duration) {
 // - resize
 
 
-function powergraph_load() {
+async function powergraph_load() {
     var skipmissing = 0;
     var limitinterval = 0;
 
@@ -456,8 +469,6 @@ function powergraph_load() {
     var average = 1;
     if (view.interval < 20) average = 0;
 
-    // Fetch the data
-
     // limit to feeds that are available
     for (var key in feeds_to_load) {
         if (feeds[key] == undefined) {
@@ -465,53 +476,48 @@ function powergraph_load() {
         }
     }
 
-
     var keys = Object.keys(feeds_to_load);
-
     var keys_string = keys.join(",");
 
-    $.ajax({
-        url: path + "timeseries/data.json",
-        data: {
-            id: config.id,
-            feeds: keys_string,
-            start: view.start,
-            end: view.end,
-            interval: view.interval,
-            average: average,
-            delta: 0,
-            skipmissing: skipmissing,
-            limitinterval: limitinterval,
-            timeformat: "notime"
-        },
-        async: true,
-        dataType: "json",
-        success: function (all_data) {
-
-            // Transfer from data to all_data by key
-            for (var key in feeds_to_load) {
-                all_data[key] = populate_timestamps(all_data[key], view.start, view.interval);
-                // Data object used for calculations
-                data[key] = remove_null_values(all_data[key], view.interval);
-
-                // Load to powergraph_series (used for drawing the graph)
-                let series = feeds_to_load[key];
-                series.data = data[key];
-                powergraph_series[key] = series;
+    try {
+        const response = await fetch(`${path}timeseries/data.json?id=${config.id}&feeds=${keys_string}&start=${view.start}&end=${view.end}&interval=${view.interval}&average=${average}&delta=0&skipmissing=${skipmissing}&limitinterval=${limitinterval}&timeformat=notime`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json"
             }
+        });
 
-            if (feeds["heatpump_outsideT"] != undefined) {
-                $("#fixed_outside_temperature_bound").hide();
-            } else {
-                $("#fixed_outside_temperature_bound").show();
-            }
-
-            // Process axioma heat meter error data
-            process_error_data();
-
-            powergraph_process();
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
-    });
+
+        const all_data = await response.json();
+
+        // Transfer from data to all_data by key
+        for (var key in feeds_to_load) {
+            all_data[key] = populate_timestamps(all_data[key], view.start, view.interval);
+            // Data object used for calculations
+            data[key] = remove_null_values(all_data[key], view.interval);
+
+            // Load to powergraph_series (used for drawing the graph)
+            let series = feeds_to_load[key];
+            series.data = data[key];
+            powergraph_series[key] = series;
+        }
+
+        if (feeds["heatpump_outsideT"] != undefined) {
+            $("#fixed_outside_temperature_bound").hide();
+        } else {
+            $("#fixed_outside_temperature_bound").show();
+        }
+
+        // Process axioma heat meter error data
+        process_error_data();
+
+        powergraph_process();
+    } catch (error) {
+        console.error('Failed to load powergraph data:', error);
+    }
 }
 
 function populate_timestamps(values, start, interval) {
@@ -782,44 +788,58 @@ function powergraph_draw() {
 // BAR GRAPH
 // -------------------------------------------------------------------------------
 
-function process_daily_data() {
-
+async function process_daily_data() {
     $("#overlay").show();
-    $.ajax({
-        url: path + "app/processdaily",
-        data: { id: config.id, apikey: apikey, timeout: process_daily_timeout },
-        async: true,
-        success: function (result) {
-            if (result.days_left != undefined) {
-                if (result.days_left > 0) {
-                    $("#overlay_text").html("Processing daily data... " + result.days_left + " days left");
-                    // run again in 10 seconds
-                    process_daily_timeout = 5;
-                    setTimeout(process_daily_data, 1000);
-                    
-                } else {
-                    $("#overlay_text").html("");
-                    $("#overlay").hide();
-                    // reload bargraph
-                    bargraph_load(bargraph_start, bargraph_end);
-                    bargraph_draw();    
-                }
-            }
 
-            if (result.success != undefined) {
-                // if false
-                if (!result.success) {
-                    $("#overlay").show();
-                    $("#overlay_text").html(result.message);
-                    setTimeout(process_daily_data, 1000);
-                }
+    const params = new URLSearchParams({
+        id: config.id,
+        apikey: apikey,
+        timeout: process_daily_timeout
+    }).toString();
+
+    try {
+        const response = await fetch(`${path}app/processdaily?${params}`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json"
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        if (result.days_left != undefined) {
+            if (result.days_left > 0) {
+                $("#overlay_text").html("Processing daily data... " + result.days_left + " days left");
+                // run again in 10 seconds
+                process_daily_timeout = 5;
+                setTimeout(process_daily_data, 1000);
+            } else {
+                $("#overlay_text").html("");
+                $("#overlay").hide();
+                // reload bargraph
+                bargraph_load(bargraph_start, bargraph_end);
+                bargraph_draw();
             }
         }
-    });
+
+        if (result.success != undefined) {
+            // if false
+            if (!result.success) {
+                $("#overlay").show();
+                $("#overlay_text").html(result.message);
+                setTimeout(process_daily_data, 1000);
+            }
+        }
+    } catch (error) {
+        console.error('Failed to process daily data:', error);
+    }
 }
 
-function bargraph_load(start, end) {
-
+async function bargraph_load(start, end) {
     $("#data-error").hide();
 
     var intervalms = DAY;
@@ -833,43 +853,56 @@ function bargraph_load(start, end) {
 
     if (config.app.enable_process_daily.value) {
         // Fetch daily data e.g http://localhost/emoncms/app/getdailydata?name=MyHeatpump&apikey=APIKEY
-        // Ajax jquery syncronous request
-        // format is csv
-        $.ajax({
-            url: path + "system/stats/daily",
-            data: { id: config.id, start: start*0.001, end: end*0.001, apikey: apikey },
-            async: false,
-            success: function (data) {
-                var rows = data.split("\n");
-                var fields = rows[0].split(",");
-                // trim fields
-                for (var i in fields) {
-                    fields[i] = fields[i].trim();
+        // Fetch API request
+        const params = new URLSearchParams({
+            id: config.id,
+            start: start * 0.001,
+            end: end * 0.001,
+            apikey: apikey
+        }).toString();
+
+        try {
+            const response = await fetch(`${path}system/stats/daily?${params}`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json"
                 }
+            });
 
-                
-                for (var z = 1; z < rows.length; z++) {
-                    var cols = rows[z].split(",");
-                    var timestamp = cols[1] * 1000;
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
 
-                    if (cols.length == fields.length) {
-                        for (var i=2; i<fields.length; i++) {
-                            if (daily_data[fields[i]] == undefined) daily_data[fields[i]] = [];
+            const data = await response.text();
+            var rows = data.split("\n");
+            var fields = rows[0].split(",");
+            // trim fields
+            for (var i in fields) {
+                fields[i] = fields[i].trim();
+            }
 
-                            if (cols[i] != "") {
-                                cols[i] = parseFloat(cols[i]);
-                            } else {
-                                cols[i] = null;
-                            }
+            for (var z = 1; z < rows.length; z++) {
+                var cols = rows[z].split(",");
+                var timestamp = cols[1] * 1000;
 
-                            daily_data[fields[i]].push([timestamp, cols[i]]);
+                if (cols.length == fields.length) {
+                    for (var i = 2; i < fields.length; i++) {
+                        if (daily_data[fields[i]] == undefined) daily_data[fields[i]] = [];
+
+                        if (cols[i] != "") {
+                            cols[i] = parseFloat(cols[i]);
+                        } else {
+                            cols[i] = null;
                         }
+
+                        daily_data[fields[i]].push([timestamp, cols[i]]);
                     }
                 }
             }
-        });
+        } catch (error) {
+            console.error('Failed to fetch daily data:', error);
+        }
     } else {
-
         // Option: Use standard feed data instead of pre-processed daily data
 
         if (heat_enabled) {
