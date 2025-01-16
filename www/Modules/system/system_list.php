@@ -1425,9 +1425,38 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     } else if (this.filterKey === 'HA') {
                         return row.heatingacademy === 1;
                     } else {
-                        return Object.keys(row).some((key) => {
-                            return String(row[key]).toLowerCase().indexOf(this.filterKey.toLowerCase()) > -1
-                        })
+
+                        // if first part of this.filterKey is 'query' then format is query:field_name:value,field_name:value
+                        if (this.filterKey.indexOf('query') === 0) {
+                            // remove 'query:' from start
+                            var query = this.filterKey.substring(6);
+                            var query_parts = query.split(',');
+
+                            var result = true;
+
+                            for (var i = 0; i < query_parts.length; i++) {
+                                var query_part = query_parts[i].split(':');
+                                var field = query_part[0];
+                                var value = query_part[1];
+
+                                // if numeric check for exact match otherwise check for partial match
+                                if (!isNaN(value)) {
+                                    if (row[field] != value) {
+                                        result = false;
+                                    }
+                                } else {
+                                    if (String(row[field]).toLowerCase().indexOf(value.toLowerCase()) == -1) {
+                                        result = false;
+                                    }
+                                }
+                            }
+                            return result;
+
+                        } else {
+                            return Object.keys(row).some((key) => {
+                                return String(row[key]).toLowerCase().indexOf(this.filterKey.toLowerCase()) > -1
+                            })
+                        }
                     }
                 }
                 return true;
