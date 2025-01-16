@@ -1164,6 +1164,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
                                         }
                                     }
+                                } else {
+                                    app.systems[i].data_flag = 0;
+                                    app.systems[i].data_flag_note = '';
                                 }
 
                                 let prc_demand_hot_water = null;
