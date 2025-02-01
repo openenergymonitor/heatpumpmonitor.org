@@ -52,7 +52,15 @@
             <div id="placeholder" style="width:100%;height:600px; margin-bottom:20px"></div>
         </div>
 
+        <div class="row">
+            <!-- alert danger -->
+            <div class="alert alert-danger" role="alert" v-if="room_temp_alert.length>0">
+                {{ room_temp_alert }}
+            </div>
+        </div>
+
         <div class="row mb-3">
+            
             <div class="col-lg-3 col-md-6">
                 <div class="input-group mb-3">
                     <span class="input-group-text">Base DT</span>
@@ -183,7 +191,8 @@
             datasheet_hp_max: 0,
             measured_hp_max: '',
             fixed_room_tmp_enable: 0,
-            fixed_room_tmp: 20
+            fixed_room_tmp: 20,
+            room_temp_alert: ""
 
         },
         methods: {
@@ -259,6 +268,13 @@
                 z += direction;
                 if (z >= 0 && z < app.system_list.length) {
                     app.systemid = app.system_list[z].id;
+
+                    // Update ?id= in URL
+                    var url = new URL(window.location.href);
+                    url.searchParams.set('id', app.systemid);
+                    window.history.pushState({}, '', url);
+
+
                     load();
                 }
             },
@@ -414,7 +430,9 @@
                 // auto enable fixed room temp if no room temp data
                 if (valid_room_temp == 0) {
                     app.fixed_room_tmp_enable = 1;
-                    alert("No room temperature data found, fixed room temperature enabled\nSet fixed room temperature in the box below (default 20°C)")
+                    app.room_temp_alert = "No room temperature data found, fixed room temperature enabled\nSet fixed room temperature in the box below (default 20°C)";
+                } else {
+                    app.room_temp_alert = "";
                 }
 
                 // Apply fixed room temperature

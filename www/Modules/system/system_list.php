@@ -702,8 +702,13 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     for (var z in systems) {
         let system = systems[z];
         let oversizing_factor = 0;
+        
         if (system['measured_heat_loss']>0 && system['hp_max_output']>0) {
             oversizing_factor = system['hp_max_output'] / system['measured_heat_loss'];
+        }
+        
+        if (system['measured_heat_loss']>0 && system['hp_max_output_test']>0) {
+            oversizing_factor = system['hp_max_output_test'] / system['measured_heat_loss'];
         }
         
         if (oversizing_factor != null) {
