@@ -563,6 +563,7 @@ class SystemStats
         $totals['agile_cost'] = 0;
         $totals['cosy_cost'] = 0;
         $totals['go_cost'] = 0;
+        $totals['eon_next_pumped_v2_cost'] = 0;
         $totals['error_air'] = 0;
         $totals['error_air_kwh'] = 0;
 
@@ -612,6 +613,9 @@ class SystemStats
 
             $go_cost = $row->unit_rate_go * 0.01 * $totals['from_energy_feeds']['elec_kwh'];
             $totals['go_cost'] += $go_cost;
+
+            $eon_next_pumped_v2_cost = $row->unit_rate_eon_next_pumped_v2 * 0.01 * $totals['from_energy_feeds']['elec_kwh'];
+            $totals['eon_next_pumped_v2_cost'] += $eon_next_pumped_v2_cost;
 
             $totals['error_air'] += $row->error_air;
             $totals['error_air_kwh'] += $row->error_air_kwh;
@@ -699,16 +703,19 @@ class SystemStats
         $stats['unit_rate_agile'] = null;
         $stats['unit_rate_cosy'] = null;
         $stats['unit_rate_go'] = null;
+        $stats['unit_rate_eon_next_pumped_v2'] = null;
 
         if ($totals['from_energy_feeds']['elec_kwh'] > 0) {
             $stats['unit_rate_agile'] = round(100*$totals['agile_cost'] / $totals['from_energy_feeds']['elec_kwh'],1);
             $stats['unit_rate_cosy'] = round(100*$totals['cosy_cost'] / $totals['from_energy_feeds']['elec_kwh'],1);
             $stats['unit_rate_go'] = round(100*$totals['go_cost'] / $totals['from_energy_feeds']['elec_kwh'],1);
+            $stats['unit_rate_eon_next_pumped_v2'] = round(100*$totals['eon_next_pumped_v2_cost'] / $totals['from_energy_feeds']['elec_kwh'],1);
         }
 
         if ($stats['unit_rate_agile'] === 0) $stats['unit_rate_agile'] = null;
         if ($stats['unit_rate_cosy'] === 0) $stats['unit_rate_cosy'] = null;
         if ($stats['unit_rate_go'] === 0) $stats['unit_rate_go'] = null;
+        if ($stats['unit_rate_eon_next_pumped_v2'] === 0) $stats['unit_rate_eon_next_pumped_v2'] = null;
 
         return $stats;
     }

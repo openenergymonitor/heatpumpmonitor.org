@@ -89,6 +89,26 @@ for ($j=0; $j<count($agile); $j++) {
     else $go[$j] = 27.12;
 }
 
+$eon_next_pumped_v2 = array();
+// 00:00-04:00: 25.67 p/kWh
+// 04:00-07:00: 11 p/kWh
+// 07:00-13:00: 25.67 p/kWh
+// 13:00-16:00: 11 p/kWh
+// 16:00-19:00: 32.91 p/kWh
+// 19:00-23:59: 25.67 p/kWh
+for ($j=0; $j<count($agile); $j++) {
+    $time = $start + $j*$interval;
+    $date->setTimestamp($time);
+    $hour = $date->format('G');
+
+    // default to 25.67
+    $eon_next_pumped_v2[$j] = 25.67;
+
+    if ($hour>=4 && $hour<7) $eon_next_pumped_v2[$j] = 11;
+    else if ($hour>=13 && $hour<16) $eon_next_pumped_v2[$j] = 11;
+    else if ($hour>=16 && $hour<19) $eon_next_pumped_v2[$j] = 32.91;
+}
+
 foreach ($data as $row) {
     $userid = (int) $row->userid;
     $systemid = (int) $row->id;
@@ -126,11 +146,13 @@ foreach ($data as $row) {
             $sum_cost_agile = array();
             $sum_cost_cosy = array();
             $sum_cost_go = array();
+            $sum_cost_eon_next_pumped_v2 = array();
 
             $months_kwh = array();
             $months_agile_cost = array();
             $months_cosy_cost = array();
             $months_go_cost = array();
+            $months_eon_next_pumped_v2_cost = array();
 
             $periods = array('last7','last30','last90','last365');
             foreach ($periods as $period) {
@@ -138,6 +160,7 @@ foreach ($data as $row) {
                 $sum_cost_agile[$period] = 0;
                 $sum_cost_cosy[$period] = 0;
                 $sum_cost_go[$period] = 0;
+                $sum_cost_eon_next_pumped_v2[$period] = 0;
             }
 
             for ($j=0; $j<count($result); $j++) {
@@ -147,6 +170,7 @@ foreach ($data as $row) {
                     $unit_cost_agile = $agile[$j]*0.01;
                     $unit_cost_cosy = $cosy[$j]*0.01;
                     $unit_cost_go = $go[$j]*0.01;
+                    $unit_cost_eon_next_pumped_v2 = $eon_next_pumped_v2[$j]*0.01;
 
                     foreach ($periods as $period) {
                         if ($time>=$starts[$period]) {
@@ -154,6 +178,7 @@ foreach ($data as $row) {
                             $sum_cost_agile[$period] += $kwh*$unit_cost_agile;
                             $sum_cost_cosy[$period] += $kwh*$unit_cost_cosy;
                             $sum_cost_go[$period] += $kwh*$unit_cost_go;
+                            $sum_cost_eon_next_pumped_v2[$period] += $kwh*$unit_cost_eon_next_pumped_v2;
                         }
                     }
 
@@ -171,12 +196,14 @@ foreach ($data as $row) {
                         $months_agile_cost[$month] = 0;
                         $months_cosy_cost[$month] = 0;
                         $months_go_cost[$month] = 0;
+                        $months_eon_next_pumped_v2_cost[$month] = 0;
                     }
 
                     $months_kwh[$month] += $kwh;
                     $months_agile_cost[$month] += $kwh*$unit_cost_agile;
                     $months_cosy_cost[$month] += $kwh*$unit_cost_cosy;
                     $months_go_cost[$month] += $kwh*$unit_cost_go;
+                    $months_eon_next_pumped_v2_cost[$month] += $kwh*$unit_cost_eon_next_pumped_v2;
                 }
             }
 
@@ -184,18 +211,19 @@ foreach ($data as $row) {
                 if ($sum_kwh[$period]>0) {
                     $unit_cost_agile = $sum_cost_agile[$period]/$sum_kwh[$period];
                     $unit_cost_agile_vat = $unit_cost_agile*1.05*100;
-
                     $unit_cost_cosy = $sum_cost_cosy[$period]/$sum_kwh[$period]*100;
-
                     $unit_cost_go = $sum_cost_go[$period]/$sum_kwh[$period]*100;
+                    $unit_cost_eon_next_pumped_v2 = $sum_cost_eon_next_pumped_v2[$period]/$sum_kwh[$period]*100;
 
                     print "$period Agile: £".number_format($sum_cost_agile[$period],2).", ".number_format($sum_kwh[$period],2)." kWh, ".number_format($unit_cost_agile_vat,3)." p/kWh\n";
                     print "$period Cosy: £".number_format($sum_cost_cosy[$period],2).", ".number_format($sum_kwh[$period],2)." kWh, ".number_format($unit_cost_cosy,3)." p/kWh\n";                    
                     print "$period Go: £".number_format($sum_cost_go[$period],2).", ".number_format($sum_kwh[$period],2)." kWh, ".number_format($unit_cost_go,3)." p/kWh\n";
+                    print "$period EON Next Pumped V2: £".number_format($sum_cost_eon_next_pumped_v2[$period],2).", ".number_format($sum_kwh[$period],2)." kWh, ".number_format($unit_cost_eon_next_pumped_v2,3)." p/kWh\n";
 
                     $mysqli->query("UPDATE system_stats_".$period."_v2 SET `unit_rate_agile` = '$unit_cost_agile_vat' WHERE `id` = $systemid");
                     $mysqli->query("UPDATE system_stats_".$period."_v2 SET `unit_rate_cosy` = '$unit_cost_cosy' WHERE `id` = $systemid");
                     $mysqli->query("UPDATE system_stats_".$period."_v2 SET `unit_rate_go` = '$unit_cost_go' WHERE `id` = $systemid");
+                    $mysqli->query("UPDATE system_stats_".$period."_v2 SET `unit_rate_eon_next_pumped_v2` = '$unit_cost_eon_next_pumped_v2' WHERE `id` = $systemid");
 
                 }
             }
@@ -205,10 +233,9 @@ foreach ($data as $row) {
                 if ($kwh>0) {
                     $unit_cost_agile = $months_agile_cost[$month]/$kwh;
                     $unit_cost_agile_vat = $unit_cost_agile*1.05*100;
-
                     $unit_cost_cosy = $months_cosy_cost[$month]/$kwh*100;
-
                     $unit_cost_go = $months_go_cost[$month]/$kwh*100;
+                    $unit_cost_eon_next_pumped_v2 = $months_eon_next_pumped_v2_cost[$month]/$kwh*100;
 
                     $date->setTimestamp($month);
                     $monthstr = $date->format('M Y');
@@ -216,10 +243,12 @@ foreach ($data as $row) {
                     print "$monthstr Agile: £".number_format($months_agile_cost[$month],2).", ".number_format($kwh,2)." kWh, ".number_format($unit_cost_agile_vat,3)." p/kWh\n";
                     print "$monthstr Cosy: £".number_format($months_cosy_cost[$month],2).", ".number_format($kwh,2)." kWh, ".number_format($unit_cost_cosy,3)." p/kWh\n";
                     print "$monthstr Go: £".number_format($months_go_cost[$month],2).", ".number_format($kwh,2)." kWh, ".number_format($unit_cost_go,3)." p/kWh\n";
+                    print "$monthstr EON Next Pumped V2: £".number_format($months_eon_next_pumped_v2_cost[$month],2).", ".number_format($kwh,2)." kWh, ".number_format($unit_cost_eon_next_pumped_v2,3)." p/kWh\n";
 
                     $mysqli->query("UPDATE system_stats_monthly_v2 SET `unit_rate_agile` = '$unit_cost_agile_vat' WHERE `id` = $systemid AND `timestamp` = $month");
                     $mysqli->query("UPDATE system_stats_monthly_v2 SET `unit_rate_cosy` = '$unit_cost_cosy' WHERE `id` = $systemid AND `timestamp` = $month");
                     $mysqli->query("UPDATE system_stats_monthly_v2 SET `unit_rate_go` = '$unit_cost_go' WHERE `id` = $systemid AND `timestamp` = $month");
+                    $mysqli->query("UPDATE system_stats_monthly_v2 SET `unit_rate_eon_next_pumped_v2` = '$unit_cost_eon_next_pumped_v2' WHERE `id` = $systemid AND `timestamp` = $month");
 
                 }
             }
