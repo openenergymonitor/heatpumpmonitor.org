@@ -77,16 +77,16 @@ for ($j=0; $j<count($agile); $j++) {
 
 
 // Generate Octopus Go data
-// Day rate: 27.12 p/kWh
-// Night rate 9.00 p/kWh (00:30-04:30)
+// Day rate: 27.26 p/kWh
+// Night rate 8.00 p/kWh (00:30-05:30)
 $go = array();
 for ($j=0; $j<count($agile); $j++) {
     $time = $start + $j*$interval;
     $date->setTimestamp($time);
     // get hour + minutes / 60
     $hour = $date->format('G') + $date->format('i')/60;
-    if ($hour>=0.5 && $hour<4.5) $go[$j] = 9.00;
-    else $go[$j] = 27.12;
+    if ($hour>=0.5 && $hour<5.5) $go[$j] = 8.00;
+    else $go[$j] = 27.26;
 }
 
 $eon_next_pumped_v2 = array();
