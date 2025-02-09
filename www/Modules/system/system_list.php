@@ -787,7 +787,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
                 for (var i = 0; i < app.systems.length; i++) {
                     if (this.tariff_mode == 'flat') {
-                        app.systems[i].selected_unit_rate = 22.36;
+                        app.systems[i].selected_unit_rate = 24.86;
                         // remove electricity_tariff from selected columns
                         if (app.selected_template == 'costs') {
                             if (app.selected_columns.includes('electricity_tariff')) {
