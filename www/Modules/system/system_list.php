@@ -167,24 +167,27 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                     <div class="form-check" v-if="!part.editing">
                                         <input class="form-check-input" type="checkbox" v-model="part.enabled" :id="'filter_' + part.field + '_' + part.operator + '_' + part.value" @change="saveFilterPart(index)">
                                         <label class="form-check-label" :for="'filter_' + part.field + '_' + part.operator + '_' + part.value" style="font-size:15px">
-                                            <div><span class="category">{{ part.category }}</span></div>
-                                            <div><span class="column">{{ part.column }}</span> {{ part.operatorSign }} {{ part.value }}</div>
+                                            <div><span class="category">{{ part.category }}</span></div>                                            
+                                            <div><span class="column">{{ part.column }}</span> {{ part.operatorSign }} <span v-html="part.formattedValue"></span></div>
                                         </label>
                                     </div>
                                     <div v-else>
-                                        <select v-model="part.field" class="form-control form-control-sm" placeholder="Select column">
+                                        <select v-model="part.field" class="form-control form-control-sm" placeholder="Select column" @change="updatePossibleValues(part.field)">
                                             <option disabled value="">Select column</option>
                                             <option v-for="(column, key) in columns" :value="key">{{ column.group }}: {{ column.name }}</option>
                                         </select>
                                         <select v-model="part.operator" class="form-control form-control-sm">
                                             <option value="eq">=</option>
                                             <option value="ne">!=</option>
-                                            <option value="gt">></option>
-                                            <option value="lt"><</option>
-                                            <option value="gte">>=</option>
-                                            <option value="lte"><=</option>
+                                            <option value="gt" :disabled="!part.allNumerical">></option>
+                                            <option value="lt" :disabled="!part.allNumerical"><</option>
+                                            <option value="gte" :disabled="!part.allNumerical">>=</option>
+                                            <option value="lte" :disabled="!part.allNumerical"><=</option>
                                         </select>
-                                        <input type="text" v-model="part.value" class="form-control form-control-sm" placeholder="Enter value" style="width:auto;">
+                                        <input type="text" v-model="part.value" class="form-control form-control-sm" placeholder="Enter value" list="possibleValues" style="width:auto;">
+                                        <datalist id="possibleValues">
+                                            <option v-for="value in possibleValues" :value="value"></option>
+                                        </datalist>
                                     </div>
                                     <div class="btn-group" style="margin-left: auto;">
                                         <button class="btn btn-xs btn-warning" @click="editFilterPart(index)" v-if="!part.editing">
@@ -812,6 +815,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             available_months_end: months,
             filterKey: filterKey,
             filter_query_parts: [],
+            possibleValues: [],
             minDays: minDays,
             showContent: true,
             show_field_selector: false,
@@ -1512,13 +1516,17 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     column: '',
                     category: '',
                     enabled: true,
-                    editing: true
+                    editing: true,
+                    allNumerical: false
                 });
             },
 
             // sets the specific filter part to edit mode
             editFilterPart(index) {
                 this.$set(this.filter_query_parts[index], 'editing', true);
+
+                // update possible values when editing
+                this.updatePossibleValues(this.filter_query_parts[index].field);
             },
 
             reconstructFilterKey() {
@@ -1531,13 +1539,31 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 }
             },
 
+            deriveColumnValues(part) {
+                // convert part.value to a number if it is a numeric string
+                if (!isNaN(part.value)) {
+                    part.value = Number(part.value);
+                }
+
+                part.column = this.columns[part.field] ? this.columns[part.field].name : part.field;
+                part.category = this.columns[part.field] ? this.columns[part.field].group : '';
+                part.operatorSign = this.getOperatorSign(part.operator);
+
+                // don't have the installer URL here so ignore the formatting
+                if (part.field == 'installer_name') {
+                    part.formattedValue = part.value;
+                } else {
+                    part.formattedValue = this.column_format({ [part.field]: part.value }, part.field);
+                }
+
+                return part;
+            },
+
             // saves the filter part after editing
             saveFilterPart(index) {
                 // populate derived values before saving
                 const part = this.filter_query_parts[index];
-                part.column = this.columns[part.field] ? this.columns[part.field].name : part.field;
-                part.category = this.columns[part.field] ? this.columns[part.field].group : '';
-                part.operatorSign = this.getOperatorSign(part.operator);
+                this.deriveColumnValues(part);        
                 part.editing = false;
 
                 // reconstruct the filterKey after editing
@@ -1569,6 +1595,24 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     'lte': '<='
                 };
                 return operatorMap[operator] || operator; // return the operator itself if not found in the map
+            },
+
+            updatePossibleValues(field) {
+                const values = [...new Set(this.systems.map(system => system[field]).filter(value => value !== null && value !== undefined))];
+                
+                // check if all values are numerical
+                const allNumerical = values.every(value => !isNaN(value));
+
+                // set the allNumerical flag for the current filter part
+                this.$set(this.filter_query_parts[index], 'allNumerical', allNumerical);
+                
+                if (allNumerical) {
+                    // sort numerically
+                    this.possibleValues = values.sort((a, b) => a - b);
+                } else {
+                    // sort alphabetically
+                    this.possibleValues = values.sort();
+                }
             },
  
             filterNodes(row) {
@@ -1605,15 +1649,12 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                 var enabled = query_part[3] || 't'; // default to 't' if no status is provided
 
                                 // store the parsed query string
-                                this.filter_query_parts.push({
+                                this.filter_query_parts.push(this.deriveColumnValues({
                                     field: field, 
                                     value: value, 
                                     operator: operator,
-                                    operatorSign: this.getOperatorSign(operator), 
-                                    column: this.columns[field] ? this.columns[field].name : field,
-                                    category: this.columns[field] ? this.columns[field].group : '',
                                     enabled: enabled === 't' ? true : false,
-                                });
+                                }));
 
                                 if (enabled === 'f') {
                                     continue;
@@ -1657,9 +1698,18 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                     }          
                                 // if not numeric check for partial match                                                          
                                 } else {
-                                    if (String(row[field]).toLowerCase().indexOf(value.toLowerCase()) == -1) {
-                                        result = false;
-                                    }
+                                    // default operator 'eq' means "contains", whereas 'ne' means "does not contain"
+                                    switch (operator) {
+                                        case 'ne':
+                                            if (String(row[field]).toLowerCase().indexOf(value.toLowerCase()) != -1) {
+                                                result = false;
+                                            }
+                                            break;
+                                        default:
+                                            if (String(row[field]).toLowerCase().indexOf(value.toLowerCase()) == -1) {
+                                                result = false;
+                                            }
+                                    }                                    
                                 }
                             }
                             return result;
