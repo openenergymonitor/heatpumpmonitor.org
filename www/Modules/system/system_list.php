@@ -5,7 +5,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 ?>
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/vue-select@3.20.4/dist/vue-select.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue-select@3.20.4/dist/vue-select.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
 <script src="https://cdn.plot.ly/plotly-2.16.1.min.js"></script>
 <script src="Lib/clipboard.js"></script>
@@ -47,10 +49,67 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         font-size: 12px;
         color: #555;
     }
+    
     .column {
         font-size: 15px;
         color: #000;
     }
+
+    .custom-select .vs__dropdown-toggle {
+        font-size: 0.875rem; /* match the font size of .form-control-sm */
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        height: 34px; /* stop the box from expanding vertically */
+    }
+
+    .custom-select .vs__dropdown-menu {
+        font-size: 0.875rem; /* match the font size of .form-control-sm */
+        width: auto; /* allow the dropdown to expand */
+        min-width: 100%; /* ensure it's at least as wide as the input */
+        position: absolute; /* ensure it's positioned outside the normal flow */
+        z-index: 1000; /* ensure it's above other elements */
+        box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23); /* add a shadow */
+    }
+
+    .custom-select .vs__search {
+        font-size: 0.875rem; /* match the font size of .form-control-sm */
+    }
+
+    .custom-select .vs__selected-options {
+        font-size: 0.875rem; /* match the font size of .form-control-sm */
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .d-flex {
+        display: flex;
+    }
+
+    .flex-grow-1 {
+        flex-grow: 1;
+    }
+
+    .mb-2 {
+        margin-bottom: 0.5rem;
+    }
+
+    .me-2 {
+        margin-right: 0.5rem;
+    }
+
+    .align-items-center {
+        align-items: center;
+    }
+
+    /* ensure parent elements do not clip the column select dropdown */
+    .list-group-item {
+        overflow: visible !important;
+    }
+    .card {
+        overflow: visible !important;
+    }    
 
 </style>
 
@@ -164,38 +223,42 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <div>
                             <ul class="list-group list-group-flush">
                                 <li v-for="(part, index) in filter_query_parts" class="list-group-item d-flex justify-content-between align-items-center" style="background-color:#f7f7f7;">
-                                    <div class="form-check" v-if="!part.editing">
+                                    <div v-if="!part.editing" class="form-check">
                                         <input class="form-check-input" type="checkbox" v-model="part.enabled" :id="'filter_' + part.field + '_' + part.operator + '_' + part.value" @change="saveFilterPart(index)">
                                         <label class="form-check-label" :for="'filter_' + part.field + '_' + part.operator + '_' + part.value" style="font-size:15px">
                                             <div><span class="category">{{ part.category }}</span></div>                                            
                                             <div><span class="column">{{ part.column }}</span> {{ part.operatorSign }} <span v-html="part.formattedValue"></span></div>
                                         </label>
                                     </div>
-                                    <div v-else>
-                                        <select v-model="part.field" class="form-control form-control-sm" placeholder="Select column" @change="updatePossibleValues(part.field)">
-                                            <option disabled value="">Select column</option>
-                                            <option v-for="(column, key) in columns" :value="key">{{ column.group }}: {{ column.name }}</option>
+                                    <div v-else class="d-flex w-100 flex-column">
+                                        <v-select v-model="part.field" :options="columnOptions" placeholder="select column" @input="updatePossibleValues(part.field, index)" class="custom-select" :reduce="option => option.value"></v-select>
+                                        <select v-model="part.operator" class="form-control form-control-sm" style="width: auto;">
+                                            <option value="eq" v-if="!part.allNumerical">contains</option>
+                                            <option value="ne" v-if="!part.allNumerical">does not contain</option>
+                                            <option value="eq" v-if="part.allNumerical">=</option>
+                                            <option value="ne" v-if="part.allNumerical">!=</option>
+                                            <option value="gt" v-if="part.allNumerical">></option>
+                                            <option value="lt" v-if="part.allNumerical"><</option>
+                                            <option value="gte" v-if="part.allNumerical">>=</option>
+                                            <option value="lte" v-if="part.allNumerical"><=</option>
                                         </select>
-                                        <select v-model="part.operator" class="form-control form-control-sm">
-                                            <option value="eq">=</option>
-                                            <option value="ne">!=</option>
-                                            <option value="gt" :disabled="!part.allNumerical">></option>
-                                            <option value="lt" :disabled="!part.allNumerical"><</option>
-                                            <option value="gte" :disabled="!part.allNumerical">>=</option>
-                                            <option value="lte" :disabled="!part.allNumerical"><=</option>
-                                        </select>
-                                        <input type="text" v-model="part.value" class="form-control form-control-sm" placeholder="Enter value" list="possibleValues" style="width:auto;">
+                                        <input type="text" v-model="part.value" class="form-control form-control-sm mb-2" placeholder="enter value" list="possibleValues" style="width:auto;">
                                         <datalist id="possibleValues">
                                             <option v-for="value in possibleValues" :value="value"></option>
                                         </datalist>
+                                        <div class="btn-group">
+                                            <button class="btn btn-xs btn-success me-2" @click="saveFilterPart(index)" :disabled="!part.field || part.value === null || part.value === undefined">
+                                                <i class="fa fa-check"></i>
+                                            </button>
+                                            <button class="btn btn-xs btn-danger" @click="removeFilterPart(index)">
+                                                <i class="fa fa-trash"></i>
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div class="btn-group" style="margin-left: auto;">
-                                        <button class="btn btn-xs btn-warning" @click="editFilterPart(index)" v-if="!part.editing">
+                                    <div v-if="!part.editing" class="btn-group" style="margin-left: auto;">
+                                        <button class="btn btn-xs btn-warning" @click="editFilterPart(index)" >
                                             <i class="fa fa-edit"></i>
-                                        </button>
-                                        <button class="btn btn-xs btn-success" @click="saveFilterPart(index)" v-if="part.editing" :disabled="!part.field || !part.value">
-                                            <i class="fa fa-check"></i>
-                                        </button>
+                                        </button>                                        
                                         <button class="btn btn-xs btn-danger" @click="removeFilterPart(index)">
                                             <i class="fa fa-trash"></i>
                                         </button>
@@ -816,6 +879,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             filterKey: filterKey,
             filter_query_parts: [],
             possibleValues: [],
+            columnOptions: Object.keys(columns).map(key => ({ label: `${columns[key].group}: ${columns[key].name}`, value: key })),
             minDays: minDays,
             showContent: true,
             show_field_selector: false,
@@ -1506,19 +1570,22 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             },
 
             // adds a filter part to the UI and stored array
-            addFilterPart() {
-                // insert new filter part at the start of the array
-                this.filter_query_parts.unshift({
-                    field: '',
-                    operator: 'eq',
-                    value: '',
-                    operatorSign: '=',
-                    column: '',
-                    category: '',
-                    enabled: true,
-                    editing: true,
-                    allNumerical: false
-                });
+            addFilterPart() {                
+                // if one has been already added, don't add another one
+                if (this.filter_query_parts.length == 0 || (!this.filter_query_parts[0].editing && !this.filter_query_parts[0].field == '')) {
+                    // insert new filter part at the start of the array
+                    this.filter_query_parts.unshift({
+                        field: '',
+                        operator: 'eq',
+                        value: '',
+                        operatorSign: '=',
+                        column: '',
+                        category: '',
+                        enabled: true,
+                        editing: true,
+                        allNumerical: false
+                    });
+                }
             },
 
             // sets the specific filter part to edit mode
@@ -1526,7 +1593,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 this.$set(this.filter_query_parts[index], 'editing', true);
 
                 // update possible values when editing
-                this.updatePossibleValues(this.filter_query_parts[index].field);
+                this.updatePossibleValues(this.filter_query_parts[index].field, index);
             },
 
             reconstructFilterKey() {
@@ -1549,8 +1616,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 part.category = this.columns[part.field] ? this.columns[part.field].group : '';
                 part.operatorSign = this.getOperatorSign(part.operator);
 
-                // don't have the installer URL here so ignore the formatting
-                if (part.field == 'installer_name') {
+                // don't have the installer URL and icons don't look great in filter display, so ignore the formatting
+                if (part.field == 'installer_name' || this.columns[part.field].group == 'Training') {
                     part.formattedValue = part.value;
                 } else {
                     part.formattedValue = this.column_format({ [part.field]: part.value }, part.field);
@@ -1597,7 +1664,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 return operatorMap[operator] || operator; // return the operator itself if not found in the map
             },
 
-            updatePossibleValues(field) {
+            updatePossibleValues(field, index) {
                 const values = [...new Set(this.systems.map(system => system[field]).filter(value => value !== null && value !== undefined))];
                 
                 // check if all values are numerical
@@ -1956,6 +2023,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             app.systems[i].elec_meter_class1 = false;
         }
     }
+
+    Vue.component('v-select', VueSelect.VueSelect);
     
     app.load_system_stats();
     app.sort_only('combined_cop');
