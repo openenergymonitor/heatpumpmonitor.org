@@ -35,6 +35,23 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         font-size:14px;
         color:red;
     }
+
+    .btn-xs {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.8rem;
+        line-height: 1;
+        border-radius: 0.2rem;
+    }
+
+    .category {
+        font-size: 12px;
+        color: #555;
+    }
+    .column {
+        font-size: 15px;
+        color: #000;
+    }
+
 </style>
 
 <div id="app" class="bg-light">
@@ -135,8 +152,56 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             </template>
                             </ul>
                         </div>
+                    </div>                    
+
+                    <div class="card mt-3" style="max-height:780px; overflow-y:scroll" >
+                        <div class="card-header">
+                            <button class="btn btn-sm btn-secondary" style="float:right; margin-right:-8px" @click="addFilterPart">
+                                <i class="fa fa-plus"></i>
+                            </button>
+                            <div style="margin-top:2px; font-size:18px">Filters</div>
+                        </div>
+                        <div>
+                            <ul class="list-group list-group-flush">
+                                <li v-for="(part, index) in filter_query_parts" class="list-group-item d-flex justify-content-between align-items-center" style="background-color:#f7f7f7;">
+                                    <div class="form-check" v-if="!part.editing">
+                                        <input class="form-check-input" type="checkbox" v-model="part.enabled" :id="'filter_' + part.field + '_' + part.operator + '_' + part.value" @change="saveFilterPart(index)">
+                                        <label class="form-check-label" :for="'filter_' + part.field + '_' + part.operator + '_' + part.value" style="font-size:15px">
+                                            <div><span class="category">{{ part.category }}</span></div>
+                                            <div><span class="column">{{ part.column }}</span> {{ part.operatorSign }} {{ part.value }}</div>
+                                        </label>
+                                    </div>
+                                    <div v-else>
+                                        <select v-model="part.field" class="form-control form-control-sm" placeholder="Select column">
+                                            <option disabled value="">Select column</option>
+                                            <option v-for="(column, key) in columns" :value="key">{{ column.group }}: {{ column.name }}</option>
+                                        </select>
+                                        <select v-model="part.operator" class="form-control form-control-sm">
+                                            <option value="eq">=</option>
+                                            <option value="ne">!=</option>
+                                            <option value="gt">></option>
+                                            <option value="lt"><</option>
+                                            <option value="gte">>=</option>
+                                            <option value="lte"><=</option>
+                                        </select>
+                                        <input type="text" v-model="part.value" class="form-control form-control-sm" placeholder="Enter value" style="width:auto;">
+                                    </div>
+                                    <div class="btn-group" style="margin-left: auto;">
+                                        <button class="btn btn-xs btn-warning" @click="editFilterPart(index)" v-if="!part.editing">
+                                            <i class="fa fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-xs btn-success" @click="saveFilterPart(index)" v-if="part.editing" :disabled="!part.field || !part.value">
+                                            <i class="fa fa-check"></i>
+                                        </button>
+                                        <button class="btn btn-xs btn-danger" @click="removeFilterPart(index)">
+                                            <i class="fa fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
-                    
+
                     <ul class="list-group mt-3">
                       <li class="list-group-item">
                       <b>Show systems with</b>
@@ -746,6 +811,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             available_months_start: months,
             available_months_end: months,
             filterKey: filterKey,
+            filter_query_parts: [],
             minDays: minDays,
             showContent: true,
             show_field_selector: false,
@@ -1434,8 +1500,81 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 
                 return '';
             },
+
+            // adds a filter part to the UI and stored array
+            addFilterPart() {
+                // insert new filter part at the start of the array
+                this.filter_query_parts.unshift({
+                    field: '',
+                    operator: 'eq',
+                    value: '',
+                    operatorSign: '=',
+                    column: '',
+                    category: '',
+                    enabled: true,
+                    editing: true
+                });
+            },
+
+            // sets the specific filter part to edit mode
+            editFilterPart(index) {
+                this.$set(this.filter_query_parts[index], 'editing', true);
+            },
+
+            reconstructFilterKey() {
+                // reconstruct the filterKey from the filter_query_parts array
+                const queryParts = this.filter_query_parts.map(part => `${part.field}:${part.value}:${part.operator}:${part.enabled ? 't' : 'f'}`);
+                if (queryParts.length == 0) {
+                    this.filterKey = '';
+                } else {
+                    this.filterKey = `query:${queryParts.join(',')}`;
+                }
+            },
+
+            // saves the filter part after editing
+            saveFilterPart(index) {
+                // populate derived values before saving
+                const part = this.filter_query_parts[index];
+                part.column = this.columns[part.field] ? this.columns[part.field].name : part.field;
+                part.category = this.columns[part.field] ? this.columns[part.field].group : '';
+                part.operatorSign = this.getOperatorSign(part.operator);
+                part.editing = false;
+
+                // reconstruct the filterKey after editing
+                this.reconstructFilterKey();
+
+                // reapply the filters after editing
+                this.filter_systems(); 
+            },
+
+            removeFilterPart(index) {
+                // remove the filter part from the array
+                const removedPart = this.filter_query_parts.splice(index, 1)[0];
+
+                // reconstruct the filterKey without the removed part
+                this.reconstructFilterKey();
+
+                // reapply the filters after removing a part
+                this.filter_systems();
+            },
+
+            // map operator to its sign
+            getOperatorSign(operator) {
+                const operatorMap = {
+                    'eq': '=',
+                    'ne': '!=',
+                    'gt': '>',
+                    'lt': '<',
+                    'gte': '>=',
+                    'lte': '<='
+                };
+                return operatorMap[operator] || operator; // return the operator itself if not found in the map
+            },
  
             filterNodes(row) {
+
+                // empty the array storing filter query parts before parsing
+                this.filter_query_parts = []; 
 
                 if (this.filterKey != '') {
                     if (this.filterKey === 'MID') {
@@ -1462,7 +1601,23 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                 var query_part = query_parts[i].split(':');
                                 var field = query_part[0];
                                 var value = query_part[1];
-                                var operator = query_part[2];                                
+                                var operator = query_part[2] || 'eq'; // default to 'eq' if no operator is provided
+                                var enabled = query_part[3] || 't'; // default to 't' if no status is provided
+
+                                // store the parsed query string
+                                this.filter_query_parts.push({
+                                    field: field, 
+                                    value: value, 
+                                    operator: operator,
+                                    operatorSign: this.getOperatorSign(operator), 
+                                    column: this.columns[field] ? this.columns[field].name : field,
+                                    category: this.columns[field] ? this.columns[field].group : '',
+                                    enabled: enabled === 't' ? true : false,
+                                });
+
+                                if (enabled === 'f') {
+                                    continue;
+                                }
 
                                 // if numeric check for exact match otherwise check for partial match
                                 if (!isNaN(value)) {                                    
