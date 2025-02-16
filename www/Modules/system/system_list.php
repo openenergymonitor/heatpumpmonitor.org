@@ -1448,6 +1448,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         return row.ultimaterenewables === 1;
                     } else if (this.filterKey === 'HA') {
                         return row.heatingacademy === 1;
+                    } else if (this.filterKey === 'HG4') {
+                        return row.heatgeek === 1 && row.combined_cop > 4; // Special filter
                     } else {
 
                         // if first part of this.filterKey is 'query' then format is query:field_name:value,field_name:value
