@@ -103,13 +103,16 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         align-items: center;
     }
 
-    /* ensure parent elements do not clip the column select dropdown */
-    .list-group-item {
-        overflow: visible !important;
+    /* apply scroll only to the "Add fields" card */
+    .add-fields-card {
+        overflow-y: scroll;
+        max-height: 780px;
     }
-    .card {
+
+    .add-filters-card {
         overflow: visible !important;
-    }    
+        max-height: 780px;
+    }
 
 </style>
 
@@ -185,7 +188,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <li @click="template_view('costs')" :class="'list-group-item list-group-item-action '+(selected_template=='costs'?'active':'')" style="cursor:pointer"><i class="fas fa-pound-sign" style="margin: 0px 15px 0px 8px"></i> Costs</li>
                     </ul>
                     
-                    <div class="card mt-3" style="max-height:780px; overflow-y:scroll">
+                    <div class="card mt-3 add-fields-card">
                         <div class="card-header">
                         <button class="btn btn-sm btn-secondary" style="float:right; margin-right:-8px" @click="show_field_selector = !show_field_selector">
                             <i :class="{'fas fa-minus': show_field_selector, 'fas fa-plus': !show_field_selector}"></i>
@@ -213,10 +216,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         </div>
                     </div>                    
 
-                    <div class="card mt-3" style="max-height:780px; overflow-y:scroll" >
+                    <div class="card mt-3 add-filters-card">
                         <div class="card-header">
                             <button class="btn btn-sm btn-secondary" style="float:right; margin-right:-8px" @click="addFilterPart">
                                 <i class="fa fa-plus"></i>
+                                <i class="fa fa-filter"></i>
                             </button>
                             <div style="margin-top:2px; font-size:18px">Filters</div>
                         </div>
