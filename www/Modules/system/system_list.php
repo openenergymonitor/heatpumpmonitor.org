@@ -1464,12 +1464,45 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                 var query_part = query_parts[i].split(':');
                                 var field = query_part[0];
                                 var value = query_part[1];
+                                var operator = query_part[2];                                
 
                                 // if numeric check for exact match otherwise check for partial match
-                                if (!isNaN(value)) {
-                                    if (row[field] != value) {
-                                        result = false;
-                                    }
+                                if (!isNaN(value)) {                                    
+                                    // optional - select operator (e.g. gt, lt, gte, lte, ne), default is 'equals'
+                                    // the additional benefit of 'greater'/'less than' operators is that they can be used for specifying ranges of values
+                                    switch (operator) {
+                                        case 'gt':
+                                            if (!(row[field] > value)) {
+                                                result = false;
+                                            }
+                                            break;
+                                        case 'lt':
+                                            if (!(row[field] < value)) {
+                                                result = false;
+                                            }
+                                            break;
+                                        case 'gte':
+                                            if (!(row[field] >= value)) {
+                                                result = false;
+                                            }
+                                            break;
+                                        case 'lte':
+                                            if (!(row[field] <= value)) {
+                                                result = false;
+                                            }
+                                            break;
+                                        case 'ne':
+                                            if (!(row[field] != value)) {
+                                                result = false;
+                                            }
+                                            break;
+                                        default:
+                                            // the default operator is 'equals', which is the original behaviour before adding support for other operators
+                                            if (row[field] != value) {
+                                                result = false;
+                                            }
+                                    }          
+                                // if not numeric check for partial match                                                          
                                 } else {
                                     if (String(row[field]).toLowerCase().indexOf(value.toLowerCase()) == -1) {
                                         result = false;
@@ -1477,7 +1510,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                 }
                             }
                             return result;
-
+                        // search all fields and check if any contains the searched value (filterKey)
                         } else {
                             return Object.keys(row).some((key) => {
                                 return String(row[key]).toLowerCase().indexOf(this.filterKey.toLowerCase()) > -1
