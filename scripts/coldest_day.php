@@ -43,6 +43,9 @@ foreach ($data as $row) {
             // update system_meta measured_outside_temp_coldest_day
             $mysqli->query("UPDATE system_meta SET measured_outside_temp_coldest_day = '$outsideT' WHERE `id` = '$systemid'");
 
+            $mysqli->query("UPDATE system_meta SET measured_room_temp_coldest_day = '$roomT' WHERE `id` = '$systemid'");
+
+
             // update system_meta measured_mean_flow_temp_coldest_day
             $mysqli->query("UPDATE system_meta SET measured_mean_flow_temp_coldest_day = '$flowT' WHERE `id` = '$systemid'");
 

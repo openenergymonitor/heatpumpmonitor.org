@@ -717,6 +717,95 @@ class SystemStats
         if ($stats['unit_rate_go'] === 0) $stats['unit_rate_go'] = null;
         if ($stats['unit_rate_eon_next_pumped_v2'] === 0) $stats['unit_rate_eon_next_pumped_v2'] = null;
 
+        // Weighted average calculations
+        /*
+    'weighted_flowT' => array('type' => 'float', 'name'=>'Weighted flowT', 'group'=>'Weighted averages', 'dp'=>1, 'unit'=>'°C'),
+    'weighted_outsideT' => array('type' => 'float', 'name'=>'Weighted outsideT', 'group'=>'Weighted averages', 'dp'=>1, 'unit'=>'°C'),
+    'weighted_flowT_minus_outsideT' => array('type' => 'float', 'name'=>'Weighted flowT - outsideT', 'group'=>'Weighted averages', 'dp'=>1, 'unit'=>'°C'),
+    'weighted_flowT_minus_returnT' => array('type' => 'float', 'name'=>'Weighted flowT - returnT', 'group'=>'Weighted averages', 'dp'=>1, 'unit'=>'°C'),
+    'weighted_elec' => array('type' => 'float', 'name'=>'Weighted elec', 'group'=>'Weighted averages', 'dp'=>0, 'unit'=>'W'),
+    'weighted_heat' => array('type' => 'float', 'name'=>'Weighted heat', 'group'=>'Weighted averages', 'dp'=>0, 'unit'=>'W'),
+    'weighted_prc_carnot' => array('type' => 'float', 'name'=>'Weighted % Carnot', 'group'=>'Weighted averages', 'dp'=>1, 'unit'=>'%'),
+    'weighted_kwh_elec' => array('type' => 'float', 'name'=>'Weighted elec kWh', 'group'=>'Weighted averages', 'dp'=>4, 'unit'=>'kWh'),
+    'weighted_kwh_heat' => array('type' => 'float', 'name'=>'Weighted heat kWh', 'group'=>'Weighted averages', 'dp'=>4, 'unit'=>'kWh'),
+    'weighted_kwh_heat_running' => array('type' => 'float', 'name'=>'Weighted heat running kWh', 'group'=>'Weighted averages', 'dp'=>4, 'unit'=>'kWh'),
+    'weighted_kwh_elec_running' => array('type' => 'float', 'name'=>'Weighted elec running kWh', 'group'=>'Weighted averages', 'dp'=>4, 'unit'=>'kWh'),
+    'weighted_kwh_carnot_elec' => array('type' => 'float', 'name'=>'Weighted Carnot elec kWh', 'group'=>'Weighted averages', 'dp'=>4, 'unit'=>'kWh'),
+    'weighted_time_on' => array('type' => 'float', 'name'=>'Weighted time on', 'group'=>'Weighted averages', 'dp'=>0, 'unit'=>'s'),
+    'weighted_time_total' => array('type' => 'float', 'name'=>'Weighted time total', 'group'=>'Weighted averages', 'dp'=>0, 'unit'=>'s'),
+    'weighted_cycle_count' => array('type' => 'float', 'name'=>'Weighted cycle count', 'group'=>'Weighted averages', 'dp'=>0, 'unit'=>''),
+    */
+
+
+        $weighted_flowT_sum = 0;
+        $weighted_outsideT_sum = 0;
+        $weighted_flowT_minus_outsideT_sum = 0;
+        $weighted_flowT_minus_returnT_sum = 0;
+        $weighted_elec_sum = 0;
+        $weighted_heat_sum = 0;
+        $total_kwh_elec = 0;
+        $total_kwh_heat = 0;
+        $total_kwh_heat_running = 0;
+        $total_kwh_elec_running = 0;
+        $total_kwh_carnot_elec = 0;
+        $total_time_on = 0;
+        $total_time_total = 0;
+        $total_cycle_count = 0;
+
+        foreach ($rows as $row) {
+            $kwh_elec = $row->weighted_kwh_elec;
+            $kwh_heat = $row->weighted_kwh_heat;
+
+            $weighted_flowT_sum += $row->weighted_flowT * $kwh_heat;
+            $weighted_outsideT_sum += $row->weighted_outsideT * $kwh_heat;
+            $weighted_flowT_minus_outsideT_sum += ($row->weighted_flowT_minus_outsideT) * $kwh_heat;
+            $weighted_flowT_minus_returnT_sum += ($row->weighted_flowT_minus_returnT) * $kwh_heat;
+            $weighted_elec_sum += $row->weighted_elec * $kwh_elec;
+            $weighted_heat_sum += $row->weighted_heat * $kwh_heat;
+
+            $total_kwh_elec += $kwh_elec;
+            $total_kwh_heat += $kwh_heat;
+
+            $total_kwh_heat_running += $row->weighted_kwh_heat_running;
+            $total_kwh_elec_running += $row->weighted_kwh_elec_running;
+            $total_kwh_carnot_elec += $row->weighted_kwh_carnot_elec;
+            $total_time_on += $row->weighted_time_on;
+            $total_time_total += $row->weighted_time_total;
+            $total_cycle_count += $row->weighted_cycle_count;
+        }
+        $stats['weighted_flowT'] = null;
+        $stats['weighted_outsideT'] = null;
+        $stats['weighted_flowT_minus_outsideT'] = null;
+        $stats['weighted_flowT_minus_returnT'] = null;
+        $stats['weighted_elec'] = null;
+        $stats['weighted_heat'] = null;
+
+        if ($total_kwh_heat > 0) {
+            $stats['weighted_flowT'] = $weighted_flowT_sum / $total_kwh_heat;
+            $stats['weighted_outsideT'] = $weighted_outsideT_sum / $total_kwh_heat;
+            $stats['weighted_flowT_minus_outsideT'] = $weighted_flowT_minus_outsideT_sum / $total_kwh_heat;
+            $stats['weighted_flowT_minus_returnT'] = $weighted_flowT_minus_returnT_sum / $total_kwh_heat;
+            $stats['weighted_heat'] = $weighted_heat_sum / $total_kwh_heat;
+        }
+
+        if ($total_kwh_elec > 0) {
+            $stats['weighted_elec'] = $weighted_elec_sum / $total_kwh_elec;
+        }
+
+        $stats['weighted_prc_carnot'] = 0;
+        if ($total_kwh_elec_running > 0 && $total_kwh_carnot_elec > 0) {
+            $stats['weighted_prc_carnot'] = 100 * ($total_kwh_heat_running / $total_kwh_elec_running) / ($total_kwh_heat_running / $total_kwh_carnot_elec);
+        }
+
+        $stats['weighted_kwh_elec'] = $total_kwh_elec;
+        $stats['weighted_kwh_heat'] = $total_kwh_heat;
+        $stats['weighted_kwh_heat_running'] = $total_kwh_heat_running;
+        $stats['weighted_kwh_elec_running'] = $total_kwh_elec_running;
+        $stats['weighted_kwh_carnot_elec'] = $total_kwh_carnot_elec;
+        $stats['weighted_time_on'] = $total_time_on;
+        $stats['weighted_time_total'] = $total_time_total;
+        $stats['weighted_cycle_count'] = $total_cycle_count;
+
         return $stats;
     }
 

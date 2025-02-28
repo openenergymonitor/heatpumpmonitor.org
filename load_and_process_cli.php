@@ -53,8 +53,8 @@ if (!$reload) {
 $systemlist = $system->list_admin();
 
 load_daily_stats($systemlist, $single_system, $reload);
-process_rolling_stats($systemlist, $single_system, $reload);
-process_monthly_stats($systemlist, $single_system, $reload);
+//process_rolling_stats($systemlist, $single_system, $reload);
+//process_monthly_stats($systemlist, $single_system, $reload);
 
 function load_daily_stats($systemlist, $single_system, $reload) {
     global $user;
@@ -66,8 +66,13 @@ function load_daily_stats($systemlist, $single_system, $reload) {
         if ($single_system && $systemid!=$single_system) continue;
         
         $userid = (int) $row->userid;
+        //if ($systemid<426) continue;
+  
         if ($user_data = $user->get($userid)) {
             load_daily_stats_system($row, $reload);
+
+            process_rolling_stats($systemlist, $systemid, $reload);
+            process_monthly_stats($systemlist, $systemid, $reload);
             $loaded_systems ++;
         }
     }
@@ -96,15 +101,17 @@ function load_daily_stats_system($meta, $reload) {
         if (isset($result['success']) && $result['success']) {
             logger("- daily data cleared");
         } else {
+            logger(json_encode($result));
             logger("- error clearing daily data");
             return false;
         }
     }
 
-    for ($i=0; $i<100; $i++) {
+    for ($i=0; $i<1000; $i++) {
         $result = $system_stats->process_data($meta->url,10);
 
         if ($result == null || !isset($result['days_left'])) {
+            logger(json_encode($result));
             logger("- error loading data");
             return false;
         }

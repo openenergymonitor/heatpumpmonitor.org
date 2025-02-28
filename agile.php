@@ -134,7 +134,16 @@ foreach ($data as $row) {
             if ($config->apikey) $apikeystr = "&apikey=".$config->apikey;
             // Load heatpump_elec_kwh feed data
             $url = "$config->server/feed/data.json?id=".$config->feeds->heatpump_elec_kwh->feedid."&start=$start&end=$end&interval=$interval&average=0&delta=1&skipmissing=0&timeformat=$timeformat".$apikeystr;
-            $result = json_decode(file_get_contents($url));
+            
+            $result_str = file_get_contents($url);
+            $result = json_decode($result_str);
+            
+            if (!$result) {
+                print "error reading kwh data from system: $systemid\n";
+                print $url."\n";
+                //print $result_str."\n";
+                continue;
+            }
 
             // Test for feed count mismatch
             if (count($result)!=count($agile)) {

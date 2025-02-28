@@ -716,7 +716,8 @@ $schema['system_meta'] = array(
 
     /* ----------------------------- Measurements ----------------------------- */
 
-
+    /*
+    // Disabled for now, not enough data to make this useful
     'measured_emitter_spec' => array(
         'type' => 'float', 
         'editable' => true, 
@@ -738,6 +739,7 @@ $schema['system_meta'] = array(
         'helper' => 'Measured system volume from Heatpump dashboard', 
         'unit' => 'L'
     ),
+    */
 
     'measured_base_DT' => array(
         'type' => 'float', 
@@ -783,42 +785,6 @@ $schema['system_meta'] = array(
         'unit' => 'kW'
     ),
 
-    'weighted_average_flow_minus_outside' => array(
-        'type' => 'float', 
-        'editable' => true, 
-        'optional' => true, 
-        'show' => false,
-        'name' => 'Weighted average flow - outside temperature', 
-        'group' => 'Measurements',
-        'helper' => '',
-        'unit' => '°K',
-        'dp' => 1
-    ),
-
-    'weighted_flow_temp' => array(
-        'type' => 'float', 
-        'editable' => true, 
-        'optional' => true, 
-        'show' => false,
-        'name' => 'Weighted average flow temperature', 
-        'group' => 'Measurements',
-        'helper' => '',
-        'unit' => '°K',
-        'dp' => 1
-    ),
-
-    'weighted_average_ideal_carnot' => array(
-        'type' => 'float', 
-        'editable' => true, 
-        'optional' => true, 
-        'show' => false,
-        'name' => 'Weighted average ideal carnot', 
-        'group' => 'Measurements',
-        'helper' => '',
-        'unit' => '',
-        'dp' => 2
-    ),
-
     'measured_mean_flow_temp_coldest_day' => array(
         'type' => 'float', 
         'editable' => true, 
@@ -847,6 +813,17 @@ $schema['system_meta'] = array(
         'optional' => true, 
         'show' => false,
         'name' => 'Outside temperature on coldest day', 
+        'group' => 'Measurements',
+        'helper' => '',
+        'unit' => '°C'
+    ),
+
+    'measured_room_temp_coldest_day' => array(
+        'type' => 'float', 
+        'editable' => true, 
+        'optional' => true, 
+        'show' => false,
+        'name' => 'Room temperature on coldest day', 
         'group' => 'Measurements',
         'helper' => '',
         'unit' => '°C'
@@ -927,6 +904,23 @@ $schema['system_stats_daily'] = array(
     'cooling_outsideT_mean' => array('type' => 'float', 'name'=>'OutsideT mean', 'group'=>'Stats: Cooling', 'dp'=>1, 'unit'=>'°C'),
     'cooling_roomT_mean' => array('type' => 'float', 'name'=>'RoomT mean', 'group'=>'Stats: Cooling', 'dp'=>1, 'unit'=>'°C'),
     'cooling_prc_carnot' => array('type' => 'float', 'name'=>'% Carnot', 'group'=>'Stats: Cooling', 'dp'=>1, 'unit'=>'%'),
+
+    // Weighted averages
+    'weighted_flowT' => array('type' => 'float', 'name'=>'Weighted flowT', 'group'=>'Weighted averages', 'dp'=>1, 'unit'=>'°C'),
+    'weighted_outsideT' => array('type' => 'float', 'name'=>'Weighted outsideT', 'group'=>'Weighted averages', 'dp'=>1, 'unit'=>'°C'),
+    'weighted_flowT_minus_outsideT' => array('type' => 'float', 'name'=>'Weighted flowT - outsideT', 'group'=>'Weighted averages', 'dp'=>1, 'unit'=>'°C'),
+    'weighted_flowT_minus_returnT' => array('type' => 'float', 'name'=>'Weighted flowT - returnT', 'group'=>'Weighted averages', 'dp'=>1, 'unit'=>'°C'),
+    'weighted_elec' => array('type' => 'float', 'name'=>'Weighted elec', 'group'=>'Weighted averages', 'dp'=>0, 'unit'=>'W'),
+    'weighted_heat' => array('type' => 'float', 'name'=>'Weighted heat', 'group'=>'Weighted averages', 'dp'=>0, 'unit'=>'W'),
+    'weighted_prc_carnot' => array('type' => 'float', 'name'=>'Weighted % Carnot', 'group'=>'Weighted averages', 'dp'=>1, 'unit'=>'%'),
+    'weighted_kwh_elec' => array('type' => 'float', 'name'=>'Total elec kWh', 'group'=>'Weighted averages', 'dp'=>0, 'unit'=>'kWh'),
+    'weighted_kwh_heat' => array('type' => 'float', 'name'=>'Total heat kWh', 'group'=>'Weighted averages', 'dp'=>0, 'unit'=>'kWh'),
+    'weighted_kwh_heat_running' => array('type' => 'float', 'name'=>'Total heat running kWh', 'group'=>'Weighted averages', 'dp'=>0, 'unit'=>'kWh'),
+    'weighted_kwh_elec_running' => array('type' => 'float', 'name'=>'Total elec running kWh', 'group'=>'Weighted averages', 'dp'=>0, 'unit'=>'kWh'),
+    'weighted_kwh_carnot_elec' => array('type' => 'float', 'name'=>'Total carnot elec kWh', 'group'=>'Weighted averages', 'dp'=>0, 'unit'=>'kWh'),
+    'weighted_time_on' => array('type' => 'float', 'name'=>'Total time on', 'group'=>'Weighted averages', 'dp'=>0, 'unit'=>'s'),
+    'weighted_time_total' => array('type' => 'float', 'name'=>'Total time', 'group'=>'Weighted averages', 'dp'=>0, 'unit'=>'s'),
+    'weighted_cycle_count' => array('type' => 'float', 'name'=>'Total cycle count', 'group'=>'Weighted averages', 'dp'=>0, 'unit'=>''),
 
     // from energy feeds
     'from_energy_feeds_elec_kwh' => array('type' => 'float', 'name'=>'Electricity consumption', 'group'=>'From energy feeds', 'dp'=>0, 'unit'=>'kWh'),

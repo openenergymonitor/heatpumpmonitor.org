@@ -124,7 +124,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                     <i :class="(show_field_group[group_name])?'fa fa-angle-up':'fa fa-angle-down'" style="float:right; margin-top:3px; margin-right:3px"></i>
                                     <b>{{ group_name }}</b>
                                 </li>
-                                <li v-for="column in group" class="list-group-item" v-if="show_field_group[group_name]">
+                                <li v-for="column in group" class="list-group-item" v-if="show_field_group[group_name] && column.fields!=false">
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault" @click="select_column(column.key)" :checked="selected_columns.includes(column.key)">
                                     <label class="form-check-label" for="flexCheckDefault" style="font-size:15px">
