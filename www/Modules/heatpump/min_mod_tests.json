@@ -1,0 +1,12 @@
+[
+    {
+        "id": 1,
+        "heatpump_id": 1,
+        "system": "Beddgelert, Gwynedd (Glyn Hudson)",
+        "date": "12th Nov 2024 20:00",
+        "data_length": 3600,
+        "elec": 464,
+        "heat": 2073,
+        "data": "https://emoncms.org/app/view?name=MyHeatpump&readkey=871ad5efb8f20f698f12d751aea9b8a6&mode=power&start=1731441600&end=1731445230"
+    }
+]

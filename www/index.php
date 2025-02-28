@@ -76,6 +76,11 @@ switch ($route->controller) {
         $output = system_controller();
         break;
 
+    case "heatpump":
+        require "Modules/heatpump/heatpump_controller.php";
+        $output = heatpump_controller();
+        break;
+
     case "dashboard":
         require "Modules/dashboard/dashboard_controller.php";
         $output = dashboard_controller();

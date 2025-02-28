@@ -1,0 +1,26 @@
+[
+    {
+        "id": 1,
+        "manufacturer": "Vaillant",
+        "model": "Arotherm+",
+        "capacity": 5,
+        "img": "vaillant_arotherm_5kw.png",
+        "min_flow_rate": 6.6
+    },
+    {
+        "id": 2,
+        "manufacturer": "Vaillant",
+        "model": "Arotherm+",
+        "capacity": 7,
+        "img": "vaillant_arotherm_5kw.png",
+        "min_flow_rate": 6.6
+    },
+    {
+        "id": 3,
+        "manufacturer": "Vaillant",
+        "model": "Arotherm+",
+        "capacity": 10,
+        "img": "vaillant_arotherm_5kw.png",
+        "min_flow_rate": 6.6
+    }
+]
