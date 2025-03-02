@@ -883,7 +883,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             filterKey: filterKey,
             filter_query_parts: [],
             possibleValues: [],
-            columnOptions: Object.keys(columns).map(key => ({ label: `${columns[key].group}: ${columns[key].name}`, value: key })),
+            columnOptions: [],
             minDays: minDays,
             showContent: true,
             show_field_selector: false,
@@ -1573,6 +1573,20 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 return '';
             },
 
+            // ensure the column options in the "Filters" are listed with the same grouping and ordering as in the "Add fields"
+            populateColumnOptions() {
+                this.columnOptions = [];
+                for (const group_name in this.column_groups) {
+                    const group = this.column_groups[group_name];
+                    group.forEach(column => {
+                        this.columnOptions.push({
+                            label: `${group_name}: ${column.name}`,
+                            value: column.key
+                        });
+                    });
+                }
+            },
+
             // adds a filter part to the UI and stored array
             addFilterPart() {                
                 // if one has been already added, don't add another one
@@ -2029,9 +2043,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     }
 
     Vue.component('v-select', VueSelect.VueSelect);
-    
+        
     app.load_system_stats();
     app.sort_only('combined_cop');
+    app.populateColumnOptions();
     resize(true);
 
     function time_ago(val,ago='') {
