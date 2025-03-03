@@ -5,7 +5,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 ?>
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/vue-select@3.20.4/dist/vue-select.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue-select@3.20.4/dist/vue-select.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
 <script src="https://cdn.plot.ly/plotly-2.16.1.min.js"></script>
 <script src="Lib/clipboard.js"></script>
@@ -35,6 +37,83 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         font-size:14px;
         color:red;
     }
+
+    .btn-xs {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.8rem;
+        line-height: 1;
+        border-radius: 0.2rem;
+    }
+
+    .category {
+        font-size: 12px;
+        color: #555;
+    }
+    
+    .column {
+        font-size: 15px;
+        color: #000;
+    }
+
+    .custom-select .vs__dropdown-toggle {
+        font-size: 0.875rem; /* match the font size of .form-control-sm */
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        height: 34px; /* stop the box from expanding vertically */
+    }
+
+    .custom-select .vs__dropdown-menu {
+        font-size: 0.875rem; /* match the font size of .form-control-sm */
+        width: auto; /* allow the dropdown to expand */
+        min-width: 100%; /* ensure it's at least as wide as the input */
+        position: absolute; /* ensure it's positioned outside the normal flow */
+        z-index: 1000; /* ensure it's above other elements */
+        box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23); /* add a shadow */
+    }
+
+    .custom-select .vs__search {
+        font-size: 0.875rem; /* match the font size of .form-control-sm */
+    }
+
+    .custom-select .vs__selected-options {
+        font-size: 0.875rem; /* match the font size of .form-control-sm */
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .d-flex {
+        display: flex;
+    }
+
+    .flex-grow-1 {
+        flex-grow: 1;
+    }
+
+    .mb-2 {
+        margin-bottom: 0.5rem;
+    }
+
+    .me-2 {
+        margin-right: 0.5rem;
+    }
+
+    .align-items-center {
+        align-items: center;
+    }
+
+    /* apply scroll only to the "Add fields" card */
+    .add-fields-card {
+        overflow-y: scroll;
+        max-height: 780px;
+    }
+
+    .add-filters-card {
+        overflow: visible !important;
+        max-height: 780px;
+    }
+
 </style>
 
 <div id="app" class="bg-light">
@@ -109,7 +188,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <li @click="template_view('costs')" :class="'list-group-item list-group-item-action '+(selected_template=='costs'?'active':'')" style="cursor:pointer"><i class="fas fa-pound-sign" style="margin: 0px 15px 0px 8px"></i> Costs</li>
                     </ul>
                     
-                    <div class="card mt-3" style="max-height:780px; overflow-y:scroll">
+                    <div class="card mt-3 add-fields-card">
                         <div class="card-header">
                         <button class="btn btn-sm btn-secondary" style="float:right; margin-right:-8px" @click="show_field_selector = !show_field_selector">
                             <i :class="{'fas fa-minus': show_field_selector, 'fas fa-plus': !show_field_selector}"></i>
@@ -135,8 +214,64 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             </template>
                             </ul>
                         </div>
+                    </div>                    
+
+                    <div class="card mt-3 add-filters-card">
+                        <div class="card-header">
+                            <button class="btn btn-sm btn-secondary" style="float:right; margin-right:-8px" @click="addFilterPart">
+                                <i class="fa fa-plus"></i>
+                                <i class="fa fa-filter"></i>
+                            </button>
+                            <div style="margin-top:2px; font-size:18px">Filters</div>
+                        </div>
+                        <div>
+                            <ul class="list-group list-group-flush">
+                                <li v-for="(part, index) in filter_query_parts" class="list-group-item d-flex justify-content-between align-items-center" style="background-color:#f7f7f7;">
+                                    <div v-if="!part.editing" class="form-check">
+                                        <input class="form-check-input" type="checkbox" v-model="part.enabled" :id="'filter_' + part.field + '_' + part.operator + '_' + part.value" @change="saveFilterPart(index)">
+                                        <label class="form-check-label" :for="'filter_' + part.field + '_' + part.operator + '_' + part.value" style="font-size:15px">
+                                            <div><span class="category">{{ part.category }}</span></div>                                            
+                                            <div><span class="column">{{ part.column }}</span> {{ part.operatorSign }} <span v-html="part.formattedValue"></span></div>
+                                        </label>
+                                    </div>
+                                    <div v-else class="d-flex w-100 flex-column">
+                                        <v-select v-model="part.field" :options="columnOptions" placeholder="select column" @input="updatePossibleValues(part.field, index)" class="custom-select" :reduce="option => option.value"></v-select>
+                                        <select v-model="part.operator" class="form-control form-control-sm" style="width: auto;">
+                                            <option value="eq" v-if="!part.allNumerical">contains</option>
+                                            <option value="ne" v-if="!part.allNumerical">does not contain</option>
+                                            <option value="eq" v-if="part.allNumerical">=</option>
+                                            <option value="ne" v-if="part.allNumerical">!=</option>
+                                            <option value="gt" v-if="part.allNumerical">></option>
+                                            <option value="lt" v-if="part.allNumerical"><</option>
+                                            <option value="gte" v-if="part.allNumerical">>=</option>
+                                            <option value="lte" v-if="part.allNumerical"><=</option>
+                                        </select>
+                                        <input type="text" v-model="part.value" class="form-control form-control-sm mb-2" placeholder="enter value" list="possibleValues" style="width:auto;">
+                                        <datalist id="possibleValues">
+                                            <option v-for="value in possibleValues" :value="value"></option>
+                                        </datalist>
+                                        <div class="btn-group">
+                                            <button class="btn btn-xs btn-success me-2" @click="saveFilterPart(index)" :disabled="!part.field || part.value === null || part.value === undefined">
+                                                <i class="fa fa-check"></i>
+                                            </button>
+                                            <button class="btn btn-xs btn-danger" @click="removeFilterPart(index)">
+                                                <i class="fa fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div v-if="!part.editing" class="btn-group" style="margin-left: auto;">
+                                        <button class="btn btn-xs btn-warning" @click="editFilterPart(index)" >
+                                            <i class="fa fa-edit"></i>
+                                        </button>                                        
+                                        <button class="btn btn-xs btn-danger" @click="removeFilterPart(index)">
+                                            <i class="fa fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
-                    
+
                     <ul class="list-group mt-3">
                       <li class="list-group-item">
                       <b>Show systems with</b>
@@ -746,6 +881,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             available_months_start: months,
             available_months_end: months,
             filterKey: filterKey,
+            filter_query_parts: [],
+            possibleValues: [],
+            columnOptions: [],
             minDays: minDays,
             showContent: true,
             show_field_selector: false,
@@ -1434,8 +1572,138 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 
                 return '';
             },
+
+            // ensure the column options in the "Filters" are listed with the same grouping and ordering as in the "Add fields"
+            populateColumnOptions() {
+                this.columnOptions = [];
+                for (const group_name in this.column_groups) {
+                    const group = this.column_groups[group_name];
+                    group.forEach(column => {
+                        this.columnOptions.push({
+                            label: `${group_name}: ${column.name}`,
+                            value: column.key
+                        });
+                    });
+                }
+            },
+
+            // adds a filter part to the UI and stored array
+            addFilterPart() {                
+                // if one has been already added, don't add another one
+                if (this.filter_query_parts.length == 0 || (!this.filter_query_parts[0].editing && !this.filter_query_parts[0].field == '')) {
+                    // insert new filter part at the start of the array
+                    this.filter_query_parts.unshift({
+                        field: '',
+                        operator: 'eq',
+                        value: '',
+                        operatorSign: '=',
+                        column: '',
+                        category: '',
+                        enabled: true,
+                        editing: true,
+                        allNumerical: false
+                    });
+                }
+            },
+
+            // sets the specific filter part to edit mode
+            editFilterPart(index) {
+                this.$set(this.filter_query_parts[index], 'editing', true);
+
+                // update possible values when editing
+                this.updatePossibleValues(this.filter_query_parts[index].field, index);
+            },
+
+            reconstructFilterKey() {
+                // reconstruct the filterKey from the filter_query_parts array
+                const queryParts = this.filter_query_parts.map(part => `${part.field}:${part.value}:${part.operator}:${part.enabled ? 't' : 'f'}`);
+                if (queryParts.length == 0) {
+                    this.filterKey = '';
+                } else {
+                    this.filterKey = `query:${queryParts.join(',')}`;
+                }
+            },
+
+            deriveColumnValues(part) {
+                // convert part.value to a number if it is a numeric string
+                if (!isNaN(part.value)) {
+                    part.value = Number(part.value);
+                }
+
+                part.column = this.columns[part.field] ? this.columns[part.field].name : part.field;
+                part.category = this.columns[part.field] ? this.columns[part.field].group : '';
+                part.operatorSign = this.getOperatorSign(part.operator);
+
+                // don't have the installer URL and icons don't look great in filter display, so ignore the formatting
+                if (part.field == 'installer_name' || this.columns[part.field].group == 'Training') {
+                    part.formattedValue = part.value;
+                } else {
+                    part.formattedValue = this.column_format({ [part.field]: part.value }, part.field);
+                }
+
+                return part;
+            },
+
+            // saves the filter part after editing
+            saveFilterPart(index) {
+                // populate derived values before saving
+                const part = this.filter_query_parts[index];
+                this.deriveColumnValues(part);        
+                part.editing = false;
+
+                // reconstruct the filterKey after editing
+                this.reconstructFilterKey();
+
+                // reapply the filters after editing
+                this.filter_systems(); 
+            },
+
+            removeFilterPart(index) {
+                // remove the filter part from the array
+                const removedPart = this.filter_query_parts.splice(index, 1)[0];
+
+                // reconstruct the filterKey without the removed part
+                this.reconstructFilterKey();
+
+                // reapply the filters after removing a part
+                this.filter_systems();
+            },
+
+            // map operator to its sign
+            getOperatorSign(operator) {
+                const operatorMap = {
+                    'eq': '=',
+                    'ne': '!=',
+                    'gt': '>',
+                    'lt': '<',
+                    'gte': '>=',
+                    'lte': '<='
+                };
+                return operatorMap[operator] || operator; // return the operator itself if not found in the map
+            },
+
+            updatePossibleValues(field, index) {
+                const values = [...new Set(this.systems.map(system => system[field]).filter(value => value !== null && value !== undefined))];
+                
+                // check if all values are numerical
+                const allNumerical = values.every(value => !isNaN(value));
+
+                // set the allNumerical flag for the current filter part
+                this.$set(this.filter_query_parts[index], 'allNumerical', allNumerical);
+                
+                if (allNumerical) {
+                    // sort numerically
+                    this.possibleValues = values.sort((a, b) => a - b);
+                } else {
+                    // sort alphabetically
+                    this.possibleValues = values.sort();
+                }
+            },
  
             filterNodes(row) {
+
+                // empty the array storing filter query parts before parsing
+                this.filter_query_parts = []; 
 
                 if (this.filterKey != '') {
                     if (this.filterKey === 'MID') {
@@ -1464,7 +1732,20 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                 var query_part = query_parts[i].split(':');
                                 var field = query_part[0];
                                 var value = query_part[1];
-                                var operator = query_part[2];                                
+                                var operator = query_part[2] || 'eq'; // default to 'eq' if no operator is provided
+                                var enabled = query_part[3] || 't'; // default to 't' if no status is provided
+
+                                // store the parsed query string
+                                this.filter_query_parts.push(this.deriveColumnValues({
+                                    field: field, 
+                                    value: value, 
+                                    operator: operator,
+                                    enabled: enabled === 't' ? true : false,
+                                }));
+
+                                if (enabled === 'f') {
+                                    continue;
+                                }
 
                                 // if numeric check for exact match otherwise check for partial match
                                 if (!isNaN(value)) {                                    
@@ -1504,9 +1785,18 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                     }          
                                 // if not numeric check for partial match                                                          
                                 } else {
-                                    if (String(row[field]).toLowerCase().indexOf(value.toLowerCase()) == -1) {
-                                        result = false;
-                                    }
+                                    // default operator 'eq' means "contains", whereas 'ne' means "does not contain"
+                                    switch (operator) {
+                                        case 'ne':
+                                            if (String(row[field]).toLowerCase().indexOf(value.toLowerCase()) != -1) {
+                                                result = false;
+                                            }
+                                            break;
+                                        default:
+                                            if (String(row[field]).toLowerCase().indexOf(value.toLowerCase()) == -1) {
+                                                result = false;
+                                            }
+                                    }                                    
                                 }
                             }
                             return result;
@@ -1753,9 +2043,12 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             app.systems[i].elec_meter_class1 = false;
         }
     }
-    
+
+    Vue.component('v-select', VueSelect.VueSelect);
+        
     app.load_system_stats();
     app.sort_only('combined_cop');
+    app.populateColumnOptions();
     resize(true);
 
     function time_ago(val,ago='') {
