@@ -179,7 +179,7 @@ $schema['system_meta'] = array(
         'optional' => true, 
         'name' => 'Refrigerant', 
         'group' => 'Heat pump', 
-        'options'=>array('R290','R32','CO2','R410A','R210A','R134A','R407C','R454C')
+        'options'=>array('R290','R32','CO2','R410A','R210A','R134A','R407C','R454C','R452B')
     ),
 
     'uses_backup_heater' => array(
