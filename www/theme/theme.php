@@ -90,8 +90,13 @@ $navigation = array(
                     <span class="navbar-text navbar-text-desktop">An open-source initiative to share and compare heat pump performance data</span>
  
                     <?php if ($settings['public_mode_enabled'] || $session['userid']) { ?>
+
                     <ul class="navbar-nav ms-auto">
                         <li class="nav-item"><a class="nav-link " href="<?php echo $path; ?>" title="Home"><i class="fas fa-home"></i> <span class="nav-item-text">Home</span></a></li>
+                    </ul>
+
+                    <ul class="navbar-nav">
+                        <li class="nav-item"><a class="nav-link " href="https://docs.openenergymonitor.org/heatpumpmonitor" title="Docs"><i class="fas fa-book"></i> <span class="nav-item-text">Docs</span></a></li>
                     </ul>
 
                     <ul class="navbar-nav">

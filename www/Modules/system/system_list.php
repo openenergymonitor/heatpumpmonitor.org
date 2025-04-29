@@ -130,7 +130,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     <p v-if="mode=='admin'">Add, edit and view all systems</p>
                     
                     <p v-if="mode=='public' && showContent">If you're monitoring a heat pump with <a href="https://openenergymonitor.org">OpenEnergyMonitor</a> login to add your system</p>
-                    <p v-if="mode=='public' && showContent">Join the discussion on the <a href="https://community.openenergymonitor.org/c/hardware/heatpump/47">Forum</a></p>
+                    <p v-if="mode=='public' && showContent">Join the discussion on the <a href="https://community.openenergymonitor.org/c/hardware/heatpump/47">Forum</a> and read more about our <a href="https://docs.openenergymonitor.org/heatpumpmonitor">findings so far</a>.</p>
                     
                     <button v-if="mode!='public'" class="btn btn-primary" @click="create">Add new system</button>
                 </div>
