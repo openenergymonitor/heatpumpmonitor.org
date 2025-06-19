@@ -144,8 +144,15 @@
             const cop = system.combined_cop;
             if (cop == null || cop < MIN_COP || cop > MAX_COP) return;
 
+            let longitude = system.longitude;
+            let latitude = system.latitude;
+            // add 100m variation to each marker
+            const variation = 0.003; // 100m in degrees (approx)
+            longitude += (Math.random() - 0.5) * variation;
+            latitude += (Math.random() - 0.5) * variation;
+
             const marker = new ol.Feature({
-                geometry: new ol.geom.Point(ol.proj.fromLonLat([system.longitude, system.latitude]))
+                geometry: new ol.geom.Point(ol.proj.fromLonLat([longitude, latitude])),
             });
 
             marker.setStyle(new ol.style.Style({
