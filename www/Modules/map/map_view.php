@@ -5,7 +5,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 <script src="https://cdn.jsdelivr.net/npm/ol@v7.4.0/dist/ol.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v7.4.0/ol.css">
 <script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
-
+<script src="<?php echo $path; ?>Modules/map/filter_systems.js?v=<?php echo time(); ?>"></script>
 
 <style>
     #map {

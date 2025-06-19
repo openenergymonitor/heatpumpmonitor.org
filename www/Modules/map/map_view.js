@@ -1,4 +1,5 @@
 (function() {
+
     // ------------------------------
     // Constants & Config
     // ------------------------------
@@ -13,6 +14,9 @@
     // State
     // ------------------------------
     let systems = [];
+
+    SystemFilter.filterKey = '';
+    SystemFilter.minDays = 0; // Minimum days of data
 
     // ------------------------------
     // Map Setup
@@ -65,9 +69,15 @@
     function mergeStatsIntoSystems(statsResult) {
         systems.forEach(system => {
             if (statsResult[system.id]) {
-                system.stats = statsResult[system.id];
+                for (const key in statsResult[system.id]) {
+                    system[key] = statsResult[system.id][key];
+                }
             }
         });
+
+        SystemFilter.init(systems);
+        SystemFilter.applyFilters();
+        console.log("Filtered systems:", SystemFilter.fSystems.length);
     }
 
     // ------------------------------
@@ -99,7 +109,7 @@
             <b>System ID:</b> ${system.id}<br>
             <b>Location:</b><br>${system.location}<br>
             <b>Heatpump:</b><br>${system.hp_output}kW, ${system.hp_model}<br>
-            <b>SCOP:</b> ${system.stats.combined_cop.toFixed(1)}<br>
+            <b>SCOP:</b> ${system.combined_cop.toFixed(1)}<br>
             ${system.installer_name ? `<b>Installer:</b> <a href='${system.installer_url}' target='_blank'>${system.installer_name}</a><br>` : ''}
         `;
     }
@@ -110,9 +120,9 @@
     function drawLocations() {
         // Find min/max for color scaling
         let minValue = 100, maxValue = -100;
-        systems.forEach(system => {
-            if (!system.stats) return;
-            const val = system.stats[COLOR_VAR];
+        SystemFilter.fSystems.forEach(system => {
+            if (!system[COLOR_VAR]) return;
+            const val = system[COLOR_VAR];
             if (val == null) return;
             if (val < minValue) minValue = val;
             if (val > maxValue) maxValue = val;
@@ -128,9 +138,9 @@
         // Create marker vector source
         const markerVectorSource = new ol.source.Vector();
 
-        systems.forEach((system, index) => {
-            if (!system.stats) return;
-            const cop = system.stats.combined_cop;
+        SystemFilter.fSystems.forEach((system, index) => {
+            if (!system.combined_cop) return;
+            const cop = system.combined_cop;
             if (cop == null || cop < MIN_COP || cop > MAX_COP) return;
 
             const marker = new ol.Feature({
@@ -141,7 +151,7 @@
                 image: new ol.style.Icon({
                     src: MARKER_ICON_URL, // (5) Configurable marker icon
                     scale: 0.5,
-                    color: getTemperatureColor(system.stats[COLOR_VAR], minValue, maxValue)
+                    color: getTemperatureColor(system[COLOR_VAR], minValue, maxValue)
                 })
             }));
             marker.set('index', index);
@@ -175,8 +185,8 @@
             overlay.setPosition(coordinates);
 
             const system_index = feature.get('index');
-            if (systems[system_index] == undefined) return false;
-            const system = systems[system_index];
+            if (SystemFilter.fSystems[system_index] == undefined) return false;
+            const system = SystemFilter.fSystems[system_index];
 
             // (6) Use template literal for HTML
             speechBubble.innerHTML = getSpeechBubbleHTML(system);
@@ -193,8 +203,8 @@
     map.on('singleclick', function(e) {
         map.forEachFeatureAtPixel(e.pixel, function(feature) {
             const system_index = feature.get('index');
-            if (systems[system_index] == undefined) return false;
-            const system = systems[system_index];
+            if (SystemFilter.fSystems[system_index] == undefined) return false;
+            const system = SystemFilter.fSystems[system_index];
             const url = 'https://heatpumpmonitor.org/system/view?id=' + encodeURIComponent(system.id);
             window.open(url, '_blank');
             return true;
@@ -240,14 +250,37 @@
         $('#map').height(availableHeight);
     }
 
+    // ------------------------------
+    // URL Param Sync for Filters
+    // ------------------------------
+    function updateFiltersFromURL() {
+        const params = new URLSearchParams(window.location.search);
+        if (params.has('filter')) {
+            SystemFilter.filterKey = params.get('filter');
+        }
+        if (params.has('minDays')) {
+            const val = parseInt(params.get('minDays'), 10);
+            if (!isNaN(val)) SystemFilter.minDays = val;
+        }
+    }
+
 
     // ------------------------------
     // Init
     // ------------------------------
+
+    // Call on init
+    updateFiltersFromURL();
+
+    // Optional: Listen for URL changes (popstate)
+    window.addEventListener('popstate', updateFiltersFromURL);
+
     resizeMap();
 
     loadSystemsAndStats();
 
     $(window).resize(resizeMap);
+
+    
 
 })();
