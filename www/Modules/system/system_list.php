@@ -1308,7 +1308,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                         // abs difference
                                         let abs_difference = Math.abs(difference);
 
-                                        if (abs_difference > 0.125) {
+                                        if (abs_difference > 0.2) {
 
                                             let note = 'Heat meter air error\n';
                                             note += (app.systems[i].error_air / 3600).toFixed(0) + " hours, ";
