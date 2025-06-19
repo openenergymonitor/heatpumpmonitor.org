@@ -42,9 +42,9 @@
     });
     map.addLayer(darkLayer);
 
-    const speechBubble = document.getElementById('speech-bubble');
+    const mapTooltip = document.getElementById('map-tooltip');
     const overlay = new ol.Overlay({
-        element: speechBubble,
+        element: mapTooltip,
         positioning: 'bottom-center',
         offset: [0, -10]
     });
@@ -105,13 +105,13 @@
     }
 
     // (5) Use Template Literals for HTML
-    function getSpeechBubbleHTML(system) {
+    function getMapTooltipHTML(system) {
         return `
             <b>System ID:</b> ${system.id}<br>
             <b>Location:</b><br>${system.location}<br>
             <b>Heatpump:</b><br>${system.hp_output}kW, ${system.hp_model}<br>
             <b>SCOP:</b> ${system.combined_cop.toFixed(1)}<br>
-            ${system.installer_name ? `<b>Installer:</b> <a href='${system.installer_url}' target='_blank'>${system.installer_name}</a><br>` : ''}
+            ${system.installer_name ? `<b>Installer:</b> ${system.installer_name}` : ''}
         `;
     }
 
@@ -183,7 +183,7 @@
         map.getTargetElement().style.cursor = hit ? 'pointer' : '';
 
         if (e.dragging) {
-            speechBubble.style.display = 'none';
+            mapTooltip.style.display = 'none';
             return;
         }
 
@@ -197,14 +197,15 @@
             const system = SystemFilter.fSystems[system_index];
 
             // (6) Use template literal for HTML
-            speechBubble.innerHTML = getSpeechBubbleHTML(system);
-            speechBubble.style.display = 'block';
+            const mapTooltipContent = document.getElementById('map-tooltip-content');
+            mapTooltipContent.innerHTML = getMapTooltipHTML(system);
+            mapTooltip.style.display = 'block';
             found = true;
             return true; // Stop iterating
         }, { hitTolerance: 5 });
 
         if (!found) {
-            speechBubble.style.display = 'none';
+            mapTooltip.style.display = 'none';
         }
     }, 20)); // Debounce delay in ms
 
