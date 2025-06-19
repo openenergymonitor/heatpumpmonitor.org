@@ -28,6 +28,24 @@ $schema['system_meta'] = array(
         'group' => 'Overview'
     ),
 
+    'latitude' => array(
+        'type' => 'float', 
+        'editable' => false, 
+        'optional' => true, 
+        'name' => 'Latitude', 
+        'group' => 'Overview',
+        'helper' => 'Rough location, nearest town or county',
+    ),
+
+    'longitude' => array(
+        'type' => 'float', 
+        'editable' => false, 
+        'optional' => true, 
+        'name' => 'Longitude', 
+        'group' => 'Overview',
+        'helper' => 'Rough location, nearest town or county',
+    ),
+
     'installer_name' => array(
         'type' => 'varchar(64)', 
         'editable' => true, 
@@ -365,8 +383,8 @@ $schema['system_meta'] = array(
     'legionella_frequency' => array(
         'type' => 'varchar(32)', 
         'editable' => true, 
-        'optional' => false, 
-        'name' => 'Legionella frequency', 
+        'optional' => true, 
+        'name' => 'Legionella frequency',
         'group' => 'Hot water',
         'options' => array('Daily', 'Weekly', 'Fornightly', 'Monthly', 'Other', 'Flexible', 'Disabled', 'No cylinder')
     ),
