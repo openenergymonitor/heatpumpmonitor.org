@@ -228,7 +228,7 @@
     // ------------------------------
     function resizeMap() {
         var topbarHeight = 64;
-        var footerHeight = 128;
+        var footerHeight = 52;
         var windowHeight = $(window).height();
         var availableHeight = windowHeight - topbarHeight - footerHeight;
 
