@@ -7,13 +7,14 @@
     const MIN_COP = 1;
     const MAX_COP = 7;
     const SYSTEM_LIST_URL = path + "system/list/public.json";
-    const SYSTEM_STATS_URL = path + "system/stats/last365";
+    const SYSTEM_STATS_URL = path + "system/stats/";
     const MARKER_ICON_URL = 'https://openlayers.org/en/latest/examples/data/dot.png'; // Configurable marker icon
 
     // ------------------------------
     // State
     // ------------------------------
     let systems = [];
+    let period = 'last365'; // Default period
 
     SystemFilter.filterKey = '';
     SystemFilter.minDays = 0; // Minimum days of data
@@ -56,7 +57,7 @@
         try {
             const [systemsRes, statsRes] = await Promise.all([
                 fetch(SYSTEM_LIST_URL).then(r => r.json()),
-                fetch(SYSTEM_STATS_URL).then(r => r.json())
+                fetch(SYSTEM_STATS_URL+period).then(r => r.json())
             ]);
             systems = systemsRes;
             mergeStatsIntoSystems(statsRes);
@@ -262,6 +263,13 @@
             const val = parseInt(params.get('minDays'), 10);
             if (!isNaN(val)) SystemFilter.minDays = val;
         }
+        if (params.has('period')) {
+            period = params.get('period');
+            SystemFilter.stats_time_start = period; // Update the stats time start
+        } else {
+            SystemFilter.stats_time_start = 'last365'; // Default to last 365 days
+        }
+
     }
 
 

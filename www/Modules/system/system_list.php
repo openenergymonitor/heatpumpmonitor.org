@@ -1953,16 +1953,31 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     settings.tariff = default_settings.tariff;
                 }
 
+                let is_default = true;
                 var url = new URL(window.location.href);
                 for (var key in settings) {
                     if (settings[key] != default_settings[key]) {
                         url.searchParams.set(key, settings[key]);
+                        is_default = false;
                     } else {
                         url.searchParams.delete(key);
                     }
                 }
                 var decodedUrl = decodeURIComponent(url.toString());
-                window.history.pushState({}, '', decodedUrl);   
+                window.history.pushState({}, '', decodedUrl);
+
+                // Update #map-link href with filter and minDays
+                if (!is_default) {
+                    var mapLink = document.getElementById('map-link');
+                    if (mapLink) {
+                        var mapUrl = new URL(mapLink.href);
+                        mapUrl.searchParams.set('filter', this.filterKey);
+                        mapUrl.searchParams.set('period', this.stats_time_start);
+                        mapUrl.searchParams.set('minDays', this.minDays);
+                        mapLink.href = decodeURIComponent(mapUrl.toString());
+                    }
+                }
+
             },
             toggle_restricted_list: function() {
                 this.admin_restricted_list = !this.admin_restricted_list;
