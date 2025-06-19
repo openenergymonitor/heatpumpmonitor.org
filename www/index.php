@@ -96,6 +96,11 @@ switch ($route->controller) {
         $output = histogram_controller();
         break;
 
+    case "map":
+        require "Modules/map/map_controller.php";
+        $output = map_controller();
+        break;
+
     // These are individual pages that are not *yet* part of the main modules
 
     case "heatloss":

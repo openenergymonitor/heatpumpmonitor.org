@@ -74,6 +74,8 @@ foreach ($data as $row) {
                 }
             // }
         }
+    } else {
+        $mysqli->query("UPDATE system_meta SET `installer_logo`='' WHERE `id`='$systemid'"); 
     }
 }
 

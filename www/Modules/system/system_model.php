@@ -265,6 +265,14 @@ class System
                 $this->send_change_notification($userid,$systemid,$change_log,true);
             }
 
+            // If location is in change_log then update latitude and longitude
+            foreach ($change_log as $change) {
+                if ($change['key']=='location') {
+                    // Get latitude and longitude from location
+                    $this->update_lat_lon($systemid, $change['new']);
+                }
+            }
+
             // $this->computed_fields($systemid);
 
             // Update last updated time
@@ -616,5 +624,31 @@ class System
             }
         }
         return $myheatpump_apps;
+    }
+
+    public function update_lat_lon($systemid, $location) {
+        global $settings;
+        if (!isset($settings['opencagedata_api_key'])) return;
+        $apikey = $settings['opencagedata_api_key'];
+
+        $id = (int) $systemid;
+
+        $location = urlencode($location);
+        $url = "https://api.opencagedata.com/geocode/v1/json?q=$location&key=$apikey";
+        $json = file_get_contents($url);
+        $data = json_decode($json);
+        if (isset($data->results[0]->geometry->lat) && isset($data->results[0]->geometry->lng)) {
+            // 1 dp ~11 km
+            // 2 dp ~1.1 km
+            // 3 dp ~110 m **
+            // 4 dp ~11 m
+            // 5 dp ~1.1 m
+            $latitude = round($data->results[0]->geometry->lat, 3);
+            $longitude = round($data->results[0]->geometry->lng, 3);
+
+            $stmt = $this->mysqli->prepare("UPDATE system_meta SET latitude = ?, longitude = ? WHERE id = ?");
+            $stmt->bind_param("ddi", $latitude, $longitude, $id);
+            $stmt->execute();
+        }
     }
 }
