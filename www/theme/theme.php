@@ -96,6 +96,10 @@ $navigation = array(
                     </ul>
 
                     <ul class="navbar-nav">
+                        <li class="nav-item"><a class="nav-link " href="<?php echo $path; ?>/map" title="Map"><i class="fas fa-map"></i> <span class="nav-item-text">Map</span></a></li>
+                    </ul>
+
+                    <ul class="navbar-nav">
                         <li class="nav-item"><a class="nav-link " href="https://docs.openenergymonitor.org/heatpumpmonitor" title="Docs"><i class="fas fa-book"></i> <span class="nav-item-text">Docs</span></a></li>
                     </ul>
 
