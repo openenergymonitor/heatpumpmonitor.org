@@ -1,4 +1,5 @@
 (function() {
+
     // ------------------------------
     // Constants & Config
     // ------------------------------
@@ -6,13 +7,17 @@
     const MIN_COP = 1;
     const MAX_COP = 7;
     const SYSTEM_LIST_URL = path + "system/list/public.json";
-    const SYSTEM_STATS_URL = path + "system/stats/last365";
+    const SYSTEM_STATS_URL = path + "system/stats/";
     const MARKER_ICON_URL = 'https://openlayers.org/en/latest/examples/data/dot.png'; // Configurable marker icon
 
     // ------------------------------
     // State
     // ------------------------------
     let systems = [];
+    let period = 'last365'; // Default period
+
+    SystemFilter.filterKey = '';
+    SystemFilter.minDays = 0; // Minimum days of data
 
     // ------------------------------
     // Map Setup
@@ -37,9 +42,9 @@
     });
     map.addLayer(darkLayer);
 
-    const speechBubble = document.getElementById('speech-bubble');
+    const mapTooltip = document.getElementById('map-tooltip');
     const overlay = new ol.Overlay({
-        element: speechBubble,
+        element: mapTooltip,
         positioning: 'bottom-center',
         offset: [0, -10]
     });
@@ -52,7 +57,7 @@
         try {
             const [systemsRes, statsRes] = await Promise.all([
                 fetch(SYSTEM_LIST_URL).then(r => r.json()),
-                fetch(SYSTEM_STATS_URL).then(r => r.json())
+                fetch(SYSTEM_STATS_URL+period).then(r => r.json())
             ]);
             systems = systemsRes;
             mergeStatsIntoSystems(statsRes);
@@ -65,9 +70,15 @@
     function mergeStatsIntoSystems(statsResult) {
         systems.forEach(system => {
             if (statsResult[system.id]) {
-                system.stats = statsResult[system.id];
+                for (const key in statsResult[system.id]) {
+                    system[key] = statsResult[system.id][key];
+                }
             }
         });
+
+        SystemFilter.init(systems);
+        SystemFilter.applyFilters();
+        console.log("Filtered systems:", SystemFilter.fSystems.length);
     }
 
     // ------------------------------
@@ -94,13 +105,13 @@
     }
 
     // (5) Use Template Literals for HTML
-    function getSpeechBubbleHTML(system) {
+    function getMapTooltipHTML(system) {
         return `
             <b>System ID:</b> ${system.id}<br>
             <b>Location:</b><br>${system.location}<br>
             <b>Heatpump:</b><br>${system.hp_output}kW, ${system.hp_model}<br>
-            <b>SCOP:</b> ${system.stats.combined_cop.toFixed(1)}<br>
-            ${system.installer_name ? `<b>Installer:</b> <a href='${system.installer_url}' target='_blank'>${system.installer_name}</a><br>` : ''}
+            <b>SCOP:</b> ${system.combined_cop.toFixed(1)}<br>
+            ${system.installer_name ? `<b>Installer:</b> ${system.installer_name}` : ''}
         `;
     }
 
@@ -110,9 +121,9 @@
     function drawLocations() {
         // Find min/max for color scaling
         let minValue = 100, maxValue = -100;
-        systems.forEach(system => {
-            if (!system.stats) return;
-            const val = system.stats[COLOR_VAR];
+        SystemFilter.fSystems.forEach(system => {
+            if (!system[COLOR_VAR]) return;
+            const val = system[COLOR_VAR];
             if (val == null) return;
             if (val < minValue) minValue = val;
             if (val > maxValue) maxValue = val;
@@ -128,20 +139,27 @@
         // Create marker vector source
         const markerVectorSource = new ol.source.Vector();
 
-        systems.forEach((system, index) => {
-            if (!system.stats) return;
-            const cop = system.stats.combined_cop;
+        SystemFilter.fSystems.forEach((system, index) => {
+            if (!system.combined_cop) return;
+            const cop = system.combined_cop;
             if (cop == null || cop < MIN_COP || cop > MAX_COP) return;
 
+            let longitude = system.longitude;
+            let latitude = system.latitude;
+            // add 100m variation to each marker
+            const variation = 0.003; // 100m in degrees (approx)
+            longitude += (Math.random() - 0.5) * variation;
+            latitude += (Math.random() - 0.5) * variation;
+
             const marker = new ol.Feature({
-                geometry: new ol.geom.Point(ol.proj.fromLonLat([system.longitude, system.latitude]))
+                geometry: new ol.geom.Point(ol.proj.fromLonLat([longitude, latitude])),
             });
 
             marker.setStyle(new ol.style.Style({
                 image: new ol.style.Icon({
                     src: MARKER_ICON_URL, // (5) Configurable marker icon
                     scale: 0.5,
-                    color: getTemperatureColor(system.stats[COLOR_VAR], minValue, maxValue)
+                    color: getTemperatureColor(system[COLOR_VAR], minValue, maxValue)
                 })
             }));
             marker.set('index', index);
@@ -165,7 +183,7 @@
         map.getTargetElement().style.cursor = hit ? 'pointer' : '';
 
         if (e.dragging) {
-            speechBubble.style.display = 'none';
+            mapTooltip.style.display = 'none';
             return;
         }
 
@@ -175,26 +193,27 @@
             overlay.setPosition(coordinates);
 
             const system_index = feature.get('index');
-            if (systems[system_index] == undefined) return false;
-            const system = systems[system_index];
+            if (SystemFilter.fSystems[system_index] == undefined) return false;
+            const system = SystemFilter.fSystems[system_index];
 
             // (6) Use template literal for HTML
-            speechBubble.innerHTML = getSpeechBubbleHTML(system);
-            speechBubble.style.display = 'block';
+            const mapTooltipContent = document.getElementById('map-tooltip-content');
+            mapTooltipContent.innerHTML = getMapTooltipHTML(system);
+            mapTooltip.style.display = 'block';
             found = true;
             return true; // Stop iterating
         }, { hitTolerance: 5 });
 
         if (!found) {
-            speechBubble.style.display = 'none';
+            mapTooltip.style.display = 'none';
         }
     }, 20)); // Debounce delay in ms
 
     map.on('singleclick', function(e) {
         map.forEachFeatureAtPixel(e.pixel, function(feature) {
             const system_index = feature.get('index');
-            if (systems[system_index] == undefined) return false;
-            const system = systems[system_index];
+            if (SystemFilter.fSystems[system_index] == undefined) return false;
+            const system = SystemFilter.fSystems[system_index];
             const url = 'https://heatpumpmonitor.org/system/view?id=' + encodeURIComponent(system.id);
             window.open(url, '_blank');
             return true;
@@ -228,7 +247,7 @@
     // ------------------------------
     function resizeMap() {
         var topbarHeight = 64;
-        var footerHeight = 128;
+        var footerHeight = 52;
         var windowHeight = $(window).height();
         var availableHeight = windowHeight - topbarHeight - footerHeight;
 
@@ -240,14 +259,44 @@
         $('#map').height(availableHeight);
     }
 
+    // ------------------------------
+    // URL Param Sync for Filters
+    // ------------------------------
+    function updateFiltersFromURL() {
+        const params = new URLSearchParams(window.location.search);
+        if (params.has('filter')) {
+            SystemFilter.filterKey = params.get('filter');
+        }
+        if (params.has('minDays')) {
+            const val = parseInt(params.get('minDays'), 10);
+            if (!isNaN(val)) SystemFilter.minDays = val;
+        }
+        if (params.has('period')) {
+            period = params.get('period');
+            SystemFilter.stats_time_start = period; // Update the stats time start
+        } else {
+            SystemFilter.stats_time_start = 'last365'; // Default to last 365 days
+        }
+
+    }
+
 
     // ------------------------------
     // Init
     // ------------------------------
+
+    // Call on init
+    updateFiltersFromURL();
+
+    // Optional: Listen for URL changes (popstate)
+    window.addEventListener('popstate', updateFiltersFromURL);
+
     resizeMap();
 
     loadSystemsAndStats();
 
     $(window).resize(resizeMap);
+
+    
 
 })();
