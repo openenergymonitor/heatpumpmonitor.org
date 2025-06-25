@@ -5,7 +5,7 @@ var SystemFilter = {
     show_mid: true,
     show_other: true,
     show_hpint: true,
-    show_errors: false,
+    show_errors: true,
 
     systems: [],
     fSystems: [],

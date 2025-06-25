@@ -3,7 +3,7 @@
     // ------------------------------
     // Constants & Config
     // ------------------------------
-    const COLOR_VAR = 'combined_cop';
+    const COLOR_VAR = 'installer_color';
     const MIN_COP = 1;
     const MAX_COP = 7;
     const SYSTEM_LIST_URL = path + "system/list/public.json";
@@ -26,7 +26,8 @@
         target: 'map',
         view: new ol.View({
             center: ol.proj.fromLonLat([-4.0, 54]),
-            zoom: 6
+            zoom: 6,
+            maxZoom: 14
         })
     });
 
@@ -61,6 +62,8 @@
             ]);
             systems = systemsRes;
             mergeStatsIntoSystems(statsRes);
+            generateInstallerColors(systems);
+
             drawLocations();
         } catch (err) {
             console.error("Failed to load systems or stats", err);
@@ -130,8 +133,9 @@
         });
 
         // Clamp to fixed range
-        minValue = MIN_COP;
-        maxValue = MAX_COP;
+        //minValue = MIN_COP;
+        //maxValue = MAX_COP;
+        console.log("Min val:", minValue, "Max val:", maxValue);
 
         // Remove old marker layers (2)
         removeMarkerLayers();
@@ -246,10 +250,8 @@
     // Resize Map
     // ------------------------------
     function resizeMap() {
-        var topbarHeight = 64;
-        var footerHeight = 52;
         var windowHeight = $(window).height();
-        var availableHeight = windowHeight - topbarHeight - footerHeight;
+        var availableHeight = windowHeight - 116; 
 
         // Min height check
         if (availableHeight < 300) {
@@ -278,6 +280,66 @@
             SystemFilter.stats_time_start = 'last365'; // Default to last 365 days
         }
 
+    }
+
+    function generateInstallerColors(systems) {
+        let installer_list_by_name = {};
+        systems.forEach(system => {
+            if (system.installer_name) {
+                const name = system.installer_name.trim();
+                if (!installer_list_by_name[name]) {
+                    installer_list_by_name[name] = 0;
+                }
+                installer_list_by_name[name]++;
+            }
+        });
+
+        const installerNames = Object.keys(installer_list_by_name).sort();
+        console.log("Installer names:", installerNames);
+
+        // Assign colors to systems
+        systems.forEach(system => {
+            system.installer_color = 0; // Default color
+            if (system.installer_name) {
+                const name = system.installer_name.trim();
+                // if name in installerNames, assign a color based on index
+                system.installer_color = installerNames.indexOf(name)+1;
+                console.log(`System ${system.id} installer color: ${system.installer_color} (${name})`);
+            }
+        });
+    }
+    
+    // Map search
+    $("#map-search-btn").on("click", function() {
+        map_search();
+    });
+
+    // On Enter key press in search input
+    $("#map-search-input").on("keypress", function(event) {
+        if (event.key === "Enter") {
+            event.preventDefault(); // Prevent form submission
+            map_search();
+        }
+    });
+
+    function map_search() {
+        const searchInput = $("#map-search-input").val().trim();
+        if (searchInput) {
+            console.log("Searching for:", searchInput);
+
+            $.getJSON("map/search", { location: searchInput }, function(response) {
+                if (response.success && response.lat && response.lng) {
+                    // Center the map on the searched location
+                    const view = map.getView();
+                    const coords = ol.proj.fromLonLat([response.lng, response.lat]);
+                    view.animate({ center: coords, duration: 800, zoom: 12 });
+                } else {
+                    alert("Location not found.");
+                }
+            }).fail(function() {
+                alert("Error searching for location.");
+            });
+        }
     }
 
 
