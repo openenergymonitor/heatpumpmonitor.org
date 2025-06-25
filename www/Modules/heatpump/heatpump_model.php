@@ -62,6 +62,11 @@ class Heatpump
      */
     public function get_stats($model, $capacity)
     {
+
+        // Sanitize inputs
+        $model = $this->mysqli->real_escape_string($model);
+        $capacity = (int) $this->mysqli->real_escape_string($capacity);
+
         // Get all systems with the given model and capacity that are published and shared
         $query = "
             SELECT 
