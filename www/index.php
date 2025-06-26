@@ -101,6 +101,11 @@ switch ($route->controller) {
         $output = map_controller();
         break;
 
+    case "installer":
+        require "Modules/installer/installer_controller.php";
+        $output = installer_controller();
+        break;
+
     // These are individual pages that are not *yet* part of the main modules
 
     case "heatloss":

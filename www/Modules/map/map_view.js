@@ -8,6 +8,7 @@
     const MAX_COP = 7;
     const SYSTEM_LIST_URL = path + "system/list/public.json";
     const SYSTEM_STATS_URL = path + "system/stats/";
+    const INSTALLER_LIST_URL = path + "installer/list.json";
     const MARKER_ICON_URL = 'https://openlayers.org/en/latest/examples/data/dot.png'; // Configurable marker icon
 
     // ------------------------------
@@ -56,13 +57,14 @@
     // ------------------------------
     async function loadSystemsAndStats() {
         try {
-            const [systemsRes, statsRes] = await Promise.all([
+            const [systemsRes, statsRes, installerRes] = await Promise.all([
                 fetch(SYSTEM_LIST_URL).then(r => r.json()),
-                fetch(SYSTEM_STATS_URL+period).then(r => r.json())
+                fetch(SYSTEM_STATS_URL+period).then(r => r.json()),
+                fetch(INSTALLER_LIST_URL).then(r => r.json())
             ]);
             systems = systemsRes;
             mergeStatsIntoSystems(statsRes);
-            generateInstallerColors(systems);
+            applyInstallerColors(installerRes);
 
             drawLocations();
         } catch (err) {
@@ -82,6 +84,30 @@
         SystemFilter.init(systems);
         SystemFilter.applyFilters();
         console.log("Filtered systems:", SystemFilter.fSystems.length);
+    }
+
+    function applyInstallerColors(installerList) {
+        if (!installerList || !Array.isArray(installerList)) {
+            console.error("Invalid installer list format");
+            return;
+        }
+
+        // create associative array for installer name => colors 
+        let installerColors = {};
+        installerList.forEach((installer, index) => {
+            if (installer.name && installer.color) {
+                installerColors[installer.name.trim()] = installer.color;
+            }
+        });
+
+        // Assign colors to systems based on installer name
+        systems.forEach(system => {
+            if (system.installer_name && installerColors[system.installer_name.trim()]) {
+                system.installer_color = installerColors[system.installer_name.trim()];
+            } else {
+                system.installer_color = 0; // Default color if not found
+            }
+        });
     }
 
     // ------------------------------
@@ -159,11 +185,22 @@
                 geometry: new ol.geom.Point(ol.proj.fromLonLat([longitude, latitude])),
             });
 
+            let color = system.installer_color;
+
+            if (color == 0) {
+                // Default color if no installer color is set
+                color = hexToRgba('#ccc', 0.8); // Default red color with 80% opacity
+            } else if (typeof color === 'string' && color.startsWith('#')) {
+                // If color is a hex string, convert to rgba
+                color = hexToRgba(color, 0.8); // Convert to rgba with 80% opacity
+            }
+            // color = getTemperatureColor(system[COLOR_VAR], minValue, maxValue);
+
             marker.setStyle(new ol.style.Style({
                 image: new ol.style.Icon({
                     src: MARKER_ICON_URL, // (5) Configurable marker icon
                     scale: 0.5,
-                    color: getTemperatureColor(system[COLOR_VAR], minValue, maxValue)
+                    color: color
                 })
             }));
             marker.set('index', index);
@@ -245,6 +282,23 @@
         }
         return `rgb(${r},${g},${b})`;
     }
+
+    // 
+    function hexToRgba(hex, alpha = 1) {
+        // Remove leading #
+        hex = hex.replace(/^#/, '');
+        // Expand shorthand form (#abc) to full form (#aabbcc)
+        if (hex.length === 3) {
+            hex = hex.split('').map(x => x + x).join('');
+        }
+        if (hex.length !== 6) return `rgba(0,0,0,${alpha})`;
+        const num = parseInt(hex, 16);
+        const r = (num >> 16) & 255;
+        const g = (num >> 8) & 255;
+        const b = num & 255;
+        return `rgba(${r},${g},${b},${alpha})`;
+    }
+
 
     // ------------------------------
     // Resize Map
