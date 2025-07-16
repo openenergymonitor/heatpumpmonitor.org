@@ -82,7 +82,7 @@
         margin: 0 auto;
         border-radius: 8px;
         width: calc(100% - 20px);
-        max-width: 400px;
+        max-width: 580px;
         justify-content: center;
         padding: 10px 8px;
     }
@@ -99,7 +99,7 @@
         margin: 0 auto;
         border-radius: 8px;
         width: calc(100% - 20px);
-        max-width: 400px;
+        max-width: 580px;
         overflow-y: auto;
         justify-content: flex-start;
         align-items: flex-start;
