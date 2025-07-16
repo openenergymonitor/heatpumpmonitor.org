@@ -21,13 +21,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     </button>
 </div>
 
-<div id="map-tooltip" class="map-tooltip">
-    <!--<span id="map-tooltip-close" class="map-tooltip-close">&times;</span>-->
-    <div id="map-tooltip-content">
-        <!-- Content will be dynamically inserted here -->
-    </div>
-    <div class="location-note">Note: Locations are not precise</div>
+<div id="map-info-overlay" class="map-info-overlay">
+   <div id="map-info-content"></div>
 </div>
+
 
 <!-- load weather_map.js -->
 <script src="<?php echo $path; ?>Modules/map/map_view.js?v=<?php echo time(); ?>"></script>

@@ -16,6 +16,7 @@
     // ------------------------------
     let systems = [];
     let period = 'last365'; // Default period
+    let highlightLayer = null; // Add this to track the highlight layer
 
     SystemFilter.filterKey = '';
     SystemFilter.minDays = 0; // Minimum days of data
@@ -25,6 +26,7 @@
     // ------------------------------
     const map = new ol.Map({
         target: 'map',
+        controls: [],
         view: new ol.View({
             center: ol.proj.fromLonLat([-4.0, 54]),
             zoom: 6,
@@ -124,6 +126,49 @@
         });
     }
 
+    // Add function to create highlight ring
+    function createHighlightRing(coordinates) {
+        // Remove existing highlight layer
+        if (highlightLayer) {
+            map.removeLayer(highlightLayer);
+            highlightLayer = null;
+        }
+
+        // Create a new feature for the highlight ring
+        const highlightFeature = new ol.Feature({
+            geometry: new ol.geom.Point(coordinates)
+        });
+
+        // Style for the hollow blue highlight ring
+        highlightFeature.setStyle(new ol.style.Style({
+            image: new ol.style.Circle({
+                radius: 12,
+                fill: new ol.style.Fill({
+                    color: 'rgba(0, 123, 255, 0.6)' // Very light blue fill for slight visibility
+                })
+            })
+        }));
+
+        // Create vector source and layer for highlight
+        const highlightSource = new ol.source.Vector();
+        highlightSource.addFeature(highlightFeature);
+
+        highlightLayer = new ol.layer.Vector({
+            source: highlightSource
+        });
+        highlightLayer.set('key', 'highlight_ring');
+        map.addLayer(highlightLayer);
+    }
+
+    // Add function to remove highlight ring
+    function removeHighlightRing() {
+        if (highlightLayer) {
+            map.removeLayer(highlightLayer);
+            highlightLayer = null;
+        }
+    }
+
+
     // (3) Debounce Pointer Events
     function debounce(fn, delay) {
         let timeout;
@@ -136,12 +181,14 @@
     // (5) Use Template Literals for HTML
     function getMapTooltipHTML(system) {
         return `
-            <b>System ID:</b> ${system.id}<br>
-            <b>Location:</b><br>${system.location}<br>
-            <b>Heatpump:</b><br>${system.hp_output}kW, ${system.hp_model}<br>
-            <b>SCOP:</b> ${system.combined_cop.toFixed(1)}<br>
-            ${system.installer_name ? `<b>Installer:</b> ${system.installer_name}` : ''}
-        `;
+            <div class="overlay-title">${system.location}</div>
+            <div class="overlay-line">${system.hp_output}kW, ${system.hp_model} (SPF: ${system.combined_cop.toFixed(1)})</div>
+            <div class="overlay-line">${system.installer_name ? `${system.installer_name}` : ''}</div>
+            <button class="btn btn-outline-primary btn-sm" onclick="window.location.href='${path}system/view?id=${system.id}'">View System</button>
+            <button class="btn btn-outline-primary btn-sm" onclick="window.location.href='${system.installer_url}'">View Installer</button>
+            <div class="location-note">Note: Locations are not precise</div>
+
+            `;
     }
 
     // ------------------------------
@@ -189,7 +236,7 @@
 
             if (color == 0) {
                 // Default color if no installer color is set
-                color = hexToRgba('#ccc', 0.8); // Default red color with 80% opacity
+                color = hexToRgba('#ccc', 0.8); // Default color with 80% opacity
             } else if (typeof color === 'string' && color.startsWith('#')) {
                 // If color is a hex string, convert to rgba
                 color = hexToRgba(color, 0.8); // Convert to rgba with 80% opacity
@@ -211,6 +258,7 @@
             source: markerVectorSource
         });
         markerVectorLayer.set('key', 'location_marker');
+        markerVectorLayer.setZIndex(100);
         map.addLayer(markerVectorLayer);
     }
 
@@ -224,42 +272,98 @@
         map.getTargetElement().style.cursor = hit ? 'pointer' : '';
 
         if (e.dragging) {
-            mapTooltip.style.display = 'none';
             return;
         }
 
+        let hoveredFeature = null;
+        
+        // Find the hovered feature first
+        map.forEachFeatureAtPixel(e.pixel, function(feature) {
+            // Skip if this is the highlight ring itself
+            const layer = feature.get('layer');
+            if (layer && layer.get('key') === 'highlight_ring') {
+                return false;
+            }
+            hoveredFeature = feature;
+            return true; // Stop at first feature
+        }, { hitTolerance: 10 });
+
+        // Reset all markers and then scale up the hovered one
+        map.getLayers().forEach(layer => {
+            if (layer.get('key') === 'location_marker') {
+                layer.getSource().getFeatures().forEach(feature => {
+                    const style = feature.getStyle();
+                    if (style && style.getImage()) {
+                        if (feature === hoveredFeature) {
+                            style.getImage().setScale(0.6); // Larger hover size
+                        } else {
+                            style.getImage().setScale(0.5); // Normal size
+                        }
+                    }
+                });
+                // Force layer to redraw
+                layer.changed();
+            }
+        });
+
+    }, 10)); // Slightly longer debounce for better performance
+
+    
+    map.on('singleclick', function(e) {
         let found = false;
         map.forEachFeatureAtPixel(e.pixel, function(feature) {
+            // Skip if this is the highlight ring itself
+            const layer = feature.get('layer');
+            if (layer && layer.get('key') === 'highlight_ring') {
+                return false; // Skip highlight ring
+            }
+
             const coordinates = feature.getGeometry().getCoordinates();
             overlay.setPosition(coordinates);
 
+            centerMap(coordinates); // Center the map on the clicked marker
+
+            // Create highlight ring around the clicked marker
+            createHighlightRing(coordinates);
+
             const system_index = feature.get('index');
             if (SystemFilter.fSystems[system_index] == undefined) return false;
             const system = SystemFilter.fSystems[system_index];
 
-            // (6) Use template literal for HTML
-            const mapTooltipContent = document.getElementById('map-tooltip-content');
-            mapTooltipContent.innerHTML = getMapTooltipHTML(system);
-            mapTooltip.style.display = 'block';
+            // Use template literal for HTML
+            let tooltipHtml = getMapTooltipHTML(system);
+            $("#map-info-content").html(tooltipHtml);
+            $("#map-info-overlay").show();
+
             found = true;
             return true; // Stop iterating
-        }, { hitTolerance: 5 });
+        }, { hitTolerance: 10 });
 
         if (!found) {
             mapTooltip.style.display = 'none';
+            removeHighlightRing(); // Remove highlight when clicking elsewhere
         }
-    }, 20)); // Debounce delay in ms
-
-    map.on('singleclick', function(e) {
-        map.forEachFeatureAtPixel(e.pixel, function(feature) {
-            const system_index = feature.get('index');
-            if (SystemFilter.fSystems[system_index] == undefined) return false;
-            const system = SystemFilter.fSystems[system_index];
-            const url = 'https://heatpumpmonitor.org/system/view?id=' + encodeURIComponent(system.id);
-            window.open(url, '_blank');
-            return true;
-        }, { hitTolerance: 5 });
     });
+
+    function centerMap(coordinates) {
+        // Center the view on the clicked marker
+        const view = map.getView();
+        const resolution = view.getResolution();
+        
+        // Only apply vertical offset on small screens (less than 600px)
+        const isSmallScreen = window.innerWidth < 600;
+        const yOffset = isSmallScreen ? (100 * resolution) : 0;
+        
+        const targetCenter = [
+            coordinates[0],
+            coordinates[1] + yOffset  // Add Y offset only on small screens
+        ];
+
+        view.animate({ 
+            center: targetCenter, 
+            duration: 500 // Smooth animation duration in milliseconds
+        });
+    }
 
     // ------------------------------
     // Utility Functions
@@ -305,7 +409,7 @@
     // ------------------------------
     function resizeMap() {
         var windowHeight = $(window).height();
-        var availableHeight = windowHeight - 116; 
+        var availableHeight = windowHeight - 58; 
 
         // Min height check
         if (availableHeight < 300) {
