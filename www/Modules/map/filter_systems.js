@@ -4,8 +4,8 @@ var SystemFilter = {
     minDays: null,
     show_mid: true,
     show_other: true,
-    show_hpint: true,
-    show_errors: true,
+    show_hpint: false,
+    show_errors: false,
 
     systems: [],
     fSystems: [],

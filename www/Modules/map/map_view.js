@@ -180,10 +180,16 @@
 
     // (5) Use Template Literals for HTML
     function getMapTooltipHTML(system) {
+
+        let logo_img = "";
+        if (system.installer_logo!== null && system.installer_logo !== '') {
+            logo_img = `<a href="${system.installer_url}"><img class="logo" src="${path}theme/img/installers/${system.installer_logo}" alt=""/></a>`;
+        }
+
         return `
             <div class="overlay-title">${system.location}</div>
             <div class="overlay-line">${system.hp_output}kW, ${system.hp_model} (SPF: ${system.combined_cop.toFixed(1)})</div>
-            <div class="overlay-line">${system.installer_name ? `${system.installer_name}` : ''}</div>
+            <div class="overlay-line">${system.installer_name ? `${logo_img} ${system.installer_name}` : ''}</div>
             <button class="btn btn-outline-primary btn-sm" onclick="window.location.href='${path}system/view?id=${system.id}'">View System</button>
             <button class="btn btn-outline-primary btn-sm" onclick="window.location.href='${system.installer_url}'">View Installer</button>
             <div class="location-note">Note: Locations are not precise</div>
@@ -352,7 +358,7 @@
         
         // Only apply vertical offset on small screens (less than 600px)
         const isSmallScreen = window.innerWidth < 600;
-        const yOffset = isSmallScreen ? (100 * resolution) : 0;
+        const yOffset = isSmallScreen ? (125 * resolution) : 0;
         
         const targetCenter = [
             coordinates[0],
