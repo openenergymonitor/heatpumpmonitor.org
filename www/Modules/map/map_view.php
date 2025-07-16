@@ -22,7 +22,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 </div>
 
 <div id="map-info-overlay" class="map-info-overlay">
-   <div id="map-info-content"></div>
+    <div class="map-info-close" id="map-info-close" title="Close">×</div>
+    <div id="map-info-content"></div>
 </div>
 
 

@@ -506,6 +506,14 @@
         }
     }
 
+    // Map info overlay close handler
+    $("#map-info-close").on("click", function() {
+        $("#map-info-overlay").fadeOut(300, function() {
+            // Remove highlight ring when overlay is closed
+            removeHighlightRing();
+        });
+    });
+
 
     // ------------------------------
     // Init

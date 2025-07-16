@@ -72,6 +72,29 @@
     display: none; /* Initially hidden */
 }
 
+.map-info-close {
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    cursor: pointer;
+    font-size: 20px;
+    font-weight: bold;
+    color: #888;
+    z-index: 10;
+    line-height: 1;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+
+.map-info-close:hover {
+    color: #000;
+    background: rgba(0,0,0,0.1);
+}
 
 @media (max-width: 600px) {
     .map-search-overlay {
