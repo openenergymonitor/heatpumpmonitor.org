@@ -223,9 +223,10 @@
         const markerVectorSource = new ol.source.Vector();
 
         SystemFilter.fSystems.forEach((system, index) => {
-            if (!system.combined_cop) return;
-            const cop = system.combined_cop;
-            if (cop == null || cop < MIN_COP || cop > MAX_COP) return;
+
+            // if (!system.combined_cop) return;
+            // const cop = system.combined_cop;
+            // if (cop == null || cop < MIN_COP || cop > MAX_COP) return;
 
             let longitude = system.longitude;
             let latitude = system.latitude;
