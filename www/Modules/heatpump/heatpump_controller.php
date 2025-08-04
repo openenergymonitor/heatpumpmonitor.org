@@ -69,6 +69,16 @@ function heatpump_controller() {
         }
     }
 
+    if ($route->action == "delete" && $session['admin']) {
+        $route->format = "json";
+        if (isset($_GET['id'])) {
+            $id = (int)$_GET['id'];
+            return $heatpump_model->delete($id);
+        } else {
+            return array("error" => "Missing heatpump ID for deletion");
+        }
+    }
+
     if ($route->action == "populate" && $session['admin']) {
         $route->format = "json";
         return $heatpump_model->populate_table();
