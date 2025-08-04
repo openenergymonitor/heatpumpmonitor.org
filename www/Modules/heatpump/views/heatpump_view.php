@@ -120,11 +120,10 @@
                         <td>{{ test.cop }}</td>
                         <td>{{ test.heat | toFixed(0) }}W</td>
                         <td style="width:120px">
-                            <a :href="test.url" target="_blank">
+                            <a :href="test.test_url" target="_blank">
                                 <button class="btn btn-secondary btn-sm" title="Dashboard"><i class="fa fa-chart-bar" style="color: #ffffff;"></i></button>
                             </a>
-                            <button class="btn btn-warning btn-sm" title="Edit"><i class="fa fa-edit" style="color: #ffffff;"></i></button>
-                            <button class="btn btn-danger btn-sm" title="Delete" @click="delete_max_cap_test(id)"><i class="fa fa-trash" style="color: #ffffff;"></i></button>
+                            <button class="btn btn-danger btn-sm" title="Delete" @click="delete_max_cap_test(test.id)"><i class="fa fa-trash" style="color: #ffffff;"></i></button>
                         </td>
                     </tr>
 
@@ -206,6 +205,7 @@
         },
         created: function() {
             this.load_heatpump();
+            this.load_max_cap_test_list();
         },
         methods: {
             enable_edit: function() {
@@ -216,6 +216,13 @@
                     .done(response => {
                         this.heatpump = response;
                         this.loaded = true;
+                    });
+            },
+            load_max_cap_test_list: function() {
+                $.get(this.path+'heatpump/max_cap_test/list?id='+this.id)
+                    .done(response => {
+                        var test_results = response;
+                        this.heatpump.max_cap_tests = test_results;
                     });
             },
             delete_min_mod_test: function(id) {
@@ -230,18 +237,16 @@
             },
             delete_max_cap_test: function(id) {
                 if (confirm("Are you sure you want to delete this test?")) {
-                    /*
                     $.get(this.path+'heatpump/max_cap_test/delete?id='+id)
                         .done(response => {
-                            this.load_heatpump();
+                            this.load_max_cap_test_list();
                         });
-                    */
                 }
             },
             load_max_cap_test_data: function() {
                 if (this.new_max_cap_test_url) {
                     // send url in post request to server
-                    $.post(this.path+'heatpump/max_cap_test/load', {url: this.new_max_cap_test_url})
+                    $.post(this.path+'heatpump/max_cap_test/load?id='+this.id, {url: this.new_max_cap_test_url})
                         .done(response => {
                             var test_result = response;
                             app.heatpump.max_cap_tests.push(test_result);
@@ -264,6 +269,7 @@
                 if (isNaN(val)) {
                     return val;
                 } else {
+                    val = parseFloat(val);
                     return val.toFixed(dp)
                 }
             }

@@ -34,6 +34,10 @@ function heatpump_controller() {
     require "Modules/heatpump/heatpump_model.php";
     $heatpump_model = new Heatpump($mysqli, $manufacturer_model);
 
+    require "Modules/heatpump/heatpump_test_model.php";
+    $heatpump_tests = new HeatpumpTests($mysqli);
+
+
     if ($route->action == "list") {
         $route->format = "json";
         return $heatpump_model->get_list();
@@ -85,8 +89,23 @@ function heatpump_controller() {
     }
 
     if ($route->action == "max_cap_test") {
-        if ($route->subaction == "load") {
+
+        if ($route->subaction == "list") {
             $route->format = "json";
+            if (!isset($_GET['id'])) {
+                return array("error" => "Missing model_id parameter");
+            }
+            $model_id = (int)$_GET['id'];
+            return $heatpump_tests->get_max_cap_tests($model_id);
+        }
+
+        if ($route->subaction == "load" && $session['admin']) {
+            $route->format = "json";
+
+            if (!isset($_GET['id'])) {
+                return array("error" => "Missing model_id parameter");
+            }
+            $model_id = (int)$_GET['id'];
 
             if (!isset($_POST['url'])) {
                 return array("error" => "Missing url parameter");
@@ -140,19 +159,35 @@ function heatpump_controller() {
             $date->setTimestamp($stats->start);
             $datestr = $date->format('jS M Y H:i');
 
-            return array(
-                "url" => $url,
-                "system_id" => $system_id,
-                "start" => $stats->start,
-                "end" => $stats->end,
-                "date" => $datestr,
-                "elec" => $stats->stats->combined->elec_mean,
-                "heat" => $stats->stats->combined->heat_mean,
-                "cop" => $stats->stats->combined->cop,
-                "flowT" => $stats->stats->combined->flowT_mean,
-                "outsideT" => $stats->stats->combined->outsideT_mean,
-                "data_length" => $stats->stats->combined->data_length
+
+            $test_object = array(
+                'system_id' => $system_id,
+                'test_url' => $url,
+                'start' => $stats->start,
+                'end' => $stats->end,
+                'date' => $datestr,
+                'data_length' => $stats->stats->combined->data_length,
+                'flowT' => $stats->stats->combined->flowT_mean,
+                'outsideT' => $stats->stats->combined->outsideT_mean,
+                'elec' => $stats->stats->combined->elec_mean,
+                'heat' => $stats->stats->combined->heat_mean,
+                'cop' => $stats->stats->combined->cop
             );
+
+            $result = $heatpump_tests->add_max_cap_test($model_id, $test_object);
+            if (!$result['success']) {
+                return array("error" => $result['error']);
+            }
+
+            return $test_object;
         }
+
+        // Delete max capacity test
+        if ($route->subaction == "delete" && $session['admin']) {
+            $route->format = "json";
+            $id = (int) get("id");
+            return $heatpump_tests->delete_max_cap_test($id);
+        }
+
     }
 }
