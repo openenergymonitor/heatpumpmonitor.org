@@ -38,6 +38,23 @@ class Manufacturer
     }
 
     /*
+     * Get manufacturer by ID
+     * @param int $id
+     * @return object|null
+     */
+    public function get_by_id($id) {
+        $stmt = $this->mysqli->prepare("SELECT * FROM manufacturers WHERE id = ?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($result->num_rows > 0) {
+            return $result->fetch_object();
+        } else {
+            return false;
+        }
+    }
+
+    /*
      * Add a new manufacturer
      * @param string $name
      * @param string $website

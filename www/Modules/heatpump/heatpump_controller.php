@@ -44,6 +44,31 @@ function heatpump_controller() {
         return $heatpump_model->get(get("id"));
     }
 
+    if ($route->action == "add" && $session['admin']) {
+        $route->format = "json";
+        if (isset($_POST['manufacturer_id']) && isset($_POST['model']) && isset($_POST['capacity'])) {
+            $manufacturer_id = (int)$_POST['manufacturer_id'];
+            $model = trim($_POST['model']);
+            $capacity = (float)$_POST['capacity'];
+            return $heatpump_model->add($manufacturer_id, $model, $capacity);
+        } else {
+            return array("error" => "Missing parameters for adding heatpump");
+        }
+    }
+
+    if ($route->action == "update" && $session['admin']) {
+        $route->format = "json";
+        if (isset($_POST['id']) && isset($_POST['manufacturer_id']) && isset($_POST['model']) && isset($_POST['capacity'])) {
+            $id = (int)$_POST['id'];
+            $manufacturer_id = (int)$_POST['manufacturer_id'];
+            $model = trim($_POST['model']);
+            $capacity = (float)$_POST['capacity'];
+            return $heatpump_model->update($id, $manufacturer_id, $model, $capacity);
+        } else {
+            return array("error" => "Missing parameters for editing heatpump");
+        }
+    }
+
     if ($route->action == "populate" && $session['admin']) {
         $route->format = "json";
         return $heatpump_model->populate_table();

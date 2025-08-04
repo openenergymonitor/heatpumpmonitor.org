@@ -6,7 +6,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
 <script src="https://cdn.plot.ly/plotly-2.16.1.min.js"></script>
 <script src="Lib/clipboard.js"></script>
 <script src="<?php echo $path; ?>Modules/system/system_list_chart.js?v=27"></script>
@@ -45,7 +45,45 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 <div class="col-12 col-sm-12 col-md-6 col-lg-6 col-xl-8">
                     <h3>Heatpumps</h3>
                     <p>Heat pump models</p>
-                    <button class="btn btn-primary">Add heatpump</button>
+                    <button class="btn btn-primary" @click="showAddModal = true">Add heatpump</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Heatpump Modal -->
+    <div v-if="showAddModal" class="modal" style="display: block; background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New Heat Pump Model</h5>
+                    <button type="button" class="btn-close" @click="closeAddModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Manufacturer *</label>
+                        <select v-model="newHeatpump.manufacturer_id" class="form-select" required>
+                            <option value="">Select manufacturer...</option>
+                            <option v-for="manufacturer in manufacturers" :value="manufacturer.id">
+                                {{ manufacturer.name }}
+                            </option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Model *</label>
+                        <input v-model="newHeatpump.model" class="form-control" type="text" placeholder="Model name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Capacity (kW) *</label>
+                        <input v-model="newHeatpump.capacity" class="form-control" type="number" step="0.1" placeholder="e.g. 5.0" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @click="closeAddModal">Cancel</button>
+                    <button type="button" class="btn btn-primary" @click="add_heatpump" 
+                            :disabled="!newHeatpump.manufacturer_id || !newHeatpump.model.trim() || !newHeatpump.capacity">
+                        Add Heat Pump
+                    </button>
                 </div>
             </div>
         </div>
@@ -62,21 +100,45 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <th>Make</th>
                         <th>Model</th>
                         <th>Capacity</th>
-                        <th>Systems</th>
+                        <!--<th>Systems</th>-->
                         <th></th>
 
                     </tr>
                     <tr v-for="unit in heatpumps">
                         <td>{{unit.id}}</td>
-                        <td>{{unit.manufacturer}}</td>
-                        <td>{{unit.model}}</td>
-                        <td>{{unit.capacity}} kW</td>
-                        <td>{{unit.stats.number_of_systems}}</td>
                         <td>
-                            <!--View button-->
-                            <a :href="'<?php echo $path;?>heatpump/view?id='+unit.id">
-                                <button class="btn btn-primary btn-sm" title="Details"><i class="fa fa-list-alt" style="color: #ffffff;"></i></button>
-                            </a>
+                            <select v-if="editingId === unit.id" v-model="editManufacturerId" class="form-select form-select-sm">
+                                <option v-for="manufacturer in manufacturers" :value="manufacturer.id">
+                                    {{ manufacturer.name }}
+                                </option>
+                            </select>
+                            <span v-else>{{unit.manufacturer_name}}</span>
+                        </td>
+                        <td>
+                            <input v-if="editingId === unit.id" v-model="editModel" class="form-control form-control-sm" type="text">
+                            <span v-else>{{unit.name}}</span>
+                        </td>
+                        <td>
+                            <div v-if="editingId === unit.id" class="input-group input-group-sm">
+                                <input v-model="editCapacity" class="form-control" type="number" step="0.1">
+                                <span class="input-group-text">kW</span>
+                            </div>
+                            <span v-else>{{unit.capacity}} kW</span>
+                        </td>
+                        <!--<td>{{unit.stats.number_of_systems}}</td>-->
+                        <td>
+                            <div v-if="editingId === unit.id">
+                                <button class="btn btn-success btn-sm me-1" @click="save_heatpump(unit.id)"><i class="fas fa-check"></i></button>
+                                <button class="btn btn-secondary btn-sm" @click="cancel_edit()"><i class="fas fa-times"></i></button>
+                            </div>
+                            <div v-else>
+                                <button class="btn btn-primary btn-sm me-1" @click="edit_heatpump(unit.id)" title="Edit"><i class="fas fa-edit"></i></button>
+                                <!--View button-->
+                                <a :href="'<?php echo $path;?>heatpump/view?id='+unit.id">
+                                    <button class="btn btn-info btn-sm me-1" title="Details"><i class="fa fa-list-alt" style="color: #ffffff;"></i></button>
+                                </a>
+                                <button class="btn btn-danger btn-sm" @click="delete_heatpump(unit.id)" title="Delete"><i class="fas fa-trash"></i></button>
+                            </div>
                         </td>    
                     </tr>
                 </table>
@@ -93,17 +155,89 @@ var app = new Vue({
     el: '#app',
     data: {
         path : "<?php echo $path; ?>",
-        heatpumps: []
+        heatpumps: [],
+        manufacturers: [],
+        showAddModal: false,
+        newHeatpump: {
+            manufacturer_id: "",
+            model: "",
+            capacity: ""
+        },
+        editingId: null,
+        editManufacturerId: "",
+        editModel: "",
+        editCapacity: ""
     },
     created: function() {
-            this.load_heatpumps();
+        this.load_heatpumps();
+        this.load_manufacturers();
     },
     methods: {
         load_heatpumps: function() {
-            axios.get(this.path+'heatpump/list')
-                .then(response => {
-                    this.heatpumps = response.data;
+            $.get(this.path+'heatpump/list')
+                .done(response => {
+                    this.heatpumps = response;
                 });
+        },
+        load_manufacturers: function() {
+            $.get(this.path+'manufacturer/list')
+                .done(response => {
+                    this.manufacturers = response;
+                });
+        },
+        add_heatpump: function() {
+            if (!this.newHeatpump.manufacturer_id || !this.newHeatpump.model.trim() || !this.newHeatpump.capacity) return;
+            
+            $.post(this.path + 'heatpump/add', {
+                manufacturer_id: this.newHeatpump.manufacturer_id,
+                model: this.newHeatpump.model,
+                capacity: this.newHeatpump.capacity
+            })
+            .done(response => {
+                this.load_heatpumps();
+                this.closeAddModal();
+            });
+        },
+        closeAddModal: function() {
+            this.showAddModal = false;
+            this.newHeatpump = {
+                manufacturer_id: "",
+                model: "",
+                capacity: ""
+            };
+        },
+        edit_heatpump: function(id) {
+            const heatpump = this.heatpumps.find(h => h.id === id);
+            this.editingId = id;
+            this.editManufacturerId = heatpump.manufacturer_id;
+            this.editModel = heatpump.name;
+            this.editCapacity = heatpump.capacity;
+        },
+        save_heatpump: function(id) {
+            $.post(this.path + 'heatpump/update', {
+                id: id,
+                manufacturer_id: this.editManufacturerId,
+                model: this.editModel,
+                capacity: this.editCapacity
+            })
+            .done(response => {
+                this.editingId = null;
+                this.load_heatpumps();
+            });
+        },
+        cancel_edit: function() {
+            this.editingId = null;
+            this.editManufacturerId = "";
+            this.editModel = "";
+            this.editCapacity = "";
+        },
+        delete_heatpump: function(id) {
+            if (confirm('Are you sure you want to delete this heat pump model?')) {
+                $.get(this.path + 'heatpump/delete?id=' + id)
+                .done(response => {
+                    this.load_heatpumps();
+                });
+            }
         }
     }
 });
