@@ -44,6 +44,22 @@ class Manufacturer
      * @return bool
      */
     public function add($name, $website = "") {
+        // Check if name is provided
+        if (empty($name)) {
+            return array("error" => "Missing manufacturer name");
+        }
+
+        // Check if name is unique
+        $stmt = $this->mysqli->prepare("SELECT COUNT(*) FROM manufacturers WHERE name = ?");
+        $stmt->bind_param("s", $name);
+        $stmt->execute();
+        $stmt->bind_result($count);
+        $stmt->fetch();
+        $stmt->close();
+        if ($count > 0) {
+            return array("error" => "Manufacturer already exists");
+        }
+
         $stmt = $this->mysqli->prepare("INSERT INTO manufacturers (name, website) VALUES (?, ?)");
         $stmt->bind_param("ss", $name, $website);
         $result = $stmt->execute();

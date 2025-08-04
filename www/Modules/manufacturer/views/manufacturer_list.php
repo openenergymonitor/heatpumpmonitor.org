@@ -109,6 +109,13 @@
                     website: this.add_manufacturer_website
                 })
                 .done(response => {
+                    // if error in response, show alert
+                    if (response.error) {
+                        alert(response.error);
+                        return;
+                    }
+
+
                     this.get_manufacturers();
                     this.closeAddModal();
                 });
