@@ -37,9 +37,9 @@ class Heatpump
             $heatpumps[] = $row;
         }
 
-        // foreach ($heatpumps as $key => $unit) {
-        //     $heatpumps[$key]["stats"] = $this->get_stats($unit["manufacturer"], $unit["capacity"]);
-        // }
+        foreach ($heatpumps as $key => $unit) {
+             $heatpumps[$key]["stats"] = $this->get_stats($unit["manufacturer_name"], $unit['name'], $unit["capacity"]);
+        }
 
         return $heatpumps;
     }
@@ -266,7 +266,7 @@ class Heatpump
         }
         if (!$heatpump) return array("success" => false, "message" => "Heatpump not found");
 
-        $heatpump["stats"] = $this->get_stats($heatpump["manufacturer"], $heatpump["capacity"]); // ." ".$heatpump["model"];
+        $heatpump["stats"] = $this->get_stats($heatpump["manufacturer_name"], $heatpump['name'], $heatpump["capacity"]);
         $heatpump["min_mod_tests"] = $this->get_min_mod_tests($id);
         $heatpump["max_cap_tests"] = $this->get_max_cap_tests($id);
 
@@ -281,11 +281,15 @@ class Heatpump
      * @param int $capacity
      * @return array
      */
-    public function get_stats($model, $capacity)
+    public function get_stats($manufacturer, $model, $capacity)
     {
 
         // Sanitize inputs
+        $manufacturer = $this->mysqli->real_escape_string($manufacturer);
         $model = $this->mysqli->real_escape_string($model);
+
+        $model = $manufacturer . " " . $model; // Combine manufacturer and model for search
+
         $capacity = (int) $this->mysqli->real_escape_string($capacity);
 
         // Get all systems with the given model and capacity that are published and shared
@@ -316,6 +320,18 @@ class Heatpump
             $heatpumps[] = $row;
         }
 
+        $number_of_systems = count($heatpumps);
+
+        if ($number_of_systems == 0) {
+            return array(
+                "number_of_systems" => 0,
+                "number_of_systems_last365" => 0,
+                "average_spf" => 0,
+                "lowest_spf" => 0,
+                "highest_spf" => 0
+            );
+        }
+
         // Calculate min, max, average COP and count of systems with 1 year of data
         $min_cop = null;
         $max_cop = null;
@@ -333,7 +349,7 @@ class Heatpump
         }
 
         return array(
-            "number_of_systems" => count($heatpumps),
+            "number_of_systems" => $number_of_systems,
             "number_of_systems_last365" => $cop_count,
             "average_spf" => number_format($sum_cop / $cop_count,2,".","")*1,
             "lowest_spf" => number_format($min_cop,2,".","")*1,

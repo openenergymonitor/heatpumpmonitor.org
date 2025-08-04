@@ -100,7 +100,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <th>Make</th>
                         <th>Model</th>
                         <th>Capacity</th>
-                        <!--<th>Systems</th>-->
+                        <th>Systems</th>
                         <th></th>
 
                     </tr>
@@ -125,7 +125,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             </div>
                             <span v-else>{{unit.capacity}} kW</span>
                         </td>
-                        <!--<td>{{unit.stats.number_of_systems}}</td>-->
+                        <td>{{unit.stats.number_of_systems}}</td>
                         <td>
                             <div v-if="editingId === unit.id">
                                 <button class="btn btn-success btn-sm me-1" @click="save_heatpump(unit.id)"><i class="fas fa-check"></i></button>
