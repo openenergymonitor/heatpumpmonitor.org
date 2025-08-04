@@ -61,50 +61,19 @@ if ($route->controller=="") {
     }
 }
 
+$output = "";
+
+// Dynamically load the controller based on the route
+$controller_file = "Modules/".$route->controller."/".$route->controller."_controller.php";
+if (file_exists($controller_file)) {
+    require $controller_file;
+    $fn = $route->controller."_controller";
+    if (function_exists($fn)) {
+        $output = $fn();
+    }
+}
+
 switch ($route->controller) {
-
-    // These are the main modules
-    // Ideally all functionality should be moved into modules
-
-    case "user":
-        require "Modules/user/user_controller.php";
-        $output = user_controller();
-        break;
-
-    case "system":
-        require "Modules/system/system_controller.php";
-        $output = system_controller();
-        break;
-
-    case "heatpump":
-        require "Modules/heatpump/heatpump_controller.php";
-        $output = heatpump_controller();
-        break;
-
-    case "dashboard":
-        require "Modules/dashboard/dashboard_controller.php";
-        $output = dashboard_controller();
-        break;
-
-    case "timeseries":
-        require "Modules/timeseries/timeseries_controller.php";
-        $output = timeseries_controller();
-        break;
-
-    case "histogram":
-        require "Modules/histogram/histogram_controller.php";
-        $output = histogram_controller();
-        break;
-
-    case "map":
-        require "Modules/map/map_controller.php";
-        $output = map_controller();
-        break;
-
-    case "installer":
-        require "Modules/installer/installer_controller.php";
-        $output = installer_controller();
-        break;
 
     // These are individual pages that are not *yet* part of the main modules
 

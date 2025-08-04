@@ -6,10 +6,12 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 class Heatpump
 {
     private $mysqli;
+    private $manufacturer_model;
 
-    public function __construct($mysqli)
+    public function __construct($mysqli, $manufacturer_model)
     {
         $this->mysqli = $mysqli;
+        $this->manufacturer_model = $manufacturer_model;
     }
 
     /*
@@ -22,6 +24,51 @@ class Heatpump
 
         foreach ($heatpumps as $key => $unit) {
             $heatpumps[$key]["stats"] = $this->get_stats($unit["manufacturer"], $unit["capacity"]);
+        }
+
+        return $heatpumps;
+    }
+
+    public function populate_table() {
+
+        // Get all manufacturers from the manufacturers table
+        $manufacturers = $this->manufacturer_model->get_names();
+
+        $result = $this->mysqli->query("SELECT * FROM system_meta");
+        // hp_model, hp_output, refrigerant
+        $heatpumps = [];
+        // Group by hp_model
+        while ($row = $result->fetch_object()) {
+
+            // E.g Vaillant Arotherm+
+            $hp_model = trim($row->hp_model);
+
+            // Check if manufacturer is in the hp_model text string
+            $manufacturer_name = false;
+            foreach ($manufacturers as $manufacturer) {
+                if (stripos($hp_model, $manufacturer) !== false) {
+                    $manufacturer_name = $manufacturer;
+                    break;
+                }
+            }
+
+            if (!isset($heatpumps[$manufacturer_name])) {
+                $heatpumps[$manufacturer_name] = [];
+            }
+
+            // Remove the manufacturer name from the hp_model
+            if ($manufacturer_name) {
+                $hp_model = str_ireplace($manufacturer_name, "", $hp_model);
+                $hp_model = trim($hp_model);
+            }
+
+            // Add the heatpump to the list
+            if (!isset($heatpumps[$manufacturer_name][$hp_model])) {
+                $heatpumps[$manufacturer_name][$hp_model] = 0;
+            }
+
+            // Increment the count of heatpumps for this model
+            $heatpumps[$manufacturer_name][$hp_model]++;
         }
 
         return $heatpumps;
@@ -156,5 +203,4 @@ class Heatpump
         return $tests;
 
     }
-
 }

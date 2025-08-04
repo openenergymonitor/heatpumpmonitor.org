@@ -28,9 +28,11 @@ function heatpump_controller() {
         ));
     }
 
-    // API
+    require "Modules/manufacturer/manufacturer_model.php";
+    $manufacturer_model = new Manufacturer($mysqli);
+
     require "Modules/heatpump/heatpump_model.php";
-    $heatpump_model = new Heatpump($mysqli);
+    $heatpump_model = new Heatpump($mysqli, $manufacturer_model);
 
     if ($route->action == "list") {
         $route->format = "json";
@@ -40,6 +42,11 @@ function heatpump_controller() {
     if ($route->action == "get") {
         $route->format = "json";
         return $heatpump_model->get(get("id"));
+    }
+
+    if ($route->action == "populate" && $session['admin']) {
+        $route->format = "json";
+        return $heatpump_model->populate_table();
     }
 
     if ($route->action == "max_cap_test") {
