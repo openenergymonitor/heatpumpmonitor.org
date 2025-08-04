@@ -21,5 +21,6 @@ $schema['heatpump_max_cap_test'] = array(
     'outsideT' => array('type' => 'float'),
     'elec' => array('type' => 'float'),
     'heat' => array('type' => 'float'),
-    'cop' => array('type' => 'float')
+    'cop' => array('type' => 'float'),
+    'flowrate' => array('type' => 'float')
 );

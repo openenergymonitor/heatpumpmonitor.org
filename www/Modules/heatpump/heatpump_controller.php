@@ -159,6 +159,9 @@ function heatpump_controller() {
             $date->setTimestamp($stats->start);
             $datestr = $date->format('jS M Y H:i');
 
+            // Estimate flow rate from flow - return 
+            $dt = $stats->stats->combined->flowT_mean - $stats->stats->combined->returnT_mean;
+            $flowrate = 60 * ($stats->stats->combined->heat_mean / (4150 * $dt));
 
             $test_object = array(
                 'system_id' => $system_id,
@@ -171,7 +174,8 @@ function heatpump_controller() {
                 'outsideT' => $stats->stats->combined->outsideT_mean,
                 'elec' => $stats->stats->combined->elec_mean,
                 'heat' => $stats->stats->combined->heat_mean,
-                'cop' => $stats->stats->combined->cop
+                'cop' => $stats->stats->combined->cop,
+                'flowrate' => $flowrate
             );
 
             $result = $heatpump_tests->add_max_cap_test($model_id, $test_object);

@@ -15,7 +15,7 @@ class HeatpumpTests
     public function get_max_cap_tests($model_id)
     {
         $model_id = (int)$model_id;
-        $result = $this->mysqli->query("SELECT * FROM heatpump_max_cap_test WHERE model_id = $model_id ORDER BY date DESC");
+        $result = $this->mysqli->query("SELECT * FROM heatpump_max_cap_test WHERE model_id = $model_id ORDER BY heat DESC");
         $tests = array();
         while ($row = $result->fetch_object()) {
             $tests[] = $row;
@@ -36,9 +36,10 @@ class HeatpumpTests
         $elec = (float)$data['elec'];
         $heat = (float)$data['heat'];
         $cop = (float)$data['cop'];
+        $flowrate = (float) $data['flowrate'];
 
-        $stmt = $this->mysqli->prepare("INSERT INTO heatpump_max_cap_test (model_id, system_id, test_url, start, end, date, data_length, flowT, outsideT, elec, heat, cop) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("iisiisiddddd", $model_id, $system_id, $test_url, $start, $end, $date, $data_length, $flowT, $outsideT, $elec, $heat, $cop);
+        $stmt = $this->mysqli->prepare("INSERT INTO heatpump_max_cap_test (model_id, system_id, test_url, start, end, date, data_length, flowT, outsideT, elec, heat, cop, flowrate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("iisiisidddddd", $model_id, $system_id, $test_url, $start, $end, $date, $data_length, $flowT, $outsideT, $elec, $heat, $cop, $flowrate);
         if (!$stmt->execute()) {
             return array("success" => false, "error" => "Failed to add max capacity test: " . $stmt->error);
         }

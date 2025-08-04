@@ -104,6 +104,7 @@
                         <th>Duration</th>
                         <th>Flow temp</th>
                         <th>Outside temp</th>
+                        <th>Flowrate</th>
                         <th>Elec input</th>
                         <th>COP</th>         
                         <th>Heat output</th>
@@ -116,6 +117,7 @@
                         <td>{{ test.data_length / 3600 | toFixed(1) }} hrs</td>
                         <td>{{ test.flowT | toFixed(1) }}&deg;C</td>
                         <td>{{ test.outsideT | toFixed(1) }}&deg;C</td>
+                        <td>{{ test.flowrate | toFixed(1) }} L/min</td>
                         <td>{{ test.elec | toFixed(0) }}W</td>
                         <td>{{ test.cop }}</td>
                         <td>{{ test.heat | toFixed(0) }}W</td>
