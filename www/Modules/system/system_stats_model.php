@@ -148,7 +148,7 @@ class SystemStats
         return $config;
     }
 
-    public function load_from_url($url, $start = false, $end = false, $api = 'getstats2')
+    public function load_from_url($url, $start = false, $end = false, $api = 'getstats')
     {
         # decode the url to separate out any args
         $url_parts = parse_url($url);

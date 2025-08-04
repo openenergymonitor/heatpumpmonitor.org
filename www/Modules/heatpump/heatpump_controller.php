@@ -87,8 +87,53 @@ function heatpump_controller() {
     if ($route->action == "max_cap_test") {
         if ($route->subaction == "load") {
             $route->format = "json";
-            $data = json_decode(file_get_contents('php://input'), true);
-            $stats = $system_stats->load_from_url($data["url"]);
+
+            if (!isset($_POST['url'])) {
+                return array("error" => "Missing url parameter");
+            }
+            $url = $_POST['url'];
+            
+            $url_parts = parse_url($url);
+            if (!isset($url_parts['query'])) {
+                return array("error" => "Missing query parameters in URL");
+            }
+
+            parse_str($url_parts['query'], $url_args);
+            if (!isset($url_args['start']) || !isset($url_args['end'])) {
+                return array("error" => "Missing start or end parameters in URL");
+            }
+
+            $start = (int)$url_args['start'];
+            $end = (int)$url_args['end'];
+
+            $stats = json_decode($system_stats->load_from_url(post("url"), $start, $end, 'getstats'));
+
+            // convert to dashboard URL in order to get system id from system_meta table
+            $dashboard_url = $url_parts['scheme'] . '://' . $url_parts['host'] . $url_parts['path'];
+
+            // remove all query parameters except 'name' and 'readkey' preserving the original order
+            $query_params = [];
+            if (isset($url_args['name'])) {
+                $query_params[] = 'name=' . urlencode($url_args['name']);
+            }
+            if (isset($url_args['readkey'])) {
+                $query_params[] = 'readkey=' . $url_args['readkey'];
+            }
+            if (!empty($query_params)) {
+                $dashboard_url .= '?' . implode('&', $query_params);
+            }
+
+            // Get system id with this URL
+            $stmt = $mysqli->prepare("SELECT id FROM system_meta WHERE url = ?");
+            $stmt->bind_param("s", $dashboard_url);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            if ($result->num_rows > 0) {
+                $row = $result->fetch_assoc();
+                $system_id = $row['id'];
+            } else {
+                return array("error" => "System not found for the provided URL");
+            }
 
             $date = new DateTime();
             $date->setTimezone(new DateTimeZone('Europe/London'));
@@ -96,6 +141,8 @@ function heatpump_controller() {
             $datestr = $date->format('jS M Y H:i');
 
             return array(
+                "url" => $url,
+                "system_id" => $system_id,
                 "start" => $stats->start,
                 "end" => $stats->end,
                 "date" => $datestr,

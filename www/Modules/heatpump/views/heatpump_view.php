@@ -1,5 +1,5 @@
 <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
 
 <div id="app" class="bg-light">
     <div style=" background-color:#f0f0f0; padding-top:20px; padding-bottom:10px">
@@ -7,13 +7,13 @@
 
             <div class="row">
                 <div class="col-12 col-sm-12 col-md-6 col-lg-6 col-xl-8">
-                    <h3>{{ heatpump.manufacturer }} {{ heatpump.model }} {{ heatpump.capacity }}kW</h3>
+                    <h3>{{ heatpump.manufacturer_name }} {{ heatpump.name }} {{ heatpump.capacity }}kW</h3>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="container"  style="max-width:1000px;">
+    <div class="container"  style="max-width:1000px;" v-if="loaded">
 
         <div class="row">
             <div class="col-8">
@@ -25,11 +25,11 @@
                     </tr>
                     <tr>
                         <td>Total number of systems</th>
-                        <td><a :href="path+'?filter=query:hp_model:Vaillant,hp_output:5&period=all&minDays=0&other=1&hpint=1&errors=1'" target="_blank">{{ heatpump.stats.number_of_systems }}</a></td>
+                        <td><a :href="path+'?filter=query:hp_model:'+heatpump.manufacturer_name+',hp_output:'+heatpump.capacity+'&period=all&minDays=0&other=1&hpint=1&errors=1'" target="_blank">{{ heatpump.stats.number_of_systems }}</a></td>
                     </tr>
                     <tr>
                         <td>Number of systems with 1 year of data</th>
-                        <td><a :href="path+'?filter=query:hp_model:Vaillant,hp_output:5&other=1&hpint=1&errors=1'" target="_blank">{{ heatpump.stats.number_of_systems_last365 }}</a></td>
+                        <td><a :href="path+'?filter=query:hp_model:'+heatpump.manufacturer_name+',hp_output:'+heatpump.capacity+'&other=1&hpint=1&errors=1'" target="_blank">{{ heatpump.stats.number_of_systems_last365 }}</a></td>
                     </tr>
                     <tr>
                         <td>Average SPF H4</th>
@@ -109,9 +109,9 @@
                         <th>Heat output</th>
                         <th></th>
                     </tr>
-                    <tr v-for="test in heatpump.max_cap_tests">
-                        <td>{{ test.id }}</td>
-                        <td>{{ test.system }}</td>
+                    <tr v-for="(test,index) in heatpump.max_cap_tests">
+                        <td>{{ index+1 }}</td>
+                        <td>{{ test.system_id }}</td>
                         <td>{{ test.date }}</td>
                         <td>{{ test.data_length / 3600 | toFixed(1) }} hrs</td>
                         <td>{{ test.flowT | toFixed(1) }}&deg;C</td>
@@ -120,7 +120,7 @@
                         <td>{{ test.cop }}</td>
                         <td>{{ test.heat | toFixed(0) }}W</td>
                         <td style="width:120px">
-                            <a :href="test.data" target="_blank">
+                            <a :href="test.url" target="_blank">
                                 <button class="btn btn-secondary btn-sm" title="Dashboard"><i class="fa fa-chart-bar" style="color: #ffffff;"></i></button>
                             </a>
                             <button class="btn btn-warning btn-sm" title="Edit"><i class="fa fa-edit" style="color: #ffffff;"></i></button>
@@ -153,13 +153,13 @@
                     </tr>
                     <tr>
                         <td>Manufacturer</th>
-                        <td v-if="!edit_properties">{{ heatpump.manufacturer }}</td>
-                        <td v-if="edit_properties"><input type="text" class="form-control" v-model="heatpump.manufacturer"></td>
+                        <td v-if="!edit_properties">{{ heatpump.manufacturer_name }}</td>
+                        <td v-if="edit_properties"><input type="text" class="form-control" v-model="heatpump.manufacturer_name"></td>
                     </tr>
                     <tr>
                         <td>Model</th>
-                        <td v-if="!edit_properties">{{ heatpump.model }}</td>
-                        <td v-if="edit_properties"><input type="text" class="form-control" v-model="heatpump.model"></td>
+                        <td v-if="!edit_properties">{{ heatpump.name }}</td>
+                        <td v-if="edit_properties"><input type="text" class="form-control" v-model="heatpump.name"></td>
                     </tr>
                     <tr>
                         <td>Capacity</th>
@@ -196,6 +196,7 @@
     var app = new Vue({
         el: '#app',
         data: {
+            loaded: false,
             id: "<?php echo $id; ?>",
             edit_properties: false,
             path: "<?php echo $path; ?>",
@@ -211,16 +212,17 @@
                 this.edit_properties = true;
             },
             load_heatpump: function() {
-                axios.get(this.path+'heatpump/get?id='+this.id)
-                    .then(response => {
-                        this.heatpump = response.data;
+                $.get(this.path+'heatpump/get?id='+this.id)
+                    .done(response => {
+                        this.heatpump = response;
+                        this.loaded = true;
                     });
             },
             delete_min_mod_test: function(id) {
                 if (confirm("Are you sure you want to delete this test?")) {
                     /*
-                    axios.get(this.path+'heatpump/min_mod_test/delete?id='+id)
-                        .then(response => {
+                    $.get(this.path+'heatpump/min_mod_test/delete?id='+id)
+                        .done(response => {
                             this.load_heatpump();
                         });
                     */
@@ -229,8 +231,8 @@
             delete_max_cap_test: function(id) {
                 if (confirm("Are you sure you want to delete this test?")) {
                     /*
-                    axios.get(this.path+'heatpump/max_cap_test/delete?id='+id)
-                        .then(response => {
+                    $.get(this.path+'heatpump/max_cap_test/delete?id='+id)
+                        .done(response => {
                             this.load_heatpump();
                         });
                     */
@@ -239,9 +241,9 @@
             load_max_cap_test_data: function() {
                 if (this.new_max_cap_test_url) {
                     // send url in post request to server
-                    axios.post(this.path+'heatpump/max_cap_test/load', {url: this.new_max_cap_test_url})
-                        .then(response => {
-                            var test_result = response.data;
+                    $.post(this.path+'heatpump/max_cap_test/load', {url: this.new_max_cap_test_url})
+                        .done(response => {
+                            var test_result = response;
                             app.heatpump.max_cap_tests.push(test_result);
                         });
                 }
@@ -249,9 +251,9 @@
             load_min_mod_test_data: function() {
                 if (this.new_min_mod_test_url) {
                     // send url in post request to server
-                    axios.post(this.path+'heatpump/max_cap_test/load', {url: this.new_min_mod_test_url})
-                        .then(response => {
-                            var test_result = response.data;
+                    $.post(this.path+'heatpump/max_cap_test/load', {url: this.new_min_mod_test_url})
+                        .done(response => {
+                            var test_result = response;
                             app.heatpump.min_mod_tests.push(test_result);
                         });
                 }
