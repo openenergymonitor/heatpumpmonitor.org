@@ -20,6 +20,18 @@ function manufacturer_controller() {
         return $manufacturer_model->get_all();
     }
 
+    // Add a new manufacturer
+    if ($route->action == "add" && $session['admin']) {
+        $route->format = "json";
+        if (isset($_POST['name'])) {
+            $name = $_POST['name'];
+            $website = isset($_POST['website']) ? $_POST['website'] : "";
+            return $manufacturer_model->add($name, $website);
+        } else {
+            return array("error" => "Missing manufacturer name");
+        }
+    }
+
     // Edit name and website of a manufacturer
     if ($route->action == "update" && $session['admin']) {
         $route->format = "json";

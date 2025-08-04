@@ -4,8 +4,34 @@
 <div id="app" class="bg-light">
     <div style=" background-color:#f0f0f0; padding-top:20px; padding-bottom:10px">
         <div class="container" style="max-width:1200px;">
-            <button class="btn btn-primary" style="float:right" v-click="add_manufacturer">+ Add manufacturer</button>
+            <button class="btn btn-primary" style="float:right" @click="showAddModal = true">+ Add manufacturer</button>
             <h2>Manufacturers</h2>
+        </div>
+    </div>
+
+    <!-- Add Manufacturer Modal -->
+    <div v-if="showAddModal" class="modal" style="display: block; background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New Manufacturer</h5>
+                    <button type="button" class="btn-close" @click="closeAddModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Name *</label>
+                        <input v-model="add_manufacturer_name" class="form-control" type="text" placeholder="Manufacturer name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Website</label>
+                        <input v-model="add_manufacturer_website" class="form-control" type="text" placeholder="example.com" @change="formatAddWebsite">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @click="closeAddModal">Cancel</button>
+                    <button type="button" class="btn btn-primary" @click="add_manufacturer" :disabled="!add_manufacturer_name.trim()">Add Manufacturer</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -68,17 +94,24 @@
             manufacturers: [],
             editingId: null,
             editName: "",
-            editWebsite: ""
+            editWebsite: "",
+            showAddModal: false
         },
         created: function () {
             this.get_manufacturers();
         },
         methods: {
             add_manufacturer: function () {
-                $.get(path + 'manufacturer/add?name=' + this.add_manufacturer_name + '&website=' + this.add_manufacturer_website)
-                    .done(response => {
-                        this.get_manufacturers();
-                    });
+                if (!this.add_manufacturer_name.trim()) return;
+                
+                $.post(path + 'manufacturer/add', {
+                    name: this.add_manufacturer_name,
+                    website: this.add_manufacturer_website
+                })
+                .done(response => {
+                    this.get_manufacturers();
+                    this.closeAddModal();
+                });
             },
             get_manufacturers: function () {
                 $.get(path + 'manufacturer/list')
@@ -120,6 +153,18 @@
                 this.editWebsite = this.editWebsite.replace(/^(https?:\/\/)?(www\.)?/, '');
                 // Remove trailing slashes
                 this.editWebsite = this.editWebsite.replace(/\/+$/, '');
+            },
+            formatAddWebsite: function () {
+                // Remove http:// or https:// from the beginning of the URL
+                // Remove www. if present
+                this.add_manufacturer_website = this.add_manufacturer_website.replace(/^(https?:\/\/)?(www\.)?/, '');
+                // Remove trailing slashes
+                this.add_manufacturer_website = this.add_manufacturer_website.replace(/\/+$/, '');
+            },
+            closeAddModal: function () {
+                this.showAddModal = false;
+                this.add_manufacturer_name = "";
+                this.add_manufacturer_website = "";
             }
         }
     });
