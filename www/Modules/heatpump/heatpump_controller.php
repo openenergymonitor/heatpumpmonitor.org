@@ -9,7 +9,10 @@ function heatpump_controller() {
 
     // List of heat pump models
     if ($route->action == "") {
-        return view("Modules/heatpump/views/heatpump_list.php", array());
+        $mode = $session['admin'] ? "admin" : "view";
+        return view("Modules/heatpump/views/heatpump_list.php", array(
+            "mode" => $mode
+        ));
     }
 
     // View heat pump data sheet page

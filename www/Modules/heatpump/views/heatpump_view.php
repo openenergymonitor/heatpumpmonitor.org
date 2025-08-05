@@ -55,7 +55,6 @@
         <div class="row">
             <div class="col">
                 <br>
-                <button class="btn btn-primary btn-sm" style="float:right">+ Add</button>
                 <h4>Minimum modulation test results</h4>
                 <table id="custom" class="table table-striped table-sm mt-3" v-if="min_mod_tests.length">
                     <tr>
@@ -78,12 +77,11 @@
                             <a :href="test.data" target="_blank">
                                 <button class="btn btn-secondary btn-sm" title="Dashboard"><i class="fa fa-chart-bar" style="color: #ffffff;"></i></button>
                             </a>
-                            <button class="btn btn-warning btn-sm" title="Edit"><i class="fa fa-edit" style="color: #ffffff;"></i></button>
-                            <button class="btn btn-danger btn-sm" title="Delete" @click="delete_min_mod_test(id)"><i class="fa fa-trash" style="color: #ffffff;"></i></button>
+                            <button class="btn btn-danger btn-sm" title="Delete" @click="delete_min_mod_test(id)" v-if="mode=='admin'"><i class="fa fa-trash" style="color: #ffffff;"></i></button>
                         </td>
                 </table>
-                <div v-else class="alert alert-warning mt-3">No tests recorded</div>
-                <div class="row">
+                <div v-if="min_mod_tests.length==0" class="alert alert-warning mt-3">No tests recorded</div>
+                <div class="row" v-if="mode=='admin'">
                     <div class="col">
                         <div class="input-group mb-3">
                             <input type="text" class="form-control" placeholder="Paste MyHeatpump app URL of max capacity test period here" v-model="new_min_mod_test_url">
@@ -94,7 +92,6 @@
 
 
                 <br>
-                <button class="btn btn-primary btn-sm" style="float:right">+ Add</button>
                 <h4>Maximum capacity test results</h4>
                 <table id="custom" class="table table-striped table-sm mt-3" v-if="max_cap_tests.length">
                     <tr>
@@ -125,13 +122,14 @@
                             <a :href="test.test_url" target="_blank">
                                 <button class="btn btn-secondary btn-sm" title="Dashboard"><i class="fa fa-chart-bar" style="color: #ffffff;"></i></button>
                             </a>
-                            <button class="btn btn-danger btn-sm" title="Delete" @click="delete_max_cap_test(test.id)"><i class="fa fa-trash" style="color: #ffffff;"></i></button>
+                            <button class="btn btn-danger btn-sm" title="Delete" @click="delete_max_cap_test(test.id)" v-if="mode=='admin'"><i class="fa fa-trash" style="color: #ffffff;"></i></button>
                         </td>
                     </tr>
 
                 </table>
+                <div v-if="max_cap_tests.length==0" class="alert alert-warning mt-3">No tests recorded</div>
 
-                <div class="row">
+                <div class="row" v-if="mode=='admin'">
                     <div class="col">
                         <div class="input-group mb-3">
                             <input type="text" class="form-control" placeholder="Paste MyHeatpump app URL of max capacity test period here" v-model="new_max_cap_test_url">
@@ -141,10 +139,8 @@
                 </div>
                 
 
-                <div v-else class="alert alert-warning mt-3">No tests recorded</div>
-
                 <br>
-                <button class="btn btn-primary btn-sm" @click="enable_edit" style="float:right">Edit</button>
+                <button class="btn btn-primary btn-sm" @click="enable_edit" style="float:right" v-if="mode=='admin'">Edit</button>
                 <h4>Heatpump properties</h4>
 
                 <table id="custom" class="table table-striped mt-3">
@@ -197,6 +193,7 @@
     var app = new Vue({
         el: '#app',
         data: {
+            mode: "<?php echo $mode; ?>",
             loaded: false,
             id: "<?php echo $id; ?>",
             edit_properties: false,

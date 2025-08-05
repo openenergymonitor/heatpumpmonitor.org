@@ -43,9 +43,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
             <div class="row">
                 <div class="col-12 col-sm-12 col-md-6 col-lg-6 col-xl-8">
-                    <h3>Heatpumps</h3>
-                    <p>Heat pump models</p>
-                    <button class="btn btn-primary" @click="showAddModal = true">Add heatpump</button>
+                    <h3>Heatpump database</h3>
+                    <button class="btn btn-primary" @click="showAddModal = true" v-if="mode=='admin'">Add heatpump</button>
                 </div>
             </div>
         </div>
@@ -132,12 +131,12 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                 <button class="btn btn-secondary btn-sm" @click="cancel_edit()"><i class="fas fa-times"></i></button>
                             </div>
                             <div v-else>
-                                <button class="btn btn-primary btn-sm me-1" @click="edit_heatpump(unit.id)" title="Edit"><i class="fas fa-edit"></i></button>
+                                <button class="btn btn-primary btn-sm me-1" @click="edit_heatpump(unit.id)" title="Edit" v-if="mode=='admin'"><i class="fas fa-edit"></i></button>
                                 <!--View button-->
                                 <a :href="'<?php echo $path;?>heatpump/view?id='+unit.id">
                                     <button class="btn btn-info btn-sm me-1" title="Details"><i class="fa fa-list-alt" style="color: #ffffff;"></i></button>
                                 </a>
-                                <button class="btn btn-danger btn-sm" @click="delete_heatpump(unit.id)" title="Delete"><i class="fas fa-trash"></i></button>
+                                <button class="btn btn-danger btn-sm" @click="delete_heatpump(unit.id)" title="Delete" v-if="mode=='admin'"><i class="fas fa-trash"></i></button>
                             </div>
                         </td>    
                     </tr>
@@ -154,6 +153,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 var app = new Vue({
     el: '#app',
     data: {
+        mode: "<?php echo $mode; ?>",
         path : "<?php echo $path; ?>",
         heatpumps: [],
         manufacturers: [],
