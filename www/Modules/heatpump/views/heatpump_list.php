@@ -60,6 +60,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
+                        <a href="manufacturer" class="mb-2" style="float:right">+ Add Manufacturer</a>
                         <label class="form-label">Manufacturer *</label>
                         <select v-model="newHeatpump.manufacturer_id" class="form-select" required>
                             <option value="">Select manufacturer...</option>
