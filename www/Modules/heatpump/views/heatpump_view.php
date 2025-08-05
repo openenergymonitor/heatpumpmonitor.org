@@ -79,17 +79,17 @@
                             </a>
                             <button class="btn btn-danger btn-sm" title="Delete" @click="delete_min_mod_test(id)" v-if="mode=='admin'"><i class="fa fa-trash" style="color: #ffffff;"></i></button>
                         </td>
+                    </tr>
                 </table>
                 <div v-if="min_mod_tests.length==0" class="alert alert-warning mt-3">No tests recorded</div>
                 <div class="row" v-if="mode=='admin'">
                     <div class="col">
                         <div class="input-group mb-3">
-                            <input type="text" class="form-control" placeholder="Paste MyHeatpump app URL of max capacity test period here" v-model="new_min_mod_test_url">
+                            <input type="text" class="form-control" placeholder="Paste MyHeatpump app URL of min modulation test period here" v-model="new_min_mod_test_url">
                             <button class="btn btn-primary" type="button" @click="load_min_mod_test_data">Load and save</button>
                         </div>
                     </div>
                 </div>
-
 
                 <br>
                 <h4>Maximum capacity test results</h4>
@@ -125,7 +125,11 @@
                             <button class="btn btn-danger btn-sm" title="Delete" @click="delete_max_cap_test(test.id)" v-if="mode=='admin'"><i class="fa fa-trash" style="color: #ffffff;"></i></button>
                         </td>
                     </tr>
-
+                    <tr>
+                        <td colspan="9" class="text-end"><b>Average heat output</b></td>
+                        <td><b>{{ average_cap_test | toFixed(0) }}W</b></td>
+                        <td></td>
+                    </tr>
                 </table>
                 <div v-if="max_cap_tests.length==0" class="alert alert-warning mt-3">No tests recorded</div>
 
@@ -200,6 +204,7 @@
             path: "<?php echo $path; ?>",
             heatpump: {},
             max_cap_tests: [],
+            average_cap_test: 0,
             min_mod_tests: [],
             new_max_cap_test_url: null,
             new_min_mod_test_url: null
@@ -224,6 +229,13 @@
                 $.get(this.path+'heatpump/max_cap_test/list?id='+this.id)
                     .done(response => {
                         self.max_cap_tests = response;
+
+                        // Calculate average heat output
+                        const validTests = self.max_cap_tests.filter(test => test.heat);
+                        self.average_cap_test = validTests.length > 0 
+                            ? (validTests.reduce((sum, test) => sum + parseFloat(test.heat), 0) / validTests.length).toFixed(0)
+                            : 0;
+
                         self.loaded = true;
                     });
             },

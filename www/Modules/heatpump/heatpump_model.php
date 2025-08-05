@@ -281,16 +281,10 @@ class Heatpump
      */
     public function get_stats($manufacturer, $model, $capacity)
     {
-
-        // Sanitize inputs
-        $manufacturer = $this->mysqli->real_escape_string($manufacturer);
-        $model = $this->mysqli->real_escape_string($model);
-
         $model = $manufacturer . " " . $model; // Combine manufacturer and model for search
+        $capacity = (float) $capacity;
 
-        $capacity = (int) $this->mysqli->real_escape_string($capacity);
-
-        // Get all systems with the given model and capacity that are published and shared
+        // Prepare the query with placeholders
         $query = "
             SELECT 
                 sm.id, 
@@ -305,18 +299,23 @@ class Heatpump
             ON 
                 sm.id = ss.id
             WHERE 
-                sm.hp_model LIKE '%$model%' 
-                AND sm.hp_output = '$capacity' 
+                sm.hp_model LIKE ? 
+                AND sm.hp_output = ? 
                 AND sm.published = '1' 
                 AND sm.share = '1'
         ";
         
-        // Execute the query and fetch the results
-        $result = $this->mysqli->query($query);
+        $stmt = $this->mysqli->prepare($query);
+        $model_pattern = '%' . $model . '%';
+        $stmt->bind_param("sd", $model_pattern, $capacity);
+        $stmt->execute();
+        
+        $result = $stmt->get_result();
         $heatpumps = [];
         while ($row = $result->fetch_assoc()) {
             $heatpumps[] = $row;
         }
+        $stmt->close();
 
         $number_of_systems = count($heatpumps);
 

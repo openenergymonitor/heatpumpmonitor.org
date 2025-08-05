@@ -75,7 +75,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <input v-model="newHeatpump.model" class="form-control" type="text" placeholder="Model name" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Capacity (kW) *</label>
+                        <label class="form-label">Badge Capacity (kW) *</label>
                         <input v-model="newHeatpump.capacity" class="form-control" type="number" step="0.1" placeholder="e.g. 5.0" required>
                     </div>
                 </div>
@@ -182,6 +182,8 @@ var app = new Vue({
         load_manufacturers: function() {
             $.get(this.path+'manufacturer/list')
                 .done(response => {
+                    // Order manufacturers by name alphabetically
+                    response.sort((a, b) => a.name.localeCompare(b.name));
                     this.manufacturers = response;
                 });
         },
