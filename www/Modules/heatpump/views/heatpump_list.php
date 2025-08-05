@@ -75,6 +75,16 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <input v-model="newHeatpump.model" class="form-control" type="text" placeholder="Model name" required>
                     </div>
                     <div class="mb-3">
+                        <label class="form-label">Refrigerant</label>
+                        <!-- R290','R32','CO2','R410A','R210A','R134A','R407C','R454C','R452B -->
+                        <select v-model="newHeatpump.refrigerant" class="form-control">
+                            <option value="">Select refrigerant...</option>
+                            <option v-for="refrigerant in refrigerants" :value="refrigerant">
+                                {{ refrigerant }}
+                            </option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label">Badge Capacity (kW) *</label>
                         <input v-model="newHeatpump.capacity" class="form-control" type="number" step="0.1" placeholder="e.g. 5.0" required>
                     </div>
@@ -100,6 +110,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <th>ID</th>
                         <th>Make</th>
                         <th>Model</th>
+                        <th>Refrigerant</th>
                         <th>Capacity</th>
                         <th>Systems</th>
                         <th style="width:120px"></th>
@@ -117,6 +128,14 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <td>
                             <input v-if="editingId === unit.id" v-model="editModel" class="form-control form-control-sm" type="text">
                             <span v-else>{{unit.name}}</span>
+                        </td>
+                        <td>
+                            <select v-if="editingId === unit.id" v-model="editRefrigerant" class="form-select form-select-sm">
+                                <option v-for="refrigerant in refrigerants" :value="refrigerant">
+                                    {{ refrigerant }}
+                                </option>
+                            </select>
+                            <span v-else>{{unit.refrigerant}}</span>
                         </td>
                         <td>
                             <div v-if="editingId === unit.id" class="input-group input-group-sm">
@@ -161,12 +180,15 @@ var app = new Vue({
         newHeatpump: {
             manufacturer_id: "",
             model: "",
+            refrigerant: "",
             capacity: ""
         },
         editingId: null,
         editManufacturerId: "",
         editModel: "",
-        editCapacity: ""
+        editRefrigerant: "",
+        editCapacity: "",
+        refrigerants: ["R290", "R32", "CO2", "R410A", "R210A", "R134A", "R407C", "R454C", "R452B"]
     },
     created: function() {
         this.load_heatpumps();
@@ -188,11 +210,17 @@ var app = new Vue({
                 });
         },
         add_heatpump: function() {
-            if (!this.newHeatpump.manufacturer_id || !this.newHeatpump.model.trim() || !this.newHeatpump.capacity) return;
+            if (this.newHeatpump.refrigerant == "") {
+                alert("Please select a refrigerant.");
+                return;
+            }
+
+            if (!this.newHeatpump.manufacturer_id || !this.newHeatpump.model.trim() || !this.newHeatpump.refrigerant.trim() || !this.newHeatpump.capacity) return;
             
             $.post(this.path + 'heatpump/add', {
                 manufacturer_id: this.newHeatpump.manufacturer_id,
                 model: this.newHeatpump.model,
+                refrigerant: this.newHeatpump.refrigerant,
                 capacity: this.newHeatpump.capacity
             })
             .done(response => {
@@ -213,6 +241,7 @@ var app = new Vue({
             this.editingId = id;
             this.editManufacturerId = heatpump.manufacturer_id;
             this.editModel = heatpump.name;
+            this.editRefrigerant = heatpump.refrigerant || ""; // Handle null refrigerant
             this.editCapacity = heatpump.capacity;
         },
         save_heatpump: function(id) {
@@ -220,6 +249,7 @@ var app = new Vue({
                 id: id,
                 manufacturer_id: this.editManufacturerId,
                 model: this.editModel,
+                refrigerant: this.editRefrigerant,
                 capacity: this.editCapacity
             })
             .done(response => {
@@ -231,6 +261,7 @@ var app = new Vue({
             this.editingId = null;
             this.editManufacturerId = "";
             this.editModel = "";
+            this.editRefrigerant = "";
             this.editCapacity = "";
         },
         delete_heatpump: function(id) {

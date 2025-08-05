@@ -20,25 +20,21 @@ class Heatpump
      * @return array
      */
     public function get_list() {
-        // $heatpumps = json_decode(file_get_contents("Modules/heatpump/heatpump_list.json"), true);
 
-        $result = $this->mysqli->query("SELECT * FROM heatpump_model");
+        $result = $this->mysqli->query("
+            SELECT 
+                hm.*, 
+                m.name as manufacturer_name 
+            FROM heatpump_model hm 
+            LEFT JOIN manufacturers m ON hm.manufacturer_id = m.id
+        ");
         $heatpumps = [];
         while ($row = $result->fetch_assoc()) {
-
-            // Get manufacturer name
-            $manufacturer = $this->manufacturer_model->get_by_id($row['manufacturer_id']);
-            if ($manufacturer) {
-                $row['manufacturer_name'] = $manufacturer->name;
-            } else {
-                $row['manufacturer_name'] = 'Unknown';
-            }
-
             $heatpumps[] = $row;
         }
 
         foreach ($heatpumps as $key => $unit) {
-             $heatpumps[$key]["stats"] = $this->get_stats($unit["manufacturer_name"], $unit['name'], $unit["capacity"]);
+             $heatpumps[$key]["stats"] = $this->get_stats($unit["manufacturer_name"], $unit['name'], $unit["refrigerant"], $unit["capacity"]);
         }
 
         return $heatpumps;
@@ -52,14 +48,19 @@ class Heatpump
      * @param float $capacity
      * @return array
      */
-    public function add($manufacturer_id, $model, $capacity) {
+    public function add($manufacturer_id, $model, $refrigerant, $capacity) {
         // Validate inputs
         $manufacturer_id = (int) $manufacturer_id;
         $model = trim($model);
+        $refrigerant = trim($refrigerant);
         $capacity = (float) $capacity;
         
         if (empty($model)) {
             return array("success" => false, "message" => "Model name is required");
+        }
+
+        if (empty($refrigerant)) {
+            return array("success" => false, "message" => "Refrigerant is required");
         }
         
         if ($capacity <= 0) {
@@ -72,13 +73,13 @@ class Heatpump
         }
         
         // Check if this model already exists for this manufacturer and capacity
-        if ($this->model_exists($manufacturer_id, $model, $capacity)) {
+        if ($this->model_exists($manufacturer_id, $model, $refrigerant, $capacity)) {
             return array("success" => false, "message" => "This heat pump model already exists");
         }
         
         // Insert the new heat pump model
-        $stmt = $this->mysqli->prepare("INSERT INTO heatpump_model (manufacturer_id, name, capacity) VALUES (?, ?, ?)");
-        $stmt->bind_param("isd", $manufacturer_id, $model, $capacity);
+        $stmt = $this->mysqli->prepare("INSERT INTO heatpump_model (manufacturer_id, name, refrigerant, capacity) VALUES (?, ?, ?, ?)");
+        $stmt->bind_param("issd", $manufacturer_id, $model, $refrigerant, $capacity);
         
         if ($stmt->execute()) {
             $new_id = $this->mysqli->insert_id;
@@ -100,15 +101,20 @@ class Heatpump
      * @param float $capacity
      * @return array
      */
-    public function update($id, $manufacturer_id, $model, $capacity) {
+    public function update($id, $manufacturer_id, $model, $refrigerant, $capacity) {
         // Validate inputs
         $id = (int) $id;
         $manufacturer_id = (int) $manufacturer_id;
         $model = trim($model);
+        $refrigerant = trim($refrigerant);
         $capacity = (float) $capacity;
 
         if (empty($model)) {
             return array("success" => false, "message" => "Model name is required");
+        }
+
+        if (empty($refrigerant)) {
+            return array("success" => false, "message" => "Refrigerant is required");
         }
 
         if ($capacity <= 0) {
@@ -121,13 +127,13 @@ class Heatpump
         }
 
         // Check if this model already exists for this manufacturer and capacity (excluding current record)
-        if ($this->model_exists($manufacturer_id, $model, $capacity, $id)) {
+        if ($this->model_exists($manufacturer_id, $model, $refrigerant, $capacity, $id)) {
             return array("success" => false, "message" => "This heat pump model already exists");
         }
 
         // Update the heat pump model
-        $stmt = $this->mysqli->prepare("UPDATE heatpump_model SET manufacturer_id = ?, name = ?, capacity = ? WHERE id = ?");
-        $stmt->bind_param("isdi", $manufacturer_id, $model, $capacity, $id);
+        $stmt = $this->mysqli->prepare("UPDATE heatpump_model SET manufacturer_id = ?, name = ?, refrigerant = ?, capacity = ? WHERE id = ?");
+        $stmt->bind_param("issdi", $manufacturer_id, $model, $refrigerant, $capacity, $id);
         if ($stmt->execute()) {
             $stmt->close();
             return array("success" => true, "message" => "Heat pump model updated successfully");
@@ -174,13 +180,13 @@ class Heatpump
      * @param int $exclude_id (optional) - exclude this ID from the check
      * @return bool
      */
-    public function model_exists($manufacturer_id, $model, $capacity, $exclude_id = null) {
+    public function model_exists($manufacturer_id, $model, $refrigerant, $capacity, $exclude_id = null) {
         if ($exclude_id) {
-            $stmt = $this->mysqli->prepare("SELECT id FROM heatpump_model WHERE manufacturer_id = ? AND name = ? AND capacity = ? AND id != ?");
-            $stmt->bind_param("isdi", $manufacturer_id, $model, $capacity, $exclude_id);
+            $stmt = $this->mysqli->prepare("SELECT id FROM heatpump_model WHERE manufacturer_id = ? AND name = ? AND refrigerant = ? AND capacity = ? AND id != ?");
+            $stmt->bind_param("issdi", $manufacturer_id, $model, $refrigerant, $capacity, $exclude_id);
         } else {
-            $stmt = $this->mysqli->prepare("SELECT id FROM heatpump_model WHERE manufacturer_id = ? AND name = ? AND capacity = ?");
-            $stmt->bind_param("isd", $manufacturer_id, $model, $capacity);
+            $stmt = $this->mysqli->prepare("SELECT id FROM heatpump_model WHERE manufacturer_id = ? AND name = ? AND refrigerant = ? AND capacity = ?");
+            $stmt->bind_param("issd", $manufacturer_id, $model, $refrigerant, $capacity);
         }
         
         $stmt->execute();
@@ -190,18 +196,6 @@ class Heatpump
         
         return $exists;
     }
-
-    /*
-     * Check if a heatpump model exists 
-     * @param int $manufacturer_id
-     * @param string $model
-     * @param float $capacity
-     * @return bool
-     */
-    public function check_exists($manufacturer_id, $model, $capacity) {
-        return $this->model_exists($manufacturer_id, $model, $capacity);
-    }
-
 
     public function populate_table() {
 
@@ -255,20 +249,29 @@ class Heatpump
      * @return array
      */
     public function get($id) {
-        $heatpumps = $this->get_list();
-
-        $heatpump = false;
-        foreach ($heatpumps as $unit) {
-            if ($unit['id'] == $id) {
-                $heatpump = $unit;
-                break;
-            }
+        $id = (int) $id;
+        
+        $stmt = $this->mysqli->prepare("
+            SELECT 
+                hm.*, 
+                m.name as manufacturer_name 
+            FROM heatpump_model hm 
+            LEFT JOIN manufacturers m ON hm.manufacturer_id = m.id 
+            WHERE hm.id = ?
+        ");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        
+        $result = $stmt->get_result();
+        $heatpump = $result->fetch_assoc();
+        $stmt->close();
+        
+        if (!$heatpump) {
+            return array("success" => false, "message" => "Heatpump not found");
         }
-        if (!$heatpump) return array("success" => false, "message" => "Heatpump not found");
 
-        $heatpump["stats"] = $this->get_stats($heatpump["manufacturer_name"], $heatpump['name'], $heatpump["capacity"]);
+        $heatpump["stats"] = $this->get_stats($heatpump["manufacturer_name"], $heatpump['name'], $heatpump['refrigerant'], $heatpump["capacity"]);
 
-        // continue here
         return $heatpump;
     }
 
@@ -279,10 +282,11 @@ class Heatpump
      * @param int $capacity
      * @return array
      */
-    public function get_stats($manufacturer, $model, $capacity)
+    public function get_stats($manufacturer, $model, $refrigerant, $capacity)
     {
         $model = $manufacturer . " " . $model; // Combine manufacturer and model for search
         $capacity = (float) $capacity;
+        $refrigerant = trim($refrigerant);
 
         // Prepare the query with placeholders
         $query = "
@@ -300,14 +304,17 @@ class Heatpump
                 sm.id = ss.id
             WHERE 
                 sm.hp_model LIKE ? 
-                AND sm.hp_output = ? 
+                AND sm.hp_output LIKE ? 
+                AND sm.refrigerant LIKE ?
                 AND sm.published = '1' 
                 AND sm.share = '1'
         ";
         
         $stmt = $this->mysqli->prepare($query);
         $model_pattern = '%' . $model . '%';
-        $stmt->bind_param("sd", $model_pattern, $capacity);
+        $refrigerant_pattern = '%' . $refrigerant . '%';
+        $capacity_pattern = '%' . $capacity . '%';
+        $stmt->bind_param("sss", $model_pattern, $capacity_pattern, $refrigerant_pattern);
         $stmt->execute();
         
         $result = $stmt->get_result();

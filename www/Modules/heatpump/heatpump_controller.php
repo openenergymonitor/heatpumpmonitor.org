@@ -49,27 +49,25 @@ function heatpump_controller() {
 
     if ($route->action == "add" && $session['admin']) {
         $route->format = "json";
-        if (isset($_POST['manufacturer_id']) && isset($_POST['model']) && isset($_POST['capacity'])) {
-            $manufacturer_id = (int)$_POST['manufacturer_id'];
-            $model = trim($_POST['model']);
-            $capacity = (float)$_POST['capacity'];
-            return $heatpump_model->add($manufacturer_id, $model, $capacity);
-        } else {
-            return array("error" => "Missing parameters for adding heatpump");
-        }
+        // Get parameters from POST request
+        $manufacturer_id = (int) post("manufacturer_id", true);
+        $model = trim(post("model", true));
+        $refrigerant = trim(post("refrigerant", true));
+        $capacity = (float) post("capacity", true);
+        // Add heat pump model
+        return $heatpump_model->add($manufacturer_id, $model, $refrigerant, $capacity);
     }
 
     if ($route->action == "update" && $session['admin']) {
         $route->format = "json";
-        if (isset($_POST['id']) && isset($_POST['manufacturer_id']) && isset($_POST['model']) && isset($_POST['capacity'])) {
-            $id = (int)$_POST['id'];
-            $manufacturer_id = (int)$_POST['manufacturer_id'];
-            $model = trim($_POST['model']);
-            $capacity = (float)$_POST['capacity'];
-            return $heatpump_model->update($id, $manufacturer_id, $model, $capacity);
-        } else {
-            return array("error" => "Missing parameters for editing heatpump");
-        }
+        // Get parameters from POST request
+        $id = (int) post("id", true);
+        $manufacturer_id = (int) post("manufacturer_id", true);
+        $model = trim(post("model", true));
+        $refrigerant = trim(post("refrigerant", true));
+        $capacity = (float) post("capacity", true);
+        // Update heat pump model
+        return $heatpump_model->update($id, $manufacturer_id, $model, $refrigerant, $capacity);
     }
 
     if ($route->action == "delete" && $session['admin']) {
