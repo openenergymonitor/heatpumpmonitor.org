@@ -42,9 +42,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         <div class="container" style="max-width:1000px;">
 
             <div class="row">
-                <div class="col-12 col-sm-12 col-md-6 col-lg-6 col-xl-8">
+                <div class="col-12">
+                    <button class="btn btn-primary" @click="showAddModal = true" v-if="mode=='admin'" style="float:right">Add heatpump</button>
+
                     <h3>Heatpump database</h3>
-                    <button class="btn btn-primary" @click="showAddModal = true" v-if="mode=='admin'">Add heatpump</button>
                 </div>
             </div>
         </div>
@@ -101,8 +102,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <th>Model</th>
                         <th>Capacity</th>
                         <th>Systems</th>
-                        <th></th>
-
+                        <th style="width:120px"></th>
                     </tr>
                     <tr v-for="unit in heatpumps">
                         <td>{{unit.id}}</td>
@@ -132,11 +132,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                 <button class="btn btn-secondary btn-sm" @click="cancel_edit()"><i class="fas fa-times"></i></button>
                             </div>
                             <div v-else>
-                                <button class="btn btn-primary btn-sm me-1" @click="edit_heatpump(unit.id)" title="Edit" v-if="mode=='admin'"><i class="fas fa-edit"></i></button>
-                                <!--View button-->
                                 <a :href="'<?php echo $path;?>heatpump/view?id='+unit.id">
-                                    <button class="btn btn-info btn-sm me-1" title="Details"><i class="fa fa-list-alt" style="color: #ffffff;"></i></button>
+                                    <button class="btn btn-secondary btn-sm me-1" title="Details"><i class="fa fa-list-alt" style="color: #ffffff;"></i></button>
                                 </a>
+                                <button class="btn btn-warning btn-sm me-1" @click="edit_heatpump(unit.id)" title="Edit" v-if="mode=='admin'"><i class="fas fa-edit" style="color: #ffffff;"></i></button>
                                 <button class="btn btn-danger btn-sm" @click="delete_heatpump(unit.id)" title="Delete" v-if="mode=='admin'"><i class="fas fa-trash"></i></button>
                             </div>
                         </td>    
