@@ -1318,14 +1318,26 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                             note += "COP not including air error: " + cop_not_including_air_error.toFixed(2)+"\n";
                                             note += "Difference: " + difference.toFixed(2);
 
+                                            // Save existing static node if it exists
+                                            if (app.systems[i].dynamic_data_flag == undefined || app.systems[i].dynamic_data_flag == 0) {
+                                                app.systems[i].data_flag_static = app.systems[i].data_flag;
+                                                app.systems[i].data_flag_note_static = app.systems[i].data_flag_note;
+                                            }
+
+                                            app.systems[i].dynamic_data_flag = 1;
                                             app.systems[i].data_flag = 1;
                                             app.systems[i].data_flag_note = note;
 
                                         }
                                     }
                                 } else {
-                                    app.systems[i].data_flag = 0;
-                                    app.systems[i].data_flag_note = '';
+                                    if (app.systems[i].dynamic_data_flag != undefined && app.systems[i].dynamic_data_flag == 1) {
+                                        // If dynamic data flag is set, reset it
+                                        app.systems[i].dynamic_data_flag = 0;
+                                        app.systems[i].data_flag = app.systems[i].data_flag_static;
+                                        app.systems[i].data_flag_note = app.systems[i].data_flag_note_static;
+
+                                    }
                                 }
 
                                 let prc_demand_hot_water = null;
