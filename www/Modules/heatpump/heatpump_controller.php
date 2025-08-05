@@ -7,26 +7,22 @@ function heatpump_controller() {
 
     global $session, $route, $user, $mysqli, $settings, $system, $system_stats;
 
+    // List of heat pump models
     if ($route->action == "") {
         return view("Modules/heatpump/views/heatpump_list.php", array());
     }
 
+    // View heat pump data sheet page
     if ($route->action == "view") {
-
-        if (!isset($_GET['id'])) {
-            return false;
-        }
-
-        $id = (int) $_GET['id'];
-
-        $mode = "view";
-        if ($session['admin']) $mode = "admin";
-
+        $id = (int) get("id", true);
+        $mode = $session['admin'] ? "admin" : "view";
         return view("Modules/heatpump/views/heatpump_view.php", array(
             "id" => $id,
             "mode" => $mode
         ));
     }
+
+    // API actions
 
     require "Modules/manufacturer/manufacturer_model.php";
     $manufacturer_model = new Manufacturer($mysqli);
@@ -192,6 +188,5 @@ function heatpump_controller() {
             $id = (int) get("id");
             return $heatpump_tests->delete_max_cap_test($id);
         }
-
     }
 }

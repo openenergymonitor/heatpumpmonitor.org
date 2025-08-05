@@ -267,8 +267,6 @@ class Heatpump
         if (!$heatpump) return array("success" => false, "message" => "Heatpump not found");
 
         $heatpump["stats"] = $this->get_stats($heatpump["manufacturer_name"], $heatpump['name'], $heatpump["capacity"]);
-        $heatpump["min_mod_tests"] = $this->get_min_mod_tests($id);
-        $heatpump["max_cap_tests"] = $this->get_max_cap_tests($id);
 
         // continue here
         return $heatpump;
@@ -348,49 +346,14 @@ class Heatpump
             $cop_count++;
         }
 
+        $average_spf = $cop_count > 0 ? number_format($sum_cop / $cop_count, 2, ".", "") * 1 : 0;
+
         return array(
             "number_of_systems" => $number_of_systems,
             "number_of_systems_last365" => $cop_count,
-            "average_spf" => number_format($sum_cop / $cop_count,2,".","")*1,
+            "average_spf" => $average_spf,
             "lowest_spf" => number_format($min_cop,2,".","")*1,
             "highest_spf" => number_format($max_cop,2,".","")*1
         );
-    }
-
-    /*
-     * Get min_mod_tests
-     * 
-     * @param string $id
-     * @return array
-     */
-    public function get_min_mod_tests($id) {
-        $min_mod_tests = json_decode(file_get_contents("Modules/heatpump/min_mod_tests.json"), true);
-
-        $tests = [];
-        foreach ($min_mod_tests as $test) {
-            if ($test['heatpump_id'] == $id) {
-                $tests[] = $test;
-            }
-        }
-        return $tests;
-    }
-
-    /*
-     * Get max_cap_tests
-     * 
-     * @param string $id
-     * @return array
-     */
-    public function get_max_cap_tests($id) {
-        $max_cap_tests = json_decode(file_get_contents("Modules/heatpump/max_cap_tests.json"), true);
-
-        $tests = [];
-        foreach ($max_cap_tests as $test) {
-            if ($test['heatpump_id'] == $id) {
-                $tests[] = $test;
-            }
-        }
-        return $tests;
-
     }
 }

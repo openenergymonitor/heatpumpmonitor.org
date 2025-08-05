@@ -57,7 +57,7 @@
                 <br>
                 <button class="btn btn-primary btn-sm" style="float:right">+ Add</button>
                 <h4>Minimum modulation test results</h4>
-                <table id="custom" class="table table-striped table-sm mt-3" v-if="heatpump.min_mod_tests.length">
+                <table id="custom" class="table table-striped table-sm mt-3" v-if="min_mod_tests.length">
                     <tr>
                         <th>Test</th>
                         <th>System</th>
@@ -67,7 +67,7 @@
                         <th>Heat output</th>
                         <th></th>
                     </tr>
-                    <tr v-for="test in heatpump.min_mod_tests">
+                    <tr v-for="test in min_mod_tests">
                         <td>{{ test.id }}</td>
                         <td>{{ test.system }}</td>
                         <td>{{ test.date }}</td>
@@ -96,7 +96,7 @@
                 <br>
                 <button class="btn btn-primary btn-sm" style="float:right">+ Add</button>
                 <h4>Maximum capacity test results</h4>
-                <table id="custom" class="table table-striped table-sm mt-3" v-if="heatpump.max_cap_tests.length">
+                <table id="custom" class="table table-striped table-sm mt-3" v-if="max_cap_tests.length">
                     <tr>
                         <th>Test</th>
                         <th>System</th>
@@ -110,7 +110,7 @@
                         <th>Heat output</th>
                         <th></th>
                     </tr>
-                    <tr v-for="(test,index) in heatpump.max_cap_tests">
+                    <tr v-for="(test,index) in max_cap_tests">
                         <td>{{ index+1 }}</td>
                         <td>{{ test.system_id }}</td>
                         <td>{{ test.date }}</td>
@@ -202,12 +202,15 @@
             edit_properties: false,
             path: "<?php echo $path; ?>",
             heatpump: {},
+            max_cap_tests: [],
+            min_mod_tests: [],
             new_max_cap_test_url: null,
             new_min_mod_test_url: null
         },
         created: function() {
             this.load_heatpump();
             this.load_max_cap_test_list();
+            this.load_min_mod_test_list();
         },
         methods: {
             enable_edit: function() {
@@ -217,15 +220,18 @@
                 $.get(this.path+'heatpump/get?id='+this.id)
                     .done(response => {
                         this.heatpump = response;
-                        this.loaded = true;
                     });
             },
             load_max_cap_test_list: function() {
+                let self = this;
                 $.get(this.path+'heatpump/max_cap_test/list?id='+this.id)
                     .done(response => {
-                        var test_results = response;
-                        this.heatpump.max_cap_tests = test_results;
+                        self.max_cap_tests = response;
+                        self.loaded = true;
                     });
+            },
+            load_min_mod_test_list: function() {
+                // Not yet implemented
             },
             delete_min_mod_test: function(id) {
                 if (confirm("Are you sure you want to delete this test?")) {
