@@ -2,7 +2,7 @@
 // no direct access
 defined('EMONCMS_EXEC') or die('Restricted access');
 
-global $path, $settings;
+global $path, $settings, $session;
 
 $navigation = array(
     array("controller" => "", "href" => ".", "title" => "Home", "icon" => "fa-home"),
@@ -103,10 +103,11 @@ $navigation = array(
                         <li class="nav-item"><a class="nav-link " href="https://docs.openenergymonitor.org/heatpumpmonitor" title="Docs"><i class="fas fa-book"></i> <span class="nav-item-text">Docs</span></a></li>
                     </ul>
 
-                    <!--
-                    <ul class="navbar-nav">
+                    <?php if ($session['admin']) { ?>
+                    <ul class="navbar-nav"> 
                         <li class="nav-item"><a id="heatpump-database-link" class="nav-link " href="<?php echo $path; ?>heatpump" title="Heat pump database"><i class="fas fa-database"></i> <span class="nav-item-text">Heat pump database</span></a></li>
-                    </ul>-->
+                    </ul>
+                    <?php } ?>
 
                     <ul class="navbar-nav">
                         <li class="nav-item dropdown">
