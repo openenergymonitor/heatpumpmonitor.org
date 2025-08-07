@@ -7,9 +7,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
 <script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
-<script src="https://cdn.plot.ly/plotly-2.16.1.min.js"></script>
-<script src="Lib/clipboard.js"></script>
-<script src="<?php echo $path; ?>Modules/system/system_list_chart.js?v=27"></script>
+
+<link rel="stylesheet" href="<?php echo $path; ?>Lib/autocomplete.css?v=4">
+<script src="Lib/autocomplete.js?v=3"></script>
 
 <style>
     .sticky {
@@ -43,7 +43,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
             <div class="row">
                 <div class="col-12">
-                    <button class="btn btn-primary" @click="showAddModal = true" v-if="mode=='admin'" style="float:right">Add heatpump</button>
+                    <button class="btn btn-primary" @click="openAddModal" v-if="mode=='admin'" style="float:right">Add heatpump</button>
 
                     <h3>Heatpump database</h3>
                 </div>
@@ -70,9 +70,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             </option>
                         </select>
                     </div>
-                    <div class="mb-3">
+                    <div class="mb-3 autocomplete">
                         <label class="form-label">Model *</label>
-                        <input v-model="newHeatpump.model" class="form-control" type="text" placeholder="Model name" required>
+                        <input id="newHeatpumpModel" v-model="newHeatpump.model" class="form-control" type="text" placeholder="Model name" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Refrigerant</label>
@@ -228,6 +228,22 @@ var app = new Vue({
                 this.closeAddModal();
             });
         },
+        openAddModal: function() {
+            this.showAddModal = true;
+            this.newHeatpump = {
+                manufacturer_id: "",
+                model: "",
+                refrigerant: "",
+                capacity: ""
+            };
+
+            this.$nextTick(() => {
+                let element = document.getElementById("newHeatpumpModel");
+                let uniqueHeatpumpNames = [...new Set(this.heatpumps.map(h => h.name))];
+                autocomplete(element, uniqueHeatpumpNames);
+            });
+        },
+
         closeAddModal: function() {
             this.showAddModal = false;
             this.newHeatpump = {
