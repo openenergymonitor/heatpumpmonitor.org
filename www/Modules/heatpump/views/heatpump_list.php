@@ -9,7 +9,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 <script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
 
 <link rel="stylesheet" href="<?php echo $path; ?>Lib/autocomplete.css?v=4">
-<script src="Lib/autocomplete.js?v=6"></script>
+<script src="Lib/autocomplete.js?v=8"></script>
 
 <style>
     .sticky {
@@ -60,15 +60,18 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     <button type="button" class="btn-close" @click="closeAddModal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-3">
+                    <div class="mb-3 autocomplete">
                         <a href="manufacturer" class="mb-2" style="float:right">+ Add Manufacturer</a>
                         <label class="form-label">Manufacturer *</label>
+                        <!--
                         <select v-model="newHeatpump.manufacturer_id" class="form-select" required>
                             <option value="">Select manufacturer...</option>
                             <option v-for="manufacturer in manufacturers" :value="manufacturer.id">
                                 {{ manufacturer.name }}
                             </option>
                         </select>
+                        -->
+                        <input id="newHeatpumpManufacturer" v-model="newHeatpump.manufacturer_name" class="form-control" type="text" placeholder="Manufacturer name" required>
                     </div>
                     <div class="mb-3 autocomplete">
                         <label class="form-label">Model *</label>
@@ -92,7 +95,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" @click="closeAddModal">Cancel</button>
                     <button type="button" class="btn btn-primary" @click="add_heatpump" 
-                            :disabled="!newHeatpump.manufacturer_id || !newHeatpump.model.trim() || !newHeatpump.capacity">
+                            :disabled="!newHeatpump.manufacturer_name || !newHeatpump.model.trim() || !newHeatpump.capacity">
                         Add Heat Pump
                     </button>
                 </div>
@@ -179,6 +182,7 @@ var app = new Vue({
         showAddModal: false,
         newHeatpump: {
             manufacturer_id: "",
+            manufacturer_name: "",
             model: "",
             refrigerant: "",
             capacity: ""
@@ -215,6 +219,16 @@ var app = new Vue({
                 return;
             }
 
+            // Fetch manufacturer ID based on name
+            const manufacturer = this.manufacturers.find(m => m.name.toLowerCase() === this.newHeatpump.manufacturer_name.toLowerCase());
+            
+            if (!manufacturer) {
+                alert("Manufacturer '" + this.newHeatpump.manufacturer_name + "' not found. Please select a valid manufacturer or add it first.");
+                return;
+            }
+            
+            this.newHeatpump.manufacturer_id = manufacturer.id;
+
             if (!this.newHeatpump.manufacturer_id || !this.newHeatpump.model.trim() || !this.newHeatpump.refrigerant.trim() || !this.newHeatpump.capacity) return;
             
             $.post(this.path + 'heatpump/add', {
@@ -232,15 +246,18 @@ var app = new Vue({
             this.showAddModal = true;
             this.newHeatpump = {
                 manufacturer_id: "",
+                manufacturer_name: "",
                 model: "",
                 refrigerant: "",
                 capacity: ""
             };
 
             this.$nextTick(() => {
-                let element = document.getElementById("newHeatpumpModel");
+
+                autocomplete(document.getElementById("newHeatpumpManufacturer"), this.manufacturers.map(m => m.name));
+
                 let uniqueHeatpumpNames = [...new Set(this.heatpumps.map(h => h.name))];
-                autocomplete(element, uniqueHeatpumpNames);
+                autocomplete(document.getElementById("newHeatpumpModel"), uniqueHeatpumpNames);
             });
         },
 
@@ -248,6 +265,7 @@ var app = new Vue({
             this.showAddModal = false;
             this.newHeatpump = {
                 manufacturer_id: "",
+                manufacturer_name: "",
                 model: "",
                 capacity: ""
             };

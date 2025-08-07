@@ -29,6 +29,8 @@ function autocomplete(input, arr) {
                 b.addEventListener("click", function(e) {
                     // insert the value for the autocomplete text field:
                     input.value = this.getElementsByTagName("input")[0].value;
+                    // Trigger input event for Vue to detect the change
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
                     //close the list of autocompleted values,
                     closeAllLists();
                 });
@@ -50,13 +52,21 @@ function autocomplete(input, arr) {
             e.preventDefault();
             if (currentFocus > -1) {
                 // and simulate a click on the "active" item:
-                if (x) x[currentFocus].click();
+                if (x) {
+                    input.value = x[currentFocus].getElementsByTagName("input")[0].value;
+                    // Trigger input event for Vue
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    closeAllLists();
+                }
             }
         } else if (e.keyCode == 9) { // TAB key
             // If TAB is pressed and there are autocomplete items, select the first one
             if (x && x.length > 0) {
                 e.preventDefault(); // Prevent default tab behavior
-                x[0].click(); // Click the first item
+                input.value = x[0].getElementsByTagName("input")[0].value;
+                // Trigger input event for Vue
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                closeAllLists();
             }
         }
     });
