@@ -37,9 +37,9 @@ function autocomplete(input, arr) {
         }
     });
     input.addEventListener("keydown", function(e) {
-        var x = document.getElementById(this.id + "autocomplete-list");
+        var x = document.getElementById(this.id + "_autocomplete-list");
         if (x) x = x.getElementsByTagName("div");
-        if (e.keyCode == 40) {
+        if (e.keyCode == 40) { // down
             currentFocus++;
             addActive(x);
         } else if (e.keyCode == 38) { //up
@@ -51,6 +51,12 @@ function autocomplete(input, arr) {
             if (currentFocus > -1) {
                 // and simulate a click on the "active" item:
                 if (x) x[currentFocus].click();
+            }
+        } else if (e.keyCode == 9) { // TAB key
+            // If TAB is pressed and there are autocomplete items, select the first one
+            if (x && x.length > 0) {
+                e.preventDefault(); // Prevent default tab behavior
+                x[0].click(); // Click the first item
             }
         }
     });

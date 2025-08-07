@@ -9,7 +9,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 <script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
 
 <link rel="stylesheet" href="<?php echo $path; ?>Lib/autocomplete.css?v=4">
-<script src="Lib/autocomplete.js?v=3"></script>
+<script src="Lib/autocomplete.js?v=6"></script>
 
 <style>
     .sticky {
