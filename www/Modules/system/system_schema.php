@@ -152,6 +152,15 @@ $schema['system_meta'] = array(
         'show'  => false
     ),
 
+    'hp_manufacturer' => array(
+        'type' => 'varchar(64)', 
+        'editable' => true, 
+        'optional' => false, 
+        'name' => 'Heat pump manufacturer', 
+        'group' => 'Heat pump',
+        'show'  => false
+    ),
+
     'hp_model' => array(
         'type' => 'varchar(64)', 
         'editable' => true, 

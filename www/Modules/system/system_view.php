@@ -205,9 +205,9 @@ global $settings, $session, $path;
                         <td></td>
                         <td>
                             <div class="input-group" v-if="mode=='edit'">
-                                <input id="heatpumpManufacturer" v-model="manufacturer_name" class="form-control" type="text" placeholder="Manufacturer name" required>
+                                <input id="heatpumpManufacturer" v-model="system.hp_manufacturer" class="form-control" type="text" placeholder="Manufacturer name" required>
                             </div>
-                            <span v-if="mode=='view'">{{ manufacturer_name }}</span>
+                            <span v-if="mode=='view'">{{ system.hp_manufacturer }}</span>
                         </td>
                     </tr>
                     <tr>
@@ -217,9 +217,9 @@ global $settings, $session, $path;
                         <td></td>
                         <td>
                             <div class="input-group" v-if="mode=='edit'">
-                                <input id="heatpumpModel" v-model="model_name" class="form-control" type="text" placeholder="Model name" required>
+                                <input id="heatpumpModel" v-model="system.hp_model" class="form-control" type="text" placeholder="Model name" required>
                             </div>
-                            <span v-if="mode=='view'">{{ model_name }}</span>
+                            <span v-if="mode=='view'">{{ system.hp_model }}</span>
                         </td>
                     </tr>
                     <tr>
@@ -416,9 +416,7 @@ global $settings, $session, $path;
             system_stats_monthly_by_group: system_stats_monthly_by_group,
             disable_loadstats: false,
 
-            manufacturer_name: '',
             manufacturers: [],
-            model_name: '',
             heatpump_models: [],
             hp_refrigerant: '',
             hp_type: '',
@@ -552,28 +550,7 @@ global $settings, $session, $path;
                 }
                 
                 this.$nextTick(() => {
-
-                    // Initialize autocomplete for heatpump manufacturer
-                    autocomplete(
-                        document.getElementById("heatpumpManufacturer"), 
-                        this.manufacturers.map(m => m.name),
-                        function(manufacturer) {
-                            app.manufacturer_name = manufacturer;
-                            app.filter_by_manufacturer();
-                        }
-                    );
-
-                    let uniqueHeatpumpNames = [...new Set(this.heatpump_models.map(h => h.name))];
-
-                    // Initialize autocomplete for heatpump model
-                    autocomplete(
-                        document.getElementById("heatpumpModel"), 
-                        uniqueHeatpumpNames, 
-                        function(model) {
-                            app.model_name = model;
-                            app.filter_refrigerant_and_type();
-                        }
-                    );
+                    this.init_autocomplete();
                 });
 
             },
@@ -581,10 +558,35 @@ global $settings, $session, $path;
                 alert(system.url);
             },
 
+            init_autocomplete: function() {
+
+                // Initialize autocomplete for heatpump manufacturer
+                autocomplete(
+                    document.getElementById("heatpumpManufacturer"), 
+                    this.manufacturers.map(m => m.name),
+                    function(manufacturer) {
+                        app.system.hp_manufacturer = manufacturer;
+                        app.filter_by_manufacturer();
+                    }
+                );
+
+                let uniqueHeatpumpNames = [...new Set(this.heatpump_models.map(h => h.name))];
+
+                // Initialize autocomplete for heatpump model
+                autocomplete(
+                    document.getElementById("heatpumpModel"), 
+                    uniqueHeatpumpNames, 
+                    function(model) {
+                        app.system.hp_model = model;
+                        app.filter_refrigerant_and_type();
+                    }
+                );
+            },
+
             filter_by_manufacturer: function() {
                 let uniqueHeatpumpNames = [];
                 for (let i = 0; i < this.heatpump_models.length; i++) {
-                    if (this.heatpump_models[i].manufacturer_name == this.manufacturer_name) {
+                    if (this.heatpump_models[i].manufacturer_name == this.system.hp_manufacturer) {
                         uniqueHeatpumpNames.push(this.heatpump_models[i].name);
                     }
                 }
@@ -593,7 +595,7 @@ global $settings, $session, $path;
                     document.getElementById("heatpumpModel"), 
                     uniqueHeatpumpNames,
                     function(model) {
-                        app.model_name = model;
+                        app.system.hp_model = model;
                         app.filter_refrigerant_and_type();
                     }
                 );
@@ -602,7 +604,7 @@ global $settings, $session, $path;
             filter_refrigerant_and_type: function() {
 
                 // If no model selected, reset refrigerants and type
-                if (this.model_name == '') {
+                if (this.system.hp_model == '') {
                     this.refrigerants = all_refrigerants;
                     this.types = all_types;
                     this.system.refrigerant = '';
@@ -610,14 +612,11 @@ global $settings, $session, $path;
                     return;
                 }
 
-                // Set hp_model to manufacturer and model name
-                this.system.hp_model = this.manufacturer_name + ' ' + this.model_name;
-
                 // Filter refrigerants based on model
                 let refrigerants = [];
                 let types = [];
                 for (let i = 0; i < this.heatpump_models.length; i++) {
-                    if (this.heatpump_models[i].name == this.model_name) {
+                    if (this.heatpump_models[i].name == this.system.hp_model) {
                         refrigerants.push(this.heatpump_models[i].refrigerant);
                         types.push(this.heatpump_models[i].type);
                     }
@@ -767,6 +766,8 @@ global $settings, $session, $path;
                         // Order manufacturers by name alphabetically
                         response.sort((a, b) => a.name.localeCompare(b.name));
                         this.manufacturers = response;
+
+                        app.load_heatpumps();
                     });
             },
 
@@ -774,6 +775,8 @@ global $settings, $session, $path;
                 $.get(this.path+'heatpump/list')
                     .done(response => {
                         this.heatpump_models = response;
+
+                        app.init_autocomplete();
                     });
             },
 
@@ -783,7 +786,6 @@ global $settings, $session, $path;
 
     app.filter_schema_groups();
     app.load_manufacturers();
-    app.load_heatpumps();
 
     axios.get(path + 'system/monthly?id=' + app.system.id)
         .then(function(response) {

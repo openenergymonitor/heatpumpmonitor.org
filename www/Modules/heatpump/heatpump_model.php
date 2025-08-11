@@ -238,6 +238,10 @@ class Heatpump
             if ($manufacturer_name) {
                 $hp_model = str_ireplace($manufacturer_name, "", $hp_model);
                 $hp_model = trim($hp_model);
+
+                // Update hp_manufacturer in the row
+                // $this->mysqli->query("UPDATE system_meta SET hp_manufacturer = '$manufacturer_name' WHERE id = {$row->id}");
+
             }
 
             // Add the heatpump to the list

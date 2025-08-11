@@ -575,16 +575,15 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     var systems = <?php echo json_encode($systems); ?>;
 
     columns['hp_type'].name = "Source";
+    columns['hp_manufacturer'].name = "Manufacturer";
     columns['hp_model'].name = "Make & Model";
     columns['hp_output'].name = "Rating";
     // columns['heatgeek'].name = "Training";
-    
     
     columns['training'] = { name: "Combined", heading: "Training", group: "Training", helper: "Training" };
     columns['learnmore'] = { name: "Combined", heading: "", group: "Learn more" };
     columns['boundary'] = { name: "Boundary", heading: "Hx", group: "Metering" };
     columns['data_flag'].heading = "";
-    
 
     // Calculate oversizing factor
     columns['oversizing_factor'] = {
