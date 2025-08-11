@@ -46,6 +46,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     <button class="btn btn-primary" @click="openAddModal" v-if="mode=='admin'" style="float:right">Add heatpump</button>
 
                     <h3>Heatpump database</h3>
+                    
+                    <div class="input-group mt-3" style="max-width:350px">
+                        <span class="input-group-text">Filter</span>
+                        <input class="form-control" v-model="filterKey" placeholder="Search manufacturers, models..." @input="filterHeatpumps">
+                    </div>
                 </div>
             </div>
         </div>
@@ -120,17 +125,33 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
                 <table id="custom" class="table table-striped table-sm mt-3">
                     <tr>
-                        <th>ID</th>
-                        <th>Make</th>
-                        <th>Model</th>
-                        <th>Refrigerant</th>
-                        <th>Type</th>
-                        <th>Capacity</th>
-                        <th>Systems</th>
+                        <!--
+                        <th @click="sort('id', 'asc')" style="cursor:pointer">ID
+                            <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='id'"></i>
+                        </th>
+                        -->
+                        <th @click="sort('manufacturer_name', 'asc')" style="cursor:pointer">Make
+                            <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='manufacturer_name'"></i>
+                        </th>
+                        <th @click="sort('name', 'asc')" style="cursor:pointer">Model
+                            <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='name'"></i>
+                        </th>
+                        <th @click="sort('refrigerant', 'asc')" style="cursor:pointer">Refrigerant
+                            <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='refrigerant'"></i>
+                        </th>
+                        <th @click="sort('type', 'asc')" style="cursor:pointer">Type
+                            <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='type'"></i>
+                        </th>
+                        <th @click="sort('capacity', 'desc')" style="cursor:pointer">Capacity
+                            <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='capacity'"></i>
+                        </th>
+                        <th @click="sort('number_of_systems', 'desc')" style="cursor:pointer">Systems
+                            <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='number_of_systems'"></i>
+                        </th>
                         <th style="width:120px"></th>
                     </tr>
-                    <tr v-for="unit in heatpumps">
-                        <td>{{unit.id}}</td>
+                    <tr v-for="unit in filteredHeatpumps">
+                        <!--<td>{{unit.id}}</td>-->
                         <td>
                             <select v-if="editingId === unit.id" v-model="editManufacturerId" class="form-select form-select-sm">
                                 <option v-for="manufacturer in manufacturers" :value="manufacturer.id">
@@ -215,13 +236,79 @@ var app = new Vue({
         editRefrigerant: "",
         editType: "",
         editCapacity: "",
-        refrigerants: ["R290", "R32", "CO2", "R410A", "R210A", "R134A", "R407C", "R454C", "R452B"]
+        refrigerants: ["R290", "R32", "CO2", "R410A", "R210A", "R134A", "R407C", "R454C", "R452B"],
+        currentSortColumn: "number_of_systems",
+        currentSortDir: "desc",
+        filterKey: ""
+    },
+    computed: {
+        sortedHeatpumps: function() {
+            return this.heatpumps.slice().sort((a, b) => {
+                let modifier = 1;
+                if (this.currentSortDir == 'desc') modifier = -1;
+
+                let aValue = a[this.currentSortColumn];
+                let bValue = b[this.currentSortColumn];
+
+                // Handle nested properties for systems count
+                if (this.currentSortColumn == 'number_of_systems') {
+                    aValue = a.stats ? a.stats.number_of_systems : 0;
+                    bValue = b.stats ? b.stats.number_of_systems : 0;
+                }
+
+                // Handle null/undefined values
+                if (aValue === null || aValue === undefined) aValue = this.currentSortDir == 'desc' ? -Infinity : Infinity;
+                if (bValue === null || bValue === undefined) bValue = this.currentSortDir == 'desc' ? -Infinity : Infinity;
+
+                // Convert to numbers if both values are numeric
+                if (!isNaN(aValue) && !isNaN(bValue)) {
+                    aValue = Number(aValue);
+                    bValue = Number(bValue);
+                }
+
+                if (aValue < bValue) return -1 * modifier;
+                if (aValue > bValue) return 1 * modifier;
+                return 0;
+            });
+        },
+        filteredHeatpumps: function() {
+            if (!this.filterKey.trim()) {
+                return this.sortedHeatpumps;
+            }
+            
+            const filterLower = this.filterKey.toLowerCase();
+            return this.sortedHeatpumps.filter(unit => {
+                return (
+                    (unit.manufacturer_name && unit.manufacturer_name.toLowerCase().includes(filterLower)) ||
+                    (unit.name && unit.name.toLowerCase().includes(filterLower)) ||
+                    (unit.refrigerant && unit.refrigerant.toLowerCase().includes(filterLower)) ||
+                    (unit.type && unit.type.toLowerCase().includes(filterLower)) ||
+                    (unit.capacity && unit.capacity.toString().includes(filterLower))
+                );
+            });
+        }
     },
     created: function() {
         this.load_heatpumps();
         this.load_manufacturers();
     },
     methods: {
+        filterHeatpumps: function() {
+            // Filtering is handled by the computed property
+            // This method exists for the @input event binding
+        },
+        sort: function(column, starting_order) {
+            if (this.currentSortColumn != column) {
+                this.currentSortDir = starting_order;
+                this.currentSortColumn = column;
+            } else {
+                if (this.currentSortDir == 'desc') {
+                    this.currentSortDir = 'asc';
+                } else {
+                    this.currentSortDir = 'desc';
+                }
+            }
+        },
         load_heatpumps: function() {
             $.get(this.path+'heatpump/list')
                 .done(response => {
