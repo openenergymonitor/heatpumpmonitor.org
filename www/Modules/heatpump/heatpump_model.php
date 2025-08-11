@@ -337,7 +337,7 @@ class Heatpump
         // Get all manufacturers from the manufacturers table
         $manufacturers = $this->manufacturer_model->get_names();
 
-        $result = $this->mysqli->query("SELECT * FROM system_meta");
+        $result = $this->mysqli->query("SELECT * FROM system_meta WHERE published = '1' AND share = '1'");
         // hp_model, hp_output, refrigerant
         $heatpumps = [];
         // Group by hp_model
@@ -392,25 +392,6 @@ class Heatpump
      * @return array
      */
     public function get_unmatched_list() {
-        $populate_data = $this->populate_table();
-        $unmatched = [];
-
-        foreach ($populate_data as $item) {
-            // Only include items where manufacturer_id is valid (not false)
-            if ($item['manufacturer_id'] !== false) {
-                $unmatched[] = [
-                    'manufacturer_id' => $item['manufacturer_id'],
-                    'manufacturer' => $item['manufacturer'],
-                    'model' => $item['model'],
-                    'refrigerant' => $item['refrigerant'],
-                    'capacity' => $item['capacity'],
-                    'type' => $item['type'],
-                    'count' => $item['count'],
-                    'system_ids' => $item['system_ids']
-                ];
-            }
-        }
-
-        return $unmatched;
+        return $this->populate_table();
     }
 }
