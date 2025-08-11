@@ -294,7 +294,8 @@ class Heatpump
      */
     public function get_stats($manufacturer, $model, $refrigerant, $capacity)
     {
-        $model = $manufacturer . " " . $model; // Combine manufacturer and model for search
+        $manufacturer = trim($manufacturer);
+        $model = trim($model);
         $capacity = (float) $capacity;
         $refrigerant = trim($refrigerant);
 
@@ -313,7 +314,8 @@ class Heatpump
             ON 
                 sm.id = ss.id
             WHERE 
-                sm.hp_model LIKE ? 
+                sm.hp_manufacturer LIKE ?
+                AND sm.hp_model LIKE ? 
                 AND sm.hp_output LIKE ? 
                 AND sm.refrigerant LIKE ?
                 AND sm.published = '1' 
@@ -321,10 +323,11 @@ class Heatpump
         ";
         
         $stmt = $this->mysqli->prepare($query);
+        $manufacturer_pattern = '%' . $manufacturer . '%';
         $model_pattern = '%' . $model . '%';
         $refrigerant_pattern = '%' . $refrigerant . '%';
         $capacity_pattern = '%' . $capacity . '%';
-        $stmt->bind_param("sss", $model_pattern, $capacity_pattern, $refrigerant_pattern);
+        $stmt->bind_param("ssss", $manufacturer_pattern, $model_pattern, $capacity_pattern, $refrigerant_pattern);
         $stmt->execute();
         
         $result = $stmt->get_result();
