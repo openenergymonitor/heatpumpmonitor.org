@@ -576,7 +576,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
     columns['hp_type'].name = "Source";
     columns['hp_manufacturer'].name = "Manufacturer";
-    columns['hp_model'].name = "Make & Model";
+    columns['hp_model'].name = "Model";
     columns['hp_output'].name = "Rating";
     // columns['heatgeek'].name = "Training";
     
@@ -694,16 +694,16 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     // Template views
     var template_views = {}
     template_views['topofthescops'] = {}
-    template_views['topofthescops']['wide'] = ['location', 'installer_logo', 'installer_name', 'training', 'hp_type', 'hp_model', 'hp_output', 'combined_data_length', 'data_flag', 'combined_cop', 'water_cop', 'boundary' , 'mid_metering', 'learnmore'];
-    template_views['topofthescops']['narrow'] = ['installer_logo', 'training', 'hp_model', 'hp_output', 'combined_cop', 'learnmore'];
+    template_views['topofthescops']['wide'] = ['location', 'installer_logo', 'installer_name', 'training', 'hp_type', 'hp_manufacturer', 'hp_model', 'hp_output', 'combined_data_length', 'data_flag', 'combined_cop', 'water_cop', 'boundary' , 'mid_metering', 'learnmore'];
+    template_views['topofthescops']['narrow'] = ['installer_logo', 'training', 'hp_manufacturer', 'hp_model', 'hp_output', 'combined_cop', 'learnmore'];
 
     template_views['heatpumpfabric'] = {}
     template_views['heatpumpfabric']['wide'] = ['installer_logo', 'location', 'property', 'insulation', 'age', 'floor_area', 'hp_type', 'hp_model', 'hp_output', 'combined_cop', 'combined_elec_kwh_per_m2', 'combined_heat_kwh_per_m2'];
-    template_views['heatpumpfabric']['narrow'] = ['installer_logo', 'hp_model', 'hp_output', 'combined_elec_kwh_per_m2'];
+    template_views['heatpumpfabric']['narrow'] = ['installer_logo', 'hp_manufacturer', 'hp_model', 'hp_output', 'combined_elec_kwh_per_m2'];
 
     template_views['costs'] = {}
-    template_views['costs']['wide'] = ['installer_logo', 'training', 'location' , 'hp_type', 'hp_model', 'hp_output', 'electricity_tariff', 'selected_unit_rate', 'combined_cop', 'combined_heat_unit_cost', 'combined_cost', 'learnmore'];
-    template_views['costs']['narrow'] = ['installer_logo', 'training', 'hp_model', 'hp_output', 'combined_heat_unit_cost', 'learnmore'];
+    template_views['costs']['wide'] = ['installer_logo', 'training', 'location' , 'hp_type', 'hp_manufacturer', 'hp_model', 'hp_output', 'electricity_tariff', 'selected_unit_rate', 'combined_cop', 'combined_heat_unit_cost', 'combined_cost', 'learnmore'];
+    template_views['costs']['narrow'] = ['installer_logo', 'training', 'hp_manufacturer', 'hp_model', 'hp_output', 'combined_heat_unit_cost', 'learnmore'];
 
     // add to template views
     for (var key in template_views) {
