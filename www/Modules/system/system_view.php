@@ -191,41 +191,80 @@ global $settings, $session, $path;
                 <hr class="mt-3">
             </div>
 
-            <div style="background-color: #fff; padding:10px; border-radius: 5px">
-                <div class="mb-3 autocomplete">
-                    <label class="form-label">Manufacturer *</label>
-                    <input id="heatpumpManufacturer" v-model="manufacturer_name" class="form-control" type="text" placeholder="Manufacturer name" required>
-                </div>
-
-                <div class="mb-3 autocomplete">
-                    <label class="form-label">Model *</label>
-                    <input id="heatpumpModel" v-model="model_name" class="form-control" type="text" placeholder="Model name" required>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Refrigerant</label>
-                    <!-- R290','R32','CO2','R410A','R210A','R134A','R407C','R454C','R452B -->
-                    <select v-model="system.refrigerant" class="form-control">
-                        <option value="">Select refrigerant...</option>
-                        <option v-for="refrigerant in refrigerants" :value="refrigerant">
-                            {{ refrigerant }}
-                        </option>
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Type</label>
-                    <select v-model="system.hp_type" class="form-select">
-                        <option value="">Select type...</option>
-                        <option v-for="type in types">{{ type }}</option>
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Badge Capacity (kW) *</label>
-                    <input v-model="system.hp_output" class="form-control" type="number" step="0.1" placeholder="e.g. 5.0" required>
-                </div>
-            </div>
-
             <table class="table mt-3">
+                <tbody>
+                    <tr>
+                        <th style="background-color:#f0f0f0;">Heat Pump Details</th>
+                        <td style="background-color:#f0f0f0;"></td>
+                        <td style="background-color:#f0f0f0;"></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span>Manufacturer</span> <span v-if="mode=='edit'" style="color:#aa0000">*</span>
+                        </td>
+                        <td></td>
+                        <td>
+                            <div class="input-group" v-if="mode=='edit'">
+                                <input id="heatpumpManufacturer" v-model="manufacturer_name" class="form-control" type="text" placeholder="Manufacturer name" required>
+                            </div>
+                            <span v-if="mode=='view'">{{ manufacturer_name }}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span>Model</span> <span v-if="mode=='edit'" style="color:#aa0000">*</span>
+                        </td>
+                        <td></td>
+                        <td>
+                            <div class="input-group" v-if="mode=='edit'">
+                                <input id="heatpumpModel" v-model="model_name" class="form-control" type="text" placeholder="Model name" required>
+                            </div>
+                            <span v-if="mode=='view'">{{ model_name }}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span>Refrigerant</span>
+                        </td>
+                        <td></td>
+                        <td>
+                            <select class="form-control" v-if="mode=='edit'" v-model="system.refrigerant">
+                                <option value="">Select refrigerant...</option>
+                                <option v-for="refrigerant in refrigerants" :value="refrigerant">
+                                    {{ refrigerant }}
+                                </option>
+                            </select>
+                            <span v-if="mode=='view'">{{ system.refrigerant }}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span>Type</span>
+                        </td>
+                        <td></td>
+                        <td>
+                            <select class="form-select" v-if="mode=='edit'" v-model="system.hp_type">
+                                <option value="">Select type...</option>
+                                <option v-for="type in types">{{ type }}</option>
+                            </select>
+                            <span v-if="mode=='view'">{{ system.hp_type }}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span>Badge Capacity (kW)</span> <span v-if="mode=='edit'" style="color:#aa0000">*</span>
+                        </td>
+                        <td></td>
+                        <td>
+                            <div class="input-group" v-if="mode=='edit'">
+                                <input v-model="system.hp_output" class="form-control" type="number" step="0.1" placeholder="e.g. 5.0" required>
+                                <span class="input-group-text">kW</span>
+                            </div>
+                            <span v-if="mode=='view'">{{ system.hp_output }}</span> <span v-if="mode=='view'" style="color:#666; font-size:14px">kW</span>
+                        </td>
+                    </tr>
+                </tbody>
+
                 <tbody v-for="group,group_name in filtered_schema_groups">
                     <tr>
                         <th style="background-color:#f0f0f0;">{{ group_name }}</th>
