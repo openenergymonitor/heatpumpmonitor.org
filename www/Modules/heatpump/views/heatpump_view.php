@@ -25,11 +25,11 @@
                     </tr>
                     <tr>
                         <td>Total number of systems</th>
-                        <td><a :href="path+'?filter=query:hp_model:'+heatpump.manufacturer_name+',hp_output:'+heatpump.capacity+'&period=all&minDays=0&other=1&hpint=1&errors=1'" target="_blank">{{ heatpump.stats.number_of_systems }}</a></td>
+                        <td><a :href="path+'?filter=query:hp_model:'+heatpump.name+',hp_output:'+heatpump.capacity+'&period=all&minDays=0&other=1&hpint=1&errors=1'" target="_blank">{{ heatpump.stats.number_of_systems }}</a></td>
                     </tr>
                     <tr>
                         <td>Number of systems with 1 year of data</th>
-                        <td><a :href="path+'?filter=query:hp_model:'+heatpump.manufacturer_name+',hp_output:'+heatpump.capacity+'&other=1&hpint=1&errors=1'" target="_blank">{{ heatpump.stats.number_of_systems_last365 }}</a></td>
+                        <td><a :href="path+'?filter=query:hp_model:'+heatpump.name+',hp_output:'+heatpump.capacity+'&other=1&hpint=1&errors=1'" target="_blank">{{ heatpump.stats.number_of_systems_last365 }}</a></td>
                     </tr>
                     <tr>
                         <td>Average SPF H4</th>
@@ -45,48 +45,48 @@
                     </tr>
                 </table>
             </div>
-            <div class="col-4">
+            <div class="col-4" v-if="heatpump.img">
                 <img :src="path+'Modules/heatpump/img/'+heatpump.img" class="img-thumbnail mt-3" :alt="heatpump.img">
             </div>
         </div>
 
-
-
         <div class="row">
             <div class="col">
-                <br>
-                <h4>Minimum modulation test results</h4>
-                <table id="custom" class="table table-striped table-sm mt-3" v-if="min_mod_tests.length">
-                    <tr>
-                        <th>Test</th>
-                        <th>System</th>
-                        <th>Date</th>
-                        <th>Duration</th>
-                        <th>Elec input</th>
-                        <th>Heat output</th>
-                        <th></th>
-                    </tr>
-                    <tr v-for="test in min_mod_tests">
-                        <td>{{ test.id }}</td>
-                        <td>{{ test.system }}</td>
-                        <td>{{ test.date }}</td>
-                        <td>{{ test.data_length / 3600 | toFixed(1) }} hrs</td>
-                        <td>{{ test.elec | toFixed(0) }}W</td>
-                        <td>{{ test.heat | toFixed(0) }}W</td>
-                        <td style="width:120px">
-                            <a :href="test.data" target="_blank">
-                                <button class="btn btn-secondary btn-sm" title="Dashboard"><i class="fa fa-chart-bar" style="color: #ffffff;"></i></button>
-                            </a>
-                            <button class="btn btn-danger btn-sm" title="Delete" @click="delete_min_mod_test(id)" v-if="mode=='admin'"><i class="fa fa-trash" style="color: #ffffff;"></i></button>
-                        </td>
-                    </tr>
-                </table>
-                <div v-if="min_mod_tests.length==0" class="alert alert-warning mt-3">No tests recorded</div>
-                <div class="row" v-if="mode=='admin'">
-                    <div class="col">
-                        <div class="input-group mb-3">
-                            <input type="text" class="form-control" placeholder="Paste MyHeatpump app URL of min modulation test period here" v-model="new_min_mod_test_url">
-                            <button class="btn btn-primary" type="button" @click="load_min_mod_test_data">Load and save</button>
+                <div v-if="min_mod_enabled">
+                    <br>
+                    <h4>Minimum modulation test results</h4>
+                    <table id="custom" class="table table-striped table-sm mt-3" v-if="min_mod_tests.length">
+                        <tr>
+                            <th>Test</th>
+                            <th>System</th>
+                            <th>Date</th>
+                            <th>Duration</th>
+                            <th>Elec input</th>
+                            <th>Heat output</th>
+                            <th></th>
+                        </tr>
+                        <tr v-for="test in min_mod_tests">
+                            <td>{{ test.id }}</td>
+                            <td>{{ test.system }}</td>
+                            <td>{{ test.date }}</td>
+                            <td>{{ test.data_length / 3600 | toFixed(1) }} hrs</td>
+                            <td>{{ test.elec | toFixed(0) }}W</td>
+                            <td>{{ test.heat | toFixed(0) }}W</td>
+                            <td style="width:120px">
+                                <a :href="test.data" target="_blank">
+                                    <button class="btn btn-secondary btn-sm" title="Dashboard"><i class="fa fa-chart-bar" style="color: #ffffff;"></i></button>
+                                </a>
+                                <button class="btn btn-danger btn-sm" title="Delete" @click="delete_min_mod_test(id)" v-if="mode=='admin'"><i class="fa fa-trash" style="color: #ffffff;"></i></button>
+                            </td>
+                        </tr>
+                    </table>
+                    <div v-if="min_mod_tests.length==0" class="alert alert-warning mt-3">No tests recorded</div>
+                    <div class="row" v-if="mode=='admin'">
+                        <div class="col">
+                            <div class="input-group mb-3">
+                                <input type="text" class="form-control" placeholder="Paste MyHeatpump app URL of min modulation test period here" v-model="new_min_mod_test_url">
+                                <button class="btn btn-primary" type="button" @click="load_min_mod_test_data">Load and save</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -131,7 +131,7 @@
                         <td></td>
                     </tr>
                 </table>
-                <div v-if="max_cap_tests.length==0" class="alert alert-warning mt-3">No tests recorded</div>
+                <div v-if="max_cap_tests.length==0" class="alert alert-secondary mt-3">No tests recorded</div>
 
                 <div class="row" v-if="mode=='admin'">
                     <div class="col">
@@ -174,6 +174,7 @@
                             </div>
                         </td>
                     </tr>
+                    <!--
                     <tr>
                         <td>Minimum flow rate</th>
                         <td v-if="!edit_properties">{{ heatpump.min_flow_rate }} L/min (Min mod @ DT5 = {{ (heatpump.min_flow_rate/60)*5*4150 | toFixed(0) }}W)</td>
@@ -186,6 +187,7 @@
                             </div>
                         </td>
                     </tr>
+                    -->
                 </table>
             </div>
         </div>
@@ -207,7 +209,8 @@
             average_cap_test: 0,
             min_mod_tests: [],
             new_max_cap_test_url: null,
-            new_min_mod_test_url: null
+            new_min_mod_test_url: null,
+            min_mod_enabled: false
         },
         created: function() {
             this.load_heatpump();
