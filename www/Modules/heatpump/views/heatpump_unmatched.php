@@ -78,6 +78,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             <th @click="sort('refrigerant', 'asc')" style="cursor:pointer">Refrigerant
                                 <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='refrigerant'"></i>
                             </th>
+                            <th @click="sort('type', 'asc')" style="cursor:pointer">Type
+                                <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='type'"></i>
+                            </th>
                             <th @click="sort('capacity', 'desc')" style="cursor:pointer">Capacity
                                 <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='capacity'"></i>
                             </th>
@@ -92,6 +95,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             <td>{{ item.manufacturer }}</td>
                             <td>{{ item.model }}</td>
                             <td>{{ item.refrigerant }}</td>
+                            <td>{{ item.type || 'Air Source' }}</td>
                             <td>{{ item.capacity }} kW</td>
                             <td>
                                 <span class="count-badge">{{ item.count }}</span>
@@ -162,6 +166,7 @@ var app = new Vue({
                     (item.manufacturer && item.manufacturer.toLowerCase().includes(filterLower)) ||
                     (item.model && item.model.toLowerCase().includes(filterLower)) ||
                     (item.refrigerant && item.refrigerant.toLowerCase().includes(filterLower)) ||
+                    (item.type && item.type.toLowerCase().includes(filterLower)) ||
                     (item.capacity && item.capacity.toString().includes(filterLower))
                 );
             });
@@ -224,7 +229,7 @@ var app = new Vue({
                 manufacturer_id: manufacturer.id,
                 model: item.model,
                 refrigerant: item.refrigerant,
-                type: "Air Source", // Default type
+                type: item.type || "Air Source", // Use the type from data or default
                 capacity: item.capacity
             })
             .done(response => {

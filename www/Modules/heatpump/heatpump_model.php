@@ -344,13 +344,14 @@ class Heatpump
         while ($row = $result->fetch_object()) {
 
             // E.g Vaillant Arotherm+
+            $hp_type = trim($row->hp_type);
             $hp_manufacturer = trim($row->hp_manufacturer);
             $hp_model = trim($row->hp_model);
             $hp_refrigerant = trim($row->refrigerant);
             $hp_output = (float) trim($row->hp_output);
 
             // get manufacturer id$
-            $manufacturer_id = '';
+            $manufacturer_id = false;
             if ($manufacturer = $this->manufacturer_model->get_by_name($hp_manufacturer)) {
                 $manufacturer_id = $manufacturer->id;
                 if ($this->model_exists($manufacturer_id, $hp_model, $hp_refrigerant, $hp_output)) {
@@ -358,17 +359,29 @@ class Heatpump
                 }
             }
 
-            $key = $manufacturer_id . ' ' . $hp_manufacturer . ' ' . $hp_model . ' ' . $hp_refrigerant . ' ' . $hp_output;
+            $key = $hp_manufacturer . ' ' . $hp_model . ' ' . $hp_refrigerant . ' ' . $hp_output;
 
             if (!isset($heatpumps[$key])) {
-                $heatpumps[$key] = 0;
+                $heatpumps[$key] = array(
+                    'manufacturer_id' => $manufacturer_id,
+                    'type' => $hp_type,
+                    'manufacturer' => $hp_manufacturer,
+                    'model' => $hp_model,
+                    'refrigerant' => $hp_refrigerant,
+                    'capacity' => $hp_output,
+                    'system_ids' => [],
+                    'count' => 0
+                );
             }
 
-            $heatpumps[$key]++;
+            $heatpumps[$key]['count']++;
+            $heatpumps[$key]['system_ids'][] = $row->id;
         }
 
         // arrange by most common
-        arsort($heatpumps);
+        usort($heatpumps, function($a, $b) {
+            return $b['count'] - $a['count'];
+        });
 
         return $heatpumps;
     }
@@ -379,33 +392,6 @@ class Heatpump
      * @return array
      */
     public function get_unmatched_list() {
-        $populate_data = $this->populate_table();
-        $unmatched = [];
-
-        foreach ($populate_data as $key => $count) {
-            // Parse the key: manufacturer_id manufacturer_name model refrigerant capacity
-            $parts = explode(' ', $key);
-            if (count($parts) >= 5) {
-                $manufacturer_id = $parts[0];
-                $manufacturer_name = $parts[1];
-                $model = $parts[2];
-                $refrigerant = $parts[3];
-                $capacity = $parts[4];
-
-                // Only include items where manufacturer_id is not empty (valid manufacturer)
-                if (!empty($manufacturer_id)) {
-                    $unmatched[] = [
-                        'manufacturer_id' => $manufacturer_id,
-                        'manufacturer' => $manufacturer_name,
-                        'model' => $model,
-                        'refrigerant' => $refrigerant,
-                        'capacity' => $capacity,
-                        'count' => $count
-                    ];
-                }
-            }
-        }
-
-        return $unmatched;
+        return $this->populate_table();
     }
 }
