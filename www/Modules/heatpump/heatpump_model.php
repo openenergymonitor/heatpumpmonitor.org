@@ -207,47 +207,6 @@ class Heatpump
         return $exists;
     }
 
-    public function populate_table() {
-
-        // Get all manufacturers from the manufacturers table
-        $manufacturers = $this->manufacturer_model->get_names();
-
-        $result = $this->mysqli->query("SELECT * FROM system_meta");
-        // hp_model, hp_output, refrigerant
-        $heatpumps = [];
-        // Group by hp_model
-        while ($row = $result->fetch_object()) {
-
-            // E.g Vaillant Arotherm+
-            $hp_manufacturer = trim($row->hp_manufacturer);
-            $hp_model = trim($row->hp_model);
-            $hp_refrigerant = trim($row->refrigerant);
-            $hp_output = (float) trim($row->hp_output);
-
-            // get manufacturer id$
-            $manufacturer_id = '';
-            if ($manufacturer = $this->manufacturer_model->get_by_name($hp_manufacturer)) {
-                $manufacturer_id = $manufacturer->id;
-                if ($this->model_exists($manufacturer_id, $hp_model, $hp_refrigerant, $hp_output)) {
-                    continue; // Skip if this model already exists
-                }
-            }
-
-            $key = $manufacturer_id . ' ' . $hp_manufacturer . ' ' . $hp_model . ' ' . $hp_refrigerant . ' ' . $hp_output;
-
-            if (!isset($heatpumps[$key])) {
-                $heatpumps[$key] = 0;
-            }
-
-            $heatpumps[$key]++;
-        }
-
-        // arrange by most common
-        arsort($heatpumps);
-
-        return $heatpumps;
-    }
-
     /*
      * Get a single heatpump by id
      * 
@@ -370,5 +329,83 @@ class Heatpump
             "lowest_spf" => number_format($min_cop,2,".","")*1,
             "highest_spf" => number_format($max_cop,2,".","")*1
         );
+    }
+
+
+    public function populate_table() {
+
+        // Get all manufacturers from the manufacturers table
+        $manufacturers = $this->manufacturer_model->get_names();
+
+        $result = $this->mysqli->query("SELECT * FROM system_meta");
+        // hp_model, hp_output, refrigerant
+        $heatpumps = [];
+        // Group by hp_model
+        while ($row = $result->fetch_object()) {
+
+            // E.g Vaillant Arotherm+
+            $hp_manufacturer = trim($row->hp_manufacturer);
+            $hp_model = trim($row->hp_model);
+            $hp_refrigerant = trim($row->refrigerant);
+            $hp_output = (float) trim($row->hp_output);
+
+            // get manufacturer id$
+            $manufacturer_id = '';
+            if ($manufacturer = $this->manufacturer_model->get_by_name($hp_manufacturer)) {
+                $manufacturer_id = $manufacturer->id;
+                if ($this->model_exists($manufacturer_id, $hp_model, $hp_refrigerant, $hp_output)) {
+                    continue; // Skip if this model already exists
+                }
+            }
+
+            $key = $manufacturer_id . ' ' . $hp_manufacturer . ' ' . $hp_model . ' ' . $hp_refrigerant . ' ' . $hp_output;
+
+            if (!isset($heatpumps[$key])) {
+                $heatpumps[$key] = 0;
+            }
+
+            $heatpumps[$key]++;
+        }
+
+        // arrange by most common
+        arsort($heatpumps);
+
+        return $heatpumps;
+    }
+
+    /*
+     * Get a list of unmatched heat pumps from system_meta
+     * 
+     * @return array
+     */
+    public function get_unmatched_list() {
+        $populate_data = $this->populate_table();
+        $unmatched = [];
+
+        foreach ($populate_data as $key => $count) {
+            // Parse the key: manufacturer_id manufacturer_name model refrigerant capacity
+            $parts = explode(' ', $key);
+            if (count($parts) >= 5) {
+                $manufacturer_id = $parts[0];
+                $manufacturer_name = $parts[1];
+                $model = $parts[2];
+                $refrigerant = $parts[3];
+                $capacity = $parts[4];
+
+                // Only include items where manufacturer_id is not empty (valid manufacturer)
+                if (!empty($manufacturer_id)) {
+                    $unmatched[] = [
+                        'manufacturer_id' => $manufacturer_id,
+                        'manufacturer' => $manufacturer_name,
+                        'model' => $model,
+                        'refrigerant' => $refrigerant,
+                        'capacity' => $capacity,
+                        'count' => $count
+                    ];
+                }
+            }
+        }
+
+        return $unmatched;
     }
 }

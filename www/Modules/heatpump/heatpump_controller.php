@@ -25,6 +25,14 @@ function heatpump_controller() {
         ));
     }
 
+    // List of unmatched heat pump models
+    if ($route->action == "unmatched" && $session['admin']) {
+        $mode = $session['admin'] ? "admin" : "view";
+        return view("Modules/heatpump/views/heatpump_unmatched.php", array(
+            "mode" => $mode
+        ));
+    }
+
     // API actions
 
     require "Modules/manufacturer/manufacturer_model.php";
@@ -85,6 +93,11 @@ function heatpump_controller() {
     if ($route->action == "populate" && $session['admin']) {
         $route->format = "json";
         return $heatpump_model->populate_table();
+    }
+
+    if ($route->action == "unmatched_list" && $session['admin']) {
+        $route->format = "json";
+        return $heatpump_model->get_unmatched_list();
     }
 
     if ($route->action == "max_cap_test") {
