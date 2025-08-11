@@ -194,7 +194,7 @@ global $settings, $session, $path;
             <table class="table mt-3">
                 <tbody>
                     <tr>
-                        <th style="background-color:#f0f0f0;">Heat Pump Details</th>
+                        <th style="background-color:#f0f0f0;">Heat pump</th>
                         <td style="background-color:#f0f0f0;"></td>
                         <td style="background-color:#f0f0f0;"></td>
                     </tr>
@@ -229,7 +229,7 @@ global $settings, $session, $path;
                         <td></td>
                         <td>
                             <select class="form-control" v-if="mode=='edit'" v-model="system.refrigerant">
-                                <option value="">Select refrigerant...</option>
+                                <option value="" v-if="refrigerants.length>1">Select refrigerant...</option>
                                 <option v-for="refrigerant in refrigerants" :value="refrigerant">
                                     {{ refrigerant }}
                                 </option>
@@ -244,7 +244,7 @@ global $settings, $session, $path;
                         <td></td>
                         <td>
                             <select class="form-select" v-if="mode=='edit'" v-model="system.hp_type">
-                                <option value="">Select type...</option>
+                                <option value="" v-if="types.length>1">Select type...</option>
                                 <option v-for="type in types">{{ type }}</option>
                             </select>
                             <span v-if="mode=='view'">{{ system.hp_type }}</span>
@@ -262,6 +262,11 @@ global $settings, $session, $path;
                             </div>
                             <span v-if="mode=='view'">{{ system.hp_output }}</span> <span v-if="mode=='view'" style="color:#666; font-size:14px">kW</span>
                         </td>
+                    </tr>
+                    <tr>
+                        <td><span>Heat pump has backup heater installed and in use</span> <!----></td> 
+                        <td><span data-bs-toggle="tooltip" data-bs-placement="top" title="This is an inline electric element that can top up the heat pump output mostly for space heating"><i class="fas fa-question-circle"></i></span></td>
+                        <td><span><input type="checkbox" v-model="system.uses_backup_heater"></span> <!----></td>
                     </tr>
                 </tbody>
 

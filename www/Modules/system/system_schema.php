@@ -200,7 +200,8 @@ $schema['system_meta'] = array(
         'optional' => true, 
         'name' => 'Refrigerant', 
         'group' => 'Heat pump', 
-        'options'=>array('R290','R32','CO2','R410A','R210A','R134A','R407C','R454C','R452B')
+        'options'=>array('R290','R32','CO2','R410A','R210A','R134A','R407C','R454C','R452B'),
+        'show' => false
     ),
 
     'uses_backup_heater' => array(
@@ -210,7 +211,8 @@ $schema['system_meta'] = array(
         'name' => 'Heat pump has backup heater installed and in use',
         'helper'=> 'This is an inline electric element that can top up the heat pump output mostly for space heating',
         'group' => 'Heat pump',
-        'basic' => true
+        'basic' => true,
+        'show' => false
     ),
 
     /* ------------------------------ Space heating ----------------------------- */
