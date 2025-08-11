@@ -34,7 +34,7 @@
                         <td><input class="form-control" type="color" v-model="system.color" @change="change_color"></td>
                         <td>
                             <select class="form-control" v-model="system.id" @change="change_system(idx)">
-                                <option v-for="s,i in system_list" :value="s.id">{{ s.location }},  {{ s.hp_model }}, {{ s.hp_output }} kW</option>
+                                <option v-for="s,i in system_list" :value="s.id">{{ s.location }}, {{ s.hp_manufacturer }} {{ s.hp_model }}, {{ s.hp_output }} kW</option>
                             </select>
                         </td>
                         <td><button class="btn btn-danger" @click="remove_system">Delete</button></td>

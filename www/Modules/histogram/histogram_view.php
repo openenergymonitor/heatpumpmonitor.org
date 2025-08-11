@@ -45,7 +45,7 @@ if (isset($_GET['id'])) {
                         <td><input class="form-control" type="color" v-model="system.color" @change="change_color"></td>
                         <td>
                             <select class="form-control" v-model="system.id" @change="change_system(idx)">
-                                <option v-for="s,i in system_list" :value="s.id">{{ s.location }}, {{ s.hp_model }}, {{ s.hp_output }} kW</option>
+                                <option v-for="s,i in system_list" :value="s.id">{{ s.location }}, {{ s.hp_manufacturer }} {{ s.hp_model }}, {{ s.hp_output }} kW</option>
                             </select>
                         </td>
                         <td><input class="form-control" v-if="idx==0 || !match_dates" v-model="system.start" type="date" @change="date_changed(idx)"></td>

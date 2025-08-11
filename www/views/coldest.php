@@ -15,7 +15,7 @@
                 <span class="input-group-text">Select system</span>
 
                 <select class="form-control" v-model="systemid" @change="change_system">
-                    <option v-for="s,i in filtered_system_list" :value="s.id">{{ s.location }}, {{ s.hp_model }}, {{ s.hp_output }} kW</option>
+                    <option v-for="s,i in filtered_system_list" :value="s.id">{{ s.location }}, {{ s.hp_manufacturer }} {{ s.hp_model }}, {{ s.hp_output }} kW</option>
                 </select>
 
                 <button class="btn btn-primary" @click="next_system(-1)"><</button>
