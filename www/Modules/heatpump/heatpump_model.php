@@ -54,7 +54,7 @@ class Heatpump
         $model = trim($model);
         $refrigerant = trim($refrigerant);
         $type = trim($type);
-        $capacity = (float) $capacity;
+        $capacity = trim($capacity);
         
         if (empty($model)) {
             return array("success" => false, "message" => "Model name is required");
@@ -84,7 +84,7 @@ class Heatpump
         
         // Insert the new heat pump model
         $stmt = $this->mysqli->prepare("INSERT INTO heatpump_model (manufacturer_id, name, refrigerant, type, capacity) VALUES (?, ?, ?, ?, ?)");
-        $stmt->bind_param("isssd", $manufacturer_id, $model, $refrigerant, $type, $capacity);
+        $stmt->bind_param("issss", $manufacturer_id, $model, $refrigerant, $type, $capacity);
         
         if ($stmt->execute()) {
             $new_id = $this->mysqli->insert_id;
@@ -113,7 +113,7 @@ class Heatpump
         $model = trim($model);
         $refrigerant = trim($refrigerant);
         $type = trim($type);
-        $capacity = (float) $capacity;
+        $capacity = trim($capacity);
 
         if (empty($model)) {
             return array("success" => false, "message" => "Model name is required");
@@ -143,7 +143,7 @@ class Heatpump
 
         // Update the heat pump model
         $stmt = $this->mysqli->prepare("UPDATE heatpump_model SET manufacturer_id = ?, name = ?, refrigerant = ?, type = ?, capacity = ? WHERE id = ?");
-        $stmt->bind_param("isssdi", $manufacturer_id, $model, $refrigerant, $type, $capacity, $id);
+        $stmt->bind_param("issssi", $manufacturer_id, $model, $refrigerant, $type, $capacity, $id);
         if ($stmt->execute()) {
             $stmt->close();
             return array("success" => true, "message" => "Heat pump model updated successfully");
@@ -193,10 +193,10 @@ class Heatpump
     public function model_exists($manufacturer_id, $model, $refrigerant, $capacity, $exclude_id = null) {
         if ($exclude_id) {
             $stmt = $this->mysqli->prepare("SELECT id FROM heatpump_model WHERE manufacturer_id = ? AND name = ? AND refrigerant = ? AND capacity = ? AND id != ?");
-            $stmt->bind_param("issdi", $manufacturer_id, $model, $refrigerant, $capacity, $exclude_id);
+            $stmt->bind_param("isssi", $manufacturer_id, $model, $refrigerant, $capacity, $exclude_id);
         } else {
             $stmt = $this->mysqli->prepare("SELECT id FROM heatpump_model WHERE manufacturer_id = ? AND name = ? AND refrigerant = ? AND capacity = ?");
-            $stmt->bind_param("issd", $manufacturer_id, $model, $refrigerant, $capacity);
+            $stmt->bind_param("isss", $manufacturer_id, $model, $refrigerant, $capacity);
         }
         
         $stmt->execute();
@@ -219,35 +219,31 @@ class Heatpump
         while ($row = $result->fetch_object()) {
 
             // E.g Vaillant Arotherm+
+            $hp_manufacturer = trim($row->hp_manufacturer);
             $hp_model = trim($row->hp_model);
+            $hp_refrigerant = trim($row->refrigerant);
+            $hp_output = (float) trim($row->hp_output);
 
-            // Check if manufacturer is in the hp_model text string
-            $manufacturer_name = false;
-            foreach ($manufacturers as $manufacturer) {
-                if (stripos($hp_model, $manufacturer) !== false) {
-                    $manufacturer_name = $manufacturer;
-                    break;
+            // get manufacturer id$
+            $manufacturer_id = '';
+            if ($manufacturer = $this->manufacturer_model->get_by_name($hp_manufacturer)) {
+                $manufacturer_id = $manufacturer->id;
+                if ($this->model_exists($manufacturer_id, $hp_model, $hp_refrigerant, $hp_output)) {
+                    continue; // Skip if this model already exists
                 }
             }
 
-            if (!isset($heatpumps[$manufacturer_name])) {
-                $heatpumps[$manufacturer_name] = [];
+            $key = $manufacturer_id . ' ' . $hp_manufacturer . ' ' . $hp_model . ' ' . $hp_refrigerant . ' ' . $hp_output;
+
+            if (!isset($heatpumps[$key])) {
+                $heatpumps[$key] = 0;
             }
 
-            // Remove the manufacturer name from the hp_model
-            if ($manufacturer_name) {
-                $hp_model = str_ireplace($manufacturer_name, "", $hp_model);
-                $hp_model = trim($hp_model);
-            }
-
-            // Add the heatpump to the list
-            if (!isset($heatpumps[$manufacturer_name][$hp_model])) {
-                $heatpumps[$manufacturer_name][$hp_model] = 0;
-            }
-
-            // Increment the count of heatpumps for this model
-            $heatpumps[$manufacturer_name][$hp_model]++;
+            $heatpumps[$key]++;
         }
+
+        // arrange by most common
+        arsort($heatpumps);
 
         return $heatpumps;
     }
@@ -296,7 +292,7 @@ class Heatpump
     {
         $manufacturer = trim($manufacturer);
         $model = trim($model);
-        $capacity = (float) $capacity;
+        $capacity = trim($capacity);
         $refrigerant = trim($refrigerant);
 
         // Prepare the query with placeholders

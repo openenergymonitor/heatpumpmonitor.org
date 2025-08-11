@@ -55,6 +55,23 @@ class Manufacturer
     }
 
     /*
+     * Get manufacturer by name
+     * @param string $name
+     * @return object|null
+     */
+    public function get_by_name($name) {
+        $stmt = $this->mysqli->prepare("SELECT * FROM manufacturers WHERE name = ?");
+        $stmt->bind_param("s", $name);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($result->num_rows > 0) {
+            return $result->fetch_object();
+        } else {
+            return false;
+        }
+    }
+
+    /*
      * Add a new manufacturer
      * @param string $name
      * @param string $website
