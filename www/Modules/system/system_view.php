@@ -39,7 +39,7 @@ global $settings, $session, $path;
             </div>
 
             <div v-if="system.hp_model!=''">
-                <h3>{{ system.hp_output }} kW, {{ system.hp_model }}</h3>
+                <h3>{{ system.hp_output }} kW, {{ system.hp_manufacturer }} {{ system.hp_model }}</h3>
                 <p>{{ system.location }}, <span v-if="system.installer_name"><a :href="system.installer_url">{{ system.installer_name }}</a></span></p>
             </div>
             <a v-if="system.id" :href="system.url"><button class="btn btn-primary mb-3"><span class="d-none d-lg-inline-block">Emoncms</span> Dashboard</button></a>

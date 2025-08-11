@@ -28,4 +28,4 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 
 <!-- load weather_map.js -->
-<script src="<?php echo $path; ?>Modules/map/map_view.js?v=124"></script>
+<script src="<?php echo $path; ?>Modules/map/map_view.js?v=125"></script>
