@@ -27,7 +27,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 <div id="app" class="bg-light">
     <div style="background-color:#f0f0f0; padding-top:20px; padding-bottom:10px">
-        <div class="container" style="max-width:1000px;">
+        <div class="container" style="max-width:1200px;">
             <div class="row">
                 <div class="col-12">
                     <a href="<?php echo $path; ?>heatpump" class="btn btn-secondary" style="float:right; margin-left:10px;">Back to Heat Pumps</a>
@@ -51,7 +51,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         </div>
     </div>
 
-    <div class="container" style="max-width:1000px;">
+    <div class="container" style="max-width:1200px;">
         <div class="row">
             <div class="col">
                 <div v-if="loading" class="text-center p-4">
@@ -84,9 +84,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             <th @click="sort('capacity', 'desc')" style="cursor:pointer">Capacity
                                 <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='capacity'"></i>
                             </th>
-                            <th @click="sort('count', 'desc')" style="cursor:pointer">Systems Count
+                            <th @click="sort('count', 'desc')" style="cursor:pointer">Count
                                 <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='count'"></i>
                             </th>
+                            <th>Systems</th>
                             <th v-if="mode=='admin'" style="width:120px">Actions</th>
                         </tr>
                     </thead>
@@ -100,6 +101,19 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             <td>
                                 <span class="count-badge">{{ item.count }}</span>
                             </td>
+                            <td>
+                                <div v-if="item.system_ids && item.system_ids.length > 0" class="d-flex flex-wrap gap-1">
+                                    <a v-for="(systemId, index) in item.system_ids" 
+                                       :key="systemId"
+                                       :href="path + 'system/view?id=' + systemId" 
+                                       class="btn btn-outline-primary btn-sm"
+                                       :title="'View System ' + systemId"
+                                       target="_blank">
+                                        {{ systemId }}
+                                    </a>
+                                </div>
+                                <span v-else class="text-muted">No systems</span>
+                            </td>
                             <td v-if="mode=='admin'">
                                 <button class="btn btn-primary btn-sm" @click="addToDatabase(item)" title="Add to Database">
                                     <i class="fas fa-plus"></i> Add
@@ -112,6 +126,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         </div>
     </div>
 </div>
+
+
 
 <script>
 var app = new Vue({

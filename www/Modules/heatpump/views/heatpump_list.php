@@ -43,6 +43,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
             <div class="row">
                 <div class="col-12">
+                    <a href="<?php echo $path; ?>heatpump/unmatched" class="btn btn-warning" v-if="mode=='admin'" style="float:right; margin-left:10px;">Unmatched Heat Pumps</a>
                     <button class="btn btn-primary" @click="openAddModal" v-if="mode=='admin'" style="float:right">Add heatpump</button>
 
                     <h3>Heatpump database</h3>

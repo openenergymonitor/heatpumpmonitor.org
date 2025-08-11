@@ -392,6 +392,25 @@ class Heatpump
      * @return array
      */
     public function get_unmatched_list() {
-        return $this->populate_table();
+        $populate_data = $this->populate_table();
+        $unmatched = [];
+
+        foreach ($populate_data as $item) {
+            // Only include items where manufacturer_id is valid (not false)
+            if ($item['manufacturer_id'] !== false) {
+                $unmatched[] = [
+                    'manufacturer_id' => $item['manufacturer_id'],
+                    'manufacturer' => $item['manufacturer'],
+                    'model' => $item['model'],
+                    'refrigerant' => $item['refrigerant'],
+                    'capacity' => $item['capacity'],
+                    'type' => $item['type'],
+                    'count' => $item['count'],
+                    'system_ids' => $item['system_ids']
+                ];
+            }
+        }
+
+        return $unmatched;
     }
 }
