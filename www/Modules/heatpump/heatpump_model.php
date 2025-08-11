@@ -48,11 +48,12 @@ class Heatpump
      * @param float $capacity
      * @return array
      */
-    public function add($manufacturer_id, $model, $refrigerant, $capacity) {
+    public function add($manufacturer_id, $model, $refrigerant, $type, $capacity) {
         // Validate inputs
         $manufacturer_id = (int) $manufacturer_id;
         $model = trim($model);
         $refrigerant = trim($refrigerant);
+        $type = trim($type);
         $capacity = (float) $capacity;
         
         if (empty($model)) {
@@ -61,6 +62,10 @@ class Heatpump
 
         if (empty($refrigerant)) {
             return array("success" => false, "message" => "Refrigerant is required");
+        }
+
+        if (empty($type)) {
+            return array("success" => false, "message" => "Type is required");
         }
         
         if ($capacity <= 0) {
@@ -78,8 +83,8 @@ class Heatpump
         }
         
         // Insert the new heat pump model
-        $stmt = $this->mysqli->prepare("INSERT INTO heatpump_model (manufacturer_id, name, refrigerant, capacity) VALUES (?, ?, ?, ?)");
-        $stmt->bind_param("issd", $manufacturer_id, $model, $refrigerant, $capacity);
+        $stmt = $this->mysqli->prepare("INSERT INTO heatpump_model (manufacturer_id, name, refrigerant, type, capacity) VALUES (?, ?, ?, ?, ?)");
+        $stmt->bind_param("isssd", $manufacturer_id, $model, $refrigerant, $type, $capacity);
         
         if ($stmt->execute()) {
             $new_id = $this->mysqli->insert_id;
@@ -101,12 +106,13 @@ class Heatpump
      * @param float $capacity
      * @return array
      */
-    public function update($id, $manufacturer_id, $model, $refrigerant, $capacity) {
+    public function update($id, $manufacturer_id, $model, $refrigerant, $type, $capacity) {
         // Validate inputs
         $id = (int) $id;
         $manufacturer_id = (int) $manufacturer_id;
         $model = trim($model);
         $refrigerant = trim($refrigerant);
+        $type = trim($type);
         $capacity = (float) $capacity;
 
         if (empty($model)) {
@@ -115,6 +121,10 @@ class Heatpump
 
         if (empty($refrigerant)) {
             return array("success" => false, "message" => "Refrigerant is required");
+        }
+
+        if (empty($type)) {
+            return array("success" => false, "message" => "Type is required");
         }
 
         if ($capacity <= 0) {
@@ -132,8 +142,8 @@ class Heatpump
         }
 
         // Update the heat pump model
-        $stmt = $this->mysqli->prepare("UPDATE heatpump_model SET manufacturer_id = ?, name = ?, refrigerant = ?, capacity = ? WHERE id = ?");
-        $stmt->bind_param("issdi", $manufacturer_id, $model, $refrigerant, $capacity, $id);
+        $stmt = $this->mysqli->prepare("UPDATE heatpump_model SET manufacturer_id = ?, name = ?, refrigerant = ?, type = ?, capacity = ? WHERE id = ?");
+        $stmt->bind_param("isssdi", $manufacturer_id, $model, $refrigerant, $type, $capacity, $id);
         if ($stmt->execute()) {
             $stmt->close();
             return array("success" => true, "message" => "Heat pump model updated successfully");

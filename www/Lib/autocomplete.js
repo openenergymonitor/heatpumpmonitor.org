@@ -1,4 +1,4 @@
-function autocomplete(input, arr) {
+function autocomplete(input, arr, callback = false) {
     // the autocomplete function takes two arguments,
     var currentFocus;
     // execute a function when someone writes in the text field:
@@ -6,7 +6,12 @@ function autocomplete(input, arr) {
         var a, b, i, val = this.value;
         // close any already open lists of autocompleted values
         closeAllLists();
-        if (!val) { return false;}
+        if (!val) {
+            if (callback && typeof callback === 'function') {
+                callback(val);
+            }
+            return false;
+        }
         currentFocus = -1;
         // create a DIV element that will contain the items (values):
         a = document.createElement("DIV");
@@ -31,6 +36,10 @@ function autocomplete(input, arr) {
                     input.value = this.getElementsByTagName("input")[0].value;
                     // Trigger input event for Vue to detect the change
                     input.dispatchEvent(new Event('input', { bubbles: true }));
+                    // Call callback if provided
+                    if (callback && typeof callback === 'function') {
+                        callback(input.value);
+                    }
                     //close the list of autocompleted values,
                     closeAllLists();
                 });
@@ -56,6 +65,10 @@ function autocomplete(input, arr) {
                     input.value = x[currentFocus].getElementsByTagName("input")[0].value;
                     // Trigger input event for Vue
                     input.dispatchEvent(new Event('input', { bubbles: true }));
+                    // Call callback if provided
+                    if (callback && typeof callback === 'function') {
+                        callback(input.value);
+                    }
                     closeAllLists();
                 }
             }
@@ -66,7 +79,12 @@ function autocomplete(input, arr) {
                 input.value = x[0].getElementsByTagName("input")[0].value;
                 // Trigger input event for Vue
                 input.dispatchEvent(new Event('input', { bubbles: true }));
+                // Call callback if provided
+                if (callback && typeof callback === 'function') {
+                    callback(input.value);
+                }
                 closeAllLists();
+                
             }
         }
     });

@@ -1,11 +1,15 @@
 <?php
 // no direct access
 defined('EMONCMS_EXEC') or die('Restricted access');
-global $settings, $session;
+global $settings, $session, $path;
 ?>
 <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
+
+<link rel="stylesheet" href="<?php echo $path; ?>Lib/autocomplete.css?v=4">
+<script src="<?php echo $path; ?>Lib/autocomplete.js?v=10"></script>
 
 <style>
     .quality-bound {
@@ -154,8 +158,6 @@ global $settings, $session;
 
             </div>
         </div>
-
-
     </div>
 
     <div class="container mt-3" style="max-width:800px" v-if="mode=='edit'">
@@ -187,6 +189,40 @@ global $settings, $session;
                 </div>
                 
                 <hr class="mt-3">
+            </div>
+
+            <div style="background-color: #fff; padding:10px; border-radius: 5px">
+                <div class="mb-3 autocomplete">
+                    <label class="form-label">Manufacturer *</label>
+                    <input id="heatpumpManufacturer" v-model="manufacturer_name" class="form-control" type="text" placeholder="Manufacturer name" required>
+                </div>
+
+                <div class="mb-3 autocomplete">
+                    <label class="form-label">Model *</label>
+                    <input id="heatpumpModel" v-model="model_name" class="form-control" type="text" placeholder="Model name" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Refrigerant</label>
+                    <!-- R290','R32','CO2','R410A','R210A','R134A','R407C','R454C','R452B -->
+                    <select v-model="system.refrigerant" class="form-control">
+                        <option value="">Select refrigerant...</option>
+                        <option v-for="refrigerant in refrigerants" :value="refrigerant">
+                            {{ refrigerant }}
+                        </option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Type</label>
+                    <select v-model="system.hp_type" class="form-select">
+                        <option value="">Select type...</option>
+                        <option v-for="type in types">{{ type }}</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Badge Capacity (kW) *</label>
+                    <input v-model="system.hp_output" class="form-control" type="number" step="0.1" placeholder="e.g. 5.0" required>
+                </div>
             </div>
 
             <table class="table mt-3">
@@ -308,6 +344,10 @@ global $settings, $session;
         form_type = 'full';
     }
 
+    // Reset to these values if model is not set
+    var all_refrigerants = ["R290", "R32", "CO2", "R410A", "R210A", "R134A", "R407C", "R454C", "R452B"];
+    var all_types = ["Air Source", "Ground Source", "Water Source", "Air-to-Air", "Other"];
+
     var app = new Vue({
         el: '#app',
         data: {
@@ -330,7 +370,18 @@ global $settings, $session;
 
             chart_yaxis: 'combined_cop',
             system_stats_monthly_by_group: system_stats_monthly_by_group,
-            disable_loadstats: false
+            disable_loadstats: false,
+
+            manufacturer_name: '',
+            manufacturers: [],
+            model_name: '',
+            heatpump_models: [],
+            hp_refrigerant: '',
+            hp_type: '',
+            hp_capacity: '',
+            refrigerants: all_refrigerants,
+            types: all_types
+
         },
         computed: {
             qualityColor() {
@@ -455,9 +506,86 @@ global $settings, $session;
                         app.system.url = selected_app.url;
                     }
                 }
+                
+                this.$nextTick(() => {
+
+                    // Initialize autocomplete for heatpump manufacturer
+                    autocomplete(
+                        document.getElementById("heatpumpManufacturer"), 
+                        this.manufacturers.map(m => m.name),
+                        function(manufacturer) {
+                            app.manufacturer_name = manufacturer;
+                            app.filter_by_manufacturer();
+                        }
+                    );
+
+                    let uniqueHeatpumpNames = [...new Set(this.heatpump_models.map(h => h.name))];
+
+                    // Initialize autocomplete for heatpump model
+                    autocomplete(
+                        document.getElementById("heatpumpModel"), 
+                        uniqueHeatpumpNames, 
+                        function(model) {
+                            app.model_name = model;
+                            app.filter_refrigerant_and_type();
+                        }
+                    );
+                });
+
             },
             load_data: function() {
                 alert(system.url);
+            },
+
+            filter_by_manufacturer: function() {
+                let uniqueHeatpumpNames = [];
+                for (let i = 0; i < this.heatpump_models.length; i++) {
+                    if (this.heatpump_models[i].manufacturer_name == this.manufacturer_name) {
+                        uniqueHeatpumpNames.push(this.heatpump_models[i].name);
+                    }
+                }
+                uniqueHeatpumpNames = [...new Set(uniqueHeatpumpNames)]; // Remove duplicates
+                autocomplete(
+                    document.getElementById("heatpumpModel"), 
+                    uniqueHeatpumpNames,
+                    function(model) {
+                        app.model_name = model;
+                        app.filter_refrigerant_and_type();
+                    }
+                );
+            },
+
+            filter_refrigerant_and_type: function() {
+
+                // If no model selected, reset refrigerants and type
+                if (this.model_name == '') {
+                    this.refrigerants = all_refrigerants;
+                    this.types = all_types;
+                    this.system.refrigerant = '';
+                    this.system.hp_type = '';
+                    return;
+                }
+
+                // Set hp_model to manufacturer and model name
+                this.system.hp_model = this.manufacturer_name + ' ' + this.model_name;
+
+                // Filter refrigerants based on model
+                let refrigerants = [];
+                let types = [];
+                for (let i = 0; i < this.heatpump_models.length; i++) {
+                    if (this.heatpump_models[i].name == this.model_name) {
+                        refrigerants.push(this.heatpump_models[i].refrigerant);
+                        types.push(this.heatpump_models[i].type);
+                    }
+                }
+                refrigerants = [...new Set(refrigerants)];  // Remove duplicates
+                types = [...new Set(types)];                // Remove duplicates
+                this.refrigerants = refrigerants;
+                this.types = types;
+
+                // Set refrigerant and source based on single option or empty
+                this.system.refrigerant = refrigerants.length == 1 ? refrigerants[0] : '';
+                this.system.hp_type = types.length == 1 ? types[0] : '';
             },
 
             rules: function() {
@@ -587,14 +715,31 @@ global $settings, $session;
                 if (url_host != 'emoncms.org') {
                     alert('Please enter a valid Emoncms.org dashboard URL');
                 }
-            }
+            },
+
+            load_manufacturers: function() {
+                $.get(this.path+'manufacturer/list')
+                    .done(response => {
+                        // Order manufacturers by name alphabetically
+                        response.sort((a, b) => a.name.localeCompare(b.name));
+                        this.manufacturers = response;
+                    });
+            },
+
+            load_heatpumps: function() {
+                $.get(this.path+'heatpump/list')
+                    .done(response => {
+                        this.heatpump_models = response;
+                    });
+            },
+
+
         },
     });
 
     app.filter_schema_groups();
-
-
-
+    app.load_manufacturers();
+    app.load_heatpumps();
 
     axios.get(path + 'system/monthly?id=' + app.system.id)
         .then(function(response) {

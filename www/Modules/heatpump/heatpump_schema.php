@@ -6,7 +6,8 @@ $schema['heatpump_model'] = array(
     'manufacturer_id' => array('type' => 'int(11)'),
     'name' => array('type' => 'varchar(128)'),
     'capacity' => array('type' => 'float', 'Null' => false, 'default' => 0),
-    'refrigerant' => array('type' => 'varchar(32)', 'Null' => true, 'default' => null)
+    'refrigerant' => array('type' => 'varchar(32)', 'Null' => true, 'default' => null),
+    'type' => array('type' => 'varchar(32)', 'Null' => true, 'default' => null)
 );
 
 $schema['heatpump_max_cap_test'] = array(

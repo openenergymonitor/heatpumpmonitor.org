@@ -88,6 +88,16 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         </select>
                     </div>
                     <div class="mb-3">
+                        <label class="form-label">Type</label>
+                        <select v-model="newHeatpump.type" class="form-select">
+                            <option>Air Source</option>
+                            <option>Ground Source</option>
+                            <option>Water Source</option>
+                            <option>Air-to-Air</option>
+                            <option>Other</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label">Badge Capacity (kW) *</label>
                         <input v-model="newHeatpump.capacity" class="form-control" type="number" step="0.1" placeholder="e.g. 5.0" required>
                     </div>
@@ -114,6 +124,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <th>Make</th>
                         <th>Model</th>
                         <th>Refrigerant</th>
+                        <th>Type</th>
                         <th>Capacity</th>
                         <th>Systems</th>
                         <th style="width:120px"></th>
@@ -139,6 +150,16 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                 </option>
                             </select>
                             <span v-else>{{unit.refrigerant}}</span>
+                        </td>
+                        <td>
+                            <select v-if="editingId === unit.id" v-model="editType" class="form-select form-select-sm">
+                                <option>Air Source</option>
+                                <option>Ground Source</option>
+                                <option>Water Source</option>
+                                <option>Air-to-Air</option>
+                                <option>Other</option>
+                            </select>
+                            <span v-else>{{unit.type}}</span>
                         </td>
                         <td>
                             <div v-if="editingId === unit.id" class="input-group input-group-sm">
@@ -185,12 +206,14 @@ var app = new Vue({
             manufacturer_name: "",
             model: "",
             refrigerant: "",
+            type: "Air Source", // Default source
             capacity: ""
         },
         editingId: null,
         editManufacturerId: "",
         editModel: "",
         editRefrigerant: "",
+        editType: "",
         editCapacity: "",
         refrigerants: ["R290", "R32", "CO2", "R410A", "R210A", "R134A", "R407C", "R454C", "R452B"]
     },
@@ -235,6 +258,7 @@ var app = new Vue({
                 manufacturer_id: this.newHeatpump.manufacturer_id,
                 model: this.newHeatpump.model,
                 refrigerant: this.newHeatpump.refrigerant,
+                type: this.newHeatpump.type,
                 capacity: this.newHeatpump.capacity
             })
             .done(response => {
@@ -249,6 +273,7 @@ var app = new Vue({
                 manufacturer_name: "",
                 model: "",
                 refrigerant: "",
+                type: "Air Source", // Default source
                 capacity: ""
             };
 
@@ -276,6 +301,7 @@ var app = new Vue({
             this.editManufacturerId = heatpump.manufacturer_id;
             this.editModel = heatpump.name;
             this.editRefrigerant = heatpump.refrigerant || ""; // Handle null refrigerant
+            this.editType = heatpump.type || "Air Source"; // Default to Air if null
             this.editCapacity = heatpump.capacity;
         },
         save_heatpump: function(id) {
@@ -284,6 +310,7 @@ var app = new Vue({
                 manufacturer_id: this.editManufacturerId,
                 model: this.editModel,
                 refrigerant: this.editRefrigerant,
+                type: this.editType,
                 capacity: this.editCapacity
             })
             .done(response => {
@@ -296,6 +323,7 @@ var app = new Vue({
             this.editManufacturerId = "";
             this.editModel = "";
             this.editRefrigerant = "";
+            this.editType = "Air Source"; // Reset to default source
             this.editCapacity = "";
         },
         delete_heatpump: function(id) {

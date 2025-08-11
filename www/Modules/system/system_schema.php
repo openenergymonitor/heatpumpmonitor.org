@@ -148,7 +148,8 @@ $schema['system_meta'] = array(
         'optional' => false, 
         'name' => 'Heat pump type', 
         'group' => 'Heat pump', 
-        'options'=>array('Air Source','Ground Source','Water Source','Air-to-Air','Other')
+        'options'=>array('Air Source','Ground Source','Water Source','Air-to-Air','Other'),
+        'show'  => false
     ),
 
     'hp_model' => array(
@@ -156,7 +157,8 @@ $schema['system_meta'] = array(
         'editable' => true, 
         'optional' => false, 
         'name' => 'Heat pump make & model',
-        'group' => 'Heat pump'
+        'group' => 'Heat pump',
+        'show'  => false
     ),
 
     'hp_output' => array(
@@ -166,7 +168,8 @@ $schema['system_meta'] = array(
         'name' => 'Heat pump output', 
         'helper' => 'This is the badge output not necessarily the maximum output as given on the datasheet',
         'group' => 'Heat pump',
-        'unit' => 'kW'
+        'unit' => 'kW',
+        'show'  => false
     ),
     
     'hp_max_output' => array(

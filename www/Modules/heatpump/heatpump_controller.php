@@ -53,9 +53,10 @@ function heatpump_controller() {
         $manufacturer_id = (int) post("manufacturer_id", true);
         $model = trim(post("model", true));
         $refrigerant = trim(post("refrigerant", true));
+        $type = trim(post("type", true));
         $capacity = (float) post("capacity", true);
         // Add heat pump model
-        return $heatpump_model->add($manufacturer_id, $model, $refrigerant, $capacity);
+        return $heatpump_model->add($manufacturer_id, $model, $refrigerant, $type, $capacity);
     }
 
     if ($route->action == "update" && $session['admin']) {
@@ -65,9 +66,10 @@ function heatpump_controller() {
         $manufacturer_id = (int) post("manufacturer_id", true);
         $model = trim(post("model", true));
         $refrigerant = trim(post("refrigerant", true));
+        $type = trim(post("type", true));
         $capacity = (float) post("capacity", true);
         // Update heat pump model
-        return $heatpump_model->update($id, $manufacturer_id, $model, $refrigerant, $capacity);
+        return $heatpump_model->update($id, $manufacturer_id, $model, $refrigerant, $type, $capacity);
     }
 
     if ($route->action == "delete" && $session['admin']) {

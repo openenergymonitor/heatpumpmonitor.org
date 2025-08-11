@@ -13,6 +13,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 <script src="Lib/clipboard.js"></script>
 <script src="<?php echo $path; ?>Modules/system/system_list_chart.js?v=27"></script>
 
+<link rel="stylesheet" href="<?php echo $path; ?>Lib/autocomplete.css?v=4">
+<script src="Lib/autocomplete.js?v=8"></script>
+
 <style>
     .sticky {
         position: sticky;
