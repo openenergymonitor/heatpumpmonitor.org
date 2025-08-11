@@ -48,7 +48,7 @@ global $settings, $session, $path;
             <a v-if="system.id" :href="path+'daily?id='+system.id"><button class="btn btn-secondary mb-3">Daily</button></a>
             <a v-if="system.id" :href="path+'compare?id='+system.id"><button class="btn btn-secondary mb-3">Compare</button></a>              
             <a v-if="system.id" :href="path+'histogram?id='+system.id"><button class="btn btn-secondary mb-3">Histogram</button></a>
-            <button class="btn btn-warning mb-3" style="margin-left:10px" v-if="admin && mode=='view'" @click="mode='edit'">Edit</button>
+            <button class="btn btn-warning mb-3" style="margin-left:10px" v-if="admin && mode=='view'" @click="switch_mode('edit')">Edit</button>
 
             <h3 v-if="!system.id">Add New System</h3>
         </div>
@@ -453,6 +453,14 @@ global $settings, $session, $path;
             }
         },
         methods: {
+            switch_mode: function(mode) {
+                this.mode = mode;
+                if (mode == 'edit') {
+                    this.$nextTick(() => {
+                        this.init_autocomplete();
+                    });
+                }
+            },
             save: function() {
                 // Send data to server using axios, check response for success
                 axios.post('save', {
@@ -774,9 +782,11 @@ global $settings, $session, $path;
             load_heatpumps: function() {
                 $.get(this.path+'heatpump/list')
                     .done(response => {
-                        this.heatpump_models = response;
+                        app.heatpump_models = response;
 
-                        app.init_autocomplete();
+                        if (app.mode == 'edit') {
+                            app.init_autocomplete();
+                        }
                     });
             },
 
