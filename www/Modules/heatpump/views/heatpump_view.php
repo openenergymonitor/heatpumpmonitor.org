@@ -120,15 +120,16 @@
                         <td>{{ test.cop }}</td>
                         <td>{{ test.heat | toFixed(0) }}W</td>
                         <td>
-                            <span v-if="test.review_status==0" class="badge bg-secondary">Pending review</span>
-                            <span v-if="test.review_status==1" class="badge bg-success">Approved</span>
-                            <span v-if="test.review_status==2" class="badge bg-danger">Rejected</span>
-                            <span v-if="test.review_status==3" class="badge bg-warning">Needs more data</span>
+                            <span v-if="test.review_status==0" class="badge bg-secondary" :title="test.review_comment || ''">Pending review</span>
+                            <span v-if="test.review_status==1" class="badge bg-success" :title="test.review_comment || ''">Approved</span>
+                            <span v-if="test.review_status==2" class="badge bg-danger" :title="test.review_comment || ''">Rejected</span>
+                            <span v-if="test.review_status==3" class="badge bg-warning" :title="test.review_comment || ''">Needs more data</span>
                         </td>
                         <td style="width:120px">
                             <a :href="test.test_url" target="_blank">
                                 <button class="btn btn-secondary btn-sm" title="Dashboard"><i class="fa fa-chart-bar" style="color: #ffffff;"></i></button>
                             </a>
+                            <button class="btn btn-warning btn-sm" title="Review" @click="open_review_modal(test)" v-if="mode=='admin'"><i class="fa fa-eye" style="color: #ffffff;"></i></button>
                             <button class="btn btn-danger btn-sm" title="Delete" @click="delete_max_cap_test(test.id)" v-if="mode=='admin' || userid==test.userid"><i class="fa fa-trash" style="color: #ffffff;"></i></button>
                         </td>
                     </tr>
@@ -150,6 +151,47 @@
                     </div>
                 </div>
                 
+
+                <!-- Review Modal (Admin Only) -->
+                <div class="modal fade" id="reviewModal" tabindex="-1" aria-labelledby="reviewModalLabel" aria-hidden="true" v-if="mode=='admin'">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="reviewModalLabel">Review Test</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div v-if="review_test">
+                                    <h6>Test Details:</h6>
+                                    <p><strong>System:</strong> {{ review_test.system_id }}</p>
+                                    <p><strong>Date:</strong> {{ review_test.date }}</p>
+                                    <p><strong>Duration:</strong> {{ review_test.data_length / 3600 | toFixed(1) }} hrs</p>
+                                    <p><strong>Heat Output:</strong> {{ review_test.heat | toFixed(0) }}W</p>
+                                    <p><strong>COP:</strong> {{ review_test.cop }}</p>
+                                    
+                                    <div class="mb-3">
+                                        <label for="review_status" class="form-label">Status</label>
+                                        <select class="form-select" id="review_status" v-model="review_form.status">
+                                            <option value="0">Pending review</option>
+                                            <option value="1">Approved</option>
+                                            <option value="2">Rejected</option>
+                                            <option value="3">Needs more data</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="review_comment" class="form-label">Comment</label>
+                                        <textarea class="form-control" id="review_comment" rows="3" v-model="review_form.comment" placeholder="Add review comments..."></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="button" class="btn btn-primary" @click="submit_review">Save Review</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <br>
                 <button class="btn btn-primary btn-sm" @click="enable_edit" style="float:right" v-if="mode=='admin'">Edit</button>
@@ -224,7 +266,12 @@
             min_mod_tests: [],
             new_max_cap_test_url: null,
             new_min_mod_test_url: null,
-            min_mod_enabled: false
+            min_mod_enabled: false,
+            review_test: null,
+            review_form: {
+                status: 0,
+                comment: ''
+            }
         },
         created: function() {
             this.load_heatpump();
@@ -296,6 +343,34 @@
                             app.heatpump.min_mod_tests.push(test_result);
                         });
                 }
+            },
+            open_review_modal: function(test) {
+                this.review_test = test;
+                this.review_form.status = test.review_status;
+                this.review_form.comment = test.review_comment || '';
+                $('#reviewModal').modal('show');
+            },
+            submit_review: function() {
+                if (!this.review_test) return;
+                
+                $.post(this.path+'heatpump/max_cap_test/update_status', {
+                    id: this.review_test.id,
+                    status: this.review_form.status,
+                    message: this.review_form.comment
+                })
+                .done(response => {
+                    if (response.success) {
+                        $('#reviewModal').modal('hide');
+                        this.load_max_cap_test_list();
+                        this.review_test = null;
+                        this.review_form = { status: 0, comment: '' };
+                    } else {
+                        alert('Error: ' + response.message);
+                    }
+                })
+                .fail(() => {
+                    alert('Failed to update test status');
+                });
             }
         },
         computed: {

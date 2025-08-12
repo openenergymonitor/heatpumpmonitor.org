@@ -108,4 +108,44 @@ class HeatpumpTests
         return $row->userid == $userid; // Check if the user is the owner of the test
     }
 
+    /*
+     * Update status and message for a heatpump test (admin only)
+     * 
+     * @param int $id
+     * @param int $status
+     * @param string $message
+     * @return array
+     */
+    public function update_status($id, $status, $message = '') {
+        // Validate inputs
+        $id = (int) $id;
+        $status = (int) $status;
+        $message = trim($message);
+        
+        // Check if test exists
+        $check_stmt = $this->mysqli->prepare("SELECT id FROM heatpump_max_cap_test WHERE id = ?");
+        $check_stmt->bind_param("i", $id);
+        $check_stmt->execute();
+        $result = $check_stmt->get_result();
+        
+        if ($result->num_rows === 0) {
+            $check_stmt->close();
+            return array("success" => false, "message" => "Test not found");
+        }
+        $check_stmt->close();
+        
+        // Update the review status and comment
+        $stmt = $this->mysqli->prepare("UPDATE heatpump_max_cap_test SET review_status = ?, review_comment = ? WHERE id = ?");
+        $stmt->bind_param("isi", $status, $message, $id);
+        
+        if ($stmt->execute()) {
+            $stmt->close();
+            return array("success" => true, "message" => "Test status updated successfully");
+        } else {
+            $error = $stmt->error;
+            $stmt->close();
+            return array("success" => false, "message" => "Failed to update test status: " . $error);
+        }
+    }
+
 }

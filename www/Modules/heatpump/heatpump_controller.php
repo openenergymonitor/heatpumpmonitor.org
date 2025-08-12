@@ -209,5 +209,15 @@ function heatpump_controller() {
             $id = (int) get("id", true);
             return $heatpump_tests->delete_max_cap_test($session['userid'], $id);
         }
+
+        // Update test status (admin only)
+        if ($route->subaction == "update_status" && $session['admin']) {
+            $route->format = "json";
+            $id = (int) post("id", true);
+            $status = (int) post("status", true);
+            $message = trim(post("message", true));
+
+            return $heatpump_tests->update_status($id, $status, $message);
+        }
     }
 }
