@@ -286,6 +286,17 @@ var app = new Vue({
                     bValue = b.stats ? b.stats.number_of_systems : 0;
                 }
 
+                // Handle nested properties for test counts
+                if (this.currentSortColumn == 'approved_tests') {
+                    aValue = a.test_counts ? a.test_counts.approved_tests : 0;
+                    bValue = b.test_counts ? b.test_counts.approved_tests : 0;
+                }
+
+                if (this.currentSortColumn == 'pending_tests') {
+                    aValue = a.test_counts ? a.test_counts.pending_tests : 0;
+                    bValue = b.test_counts ? b.test_counts.pending_tests : 0;
+                }
+
                 // Handle null/undefined values
                 if (aValue === null || aValue === undefined) aValue = this.currentSortDir == 'desc' ? -Infinity : Infinity;
                 if (bValue === null || bValue === undefined) bValue = this.currentSortDir == 'desc' ? -Infinity : Infinity;
