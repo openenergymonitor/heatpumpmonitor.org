@@ -23,6 +23,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         font-size: 12px;
         font-weight: bold;
     }
+    .btn {
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border-radius: 5px;
+    }
+
 </style>
 
 <div id="app" class="bg-light">

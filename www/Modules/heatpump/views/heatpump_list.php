@@ -35,6 +35,12 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         font-size:14px;
         color:red;
     }
+
+    .btn {
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border-radius: 5px;
+    }
+
 </style>
 
 <div id="app" class="bg-light">
@@ -43,8 +49,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
             <div class="row">
                 <div class="col-12">
-                    <a href="<?php echo $path; ?>heatpump/unmatched" class="btn btn-warning" v-if="mode=='admin'" style="float:right; margin-left:10px;">Unmatched Heat Pumps</a>
-                    <button class="btn btn-primary" @click="openAddModal" v-if="mode=='admin'" style="float:right">Add heatpump</button>
+                    <a href="<?php echo $path; ?>heatpump/unmatched" class="btn btn-warning" v-if="mode=='admin'" style="float:right; margin-left:10px;"><i class="fas fa-exclamation-triangle"></i> Unmatched Heat Pumps</a>
+                    <button class="btn btn-primary" @click="openAddModal" v-if="mode=='admin'" style="float:right"><i class="fas fa-plus"></i> Add heatpump</button>
 
                     <h3>Heatpump database</h3>
                     <p class="text-muted">Explore heat pump models by manufacturer and model name.</p>
