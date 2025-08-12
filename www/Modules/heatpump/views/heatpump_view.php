@@ -7,7 +7,7 @@
 
             <div class="row">
                 <div class="col-12 col-sm-12 col-md-6 col-lg-6 col-xl-8">
-                    <h3>{{ heatpump.manufacturer_name }} {{ heatpump.name }} {{ heatpump.capacity }}kW</h3>
+                    <h3>{{ heatpump.manufacturer_name }} {{ heatpump.name }} {{ heatpump.refrigerant }} {{ heatpump.capacity }}kW</h3>
                 </div>
             </div>
         </div>
@@ -81,7 +81,7 @@
                         </tr>
                     </table>
                     <div v-if="min_mod_tests.length==0" class="alert alert-warning mt-3">No tests recorded</div>
-                    <div class="row" v-if="mode=='admin'">
+                    <div class="row" v-if="userid>0">
                         <div class="col">
                             <div class="input-group mb-3">
                                 <input type="text" class="form-control" placeholder="Paste MyHeatpump app URL of min modulation test period here" v-model="new_min_mod_test_url">
@@ -129,18 +129,19 @@
                             <a :href="test.test_url" target="_blank">
                                 <button class="btn btn-secondary btn-sm" title="Dashboard"><i class="fa fa-chart-bar" style="color: #ffffff;"></i></button>
                             </a>
-                            <button class="btn btn-danger btn-sm" title="Delete" @click="delete_max_cap_test(test.id)" v-if="mode=='admin'"><i class="fa fa-trash" style="color: #ffffff;"></i></button>
+                            <button class="btn btn-danger btn-sm" title="Delete" @click="delete_max_cap_test(test.id)" v-if="mode=='admin' || userid==test.userid"><i class="fa fa-trash" style="color: #ffffff;"></i></button>
                         </td>
                     </tr>
                     <tr>
                         <td colspan="9" class="text-end"><b>Average heat output<span v-if="unapprovedTestsCount > 0"> (approved tests)</span></b></td>
                         <td><b>{{ average_cap_test | toFixed(0) }}W</b></td>
                         <td></td>
+                        <td></td>
                     </tr>
                 </table>
                 <div v-if="max_cap_tests.length==0" class="alert alert-secondary mt-3">No tests recorded</div>
 
-                <div class="row" v-if="mode=='admin'">
+                <div class="row" v-if="userid>0">
                     <div class="col">
                         <div class="input-group mb-3">
                             <input type="text" class="form-control" placeholder="Paste MyHeatpump app URL of max capacity test period here" v-model="new_max_cap_test_url">
@@ -168,6 +169,11 @@
                         <td>Model</th>
                         <td v-if="!edit_properties">{{ heatpump.name }}</td>
                         <td v-if="edit_properties"><input type="text" class="form-control" v-model="heatpump.name"></td>
+                    </tr>
+                    <tr>
+                        <td>Refrigerant</th>
+                        <td v-if="!edit_properties">{{ heatpump.refrigerant }}</td>
+                        <td v-if="edit_properties"><input type="text" class="form-control" v-model="heatpump.refrigerant"></td>
                     </tr>
                     <tr>
                         <td>Capacity</th>
@@ -207,6 +213,7 @@
         el: '#app',
         data: {
             mode: "<?php echo $mode; ?>",
+            userid: <?php echo $userid; ?>,
             loaded: false,
             id: "<?php echo $id; ?>",
             edit_properties: false,

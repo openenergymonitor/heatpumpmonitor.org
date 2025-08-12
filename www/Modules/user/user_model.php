@@ -548,4 +548,27 @@ class User
             return array('success'=>true, 'message'=>"User deleted");
         }
     }
+
+    // Userid exists
+    public function userid_exists($userid) {
+        $userid = (int) $userid;
+        $result = $this->mysqli->query("SELECT id FROM users WHERE id='$userid'");
+        if ($result->num_rows > 0) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    // User is admin
+    public function is_admin($userid) {
+        $userid = (int) $userid;
+        $result = $this->mysqli->query("SELECT admin FROM users WHERE id='$userid'");
+        if ($result->num_rows == 0) {
+            return false;
+        } else {
+            $row = $result->fetch_object();
+            return $row->admin ? true : false;
+        }
+    }    
 }

@@ -21,7 +21,8 @@ function heatpump_controller() {
         $mode = $session['admin'] ? "admin" : "view";
         return view("Modules/heatpump/views/heatpump_view.php", array(
             "id" => $id,
-            "mode" => $mode
+            "mode" => $mode,
+            "userid" => $session['userid'] ?? 0
         ));
     }
 
@@ -42,7 +43,7 @@ function heatpump_controller() {
     $heatpump_model = new Heatpump($mysqli, $manufacturer_model);
 
     require "Modules/heatpump/heatpump_test_model.php";
-    $heatpump_tests = new HeatpumpTests($mysqli);
+    $heatpump_tests = new HeatpumpTests($mysqli, $user);
 
 
     if ($route->action == "list") {
@@ -111,7 +112,7 @@ function heatpump_controller() {
             return $heatpump_tests->get_max_cap_tests($model_id);
         }
 
-        if ($route->subaction == "load" && $session['admin']) {
+        if ($route->subaction == "load" && $session['userid']>0) {
             $route->format = "json";
 
             if (!isset($_GET['id'])) {
@@ -203,10 +204,10 @@ function heatpump_controller() {
         }
 
         // Delete max capacity test
-        if ($route->subaction == "delete" && $session['admin']) {
+        if ($route->subaction == "delete" && $session['userid'] > 0) {
             $route->format = "json";
-            $id = (int) get("id");
-            return $heatpump_tests->delete_max_cap_test($id);
+            $id = (int) get("id", true);
+            return $heatpump_tests->delete_max_cap_test($session['userid'], $id);
         }
     }
 }
