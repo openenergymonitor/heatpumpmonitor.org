@@ -47,10 +47,18 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     <button class="btn btn-primary" @click="openAddModal" v-if="mode=='admin'" style="float:right">Add heatpump</button>
 
                     <h3>Heatpump database</h3>
-                    
-                    <div class="input-group mt-3" style="max-width:350px">
-                        <span class="input-group-text">Filter</span>
-                        <input class="form-control" v-model="filterKey" placeholder="Search manufacturers, models..." @input="filterHeatpumps">
+                    <p class="text-muted">Explore heat pump models by manufacturer and model name.</p>
+
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="input-group" style="max-width:350px">
+                                <span class="input-group-text">Filter</span>
+                                <input class="form-control" v-model="filterKey" placeholder="Search manufacturers, models..." @input="filterHeatpumps">
+                            </div>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <span class="badge bg-primary fs-6">{{ filteredHeatpumps.length }} heat pump models</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -123,8 +131,14 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         <div class="row">
             <div class="col">
 
+                <div v-if="loading" class="text-center p-4">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading heat pump models...</p>
+                </div>
 
-                <table id="custom" class="table table-striped table-sm mt-3">
+                <table v-else id="custom" class="table table-striped table-sm mt-3">
                     <tr>
                         <!--
                         <th @click="sort('id', 'asc')" style="cursor:pointer">ID
@@ -226,6 +240,7 @@ var app = new Vue({
         path : "<?php echo $path; ?>",
         heatpumps: [],
         manufacturers: [],
+        loading: true,
         showAddModal: false,
         newHeatpump: {
             manufacturer_id: "",
@@ -316,9 +331,15 @@ var app = new Vue({
             }
         },
         load_heatpumps: function() {
+            this.loading = true;
             $.get(this.path+'heatpump/list')
                 .done(response => {
                     this.heatpumps = response;
+                    this.loading = false;
+                })
+                .fail(() => {
+                    this.loading = false;
+                    alert('Error loading heat pump models');
                 });
         },
         load_manufacturers: function() {
