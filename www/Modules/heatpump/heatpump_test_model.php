@@ -22,7 +22,7 @@ class HeatpumpTests
         }
         return $tests;
     }
-    public function add_max_cap_test($model_id, $data) {
+    public function add_max_cap_test($userid, $model_id, $data, $review_status = 0, $review_comment = '') {
         $model_id = (int)$model_id;
 
         $system_id = (int)$data['system_id'];
@@ -38,8 +38,12 @@ class HeatpumpTests
         $cop = (float)$data['cop'];
         $flowrate = (float) $data['flowrate'];
 
-        $stmt = $this->mysqli->prepare("INSERT INTO heatpump_max_cap_test (model_id, system_id, test_url, start, end, date, data_length, flowT, outsideT, elec, heat, cop, flowrate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("iisiisidddddd", $model_id, $system_id, $test_url, $start, $end, $date, $data_length, $flowT, $outsideT, $elec, $heat, $cop, $flowrate);
+        $userid = (int)$userid;
+        $review_status = (int)$review_status;
+        $created = date('Y-m-d H:i:s'); // Current timestamp
+
+        $stmt = $this->mysqli->prepare("INSERT INTO heatpump_max_cap_test (model_id, system_id, test_url, start, end, date, data_length, flowT, outsideT, elec, heat, cop, flowrate, userid, review_status, review_comment, created) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("iisiisiddddddiiss", $model_id, $system_id, $test_url, $start, $end, $date, $data_length, $flowT, $outsideT, $elec, $heat, $cop, $flowrate, $userid, $review_status, $review_comment, $created);
         if (!$stmt->execute()) {
             return array("success" => false, "error" => "Failed to add max capacity test: " . $stmt->error);
         }

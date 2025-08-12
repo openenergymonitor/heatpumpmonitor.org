@@ -3,7 +3,7 @@
 
 <div id="app" class="bg-light">
     <div style=" background-color:#f0f0f0; padding-top:20px; padding-bottom:10px">
-        <div class="container"  style="max-width:1000px;">
+        <div class="container"  style="max-width:1200px;">
 
             <div class="row">
                 <div class="col-12 col-sm-12 col-md-6 col-lg-6 col-xl-8">
@@ -13,9 +13,9 @@
         </div>
     </div>
 
-    <div class="container"  style="max-width:1000px;" v-if="loaded">
+    <div class="container"  style="max-width:1200px;" v-if="loaded">
 
-        <div class="row">
+        <div class="row" v-if="heatpump.stats">
             <div class="col-8">
                 <table id="custom" class="table table-striped mt-3">
                     <tr>
@@ -105,9 +105,10 @@
                         <th>Elec input</th>
                         <th>COP</th>         
                         <th>Heat output</th>
+                        <th>Status</th>
                         <th></th>
                     </tr>
-                    <tr v-for="(test,index) in max_cap_tests">
+                    <tr v-for="(test,index) in max_cap_tests" :class="{'table-warning': test.review_status != 1}">
                         <td>{{ index+1 }}</td>
                         <td>{{ test.system_id }}</td>
                         <td>{{ test.date }}</td>
@@ -118,6 +119,12 @@
                         <td>{{ test.elec | toFixed(0) }}W</td>
                         <td>{{ test.cop }}</td>
                         <td>{{ test.heat | toFixed(0) }}W</td>
+                        <td>
+                            <span v-if="test.review_status==0" class="badge bg-secondary">Pending review</span>
+                            <span v-if="test.review_status==1" class="badge bg-success">Approved</span>
+                            <span v-if="test.review_status==2" class="badge bg-danger">Rejected</span>
+                            <span v-if="test.review_status==3" class="badge bg-warning">Needs more data</span>
+                        </td>
                         <td style="width:120px">
                             <a :href="test.test_url" target="_blank">
                                 <button class="btn btn-secondary btn-sm" title="Dashboard"><i class="fa fa-chart-bar" style="color: #ffffff;"></i></button>
@@ -126,7 +133,7 @@
                         </td>
                     </tr>
                     <tr>
-                        <td colspan="9" class="text-end"><b>Average heat output</b></td>
+                        <td colspan="9" class="text-end"><b>Average heat output<span v-if="unapprovedTestsCount > 0"> (approved tests)</span></b></td>
                         <td><b>{{ average_cap_test | toFixed(0) }}W</b></td>
                         <td></td>
                     </tr>
@@ -234,7 +241,7 @@
                         self.max_cap_tests = response;
 
                         // Calculate average heat output
-                        const validTests = self.max_cap_tests.filter(test => test.heat);
+                        const validTests = self.max_cap_tests.filter(test => test.heat && test.review_status == 1);
                         self.average_cap_test = validTests.length > 0 
                             ? (validTests.reduce((sum, test) => sum + parseFloat(test.heat), 0) / validTests.length).toFixed(0)
                             : 0;
@@ -268,8 +275,8 @@
                     // send url in post request to server
                     $.post(this.path+'heatpump/max_cap_test/load?id='+this.id, {url: this.new_max_cap_test_url})
                         .done(response => {
-                            var test_result = response;
-                            app.heatpump.max_cap_tests.push(test_result);
+                            this.load_max_cap_test_list();
+                            this.new_max_cap_test_url = null;
                         });
                 }
             },
@@ -282,6 +289,11 @@
                             app.heatpump.min_mod_tests.push(test_result);
                         });
                 }
+            }
+        },
+        computed: {
+            unapprovedTestsCount: function() {
+                return this.max_cap_tests.filter(test => test.review_status != 1).length;
             }
         },
         filters: {

@@ -24,5 +24,11 @@ $schema['heatpump_max_cap_test'] = array(
     'elec' => array('type' => 'float'),
     'heat' => array('type' => 'float'),
     'cop' => array('type' => 'float'),
-    'flowrate' => array('type' => 'float')
+    'flowrate' => array('type' => 'float'),
+
+    // Used for test management
+    'userid' => array('type' => 'int(11)', 'Null' => true, 'default' => null),
+    'created' => array('type' => 'datetime', 'Null' => true, 'default' => null),
+    'review_status' => array('type' => 'int(11)', 'Null' => true, 'default' => 0),
+    'review_comment' => array('type' => 'text', 'Null' => true, 'default' => '')
 );

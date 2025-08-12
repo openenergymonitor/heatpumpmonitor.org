@@ -190,7 +190,11 @@ function heatpump_controller() {
                 'flowrate' => $flowrate
             );
 
-            $result = $heatpump_tests->add_max_cap_test($model_id, $test_object);
+            $userid = $session['userid'] ?? 0; // Use session user ID or 0 if not logged in
+            $review_status = 0; // Default review status
+            $review_comment = ''; // Default empty review comment
+
+            $result = $heatpump_tests->add_max_cap_test($userid, $model_id, $test_object, $review_status, $review_comment);
             if (!$result['success']) {
                 return array("error" => $result['error']);
             }
