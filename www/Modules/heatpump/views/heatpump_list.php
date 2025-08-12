@@ -215,6 +215,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 <script>
 
+// Get URL parameters
+var urlParams = new URLSearchParams(window.location.search);
+var initialFilterKey = urlParams.get('filter') || '';
+
 var app = new Vue({
     el: '#app',
     data: {
@@ -240,7 +244,7 @@ var app = new Vue({
         refrigerants: ["R290", "R32", "CO2", "R410A", "R210A", "R134A", "R407C", "R454C", "R452B"],
         currentSortColumn: "number_of_systems",
         currentSortDir: "desc",
-        filterKey: ""
+        filterKey: initialFilterKey
     },
     computed: {
         sortedHeatpumps: function() {
@@ -297,6 +301,7 @@ var app = new Vue({
         filterHeatpumps: function() {
             // Filtering is handled by the computed property
             // This method exists for the @input event binding
+            this.updateUrl();
         },
         sort: function(column, starting_order) {
             if (this.currentSortColumn != column) {
@@ -420,6 +425,17 @@ var app = new Vue({
                 .done(response => {
                     this.load_heatpumps();
                 });
+            }
+        },
+        updateUrl: function() {
+            if (this.filterKey) {
+                const url = new URL(window.location);
+                url.searchParams.set('filter', this.filterKey);
+                window.history.pushState({}, '', url);
+            } else {
+                const url = new URL(window.location);
+                url.searchParams.delete('filter');
+                window.history.pushState({}, '', url);
             }
         }
     }

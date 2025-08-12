@@ -130,6 +130,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 
 <script>
+// Get URL parameters
+var urlParams = new URLSearchParams(window.location.search);
+var initialFilterKey = urlParams.get('filter') || '';
+
 var app = new Vue({
     el: '#app',
     data: {
@@ -140,7 +144,7 @@ var app = new Vue({
         loading: true,
         currentSortColumn: "count",
         currentSortDir: "desc",
-        filterKey: ""
+        filterKey: initialFilterKey
     },
     computed: {
         sortedUnmatched: function() {
@@ -195,6 +199,7 @@ var app = new Vue({
     methods: {
         filterUnmatched: function() {
             // Filtering is handled by the computed property
+            this.updateUrl();
         },
         sort: function(column, starting_order) {
             if (this.currentSortColumn != column) {
@@ -259,6 +264,17 @@ var app = new Vue({
             .fail(() => {
                 alert('Error adding heat pump to database');
             });
+        },
+        updateUrl: function() {
+            if (this.filterKey) {
+                const url = new URL(window.location);
+                url.searchParams.set('filter', this.filterKey);
+                window.history.pushState({}, '', url);
+            } else {
+                const url = new URL(window.location);
+                url.searchParams.delete('filter');
+                window.history.pushState({}, '', url);
+            }
         }
     }
 });
