@@ -169,6 +169,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <th @click="sort('number_of_systems', 'desc')" style="cursor:pointer">Systems
                             <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='number_of_systems'"></i>
                         </th>
+                        <th @click="sort('approved_tests', 'desc')" style="cursor:pointer">Tests
+                            <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='approved_tests'"></i>
+                        </th>
                         <th style="width:120px"></th>
                     </tr>
                     <tr v-for="unit in filteredHeatpumps">
@@ -211,6 +214,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             <span v-else>{{unit.capacity}} kW</span>
                         </td>
                         <td>{{unit.stats.number_of_systems}}</td>
+                        <td><span v-if="unit.test_counts.approved_tests>0">{{unit.test_counts.approved_tests}}</span> <span v-if="mode=='admin' && unit.test_counts.pending_tests>0">({{unit.test_counts.pending_tests}})</span></td>
                         <td>
                             <div v-if="editingId === unit.id">
                                 <button class="btn btn-success btn-sm me-1" @click="save_heatpump(unit.id)"><i class="fas fa-check"></i></button>

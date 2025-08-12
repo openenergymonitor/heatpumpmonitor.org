@@ -35,6 +35,7 @@ class Heatpump
 
         foreach ($heatpumps as $key => $unit) {
              $heatpumps[$key]["stats"] = $this->get_stats($unit["manufacturer_name"], $unit['name'], $unit["refrigerant"], $unit["capacity"]);
+             $heatpumps[$key]["test_counts"] = $this->get_test_counts($unit["id"]);
         }
 
         return $heatpumps;
@@ -395,5 +396,36 @@ class Heatpump
      */
     public function get_unmatched_list() {
         return $this->populate_table();
+    }
+
+    /*
+     * Get test counts for a heatpump model
+     * 
+     * @param int $model_id
+     * @return array
+     */
+    public function get_test_counts($model_id) {
+        $model_id = (int) $model_id;
+        
+        // Count approved tests (review_status = 1)
+        $stmt = $this->mysqli->prepare("SELECT COUNT(*) as count FROM heatpump_max_cap_test WHERE model_id = ? AND review_status = 1");
+        $stmt->bind_param("i", $model_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $approved_count = $result->fetch_assoc()['count'];
+        $stmt->close();
+        
+        // Count pending tests (review_status = 0)
+        $stmt = $this->mysqli->prepare("SELECT COUNT(*) as count FROM heatpump_max_cap_test WHERE model_id = ? AND review_status = 0");
+        $stmt->bind_param("i", $model_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $pending_count = $result->fetch_assoc()['count'];
+        $stmt->close();
+        
+        return array(
+            "approved_tests" => $approved_count,
+            "pending_tests" => $pending_count
+        );
     }
 }
