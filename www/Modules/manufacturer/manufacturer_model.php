@@ -38,6 +38,21 @@ class Manufacturer
     }
 
     /*
+     * Get name by ID
+     * @param int $id
+     * @return string|null
+     */
+    public function get_name($id) {
+        $id = (int)$id;
+        $result = $this->mysqli->query("SELECT name FROM manufacturers WHERE id = $id");
+        if ($row = $result->fetch_object()) {
+            return $row->name;
+        } else {
+            return null;
+        }
+    }
+
+    /*
      * Get manufacturer by ID
      * @param int $id
      * @return object|null

@@ -7,11 +7,14 @@ class HeatpumpTests
 {
     private $mysqli;
     private $user;
+    private $manufacturer_model;
+    private $heatpump_model;
 
-    public function __construct($mysqli, $user)
+    public function __construct($mysqli, $user, $heatpump_model = null)
     {
         $this->mysqli = $mysqli;
         $this->user = $user;
+        $this->heatpump_model = $heatpump_model;
     }
 
     public function get_max_cap_tests($model_id)
@@ -66,6 +69,8 @@ class HeatpumpTests
         if (!$stmt->execute()) {
             return array("success" => false, "error" => "Failed to add max capacity test: " . $stmt->error);
         }
+
+        $this->send_test_notification($this->mysqli->insert_id);
         
         return array("success" => true, "id" => $this->mysqli->insert_id);
     }
@@ -148,4 +153,80 @@ class HeatpumpTests
         }
     }
 
+
+    public function send_test_notification($test_id) {
+        $test_id = (int) $test_id;
+    
+        // Get test data
+        $result = $this->mysqli->query("SELECT * FROM heatpump_max_cap_test WHERE id = $test_id");
+        if (!$test = $result->fetch_object()) {
+            return; // Test not found
+        }
+        $model_id = (int)$test->model_id;
+
+        // Get username
+        if (!$user = $this->user->get($test->userid)) {
+            return; // User not found
+        }
+        $test->user_name = $user->name;
+        $test->username = $user->username;
+
+        // Get model name
+        if (!$model = $this->heatpump_model->get($model_id)) {
+            return; // Model not found
+        }
+        $test->model = $model['name'];
+        $test->manufacturer = $model['manufacturer_name'];
+
+        // Get admin users email addresses
+        $admin_result = $this->mysqli->query("SELECT email FROM users WHERE admin=1");
+        if ($admin_result === false) {
+            return; // Query failed
+        }
+        
+        $emails = array();
+        while ($row = $admin_result->fetch_object()) {
+            $emails[] = array("email"=>$row->email);
+        }
+
+        // Create email content
+        $model_name = $test->manufacturer . " " . $test->model;
+        $model_url = "https://dev.heatpumpmonitor.org/heatpump/view?id=" . $test->model_id;
+        
+        $subject = "New max capacity test submitted for $model_name by {$test->user_name}";
+        
+        $text = "A new max capacity test has been submitted for $model_name by {$test->user_name} ({$test->username}). Please review at: $model_url";
+
+        $html = "<h3>New Max Capacity Test Submitted</h3>";
+        $html .= "<p><strong>Heat Pump Model:</strong> <a href=\"$model_url\">$model_name</a></p>";
+        $html .= "<p><strong>Submitted by:</strong> {$test->user_name} ({$test->username})</p>";
+        $html .= "<p><strong>Test Date:</strong> {$test->date}</p>";
+        
+        $html .= "<h4>Test Summary:</h4>";
+        $html .= "<ul>";
+        $html .= "<li><strong>Outside Temperature:</strong> {$test->outsideT}°C</li>";
+        $html .= "<li><strong>Flow Temperature:</strong> {$test->flowT}°C</li>";
+        $html .= "<li><strong>Heat Output:</strong> {$test->heat} kW</li>";
+        $html .= "<li><strong>Electrical Input:</strong> {$test->elec} kW</li>";
+        $html .= "<li><strong>COP:</strong> {$test->cop}</li>";
+        $html .= "<li><strong>Flow Rate:</strong> {$test->flowrate} L/min</li>";
+        $html .= "<li><strong>Data Length:</strong> {$test->data_length} minutes</li>";
+        $html .= "</ul>";
+        
+        if (!empty($test->test_url)) {
+            $html .= "<p><strong>Test Data URL:</strong> <a href=\"{$test->test_url}\">{$test->test_url}</a></p>";
+        }
+        
+        $html .= "<p><a href=\"$model_url\">View Heat Pump Model Page</a></p>";
+
+        // Send email notification
+        require_once "Lib/email.php";
+        $email_class = new Email();
+        $email_class->send(array(
+            "to" => $emails,
+            "subject" => $subject,
+            "text" => $text,
+            "html" => $html
+        ));
+    }
 }

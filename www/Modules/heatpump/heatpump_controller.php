@@ -43,7 +43,7 @@ function heatpump_controller() {
     $heatpump_model = new Heatpump($mysqli, $manufacturer_model);
 
     require "Modules/heatpump/heatpump_test_model.php";
-    $heatpump_tests = new HeatpumpTests($mysqli, $user);
+    $heatpump_tests = new HeatpumpTests($mysqli, $user, $heatpump_model);
 
 
     if ($route->action == "list") {

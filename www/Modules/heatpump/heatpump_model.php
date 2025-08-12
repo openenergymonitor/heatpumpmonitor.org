@@ -213,7 +213,7 @@ class Heatpump
      * @param int $id
      * @return array
      */
-    public function get($id) {
+    public function get($id, $include_stats = true) {
         $id = (int) $id;
         
         $stmt = $this->mysqli->prepare("
@@ -235,7 +235,9 @@ class Heatpump
             return array("success" => false, "message" => "Heatpump not found");
         }
 
-        $heatpump["stats"] = $this->get_stats($heatpump["manufacturer_name"], $heatpump['name'], $heatpump['refrigerant'], $heatpump["capacity"]);
+        if ($include_stats) {
+            $heatpump["stats"] = $this->get_stats($heatpump["manufacturer_name"], $heatpump['name'], $heatpump['refrigerant'], $heatpump["capacity"]);
+        }
 
         return $heatpump;
     }
