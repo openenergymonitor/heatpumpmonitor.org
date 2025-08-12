@@ -185,15 +185,39 @@ var app = new Vue({
                 return this.sortedUnmatched;
             }
             
-            const filterLower = this.filterKey.toLowerCase();
+            // Split filter terms by space, comma, or semicolon
+            const filterTerms = this.filterKey
+                .split(/[\s,;]+/)
+                .map(term => term.trim().toLowerCase())
+                .filter(term => term.length > 0);
+            
+            if (filterTerms.length === 0) {
+                return this.sortedUnmatched;
+            }
+            
             return this.sortedUnmatched.filter(item => {
-                return (
-                    (item.manufacturer && item.manufacturer.toLowerCase().includes(filterLower)) ||
-                    (item.model && item.model.toLowerCase().includes(filterLower)) ||
-                    (item.refrigerant && item.refrigerant.toLowerCase().includes(filterLower)) ||
-                    (item.type && item.type.toLowerCase().includes(filterLower)) ||
-                    (item.capacity && item.capacity.toString().includes(filterLower))
-                );
+                return filterTerms.every(term => {
+                    // Check if this is a capacity search (ends with "kw")
+                    if (term.endsWith('kw')) {
+                        let capacityValue = parseFloat(term.replace('kw', ''));
+                        if (!isNaN(capacityValue) && item.capacity) {
+                            // Allow for small tolerance in capacity matching (±0.1 kW)
+                            return Math.abs(parseFloat(item.capacity) - capacityValue) <= 0.1;
+                        }
+                        return false;
+                    }
+                    
+                    // Regular text search for non-capacity terms
+                    const searchableText = [
+                        item.manufacturer || '',
+                        item.model || '',
+                        item.refrigerant || '',
+                        item.type || '',
+                        item.capacity || ''
+                    ].join(' ').toLowerCase();
+                    
+                    return searchableText.includes(term);
+                });
             });
         }
     },

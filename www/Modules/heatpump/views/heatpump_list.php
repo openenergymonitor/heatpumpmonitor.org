@@ -302,15 +302,39 @@ var app = new Vue({
                 return this.sortedHeatpumps;
             }
             
-            const filterLower = this.filterKey.toLowerCase();
+            // Split filter terms by space, comma, or semicolon
+            const filterTerms = this.filterKey
+                .split(/[\s,;]+/)
+                .map(term => term.trim().toLowerCase())
+                .filter(term => term.length > 0);
+            
+            if (filterTerms.length === 0) {
+                return this.sortedHeatpumps;
+            }
+            
             return this.sortedHeatpumps.filter(unit => {
-                return (
-                    (unit.manufacturer_name && unit.manufacturer_name.toLowerCase().includes(filterLower)) ||
-                    (unit.name && unit.name.toLowerCase().includes(filterLower)) ||
-                    (unit.refrigerant && unit.refrigerant.toLowerCase().includes(filterLower)) ||
-                    (unit.type && unit.type.toLowerCase().includes(filterLower)) ||
-                    (unit.capacity && unit.capacity.toString().includes(filterLower))
-                );
+                return filterTerms.every(term => {
+                    // Check if this is a capacity search (ends with "kw")
+                    if (term.endsWith('kw')) {
+                        let capacityValue = parseFloat(term.replace('kw', ''));
+                        if (!isNaN(capacityValue) && unit.capacity) {
+                            // Allow for small tolerance in capacity matching (±0.1 kW)
+                            return Math.abs(parseFloat(unit.capacity) - capacityValue) <= 0.1;
+                        }
+                        return false;
+                    }
+                    
+                    // Regular text search for non-capacity terms
+                    const searchableText = [
+                        unit.manufacturer_name || '',
+                        unit.name || '',
+                        unit.refrigerant || '',
+                        unit.type || '',
+                        unit.capacity || ''
+                    ].join(' ').toLowerCase();
+                    
+                    return searchableText.includes(term);
+                });
             });
         }
     },
