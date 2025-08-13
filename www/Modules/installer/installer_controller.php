@@ -15,10 +15,6 @@ function installer_controller() {
                 'admin' => $session['admin']
             ));
         }
-
-        if ($route->action == "unmatched" && $session['admin']) {
-            return view("Modules/installer/views/installer_unmatched.php", array());
-        }
     }
 
     // API (JSON)

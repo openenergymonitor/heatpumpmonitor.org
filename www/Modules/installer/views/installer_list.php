@@ -18,6 +18,18 @@
         <div class="container" style="max-width:1200px;">
             <button class="btn btn-primary" style="float:right" @click="openAddModal" v-if="admin">+ Add Installer</button>
             <h2>Installers</h2>
+            
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <div class="input-group" style="max-width:350px">
+                        <span class="input-group-text">Filter</span>
+                        <input class="form-control" v-model="filterKey" placeholder="Search installers..." @input="filterInstallers">
+                    </div>
+                </div>
+                <div class="col-md-6 text-end">
+                    {{ filteredInstallers.length }} installers
+                </div>
+            </div>
         </div>
     </div>
 
@@ -26,16 +38,22 @@
         <table class="table mt-3">
             <thead class="table-light">
                 <tr>
-                    <th>Name</th>
-                    <th>URL</th>
+                    <th @click="sort('name', 'asc')" style="cursor:pointer">Name
+                        <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='name'"></i>
+                    </th>
+                    <th @click="sort('url', 'asc')" style="cursor:pointer">URL
+                        <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='url'"></i>
+                    </th>
                     <th>Logo</th>
-                    <th>Systems</th>
+                    <th @click="sort('systems', 'desc')" style="cursor:pointer">Systems
+                        <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='systems'"></i>
+                    </th>
                     <th>Color</th>
                     <th v-if="admin">Actions</th>
                 </tr>
             </thead>
             <tbody>
-                <tr v-for="installer in sortedInstallers" :key="installer.id" v-if="installer.name">
+                <tr v-for="installer in filteredInstallers" :key="installer.id" v-if="installer.name">
                     <td>{{ installer.name }}</td>
                     <td>
                         <a v-if="installer.url" :href="installer.url" target="_blank">{{ installer.url }}</a>
@@ -141,7 +159,60 @@
                 color: '#cccccc'
             },
             loadingLogo: false,
-            loadingColor: false
+            loadingColor: false,
+            currentSortColumn: "systems",
+            currentSortDir: "desc",
+            filterKey: ""
+        },
+        computed: {
+            sortedInstallers() {
+                return this.installers.slice().sort((a, b) => {
+                    let modifier = 1;
+                    if (this.currentSortDir == 'desc') modifier = -1;
+
+                    let aValue = a[this.currentSortColumn];
+                    let bValue = b[this.currentSortColumn];
+
+                    // Handle null/undefined values
+                    if (aValue === null || aValue === undefined) aValue = this.currentSortDir == 'desc' ? -Infinity : Infinity;
+                    if (bValue === null || bValue === undefined) bValue = this.currentSortDir == 'desc' ? -Infinity : Infinity;
+
+                    // Convert to numbers if both values are numeric
+                    if (!isNaN(aValue) && !isNaN(bValue)) {
+                        aValue = Number(aValue);
+                        bValue = Number(bValue);
+                    }
+
+                    if (aValue < bValue) return -1 * modifier;
+                    if (aValue > bValue) return 1 * modifier;
+                    return 0;
+                });
+            },
+            filteredInstallers() {
+                if (!this.filterKey.trim()) {
+                    return this.sortedInstallers;
+                }
+                
+                const filterTerms = this.filterKey
+                    .split(/[\s,;]+/)
+                    .map(term => term.trim().toLowerCase())
+                    .filter(term => term.length > 0);
+                
+                if (filterTerms.length === 0) {
+                    return this.sortedInstallers;
+                }
+                
+                return this.sortedInstallers.filter(installer => {
+                    return filterTerms.every(term => {
+                        const searchableText = [
+                            installer.name || '',
+                            installer.url || ''
+                        ].join(' ').toLowerCase();
+                        
+                        return searchableText.includes(term);
+                    });
+                });
+            }
         },
         methods: {
             openAddModal() {
@@ -247,12 +318,23 @@
                     .done(res => {
                         this.installers = res;
                     });
-            }
-        },
-        computed: {
-            sortedInstallers() {
-                return this.installers.slice().sort((a, b) => b.systems - a.systems);
-            }
+            },
+            sort(column, starting_order) {
+                if (this.currentSortColumn != column) {
+                    this.currentSortDir = starting_order;
+                    this.currentSortColumn = column;
+                } else {
+                    if (this.currentSortDir == 'desc') {
+                        this.currentSortDir = 'asc';
+                    } else {
+                        this.currentSortDir = 'desc';
+                    }
+                }
+            },
+            filterInstallers() {
+                // Filtering is handled by the computed property
+                // This method exists for the @input event binding
+            },
         },
         mounted() {
             this.loadInstallers();
