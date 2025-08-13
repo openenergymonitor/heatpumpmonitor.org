@@ -9,13 +9,21 @@ function installer_controller() {
 
     // Views (HTML)
     if ($route->format == "html") {
-        if ($route->action == "list" && $session['admin']) {
-            return view("Modules/installer/installer_view.php", array());
+        if ($route->action == "") {
+            return view("Modules/installer/views/installer_list.php", array(
+                'userid' => $session['userid'],
+                'admin' => $session['admin']
+            ));
+        }
+
+        if ($route->action == "unmatched" && $session['admin']) {
+            return view("Modules/installer/views/installer_unmatched.php", array());
         }
     }
 
     // API (JSON)
     if ($route->format == "json") {
+
         require "Modules/installer/installer_model.php";
         $installer_model = new Installer($mysqli);
 
@@ -23,9 +31,32 @@ function installer_controller() {
             return $installer_model->get_list();
         }
 
+        // Add a new installer
+        if ($route->action == "add" && $session['admin']) {
+
+            $name = post('name', true);
+            $url = post('url', true);
+            $logo = post('logo', true);
+            $systems = post('systems', true);
+            
+            return $installer_model->add($name, $url, $logo, $systems);
+        }
+
+        // Edit an existing installer
+        if ($route->action == "edit" && $session['admin']) {
+
+            $id = (int) post('id', true);
+            $name = post('name', true);
+            $url = post('url', true);
+            $logo = post('logo', true);
+            $systems = post('systems', true);
+            
+            return $installer_model->edit($id, $name, $url, $logo, $systems);
+        }
+
         // Temporary for testing, populate the database with installers from system_meta
-        if ($route->action == "populate" && $session['admin']) {
-            return $installer_model->populate();
+        if ($route->action == "unmatched" && $session['admin']) {
+            return $installer_model->unmatched();
         }
     }
 
