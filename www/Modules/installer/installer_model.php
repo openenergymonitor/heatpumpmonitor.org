@@ -17,13 +17,37 @@ class Installer
      */
     public function get_list()
     {
+        // Get installer system count from system_meta
+        $installer_systems = $this->get_installers_from_system_meta();
+
         // Example implementation, replace with actual logic
         $result = $this->mysqli->query("SELECT * FROM installer");
         $installers = [];
         while ($row = $result->fetch_object()) {
+            // Add system count from system_meta
+            $row->systems = isset($installer_systems[$row->name]) ? $installer_systems[$row->name] : 0;
             $installers[] = $row;
         }
         return $installers;
+    }
+
+    /**
+     * Get list of installers and installer count from system_meta
+     * 
+     * @return array Array of installer names and their system counts
+     */
+    public function get_installers_from_system_meta()
+    {
+        $result = $this->mysqli->query("SELECT installer_name FROM system_meta WHERE published = '1' AND share = '1'");
+        $installer_systems = [];
+        while ($row = $result->fetch_object()) {
+            $installer_name = trim($row->installer_name);
+            if (!isset($installer_systems[$installer_name])) {
+                $installer_systems[$installer_name] = 0;
+            }
+            $installer_systems[$installer_name]++;
+        }
+        return $installer_systems;
     }
 
     /**
@@ -35,7 +59,7 @@ class Installer
     public function unmatched()
     {
         // Load all systems from system_meta
-        $result = $this->mysqli->query("SELECT * FROM system_meta WHERE installer_name IS NOT NULL");
+        $result = $this->mysqli->query("SELECT * FROM system_meta WHERE published = '1' AND share = '1'");
         $installers = [];
 
         while ($row = $result->fetch_object()) {
@@ -61,28 +85,6 @@ class Installer
         }
 
         return $unmatched_installers;
-    }
-
-    /**
-     * Find duplicate installer URLs that have different names
-     * 
-     * @return array Array of duplicate URL entries with their associated names
-     */
-    public function find_duplicate_urls_with_different_names()
-    {
-        $query = "
-            SELECT installer_url, GROUP_CONCAT(DISTINCT installer_name) AS names, COUNT(DISTINCT installer_name) AS name_count
-            FROM system_meta
-            WHERE installer_url IS NOT NULL AND installer_name IS NOT NULL
-            GROUP BY installer_url
-            HAVING name_count > 1
-        ";
-        $result = $this->mysqli->query($query);
-        $duplicates = [];
-        while ($row = $result->fetch_assoc()) {
-            $duplicates[] = $row;
-        }
-        return $duplicates;
     }
 
     /**
@@ -134,10 +136,9 @@ class Installer
      * @param string $name The installer name
      * @param string $url The installer URL (optional)
      * @param string $logo The installer logo filename (optional)
-     * @param int $systems The number of systems using this installer (default: 0)
      * @return bool True if successful, false if installer already exists or insert failed
      */
-    public function add($name, $url = '', $logo = '', $systems = 0)
+    public function add($name, $url = '', $logo = '')
     {
         // Name should not be empty
         if (empty($name)) {
@@ -155,8 +156,8 @@ class Installer
             $color = $this->get_dominant_color($logo_path);
         }
 
-        $stmt = $this->mysqli->prepare("INSERT INTO installer (name, url, logo, color, systems) VALUES (?, ?, ?, ?, ?)");
-        $stmt->bind_param("ssssi", $name, $url, $logo, $color, $systems);
+        $stmt = $this->mysqli->prepare("INSERT INTO installer (name, url, logo, color) VALUES (?, ?, ?, ?)");
+        $stmt->bind_param("ssss", $name, $url, $logo, $color);
         $result = $stmt->execute();
         $stmt->close();
 
@@ -170,10 +171,9 @@ class Installer
      * @param string $name The new installer name
      * @param string $url The new installer URL (optional)
      * @param string $logo The new installer logo filename (optional)
-     * @param int $systems The new number of systems using this installer (default: 0)
      * @return bool True if successful, false if installer doesn't exist, name conflict, or update failed
      */
-    public function edit($id, $name, $url = '', $logo = '', $systems = 0)
+    public function edit($id, $name, $url = '', $logo = '')
     {
         $id = (int) $id;
 
@@ -197,8 +197,8 @@ class Installer
             $color = $this->get_dominant_color($logo_path);
         }
 
-        $stmt = $this->mysqli->prepare("UPDATE installer SET name = ?, url = ?, logo = ?, color = ?, systems = ? WHERE id = ?");
-        $stmt->bind_param("ssssii", $name, $url, $logo, $color, $systems, $id);
+        $stmt = $this->mysqli->prepare("UPDATE installer SET name = ?, url = ?, logo = ?, color = ? WHERE id = ?");
+        $stmt->bind_param("ssssi", $name, $url, $logo, $color, $id);
         $result = $stmt->execute();
         $stmt->close();
 
