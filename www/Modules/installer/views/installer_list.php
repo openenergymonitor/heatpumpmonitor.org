@@ -168,7 +168,7 @@
                     });
             },
             loadInstallers() {
-                axios.get(this.path + 'installer/list.json')
+                axios.get(this.path + 'installer/list.json?system_count=1')
                     .then(res => {
                         this.installers = res.data;
                     });

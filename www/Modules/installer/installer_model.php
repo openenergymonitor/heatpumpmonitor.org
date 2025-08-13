@@ -15,10 +15,14 @@ class Installer
      * 
      * @return array Array of installer objects
      */
-    public function get_list()
+    public function get_list($include_system_count = false)
     {
         // Get installer system count from system_meta
-        $installer_systems = $this->get_installers_from_system_meta();
+        if ($include_system_count) {
+            $installer_systems = $this->get_installers_from_system_meta();
+        } else {
+            $installer_systems = [];
+        }
 
         // Example implementation, replace with actual logic
         $result = $this->mysqli->query("SELECT * FROM installer");

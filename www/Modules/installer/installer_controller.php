@@ -28,7 +28,8 @@ function installer_controller() {
         $installer_model = new Installer($mysqli);
 
         if ($route->action == "list") {
-            return $installer_model->get_list();
+            $system_count = (int) get('system_count', false, false);
+            return $installer_model->get_list($system_count);
         }
 
         // Add a new installer
@@ -37,9 +38,8 @@ function installer_controller() {
             $name = post('name', true);
             $url = post('url', true);
             $logo = post('logo', true);
-            $systems = post('systems', true);
             
-            return $installer_model->add($name, $url, $logo, $systems);
+            return $installer_model->add($name, $url, $logo);
         }
 
         // Edit an existing installer
@@ -49,9 +49,8 @@ function installer_controller() {
             $name = post('name', true);
             $url = post('url', true);
             $logo = post('logo', true);
-            $systems = post('systems', true);
             
-            return $installer_model->edit($id, $name, $url, $logo, $systems);
+            return $installer_model->edit($id, $name, $url, $logo);
         }
 
         // Temporary for testing, populate the database with installers from system_meta
