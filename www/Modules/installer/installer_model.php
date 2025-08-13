@@ -70,10 +70,21 @@ class Installer
             $installer_name = trim($row->installer_name);
             if (!isset($installers[$installer_name])) {
 
+
+                $color = $this->default_color;
+                // get dominant color from logo if available
+                if (!empty($row->installer_logo)) {
+                    $logo_path = 'theme/img/installers/' . $row->installer_logo;
+                    if (file_exists($logo_path)) {
+                        $color = $this->get_dominant_color($logo_path);
+                    }
+                }
+
                 $installers[$installer_name] = [
                     'name' => $installer_name,
                     'url' => $row->installer_url ?? '',
                     'logo' => $row->installer_logo ?? '',
+                    'color' => $color,
                     'systems' => 0
                 ];
             }
@@ -163,12 +174,13 @@ class Installer
             return array('success' => false, 'message' => 'Installer already exists with this name');
         }
 
-        // Get color from logo if provided
-        $color = $this->default_color;
-        if (!empty($logo)) {
-            $logo_path = '/home/oem/hpmon_main/www/theme/img/installers/' . $logo;
-            $color = $this->get_dominant_color($logo_path);
+        // Fetch the logo from URL if provided
+        $image = $this->fetch_installer_logo($url);
+        if ($image === false) {
+            return array('success' => false, 'message' => 'Failed to load logo from URL');
         }
+        file_put_contents("theme/img/installers/".$image['filename'], $image['data']);
+        $logo = $image['filename'];
 
         $stmt = $this->mysqli->prepare("INSERT INTO installer (name, url, logo, color) VALUES (?, ?, ?, ?)");
         $stmt->bind_param("ssss", $name, $url, $logo, $color);
