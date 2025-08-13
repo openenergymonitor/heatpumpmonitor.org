@@ -142,12 +142,11 @@ class Installer
      * @param string $logo The installer logo filename (optional)
      * @return bool True if successful, false if installer already exists or insert failed
      */
-    public function add($name, $url = '', $logo = '', $color = '')
+    public function add($name, $url = '', $color = '')
     {
         // Validate inputs
         $name = trim($name);
         $url = trim($url);
-        $logo = trim($logo);
         $color = trim($color);
 
         // Default color if not provided
@@ -188,14 +187,13 @@ class Installer
      * @param string $logo The new installer logo filename (optional)
      * @return bool True if successful, false if installer doesn't exist, name conflict, or update failed
      */
-    public function edit($id, $name, $url = '', $logo = '', $color = '')
+    public function edit($id, $name, $url = '', $color = '')
     {
         $id = (int) $id;
 
         // Validate inputs
         $name = trim($name);
         $url = trim($url);
-        $logo = trim($logo);
         $color = trim($color);
 
         // Default color if not provided
@@ -269,5 +267,71 @@ class Installer
         if (!$colors) return $this->default_color;
         arsort($colors);
         return key($colors);
+    }
+
+    public function fetch_installer_logo($url) {
+        $url = parse_url($url);
+        if (isset($url['host'])) {
+            $host = $url['host'];
+            $host_parts = explode(".",$host);
+            
+            $i = 0;
+            if ($host_parts[0] == "www") {
+                $i++;
+            }
+            $filename = $host_parts[$i];
+                
+            $image_data = $this->getFaviconContent($url['host']);
+            if ($image_data === false) {
+                $url['host'] = str_replace("www.","",$url['host']);
+                $image_data = $this->getFaviconContent($url['host']);
+            }
+
+            if ($image_data !== false) {
+            
+                // Detect MIME type
+                $finfo = new finfo(FILEINFO_MIME_TYPE);
+                $mimeType = $finfo->buffer($image_data);
+                
+                // Determine file extension based on MIME type
+                switch ($mimeType) {
+                    case 'image/jpeg':
+                        $extension = '.jpg';
+                        break;
+                    case 'image/png':
+                        $extension = '.png';
+                        break;
+                    case 'image/gif':
+                        $extension = '.gif';
+                        break;
+                    default:
+                        $extension = ''; // Or assume a default extension or handle error
+                        break;
+                }
+                
+                $filename .= $extension;
+                return array(
+                    'filename' => $filename,
+                    'data' => $image_data
+                );
+            }
+        }
+        return false;
+    }
+    private function getFaviconContent($url) {
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, "https://t0.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://$url&size=16");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+        $image = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        
+        if ($httpCode == 200) { // Check if successful response
+            return $image;
+        } else {
+            return false; // Or handle error as needed
+        }
     }
 }

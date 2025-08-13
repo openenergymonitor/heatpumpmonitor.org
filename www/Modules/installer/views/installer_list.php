@@ -1,7 +1,5 @@
 <?php global $path; ?>
 <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
-<!-- jquery -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <style>
@@ -52,7 +50,7 @@
                         <div class="badge" :style="{backgroundColor: installer.color, color: '#fff'}"></div>
                     </td>
                     <td v-if="admin">
-                        <button class="btn btn-warning btn-sm me-1" style="padding:1px 8px 1px 8px" @click="openEditModal(installer)" title="Edit"><i class="fas fa-edit" style="color: #ffffff;"></i></button>
+                        <button class="btn btn-secondary btn-sm me-1" @click="openEditModal(installer)" title="Edit"><i class="fas fa-pencil-alt" style="color: #ffffff;"></i></button>
                     </td>
                 </tr>
             </tbody>
@@ -78,10 +76,6 @@
                         <div class="form-group">
                             <label for="url">URL</label>
                             <input type="url" class="form-control" id="url" v-model="form.url">
-                        </div>
-                        <div class="form-group">
-                            <label for="logo">Logo</label>
-                            <input type="text" class="form-control" id="logo" v-model="form.logo">
                         </div>
                         <div class="form-group">
                             <label for="color">Color</label>
@@ -111,7 +105,6 @@
                 id: null,
                 name: '',
                 url: '',
-                logo: '',
                 color: '#000000'
             }
         },
@@ -127,7 +120,6 @@
                     id: installer.id,
                     name: installer.name || '',
                     url: installer.url || '',
-                    logo: installer.logo || '',
                     color: installer.color || '#000000'
                 };
                 $('#installerModal').modal('show');
@@ -141,30 +133,29 @@
                     id: null,
                     name: '',
                     url: '',
-                    logo: '',
                     color: '#000000'
                 };
             },
             saveInstaller() {
                 const url = this.isEdit ? this.path + 'installer/edit.json' : this.path + 'installer/add.json';
                 
-                axios.post(url, this.form)
-                    .then(response => {
-                        if (response.data.success) {
+                $.post(url, this.form)
+                    .done(response => {
+                        if (response.success) {
                             this.closeModal();
                             this.loadInstallers();
                         } else {
-                            alert('Error: ' + (response.data.message || 'Failed to save installer'));
+                            alert('Error: ' + (response.message || 'Failed to save installer'));
                         }
                     })
-                    .catch(error => {
-                        alert('Error: ' + error.message);
+                    .fail(error => {
+                        alert('Error: ' + error.statusText);
                     });
             },
             loadInstallers() {
-                axios.get(this.path + 'installer/list.json?system_count=1')
-                    .then(res => {
-                        this.installers = res.data;
+                $.get(this.path + 'installer/list.json?system_count=1')
+                    .done(res => {
+                        this.installers = res;
                     });
             }
         },
