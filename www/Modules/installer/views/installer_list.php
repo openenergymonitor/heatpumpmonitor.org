@@ -51,6 +51,7 @@
                     </td>
                     <td v-if="admin">
                         <button class="btn btn-secondary btn-sm me-1" @click="openEditModal(installer)" title="Edit"><i class="fas fa-pencil-alt" style="color: #ffffff;"></i></button>
+                        <button class="btn btn-danger btn-sm" @click="deleteInstaller(installer)" title="Delete"><i class="fas fa-trash" style="color: #ffffff;"></i></button>
                     </td>
                 </tr>
             </tbody>
@@ -79,23 +80,38 @@
                         </div>
 
                         <div class="form-group mt-3">
+                            <label for="color">Logo</label>
                             <div class="row">
+
+                                <div class="col-4 text-center">
+                                    <div style="border: 1px solid #ccc; padding: 5px; border-radius: 5px;">
+                                        <img v-if="form.logo" :src="path+'theme/img/installers/'+form.logo" style="max-width: 32px; max-height: 32px;" alt="Logo preview">
+                                        <span v-else class="text-muted">No logo</span>
+                                    </div>  
+                                </div>
+
                                 <div class="col-8">
                                     <button type="button" class="btn btn-secondary btn-sm" @click="loadLogo" :disabled="!form.url || loadingLogo">
                                         <span v-if="loadingLogo">Loading...</span>
                                         <span v-else>Fetch Logo from URL</span>
                                     </button>
                                 </div>
-                                <div class="col-4 text-center">
-                                    <img v-if="form.logo" :src="path+'theme/img/installers/'+form.logo" style="max-width: 32px; max-height: 32px;" alt="Logo preview">
-                                    <span v-else class="text-muted">No logo</span>
-                                </div>
                             </div>
                         </div>
 
                         <div class="form-group mt-3">
                             <label for="color">Color</label>
-                            <input type="color" class="form-control" id="color" v-model="form.color" :title="form.color">
+                            <div class="row">
+                                <div class="col-4">
+                                    <input type="color" class="form-control" id="color" v-model="form.color" :title="form.color">
+                                </div>
+                                <div class="col-8">
+                                    <button type="button" class="btn btn-secondary btn-sm" @click="getDominantColor" :disabled="!form.logo || loadingColor">
+                                        <span v-if="loadingColor">Loading...</span>
+                                        <span v-else>Get from Logo</span>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -122,9 +138,10 @@
                 name: '',
                 url: '',
                 logo: '',
-                color: '#000000'
+                color: '#cccccc'
             },
-            loadingLogo: false
+            loadingLogo: false,
+            loadingColor: false
         },
         methods: {
             openAddModal() {
@@ -139,7 +156,7 @@
                     name: installer.name || '',
                     url: installer.url || '',
                     logo: installer.logo || '',
-                    color: installer.color || '#000000'
+                    color: installer.color || '#cccccc'
                 };
                 $('#installerModal').modal('show');
             },
@@ -153,7 +170,7 @@
                     name: '',
                     url: '',
                     logo: '',
-                    color: '#000000'
+                    color: '#cccccc'
                 };
             },
             loadLogo() {
@@ -174,6 +191,40 @@
                     .always(() => {
                         this.loadingLogo = false;
                     });
+            },
+            getDominantColor() {
+                if (!this.form.logo) return;
+                
+                this.loadingColor = true;
+                $.post(this.path + 'installer/get_dominant_color.json', { logo: this.form.logo })
+                    .done(response => {
+                        if (response.success) {
+                            this.form.color = response.color;
+                        } else {
+                            alert('Error getting dominant color: ' + (response.message || 'Failed to get color'));
+                        }
+                    })
+                    .fail(error => {
+                        alert('Error getting dominant color: ' + error.statusText);
+                    })
+                    .always(() => {
+                        this.loadingColor = false;
+                    });
+            },
+            deleteInstaller(installer) {
+                if (confirm(`Are you sure you want to delete the installer "${installer.name}"?`)) {
+                    $.post(this.path + 'installer/delete.json', { id: installer.id })
+                        .done(response => {
+                            if (response.success) {
+                                this.loadInstallers();
+                            } else {
+                                alert('Error: ' + (response.message || 'Failed to delete installer'));
+                            }
+                        })
+                        .fail(error => {
+                            alert('Error: ' + error.statusText);
+                        });
+                }
             },
             saveInstaller() {
                 const url = this.isEdit ? this.path + 'installer/edit.json' : this.path + 'installer/add.json';

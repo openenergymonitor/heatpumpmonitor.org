@@ -70,6 +70,32 @@ function installer_controller() {
 
             return array('success' => true, 'logo' => $image['filename']);
         }
+
+        // Get dominant color from logo
+        if ($route->action == "get_dominant_color" && $session['admin']) {
+            $logo = post('logo', true);
+            if (empty($logo)) {
+                return array('success' => false, 'message' => 'Logo path is required');
+            }
+
+            $logo_path = 'theme/img/installers/' . $logo;
+            if (!file_exists($logo_path)) {
+                return array('success' => false, 'message' => 'Logo file does not exist');
+            }
+
+            $color = $installer_model->get_dominant_color($logo_path);
+            if ($color === false) {
+                return array('success' => false, 'message' => 'Failed to get dominant color');
+            }
+
+            return array('success' => true, 'color' => $color);
+        }
+
+        // Delete an installer
+        if ($route->action == "delete" && $session['admin']) {
+            $id = (int) post('id', true);
+            return $installer_model->delete($id);
+        }
     }
 
     return false;

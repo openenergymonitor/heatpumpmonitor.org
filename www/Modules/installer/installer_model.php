@@ -3,7 +3,7 @@
 class Installer
 {
     private $mysqli;
-    private $default_color = "#ccc"; // Default color for installers without a logo
+    private $default_color = "#cccccc"; // Default color for installers without a logo
 
     public function __construct($mysqli)
     {
@@ -222,13 +222,6 @@ class Installer
         file_put_contents("theme/img/installers/".$image['filename'], $image['data']);
         $logo = $image['filename'];
 
-        // Get color from logo if provided
-        $color = $this->default_color;
-        if (!empty($logo)) {
-            $logo_path = 'theme/img/installers/' . $logo;
-            $color = $this->get_dominant_color($logo_path);
-        }
-
         $stmt = $this->mysqli->prepare("UPDATE installer SET name = ?, url = ?, logo = ?, color = ? WHERE id = ?");
         $stmt->bind_param("ssssi", $name, $url, $logo, $color, $id);
         $result = $stmt->execute();
@@ -238,13 +231,34 @@ class Installer
     }
 
     /**
+     * Delete an installer from the database
+     * 
+     * @param int $id The installer ID to delete
+     * @return bool True if successful, false if installer doesn't exist or delete failed
+     */
+    public function delete($id)
+    {
+        $id = (int) $id;
+        if ($id <= 0 || !$this->exists_by_id($id)) {
+            return array('success' => false, 'message' => 'Installer not found');
+        }
+
+        $stmt = $this->mysqli->prepare("DELETE FROM installer WHERE id = ?");
+        $stmt->bind_param("i", $id);
+        $result = $stmt->execute();
+        $stmt->close();
+
+        return array('success' => true, 'message' => 'Installer deleted successfully');
+    }
+
+    /**
      * Extract the dominant color from an installer logo image
      * Analyzes the image and returns the most common non-black/white color
      * 
      * @param string $image_path Full path to the image file
      * @return string Hex color code (e.g., "#ff0000") or default color if image invalid
      */
-    private function get_dominant_color($image_path) {
+    public function get_dominant_color($image_path) {
         if (!file_exists($image_path) || is_dir($image_path)) return $this->default_color;
         $info = getimagesize($image_path);
 
