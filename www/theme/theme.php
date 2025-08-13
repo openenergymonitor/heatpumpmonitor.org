@@ -143,6 +143,7 @@ $navigation = array(
                                         </li>
                                         <li><a class="dropdown-item" href="<?php echo $path; ?>user/admin">Admin users</a></li>
                                         <li><a class="dropdown-item" href="<?php echo $path; ?>system/list/admin">Admin systems</a></li>
+                                        <li><a class="dropdown-item" href="<?php echo $path; ?>installer">Admin Installers</a></li>
                                         <li><a class="dropdown-item" href="<?php echo $path; ?>system/log">Change log</a></li>
                                     <?php } ?>
                                     <li>
