@@ -214,10 +214,18 @@ class Installer
             return array('success' => false, 'message' => 'Installer already exists with this name');
         }
 
+        // Fetch the logo from URL if provided
+        $image = $this->fetch_installer_logo($url);
+        if ($image === false) {
+            return array('success' => false, 'message' => 'Failed to load logo from URL');
+        }
+        file_put_contents("theme/img/installers/".$image['filename'], $image['data']);
+        $logo = $image['filename'];
+
         // Get color from logo if provided
         $color = $this->default_color;
         if (!empty($logo)) {
-            $logo_path = '/home/oem/hpmon_main/www/theme/img/installers/' . $logo;
+            $logo_path = 'theme/img/installers/' . $logo;
             $color = $this->get_dominant_color($logo_path);
         }
 

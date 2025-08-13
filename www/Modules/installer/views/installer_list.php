@@ -47,7 +47,7 @@
                     </td>
                     <td>{{ installer.systems }}</td>
                     <td>
-                        <div class="badge" :style="{backgroundColor: installer.color, color: '#fff'}"></div>
+                        <div class="badge" :style="{backgroundColor: installer.color, color: '#fff'}" :title="installer.color"></div>
                     </td>
                     <td v-if="admin">
                         <button class="btn btn-secondary btn-sm me-1" @click="openEditModal(installer)" title="Edit"><i class="fas fa-pencil-alt" style="color: #ffffff;"></i></button>
@@ -77,9 +77,25 @@
                             <label for="url">URL</label>
                             <input type="url" class="form-control" id="url" v-model="form.url">
                         </div>
-                        <div class="form-group">
+
+                        <div class="form-group mt-3">
+                            <div class="row">
+                                <div class="col-8">
+                                    <button type="button" class="btn btn-secondary btn-sm" @click="loadLogo" :disabled="!form.url || loadingLogo">
+                                        <span v-if="loadingLogo">Loading...</span>
+                                        <span v-else>Fetch Logo from URL</span>
+                                    </button>
+                                </div>
+                                <div class="col-4 text-center">
+                                    <img v-if="form.logo" :src="path+'theme/img/installers/'+form.logo" style="max-width: 32px; max-height: 32px;" alt="Logo preview">
+                                    <span v-else class="text-muted">No logo</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group mt-3">
                             <label for="color">Color</label>
-                            <input type="color" class="form-control" id="color" v-model="form.color">
+                            <input type="color" class="form-control" id="color" v-model="form.color" :title="form.color">
                         </div>
                     </form>
                 </div>
@@ -105,8 +121,10 @@
                 id: null,
                 name: '',
                 url: '',
+                logo: '',
                 color: '#000000'
-            }
+            },
+            loadingLogo: false
         },
         methods: {
             openAddModal() {
@@ -120,6 +138,7 @@
                     id: installer.id,
                     name: installer.name || '',
                     url: installer.url || '',
+                    logo: installer.logo || '',
                     color: installer.color || '#000000'
                 };
                 $('#installerModal').modal('show');
@@ -133,8 +152,28 @@
                     id: null,
                     name: '',
                     url: '',
+                    logo: '',
                     color: '#000000'
                 };
+            },
+            loadLogo() {
+                if (!this.form.url) return;
+                
+                this.loadingLogo = true;
+                $.post(this.path + 'installer/load_logo.json', { url: this.form.url })
+                    .done(response => {
+                        if (response.success) {
+                            this.form.logo = response.logo;
+                        } else {
+                            alert('Error loading logo: ' + (response.message || 'Failed to load logo'));
+                        }
+                    })
+                    .fail(error => {
+                        alert('Error loading logo: ' + error.statusText);
+                    })
+                    .always(() => {
+                        this.loadingLogo = false;
+                    });
             },
             saveInstaller() {
                 const url = this.isEdit ? this.path + 'installer/edit.json' : this.path + 'installer/add.json';

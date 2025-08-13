@@ -57,6 +57,19 @@ function installer_controller() {
         if ($route->action == "unmatched" && $session['admin']) {
             return $installer_model->unmatched();
         }
+
+        // Load logo from URL
+        if ($route->action == "load_logo" && $session['admin']) {
+            $url = post('url', true);
+
+            $image = $installer_model->fetch_installer_logo($url);
+            if ($image === false) {
+                return array('success' => false, 'message' => 'Failed to load logo from URL');
+            }
+            file_put_contents("theme/img/installers/".$image['filename'], $image['data']);
+
+            return array('success' => true, 'logo' => $image['filename']);
+        }
     }
 
     return false;
