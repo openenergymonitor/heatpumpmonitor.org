@@ -16,8 +16,16 @@
 <div id="installer-app">
     <div style=" background-color:#f0f0f0; padding-top:20px; padding-bottom:10px">
         <div class="container" style="max-width:1200px;">
-            <button class="btn btn-primary" style="float:right" @click="openAddModal" v-if="admin">+ Add Installer</button>
-            <h2>Installers</h2>
+            <div style="float:right">
+                <button class="btn btn-warning me-2" @click="toggleMode" v-if="admin">
+                    <i class="fas fa-exclamation-triangle" v-if="!showUnmatched"></i>
+                    <i class="fas fa-list" v-else></i>
+                    {{ showUnmatched ? 'Show Registered' : 'Show Unmatched' }}
+                </button>
+                <button class="btn btn-primary" @click="openAddModal" v-if="admin && !showUnmatched">+ Add Installer</button>
+            </div>
+            <h2>{{ showUnmatched ? 'Unmatched Installers' : 'Installers' }}</h2>
+            <p class="text-muted" v-if="showUnmatched">Installers found in systems but not yet registered in the database.</p>
             
             <div class="row mt-3">
                 <div class="col-md-6">
@@ -53,7 +61,7 @@
                 </tr>
             </thead>
             <tbody>
-                <tr v-for="installer in filteredInstallers" :key="installer.id" v-if="installer.name">
+                <tr v-for="installer in filteredInstallers" :key="installer.id || installer.name" v-if="installer.name">
                     <td>{{ installer.name }}</td>
                     <td>
                         <a v-if="installer.url" :href="installer.url" target="_blank">{{ installer.url }}</a>
@@ -68,8 +76,15 @@
                         <div class="badge" :style="{backgroundColor: installer.color, color: '#fff'}" :title="installer.color"></div>
                     </td>
                     <td v-if="admin">
-                        <button class="btn btn-secondary btn-sm me-1" @click="openEditModal(installer)" title="Edit"><i class="fas fa-pencil-alt" style="color: #ffffff;"></i></button>
-                        <button class="btn btn-danger btn-sm" @click="deleteInstaller(installer)" title="Delete"><i class="fas fa-trash" style="color: #ffffff;"></i></button>
+                        <div v-if="showUnmatched">
+                            <button class="btn btn-success btn-sm" @click="addUnmatchedInstaller(installer)" title="Add to Database">
+                                <i class="fas fa-plus" style="color: #ffffff;"></i> Add
+                            </button>
+                        </div>
+                        <div v-else>
+                            <button class="btn btn-secondary btn-sm me-1" @click="openEditModal(installer)" title="Edit"><i class="fas fa-pencil-alt" style="color: #ffffff;"></i></button>
+                            <button class="btn btn-danger btn-sm" @click="deleteInstaller(installer)" title="Delete"><i class="fas fa-trash" style="color: #ffffff;"></i></button>
+                        </div>
                     </td>
                 </tr>
             </tbody>
@@ -162,7 +177,8 @@
             loadingColor: false,
             currentSortColumn: "systems",
             currentSortDir: "desc",
-            filterKey: ""
+            filterKey: "",
+            showUnmatched: false
         },
         computed: {
             sortedInstallers() {
@@ -215,6 +231,21 @@
             }
         },
         methods: {
+            toggleMode() {
+                this.showUnmatched = !this.showUnmatched;
+                this.loadInstallers();
+            },
+            addUnmatchedInstaller(installer) {
+                this.isEdit = false;
+                this.form = {
+                    id: null,
+                    name: installer.name || '',
+                    url: installer.url || '',
+                    logo: installer.logo || '',
+                    color: installer.color || '#cccccc'
+                };
+                $('#installerModal').modal('show');
+            },
             openAddModal() {
                 this.isEdit = false;
                 this.resetForm();
@@ -314,7 +345,11 @@
                     });
             },
             loadInstallers() {
-                $.get(this.path + 'installer/list.json?system_count=1')
+                const endpoint = this.showUnmatched ? 
+                    this.path + 'installer/unmatched.json?system_count=1' : 
+                    this.path + 'installer/list.json?system_count=1';
+                    
+                $.get(endpoint)
                     .done(res => {
                         this.installers = res;
                     });
