@@ -8,9 +8,10 @@
     #installer-app .badge {
         display: inline-block;
         width: 40px;
-        height: 20px;
+        height: 22px;
         border-radius: 5px;
         margin-right: 5px;
+        margin-top:2px;
     }
 </style>
 
@@ -51,7 +52,7 @@
                         <div class="badge" :style="{backgroundColor: installer.color, color: '#fff'}"></div>
                     </td>
                     <td v-if="admin">
-                        <button class="btn btn-sm btn-secondary" @click="openEditModal(installer)">Edit</button>
+                        <button class="btn btn-warning btn-sm me-1" style="padding:1px 8px 1px 8px" @click="openEditModal(installer)" title="Edit"><i class="fas fa-edit" style="color: #ffffff;"></i></button>
                     </td>
                 </tr>
             </tbody>
@@ -83,10 +84,6 @@
                             <input type="text" class="form-control" id="logo" v-model="form.logo">
                         </div>
                         <div class="form-group">
-                            <label for="systems">Systems</label>
-                            <input type="number" class="form-control" id="systems" v-model="form.systems" min="0">
-                        </div>
-                        <div class="form-group">
                             <label for="color">Color</label>
                             <input type="color" class="form-control" id="color" v-model="form.color">
                         </div>
@@ -115,7 +112,6 @@
                 name: '',
                 url: '',
                 logo: '',
-                systems: 0,
                 color: '#000000'
             }
         },
@@ -132,7 +128,6 @@
                     name: installer.name || '',
                     url: installer.url || '',
                     logo: installer.logo || '',
-                    systems: installer.systems || 0,
                     color: installer.color || '#000000'
                 };
                 $('#installerModal').modal('show');
@@ -147,7 +142,6 @@
                     name: '',
                     url: '',
                     logo: '',
-                    systems: 0,
                     color: '#000000'
                 };
             },

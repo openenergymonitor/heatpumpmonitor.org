@@ -38,8 +38,9 @@ function installer_controller() {
             $name = post('name', true);
             $url = post('url', true);
             $logo = post('logo', true);
+            $color = post('color', true);
             
-            return $installer_model->add($name, $url, $logo);
+            return $installer_model->add($name, $url, $logo, $color);
         }
 
         // Edit an existing installer
@@ -49,8 +50,9 @@ function installer_controller() {
             $name = post('name', true);
             $url = post('url', true);
             $logo = post('logo', true);
+            $color = post('color', true);
             
-            return $installer_model->edit($id, $name, $url, $logo);
+            return $installer_model->edit($id, $name, $url, $logo, $color);
         }
 
         // Temporary for testing, populate the database with installers from system_meta

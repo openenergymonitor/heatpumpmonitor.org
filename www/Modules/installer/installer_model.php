@@ -142,8 +142,19 @@ class Installer
      * @param string $logo The installer logo filename (optional)
      * @return bool True if successful, false if installer already exists or insert failed
      */
-    public function add($name, $url = '', $logo = '')
+    public function add($name, $url = '', $logo = '', $color = '')
     {
+        // Validate inputs
+        $name = trim($name);
+        $url = trim($url);
+        $logo = trim($logo);
+        $color = trim($color);
+
+        // Default color if not provided
+        if (empty($color)) {
+            $color = $this->default_color;
+        }
+
         // Name should not be empty
         if (empty($name)) {
             return array('success' => false, 'message' => 'Installer name required');
@@ -177,10 +188,21 @@ class Installer
      * @param string $logo The new installer logo filename (optional)
      * @return bool True if successful, false if installer doesn't exist, name conflict, or update failed
      */
-    public function edit($id, $name, $url = '', $logo = '')
+    public function edit($id, $name, $url = '', $logo = '', $color = '')
     {
         $id = (int) $id;
 
+        // Validate inputs
+        $name = trim($name);
+        $url = trim($url);
+        $logo = trim($logo);
+        $color = trim($color);
+
+        // Default color if not provided
+        if (empty($color)) {
+            $color = $this->default_color;
+        }
+        
         // ID and name should not be empty
         if ($id <= 0 || empty($name)) {
             return array('success' => false, 'message' => 'ID and name are required');
