@@ -33,6 +33,12 @@
                         <span class="input-group-text">Filter</span>
                         <input class="form-control" v-model="filterKey" placeholder="Search installers..." @input="filterInstallers">
                     </div>
+                    <div class="form-check mt-2">
+                        <input class="form-check-input" type="checkbox" v-model="midMeteringOnly" id="midMeteringFilter">
+                        <label class="form-check-label" for="midMeteringFilter">
+                            Show only installers with MID metered systems
+                        </label>
+                    </div>
                 </div>
                 <div class="col-md-6 text-end">
                     {{ filteredInstallers.length }} installers
@@ -57,7 +63,10 @@
                         <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='systems'"></i>
                     </th>
                     <th>Color</th>
-                    <th v-if="admin">Actions</th>
+                    <th>
+                        <span v-if="admin">Actions</span>
+                        <span v-else>View</span>
+                    </th>
                 </tr>
             </thead>
             <tbody>
@@ -71,20 +80,19 @@
                         <a v-if="installer.logo" :href='installer.url'><img class='logo' :src="path+'theme/img/installers/'+installer.logo"/></a>
                         <span v-else>-</span>
                     </td>
-                    <td>{{ installer.systems }}</td>
+                    <td>{{ midMeteringOnly ? installer.mid_systems : installer.systems }}</td>
                     <td>
                         <div class="badge" :style="{backgroundColor: installer.color, color: '#fff'}" :title="installer.color"></div>
                     </td>
-                    <td v-if="admin">
-                        <div v-if="showUnmatched">
-                            <button class="btn btn-success btn-sm" @click="addUnmatchedInstaller(installer)" title="Add to Database">
-                                <i class="fas fa-plus" style="color: #ffffff;"></i> Add
-                            </button>
-                        </div>
-                        <div v-else>
-                            <button class="btn btn-secondary btn-sm me-1" @click="openEditModal(installer)" title="Edit"><i class="fas fa-pencil-alt" style="color: #ffffff;"></i></button>
-                            <button class="btn btn-danger btn-sm" @click="deleteInstaller(installer)" title="Delete"><i class="fas fa-trash" style="color: #ffffff;"></i></button>
-                        </div>
+                    <td style="width:130px">
+                        <button v-if="admin && showUnmatched" class="btn btn-success btn-sm" @click="addUnmatchedInstaller(installer)" title="Add to Database">
+                            <i class="fas fa-plus" style="color: #ffffff;"></i> Add
+                        </button>
+                        <button v-if="admin && !showUnmatched" class="btn btn-secondary btn-sm me-1" @click="openEditModal(installer)" title="Edit"><i class="fas fa-pencil-alt" style="color: #ffffff;"></i></button>
+                        <button v-if="admin && !showUnmatched" class="btn btn-danger btn-sm me-1" @click="deleteInstaller(installer)" title="Delete"><i class="fas fa-trash" style="color: #ffffff;"></i></button>
+                        <a :href="path+'?filter='+encodeURIComponent(installer.name)+'&period=all&minDays=0&errors=1'">
+                            <button class="btn btn-primary btn-sm" :title="'View '+installer.name+' systems'"><i class="fa fa-eye" style="color: #ffffff;"></i></button>
+                        </a>
                     </td>
                 </tr>
             </tbody>
@@ -178,7 +186,8 @@
             currentSortColumn: "systems",
             currentSortDir: "desc",
             filterKey: "",
-            showUnmatched: false
+            showUnmatched: false,
+            midMeteringOnly: true
         },
         computed: {
             sortedInstallers() {
@@ -188,6 +197,12 @@
 
                     let aValue = a[this.currentSortColumn];
                     let bValue = b[this.currentSortColumn];
+
+                    // When sorting by systems and MID metering is enabled, use mid_systems
+                    if (this.currentSortColumn === 'systems' && this.midMeteringOnly) {
+                        aValue = a['mid_systems'];
+                        bValue = b['mid_systems'];
+                    }
 
                     // Handle null/undefined values
                     if (aValue === null || aValue === undefined) aValue = this.currentSortDir == 'desc' ? -Infinity : Infinity;
@@ -205,8 +220,16 @@
                 });
             },
             filteredInstallers() {
+                let filtered = this.sortedInstallers;
+                
+                // Apply MID metering filter
+                if (this.midMeteringOnly) {
+                    filtered = filtered.filter(installer => (installer.mid_systems || 0) > 0);
+                }
+                
+                // Apply search filter
                 if (!this.filterKey.trim()) {
-                    return this.sortedInstallers;
+                    return filtered;
                 }
                 
                 const filterTerms = this.filterKey
@@ -215,10 +238,10 @@
                     .filter(term => term.length > 0);
                 
                 if (filterTerms.length === 0) {
-                    return this.sortedInstallers;
+                    return filtered;
                 }
                 
-                return this.sortedInstallers.filter(installer => {
+                return filtered.filter(installer => {
                     return filterTerms.every(term => {
                         const searchableText = [
                             installer.name || '',

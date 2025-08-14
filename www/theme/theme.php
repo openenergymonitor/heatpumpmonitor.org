@@ -107,6 +107,14 @@ $navigation = array(
                         <li class="nav-item"><a id="heatpump-database-link" class="nav-link " href="<?php echo $path; ?>heatpump" title="Heat pump database"><i class="fas fa-database"></i> <span class="nav-item-text">Heat pump database</span></a></li>
                     </ul>
 
+                    <ul class="navbar-nav"> 
+                        <li class="nav-item">
+                            <a id="installer-link" class="nav-link" href="<?php echo $path; ?>installer" title="Installer database">
+                                <i class="fas fa-tools"></i> <span class="nav-item-text">Installers</span>
+                            </a>
+                        </li>
+                    </ul>
+
                     <ul class="navbar-nav">
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="avatarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -143,7 +151,6 @@ $navigation = array(
                                         </li>
                                         <li><a class="dropdown-item" href="<?php echo $path; ?>user/admin">Admin users</a></li>
                                         <li><a class="dropdown-item" href="<?php echo $path; ?>system/list/admin">Admin systems</a></li>
-                                        <li><a class="dropdown-item" href="<?php echo $path; ?>installer">Admin Installers</a></li>
                                         <li><a class="dropdown-item" href="<?php echo $path; ?>system/log">Change log</a></li>
                                     <?php } ?>
                                     <li>

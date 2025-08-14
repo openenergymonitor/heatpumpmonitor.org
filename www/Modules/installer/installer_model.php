@@ -19,7 +19,7 @@ class Installer
     {
         // Get installer system count from system_meta
         if ($include_system_count) {
-            $installer_systems = $this->get_installers_from_system_meta();
+            $installer_systems = $this->get_system_count();
         } else {
             $installer_systems = [];
         }
@@ -29,7 +29,13 @@ class Installer
         $installers = [];
         while ($row = $result->fetch_object()) {
             // Add system count from system_meta
-            $row->systems = isset($installer_systems[$row->name]) ? $installer_systems[$row->name] : 0;
+            $row->systems = 0; 
+            $row->mid_systems = 0; // Initialize mid systems count
+            if (isset($installer_systems[$row->name])) {
+                $row->systems = $installer_systems[$row->name]['all'] ?? 0;
+                $row->mid_systems = $installer_systems[$row->name]['mid'] ?? 0;
+            }
+
             $installers[] = $row;
         }
         return $installers;
@@ -40,16 +46,22 @@ class Installer
      * 
      * @return array Array of installer names and their system counts
      */
-    public function get_installers_from_system_meta()
+    public function get_system_count()
     {
-        $result = $this->mysqli->query("SELECT installer_name FROM system_meta WHERE published = '1' AND share = '1'");
+        $result = $this->mysqli->query("SELECT installer_name,mid_metering FROM system_meta WHERE published = '1' AND share = '1'");
         $installer_systems = [];
         while ($row = $result->fetch_object()) {
             $installer_name = trim($row->installer_name);
             if (!isset($installer_systems[$installer_name])) {
-                $installer_systems[$installer_name] = 0;
+                $installer_systems[$installer_name] = array(
+                    'all' => 0, // Total systems
+                    'mid' => 0 // Mid metering systems
+                );
             }
-            $installer_systems[$installer_name]++;
+            $installer_systems[$installer_name]['all']++;
+            if ($row->mid_metering == '1') {
+                $installer_systems[$installer_name]['mid']++;
+            }
         }
         return $installer_systems;
     }
