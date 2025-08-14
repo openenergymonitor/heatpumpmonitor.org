@@ -84,14 +84,17 @@
                     <td>
                         <div class="badge" :style="{backgroundColor: installer.color, color: '#fff'}" :title="installer.color"></div>
                     </td>
-                    <td style="width:130px">
+                    <td :style="{width: admin ? '180px' : '100px'}">
                         <button v-if="admin && showUnmatched" class="btn btn-success btn-sm" @click="addUnmatchedInstaller(installer)" title="Add to Database">
                             <i class="fas fa-plus" style="color: #ffffff;"></i> Add
                         </button>
                         <button v-if="admin && !showUnmatched" class="btn btn-secondary btn-sm me-1" @click="openEditModal(installer)" title="Edit"><i class="fas fa-pencil-alt" style="color: #ffffff;"></i></button>
                         <button v-if="admin && !showUnmatched" class="btn btn-danger btn-sm me-1" @click="deleteInstaller(installer)" title="Delete"><i class="fas fa-trash" style="color: #ffffff;"></i></button>
                         <a :href="path+'?filter='+encodeURIComponent(installer.name)+'&period=all&minDays=0&errors=1'">
-                            <button class="btn btn-primary btn-sm" :title="'View '+installer.name+' systems'"><i class="fa fa-eye" style="color: #ffffff;"></i></button>
+                            <button class="btn btn-primary btn-sm me-1" :title="'View '+installer.name+' systems'"><i class="fa fa-list-alt" style="color: #ffffff;"></i></button>
+                        </a>
+                        <a :href="path+'map?filter='+encodeURIComponent(installer.name)+'&period=all&minDays=0&errors=1'">
+                            <button class="btn btn-primary btn-sm" :title="'View '+installer.name+' map'"><i class="fa fa-map" style="color: #ffffff;"></i></button>
                         </a>
                     </td>
                 </tr>
