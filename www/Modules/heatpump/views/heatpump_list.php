@@ -41,6 +41,19 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         border-radius: 5px;
     }
 
+    /* Mobile responsive adjustments */
+    @media (max-width: 767.98px) {
+        .type-column {
+            display: none !important;
+        }
+        .table td, .table th {
+            padding: 0.5rem 0.25rem;
+        }
+        .table-sm td, .table-sm th {
+            padding: 0.25rem 0.125rem;
+        }
+    }
+
 </style>
 
 <div id="app" class="bg-light">
@@ -61,8 +74,13 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                 <span class="input-group-text">Filter</span>
                                 <input class="form-control" v-model="filterKey" placeholder="Search manufacturers, models..." @input="filterHeatpumps">
                             </div>
+                            <!-- Mobile: Show count below filter -->
+                            <div class="d-md-none mt-2">
+                                <span class="badge bg-primary fs-6">{{ filteredHeatpumps.length }} heat pump models</span>
+                            </div>
                         </div>
-                        <div class="col-md-6 text-end">
+                        <!-- Desktop: Show count on right -->
+                        <div class="col-md-6 text-end d-none d-md-block">
                             <span class="badge bg-primary fs-6">{{ filteredHeatpumps.length }} heat pump models</span>
                         </div>
                     </div>
@@ -157,16 +175,22 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <th @click="sort('name', 'asc')" style="cursor:pointer">Model
                             <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='name'"></i>
                         </th>
-                        <th @click="sort('refrigerant', 'asc')" style="cursor:pointer">Refrigerant
+                        <th @click="sort('refrigerant', 'asc')" style="cursor:pointer">
+                            <span class="d-none d-md-inline">Refrigerant</span>
+                            <span class="d-md-none">Ref</span>
                             <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='refrigerant'"></i>
                         </th>
-                        <th @click="sort('type', 'asc')" style="cursor:pointer">Type
+                        <th @click="sort('type', 'asc')" style="cursor:pointer" class="type-column d-none d-md-table-cell">Type
                             <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='type'"></i>
                         </th>
-                        <th @click="sort('capacity', 'desc')" style="cursor:pointer">Capacity
+                        <th @click="sort('capacity', 'desc')" style="cursor:pointer">
+                            <span class="d-none d-md-inline">Capacity</span>
+                            <span class="d-md-none">Cap</span>
                             <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='capacity'"></i>
                         </th>
-                        <th @click="sort('number_of_systems', 'desc')" style="cursor:pointer">Systems
+                        <th @click="sort('number_of_systems', 'desc')" style="cursor:pointer">
+                            <span class="d-none d-md-inline">Systems</span>
+                            <span class="d-md-none">Sys</span>
                             <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='number_of_systems'"></i>
                         </th>
                         <th @click="sort('approved_tests', 'desc')" style="cursor:pointer">Tests
@@ -196,7 +220,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             </select>
                             <span v-else>{{unit.refrigerant}}</span>
                         </td>
-                        <td>
+                        <td class="type-column d-none d-md-table-cell">
                             <select v-if="editingId === unit.id" v-model="editType" class="form-select form-select-sm">
                                 <option>Air Source</option>
                                 <option>Ground Source</option>
@@ -211,7 +235,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                 <input v-model="editCapacity" class="form-control" type="number" step="0.1">
                                 <span class="input-group-text">kW</span>
                             </div>
-                            <span v-else>{{unit.capacity}} kW</span>
+                            <span v-else>{{unit.capacity}}<span class="text-muted" style="font-size: 0.85em;">
+                                    <span class="d-none d-md-inline">&nbsp;</span>kW
+                                </span>
+                            </span>
                         </td>
                         <td>{{unit.stats.number_of_systems}}</td>
                         <td><span v-if="unit.test_counts.approved_tests>0">{{unit.test_counts.approved_tests}}</span> <span v-if="mode=='admin' && unit.test_counts.pending_tests>0">({{unit.test_counts.pending_tests}})</span></td>
