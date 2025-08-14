@@ -11,6 +11,16 @@
         margin-right: 5px;
         margin-top:2px;
     }
+    
+    /* Mobile responsive adjustments */
+    @media (max-width: 767.98px) {
+        .url-column {
+            display: none !important;
+        }
+        .table td, .table th {
+            padding: 0.5rem 0.25rem;
+        }
+    }
 </style>
 
 <div id="installer-app">
@@ -39,8 +49,13 @@
                             Show only installers with MID metered systems
                         </label>
                     </div>
+                    <!-- Mobile: Show count below filter -->
+                    <div class="d-md-none mt-2 text-muted">
+                        {{ filteredInstallers.length }} installers
+                    </div>
                 </div>
-                <div class="col-md-6 text-end">
+                <!-- Desktop: Show count on right -->
+                <div class="col-md-6 text-end d-none d-md-block">
                     {{ filteredInstallers.length }} installers
                 </div>
             </div>
@@ -55,15 +70,15 @@
                     <th @click="sort('name', 'asc')" style="cursor:pointer">Name
                         <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='name'"></i>
                     </th>
-                    <th @click="sort('url', 'asc')" style="cursor:pointer">URL
+                    <th @click="sort('url', 'asc')" style="cursor:pointer" class="url-column d-none d-md-table-cell">URL
                         <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='url'"></i>
                     </th>
                     <th>Logo</th>
                     <th @click="sort('systems', 'desc')" style="cursor:pointer">Systems
                         <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='systems'"></i>
                     </th>
-                    <th>Color</th>
-                    <th>
+                    <th class="d-none d-sm-table-cell">Color</th>
+                    <th class="actions-column">
                         <span v-if="admin">Actions</span>
                         <span v-else>View</span>
                     </th>
@@ -71,8 +86,20 @@
             </thead>
             <tbody>
                 <tr v-for="installer in filteredInstallers" :key="installer.id || installer.name" v-if="installer.name">
-                    <td>{{ installer.name }}</td>
                     <td>
+                        <!-- Mobile: Name as link if URL exists -->
+                        <div class="d-md-none">
+                            <a v-if="installer.url" :href="installer.url" target="_blank" class="text-decoration-none">
+                                {{ installer.name }}
+                            </a>
+                            <span v-else>{{ installer.name }}</span>
+                        </div>
+                        <!-- Desktop: Name only -->
+                        <div class="d-none d-md-block">
+                            {{ installer.name }}
+                        </div>
+                    </td>
+                    <td class="url-column d-none d-md-table-cell">
                         <a v-if="installer.url" :href="installer.url" target="_blank">{{ installer.url }}</a>
                         <span v-else>-</span>
                     </td>
@@ -81,21 +108,32 @@
                         <span v-else>-</span>
                     </td>
                     <td>{{ midMeteringOnly ? installer.mid_systems : installer.systems }}</td>
-                    <td>
+                    <td class="d-none d-sm-table-cell">
                         <div class="badge" :style="{backgroundColor: installer.color, color: '#fff'}" :title="installer.color"></div>
                     </td>
-                    <td :style="{width: admin ? '180px' : '100px'}">
-                        <button v-if="admin && showUnmatched" class="btn btn-success btn-sm" @click="addUnmatchedInstaller(installer)" title="Add to Database">
-                            <i class="fas fa-plus" style="color: #ffffff;"></i> Add
-                        </button>
-                        <button v-if="admin && !showUnmatched" class="btn btn-secondary btn-sm me-1" @click="openEditModal(installer)" title="Edit"><i class="fas fa-pencil-alt" style="color: #ffffff;"></i></button>
-                        <button v-if="admin && !showUnmatched" class="btn btn-danger btn-sm me-1" @click="deleteInstaller(installer)" title="Delete"><i class="fas fa-trash" style="color: #ffffff;"></i></button>
-                        <a :href="path+'?filter='+encodeURIComponent(installer.name)+'&period=all&minDays=0&errors=1'">
-                            <button class="btn btn-primary btn-sm me-1" :title="'View '+installer.name+' systems'"><i class="fa fa-list-alt" style="color: #ffffff;"></i></button>
-                        </a>
-                        <a :href="path+'map?filter='+encodeURIComponent(installer.name)+'&period=all&minDays=0&errors=1'">
-                            <button class="btn btn-primary btn-sm" :title="'View '+installer.name+' map'"><i class="fa fa-map" style="color: #ffffff;"></i></button>
-                        </a>
+                    <td class="actions-column" :style="{width: admin ? '180px' : '90px'}">
+                        <div class="d-flex flex-wrap gap-1">
+                            <button v-if="admin && showUnmatched" class="btn btn-success btn-sm" @click="addUnmatchedInstaller(installer)" title="Add to Database">
+                                <i class="fas fa-plus" style="color: #ffffff;"></i> 
+                                <span class="d-none d-sm-inline">Add</span>
+                            </button>
+                            <button v-if="admin && !showUnmatched" class="btn btn-secondary btn-sm" @click="openEditModal(installer)" title="Edit">
+                                <i class="fas fa-pencil-alt" style="color: #ffffff;"></i>
+                            </button>
+                            <button v-if="admin && !showUnmatched" class="btn btn-danger btn-sm" @click="deleteInstaller(installer)" title="Delete">
+                                <i class="fas fa-trash" style="color: #ffffff;"></i>
+                            </button>
+                            <a :href="path+'?filter='+encodeURIComponent(installer.name)+'&period=all&minDays=0&errors=1'">
+                                <button class="btn btn-primary btn-sm" :title="'View '+installer.name+' systems'">
+                                    <i class="fa fa-list-alt" style="color: #ffffff;"></i>
+                                </button>
+                            </a>
+                            <a :href="path+'map?filter='+encodeURIComponent(installer.name)+'&period=all&minDays=0&errors=1'">
+                                <button class="btn btn-primary btn-sm" :title="'View '+installer.name+' map'">
+                                    <i class="fa fa-map" style="color: #ffffff;"></i>
+                                </button>
+                            </a>
+                        </div>
                     </td>
                 </tr>
             </tbody>
