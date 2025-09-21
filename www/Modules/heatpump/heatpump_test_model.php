@@ -79,7 +79,10 @@ class HeatpumpTests
             return array("success" => false, "error" => "Failed to add {$test_type} capacity test: " . $stmt->error);
         }
 
-        $this->send_test_notification($test_type, $this->mysqli->insert_id);
+        // Only send notification if user submitting is not admin
+        if (!$this->user->is_admin($userid)) {
+            $this->send_test_notification($test_type, $this->mysqli->insert_id);
+        }
         
         return array("success" => true, "id" => $this->mysqli->insert_id);
     }

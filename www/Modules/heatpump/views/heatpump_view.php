@@ -73,12 +73,12 @@
                         <td>{{ index+1 }}</td>
                         <td>{{ test.system_id }}</td>
                         <td>{{ test.date }}</td>
-                        <td>{{ test.data_length / 3600 | toFixed(1) }} hrs</td>
+                        <td>{{ test.data_length / 60 | toFixed(0) }} mins</td>
                         <td>{{ test.flowT | toFixed(1) }}&deg;C</td>
                         <td>{{ test.outsideT | toFixed(1) }}&deg;C</td>
                         <td>{{ test.flowrate | toFixed(1) }} L/min</td>
-                        <td>{{ test.elec | toFixed(0) }}W</td>
-                        <td>{{ test.cop }}</td>
+                        <td><b>{{ test.elec | toFixed(0) }}W</b></td>
+                        <td>{{ test.cop | toFixed(1) }}</td>
                         <td>{{ test.heat | toFixed(0) }}W</td>
                         <td>
                             <span v-if="test.review_status==0" class="badge bg-secondary" :title="test.review_comment || ''">Pending review</span>

@@ -35,7 +35,7 @@ class Heatpump
 
         foreach ($heatpumps as $key => $unit) {
              $heatpumps[$key]["stats"] = $this->get_stats($unit["manufacturer_name"], $unit['name'], $unit["refrigerant"], $unit["capacity"]);
-             $heatpumps[$key]["test_counts"] = $this->get_test_counts($unit["id"]);
+             $heatpumps[$key]["tests"] = $this->get_tests($unit["id"]);
         }
 
         return $heatpumps;
@@ -404,28 +404,40 @@ class Heatpump
      * @param int $model_id
      * @return array
      */
-    public function get_test_counts($model_id) {
+    public function get_tests($model_id) {
         $model_id = (int) $model_id;
+
+        $max_count = 0;
+        $max_sum = 0;
         
-        // Count approved tests (review_status = 1)
-        $stmt = $this->mysqli->prepare("SELECT COUNT(*) as count FROM heatpump_max_cap_test WHERE model_id = ? AND review_status = 1");
-        $stmt->bind_param("i", $model_id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $approved_count = $result->fetch_assoc()['count'];
-        $stmt->close();
-        
-        // Count pending tests (review_status = 0)
-        $stmt = $this->mysqli->prepare("SELECT COUNT(*) as count FROM heatpump_max_cap_test WHERE model_id = ? AND review_status = 0");
-        $stmt->bind_param("i", $model_id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $pending_count = $result->fetch_assoc()['count'];
-        $stmt->close();
+        $result = $this->mysqli->query("SELECT review_status, heat FROM heatpump_max_cap_test WHERE model_id = $model_id");
+        while ($row = $result->fetch_object()) {
+            if ($row->review_status == 1) {
+                $max_count++;
+                $max_sum += $row->heat;
+            }
+        }
+        $max_output = $max_count > 0 ? $max_sum / $max_count : 0;
+
+        $min_count = 0;
+        $min_sum = 0;
+
+        $result = $this->mysqli->query("SELECT review_status, heat FROM heatpump_min_cap_test WHERE model_id = $model_id");
+        while ($row = $result->fetch_object()) {
+            if ($row->review_status == 1) {
+                $min_count++;
+                $min_sum += $row->heat;
+            }
+        }
+        $min_output = $min_count > 0 ? $min_sum / $min_count : 0;
+
+
         
         return array(
-            "approved_tests" => $approved_count,
-            "pending_tests" => $pending_count
+            "max_count" => $max_count,
+            "max_output" => $max_output,
+            "min_count" => $min_count,
+            "min_output" => $min_output
         );
     }
 }

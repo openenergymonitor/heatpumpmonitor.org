@@ -58,7 +58,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 <div id="app" class="bg-light">
     <div style=" background-color:#f0f0f0; padding-top:20px; padding-bottom:10px">
-        <div class="container" style="max-width:1000px;">
+        <div class="container" style="max-width:1200px;">
 
             <div class="row">
                 <div class="col-12">
@@ -151,7 +151,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         </div>
     </div>
 
-    <div class="container" style="max-width:1000px;">
+    <div class="container" style="max-width:1200px;">
         <div class="row">
             <div class="col">
 
@@ -193,8 +193,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             <span class="d-md-none">Sys</span>
                             <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='number_of_systems'"></i>
                         </th>
-                        <th @click="sort('approved_tests', 'desc')" style="cursor:pointer">Tests
-                            <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='approved_tests'"></i>
+                        <th @click="sort('min_output', 'desc')" style="cursor:pointer">Min
+                            <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='min_output'"></i>
+                        </th>
+                        <th @click="sort('max_output', 'desc')" style="cursor:pointer">Max
+                            <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='max_output'"></i>
                         </th>
                         <th style="width:120px"></th>
                     </tr>
@@ -241,7 +244,16 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             </span>
                         </td>
                         <td>{{unit.stats.number_of_systems}}</td>
-                        <td><span v-if="unit.test_counts.approved_tests>0">{{unit.test_counts.approved_tests}}</span> <span v-if="mode=='admin' && unit.test_counts.pending_tests>0">({{unit.test_counts.pending_tests}})</span></td>
+                        <td>
+                            <span v-if="unit.tests.min_output">
+                                {{ unit.tests.min_output*0.001 | toFixed(1) }} kW ({{unit.tests.min_count}})
+                            </span>
+                        </td>
+                        <td>
+                            <span v-if="unit.tests.max_output">
+                                {{ unit.tests.max_output*0.001 | toFixed(1) }} kW ({{unit.tests.max_count}})
+                            </span>
+                        </td>
                         <td>
                             <div v-if="editingId === unit.id">
                                 <button class="btn btn-success btn-sm me-1" @click="save_heatpump(unit.id)"><i class="fas fa-check"></i></button>
@@ -314,14 +326,24 @@ var app = new Vue({
                 }
 
                 // Handle nested properties for test counts
-                if (this.currentSortColumn == 'approved_tests') {
-                    aValue = a.test_counts ? a.test_counts.approved_tests : 0;
-                    bValue = b.test_counts ? b.test_counts.approved_tests : 0;
+                if (this.currentSortColumn == 'max_count') {
+                    aValue = a.tests ? a.tests.max_count : 0;
+                    bValue = b.tests ? b.tests.max_count : 0;
                 }
 
-                if (this.currentSortColumn == 'pending_tests') {
-                    aValue = a.test_counts ? a.test_counts.pending_tests : 0;
-                    bValue = b.test_counts ? b.test_counts.pending_tests : 0;
+                if (this.currentSortColumn == 'max_output') {
+                    aValue = a.tests ? a.tests.max_output : 0;
+                    bValue = b.tests ? b.tests.max_output : 0;
+                }
+
+                if (this.currentSortColumn == 'min_count') {
+                    aValue = a.tests ? a.tests.min_count : 0;
+                    bValue = b.tests ? b.tests.min_count : 0;
+                }
+
+                if (this.currentSortColumn == 'min_output') {
+                    aValue = a.tests ? a.tests.min_output : 0;
+                    bValue = b.tests ? b.tests.min_output : 0;
                 }
 
                 // Handle null/undefined values
@@ -530,6 +552,14 @@ var app = new Vue({
                 url.searchParams.delete('filter');
                 window.history.pushState({}, '', url);
             }
+        }
+    },
+    filters: {
+        toFixed: function(value, decimals) {
+            if (!isNaN(value)) {
+                return parseFloat(value).toFixed(decimals);
+            }
+            return value;
         }
     }
 });
