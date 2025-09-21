@@ -101,7 +101,11 @@ function heatpump_controller() {
         return $heatpump_model->get_unmatched_list();
     }
 
-    if ($route->action == "max_cap_test") {
+    if ($route->action == "max_cap_test" || $route->action == "min_cap_test") {
+        $test_type = "max";
+        if ($route->action == "min_cap_test") {
+            $test_type = "min";
+        }
 
         if ($route->subaction == "list") {
             $route->format = "json";
@@ -109,7 +113,7 @@ function heatpump_controller() {
                 return array("error" => "Missing model_id parameter");
             }
             $model_id = (int)$_GET['id'];
-            return $heatpump_tests->get_max_cap_tests($model_id);
+            return $heatpump_tests->get_cap_tests($test_type,$model_id);
         }
 
         if ($route->subaction == "load" && $session['userid']>0) {
@@ -195,7 +199,7 @@ function heatpump_controller() {
             $review_status = 0; // Default review status
             $review_comment = ''; // Default empty review comment
 
-            $result = $heatpump_tests->add_max_cap_test($userid, $model_id, $test_object, $review_status, $review_comment);
+            $result = $heatpump_tests->add_cap_test($test_type,$userid, $model_id, $test_object, $review_status, $review_comment);
             if (!$result['success']) {
                 return array("error" => $result['error']);
             }
@@ -203,11 +207,11 @@ function heatpump_controller() {
             return $test_object;
         }
 
-        // Delete max capacity test
+        // Delete min/max capacity test
         if ($route->subaction == "delete" && $session['userid'] > 0) {
             $route->format = "json";
             $id = (int) get("id", true);
-            return $heatpump_tests->delete_max_cap_test($session['userid'], $id);
+            return $heatpump_tests->delete_cap_test($test_type,$session['userid'], $id);
         }
 
         // Update test status (admin only)
@@ -217,7 +221,7 @@ function heatpump_controller() {
             $status = (int) post("status", true);
             $message = trim(post("message", true));
 
-            return $heatpump_tests->update_status($id, $status, $message);
+            return $heatpump_tests->update_status($test_type, $id, $status, $message);
         }
     }
 }

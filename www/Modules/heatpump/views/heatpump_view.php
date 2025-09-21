@@ -52,41 +52,62 @@
 
         <div class="row">
             <div class="col">
-                <div v-if="min_mod_enabled">
-                    <br>
-                    <h4>Minimum modulation test results</h4>
-                    <table id="custom" class="table table-striped table-sm mt-3" v-if="min_mod_tests.length">
-                        <tr>
-                            <th>Test</th>
-                            <th>System</th>
-                            <th>Date</th>
-                            <th>Duration</th>
-                            <th>Elec input</th>
-                            <th>Heat output</th>
-                            <th></th>
-                        </tr>
-                        <tr v-for="test in min_mod_tests">
-                            <td>{{ test.id }}</td>
-                            <td>{{ test.system }}</td>
-                            <td>{{ test.date }}</td>
-                            <td>{{ test.data_length / 3600 | toFixed(1) }} hrs</td>
-                            <td>{{ test.elec | toFixed(0) }}W</td>
-                            <td>{{ test.heat | toFixed(0) }}W</td>
-                            <td style="width:120px">
-                                <a :href="test.data" target="_blank">
-                                    <button class="btn btn-secondary btn-sm" title="Dashboard"><i class="fa fa-chart-bar" style="color: #ffffff;"></i></button>
-                                </a>
-                                <button class="btn btn-danger btn-sm" title="Delete" @click="delete_min_mod_test(id)" v-if="mode=='admin'"><i class="fa fa-trash" style="color: #ffffff;"></i></button>
-                            </td>
-                        </tr>
-                    </table>
-                    <div v-if="min_mod_tests.length==0" class="alert alert-warning mt-3">No tests recorded</div>
-                    <div class="row" v-if="userid>0">
-                        <div class="col">
-                            <div class="input-group mb-3">
-                                <input type="text" class="form-control" placeholder="Paste MyHeatpump app URL of min modulation test period here" v-model="new_min_mod_test_url">
-                                <button class="btn btn-primary" type="button" @click="load_min_mod_test_data">Load and save</button>
-                            </div>
+
+                <h4>Minimum modulation test results</h4>
+                <table id="custom" class="table table-striped table-sm mt-3" v-if="min_cap_tests.length">
+                    <tr>
+                        <th>Test</th>
+                        <th>System</th>
+                        <th>Date</th>
+                        <th>Duration</th>
+                        <th>Flow temp</th>
+                        <th>Outside temp</th>
+                        <th>Flowrate</th>
+                        <th>Elec input</th>
+                        <th>COP</th>         
+                        <th>Heat output</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                    <tr v-for="(test,index) in min_cap_tests" :class="{'table-warning': test.review_status != 1}">
+                        <td>{{ index+1 }}</td>
+                        <td>{{ test.system_id }}</td>
+                        <td>{{ test.date }}</td>
+                        <td>{{ test.data_length / 3600 | toFixed(1) }} hrs</td>
+                        <td>{{ test.flowT | toFixed(1) }}&deg;C</td>
+                        <td>{{ test.outsideT | toFixed(1) }}&deg;C</td>
+                        <td>{{ test.flowrate | toFixed(1) }} L/min</td>
+                        <td>{{ test.elec | toFixed(0) }}W</td>
+                        <td>{{ test.cop }}</td>
+                        <td>{{ test.heat | toFixed(0) }}W</td>
+                        <td>
+                            <span v-if="test.review_status==0" class="badge bg-secondary" :title="test.review_comment || ''">Pending review</span>
+                            <span v-if="test.review_status==1" class="badge bg-success" :title="test.review_comment || ''">Approved</span>
+                            <span v-if="test.review_status==2" class="badge bg-danger" :title="test.review_comment || ''">Rejected</span>
+                            <span v-if="test.review_status==3" class="badge bg-warning" :title="test.review_comment || ''">Needs more data</span>
+                        </td>
+                        <td style="width:120px">
+                            <a :href="test.test_url" target="_blank">
+                                <button class="btn btn-secondary btn-sm" title="Dashboard"><i class="fa fa-chart-bar" style="color: #ffffff;"></i></button>
+                            </a>
+                            <button class="btn btn-warning btn-sm" title="Review" @click="open_review_modal('min',test)" v-if="mode=='admin'"><i class="fa fa-eye" style="color: #ffffff;"></i></button>
+                            <button class="btn btn-danger btn-sm" title="Delete" @click="delete_cap_test('min', test.id)" v-if="mode=='admin' || userid==test.userid"><i class="fa fa-trash" style="color: #ffffff;"></i></button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="9" class="text-end"><b>Average heat output<span v-if="unapprovedMinTestsCount > 0"> (approved tests)</span></b></td>
+                        <td><b>{{ average_min_cap_test | toFixed(0) }}W</b></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                </table>
+                <div v-if="min_cap_tests.length==0" class="alert alert-secondary mt-3">No tests recorded</div>
+
+                <div class="row" v-if="userid>0">
+                    <div class="col">
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control" placeholder="Paste MyHeatpump app URL of min capacity test period here" v-model="new_min_cap_test_url">
+                            <button class="btn btn-primary" type="button" @click="load_cap_test_data('min')">Load and save</button>
                         </div>
                     </div>
                 </div>
@@ -129,13 +150,13 @@
                             <a :href="test.test_url" target="_blank">
                                 <button class="btn btn-secondary btn-sm" title="Dashboard"><i class="fa fa-chart-bar" style="color: #ffffff;"></i></button>
                             </a>
-                            <button class="btn btn-warning btn-sm" title="Review" @click="open_review_modal(test)" v-if="mode=='admin'"><i class="fa fa-eye" style="color: #ffffff;"></i></button>
-                            <button class="btn btn-danger btn-sm" title="Delete" @click="delete_max_cap_test(test.id)" v-if="mode=='admin' || userid==test.userid"><i class="fa fa-trash" style="color: #ffffff;"></i></button>
+                            <button class="btn btn-warning btn-sm" title="Review" @click="open_review_modal('max',test)" v-if="mode=='admin'"><i class="fa fa-eye" style="color: #ffffff;"></i></button>
+                            <button class="btn btn-danger btn-sm" title="Delete" @click="delete_cap_test('max', test.id)" v-if="mode=='admin' || userid==test.userid"><i class="fa fa-trash" style="color: #ffffff;"></i></button>
                         </td>
                     </tr>
                     <tr>
-                        <td colspan="9" class="text-end"><b>Average heat output<span v-if="unapprovedTestsCount > 0"> (approved tests)</span></b></td>
-                        <td><b>{{ average_cap_test | toFixed(0) }}W</b></td>
+                        <td colspan="9" class="text-end"><b>Average heat output<span v-if="unapprovedMaxTestsCount > 0"> (approved tests)</span></b></td>
+                        <td><b>{{ average_max_cap_test | toFixed(0) }}W</b></td>
                         <td></td>
                         <td></td>
                     </tr>
@@ -146,7 +167,7 @@
                     <div class="col">
                         <div class="input-group mb-3">
                             <input type="text" class="form-control" placeholder="Paste MyHeatpump app URL of max capacity test period here" v-model="new_max_cap_test_url">
-                            <button class="btn btn-primary" type="button" @click="load_max_cap_test_data">Load and save</button>
+                            <button class="btn btn-primary" type="button" @click="load_cap_test_data('max')">Load and save</button>
                         </div>
                     </div>
                 </div>
@@ -156,8 +177,8 @@
                 <div class="modal fade" id="reviewModal" tabindex="-1" aria-labelledby="reviewModalLabel" aria-hidden="true" v-if="mode=='admin'">
                     <div class="modal-dialog">
                         <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title" id="reviewModalLabel">Review Test</h5>
+                            <div class="modal-header" v-if="review_test">
+                                <h5 class="modal-title" id="reviewModalLabel">Review <span class="text-primary">{{ review_test.type }}</span> Test</h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             <div class="modal-body">
@@ -261,12 +282,17 @@
             edit_properties: false,
             path: "<?php echo $path; ?>",
             heatpump: {},
+            // Min
+            min_cap_tests: [],
+            average_min_cap_test: 0,
+            new_min_cap_test_url: null,
+
+            // Max
             max_cap_tests: [],
-            average_cap_test: 0,
-            min_mod_tests: [],
+            average_max_cap_test: 0,
             new_max_cap_test_url: null,
-            new_min_mod_test_url: null,
-            min_mod_enabled: false,
+            
+            // Review
             review_test: null,
             review_form: {
                 status: 0,
@@ -275,8 +301,8 @@
         },
         created: function() {
             this.load_heatpump();
-            this.load_max_cap_test_list();
-            this.load_min_mod_test_list();
+            this.load_cap_test_list("max");
+            this.load_cap_test_list("min");
         },
         methods: {
             enable_edit: function() {
@@ -288,63 +314,45 @@
                         this.heatpump = response;
                     });
             },
-            load_max_cap_test_list: function() {
+            load_cap_test_list: function(type) {
                 let self = this;
-                $.get(this.path+'heatpump/max_cap_test/list?id='+this.id)
+                $.get(this.path+'heatpump/' + type + '_cap_test/list?id='+this.id)
                     .done(response => {
-                        self.max_cap_tests = response;
+                        if (type === "max") {
+                            self.max_cap_tests = response;
+                        } else {
+                            self.min_cap_tests = response;
+                        }
 
                         // Calculate average heat output
-                        const validTests = self.max_cap_tests.filter(test => test.heat && test.review_status == 1);
-                        self.average_cap_test = validTests.length > 0 
+                        const validTests = type === "max" ? self.max_cap_tests : self.min_cap_tests;
+                        self['average_' + type + '_cap_test'] = validTests.filter(test => test.heat && test.review_status == 1).length > 0
                             ? (validTests.reduce((sum, test) => sum + parseFloat(test.heat), 0) / validTests.length).toFixed(0)
                             : 0;
 
                         self.loaded = true;
                     });
             },
-            load_min_mod_test_list: function() {
-                // Not yet implemented
-            },
-            delete_min_mod_test: function(id) {
+            delete_cap_test: function(type, id) {
                 if (confirm("Are you sure you want to delete this test?")) {
-                    /*
-                    $.get(this.path+'heatpump/min_mod_test/delete?id='+id)
+                    $.get(this.path+'heatpump/' + type + '_cap_test/delete?id='+id)
                         .done(response => {
-                            this.load_heatpump();
-                        });
-                    */
-                }
-            },
-            delete_max_cap_test: function(id) {
-                if (confirm("Are you sure you want to delete this test?")) {
-                    $.get(this.path+'heatpump/max_cap_test/delete?id='+id)
-                        .done(response => {
-                            this.load_max_cap_test_list();
+                            this.load_cap_test_list(type);
                         });
                 }
             },
-            load_max_cap_test_data: function() {
-                if (this.new_max_cap_test_url) {
+            load_cap_test_data: function(type) {
+                if (this['new_' + type + '_cap_test_url']) {
                     // send url in post request to server
-                    $.post(this.path+'heatpump/max_cap_test/load?id='+this.id, {url: this.new_max_cap_test_url})
+                    $.post(this.path+'heatpump/' + type + '_cap_test/load?id='+this.id, {url: this['new_' + type + '_cap_test_url']})
                         .done(response => {
-                            this.load_max_cap_test_list();
-                            this.new_max_cap_test_url = null;
+                            this.load_cap_test_list(type);
+                            this['new_' + type + '_cap_test_url'] = null;
                         });
                 }
             },
-            load_min_mod_test_data: function() {
-                if (this.new_min_mod_test_url) {
-                    // send url in post request to server
-                    $.post(this.path+'heatpump/max_cap_test/load', {url: this.new_min_mod_test_url})
-                        .done(response => {
-                            var test_result = response;
-                            app.heatpump.min_mod_tests.push(test_result);
-                        });
-                }
-            },
-            open_review_modal: function(test) {
+            open_review_modal: function(type, test) {
+                test.type = type;
                 this.review_test = test;
                 this.review_form.status = test.review_status;
                 this.review_form.comment = test.review_comment || '';
@@ -352,8 +360,10 @@
             },
             submit_review: function() {
                 if (!this.review_test) return;
-                
-                $.post(this.path+'heatpump/max_cap_test/update_status', {
+
+                let type = this.review_test.type;
+
+                $.post(this.path+'heatpump/' + type + '_cap_test/update_status', {
                     id: this.review_test.id,
                     status: this.review_form.status,
                     message: this.review_form.comment
@@ -361,7 +371,7 @@
                 .done(response => {
                     if (response.success) {
                         $('#reviewModal').modal('hide');
-                        this.load_max_cap_test_list();
+                        this.load_cap_test_list(type);
                         this.review_test = null;
                         this.review_form = { status: 0, comment: '' };
                     } else {
@@ -374,8 +384,11 @@
             }
         },
         computed: {
-            unapprovedTestsCount: function() {
+            unapprovedMaxTestsCount: function() {
                 return this.max_cap_tests.filter(test => test.review_status != 1).length;
+            },
+            unapprovedMinTestsCount: function() {
+                return this.min_cap_tests.filter(test => test.review_status != 1).length;
             }
         },
         filters: {
