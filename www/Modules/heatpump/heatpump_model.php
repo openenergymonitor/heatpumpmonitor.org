@@ -46,16 +46,24 @@ class Heatpump
      * 
      * @param int $manufacturer_id
      * @param string $model
+     * @param string $refrigerant
+     * @param string $type
      * @param float $capacity
+     * @param float $min_flowrate
+     * @param float $max_flowrate
+     * @param float $max_current
      * @return array
      */
-    public function add($manufacturer_id, $model, $refrigerant, $type, $capacity) {
+    public function add($manufacturer_id, $model, $refrigerant, $type, $capacity, $min_flowrate = null, $max_flowrate = null, $max_current = null) {
         // Validate inputs
         $manufacturer_id = (int) $manufacturer_id;
         $model = trim($model);
         $refrigerant = trim($refrigerant);
         $type = trim($type);
         $capacity = trim($capacity);
+        $min_flowrate = $min_flowrate !== null && $min_flowrate !== '' ? (float) $min_flowrate : null;
+        $max_flowrate = $max_flowrate !== null && $max_flowrate !== '' ? (float) $max_flowrate : null;
+        $max_current = $max_current !== null && $max_current !== '' ? (float) $max_current : null;
         
         if (empty($model)) {
             return array("success" => false, "message" => "Model name is required");
@@ -84,8 +92,8 @@ class Heatpump
         }
         
         // Insert the new heat pump model
-        $stmt = $this->mysqli->prepare("INSERT INTO heatpump_model (manufacturer_id, name, refrigerant, type, capacity) VALUES (?, ?, ?, ?, ?)");
-        $stmt->bind_param("issss", $manufacturer_id, $model, $refrigerant, $type, $capacity);
+        $stmt = $this->mysqli->prepare("INSERT INTO heatpump_model (manufacturer_id, name, refrigerant, type, capacity, min_flowrate, max_flowrate, max_current) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("issssddd", $manufacturer_id, $model, $refrigerant, $type, $capacity, $min_flowrate, $max_flowrate, $max_current);
         
         if ($stmt->execute()) {
             $new_id = $this->mysqli->insert_id;
@@ -104,10 +112,15 @@ class Heatpump
      * @param int $id
      * @param int $manufacturer_id
      * @param string $model
+     * @param string $refrigerant
+     * @param string $type
      * @param float $capacity
+     * @param float $min_flowrate
+     * @param float $max_flowrate
+     * @param float $max_current
      * @return array
      */
-    public function update($id, $manufacturer_id, $model, $refrigerant, $type, $capacity) {
+    public function update($id, $manufacturer_id, $model, $refrigerant, $type, $capacity, $min_flowrate = null, $max_flowrate = null, $max_current = null) {
         // Validate inputs
         $id = (int) $id;
         $manufacturer_id = (int) $manufacturer_id;
@@ -115,6 +128,9 @@ class Heatpump
         $refrigerant = trim($refrigerant);
         $type = trim($type);
         $capacity = trim($capacity);
+        $min_flowrate = $min_flowrate !== null && $min_flowrate !== '' ? (float) $min_flowrate : null;
+        $max_flowrate = $max_flowrate !== null && $max_flowrate !== '' ? (float) $max_flowrate : null;
+        $max_current = $max_current !== null && $max_current !== '' ? (float) $max_current : null;
 
         if (empty($model)) {
             return array("success" => false, "message" => "Model name is required");
@@ -143,8 +159,8 @@ class Heatpump
         }
 
         // Update the heat pump model
-        $stmt = $this->mysqli->prepare("UPDATE heatpump_model SET manufacturer_id = ?, name = ?, refrigerant = ?, type = ?, capacity = ? WHERE id = ?");
-        $stmt->bind_param("issssi", $manufacturer_id, $model, $refrigerant, $type, $capacity, $id);
+        $stmt = $this->mysqli->prepare("UPDATE heatpump_model SET `manufacturer_id` = ?, `name` = ?, `refrigerant` = ?, `type` = ?, `capacity` = ?, `min_flowrate` = ?, `max_flowrate` = ?, `max_current` = ? WHERE id = ?");
+        $stmt->bind_param("issssdddi", $manufacturer_id, $model, $refrigerant, $type, $capacity, $min_flowrate, $max_flowrate, $max_current, $id);
         if ($stmt->execute()) {
             $stmt->close();
             return array("success" => true, "message" => "Heat pump model updated successfully");

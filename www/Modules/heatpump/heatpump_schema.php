@@ -7,7 +7,10 @@ $schema['heatpump_model'] = array(
     'name' => array('type' => 'varchar(128)'),
     'capacity' => array('type' => 'varchar(10)', 'Null' => true, 'default' => null),
     'refrigerant' => array('type' => 'varchar(32)', 'Null' => true, 'default' => null),
-    'type' => array('type' => 'varchar(32)', 'Null' => true, 'default' => null)
+    'type' => array('type' => 'varchar(32)', 'Null' => true, 'default' => null),
+    'min_flowrate' => array('type' => 'float', 'Null' => true, 'default' => null),
+    'max_flowrate' => array('type' => 'float', 'Null' => true, 'default' => null),
+    'max_current' => array('type' => 'float', 'Null' => true, 'default' => null)
 );
 
 $schema['heatpump_max_cap_test'] = array(

@@ -64,8 +64,11 @@ function heatpump_controller() {
         $refrigerant = trim(post("refrigerant", true));
         $type = trim(post("type", true));
         $capacity = (float) post("capacity", true);
+        $min_flowrate = post("min_flowrate", false);
+        $max_flowrate = post("max_flowrate", false);
+        $max_current = post("max_current", false);
         // Add heat pump model
-        return $heatpump_model->add($manufacturer_id, $model, $refrigerant, $type, $capacity);
+        return $heatpump_model->add($manufacturer_id, $model, $refrigerant, $type, $capacity, $min_flowrate, $max_flowrate, $max_current);
     }
 
     if ($route->action == "update" && $session['admin']) {
@@ -77,8 +80,11 @@ function heatpump_controller() {
         $refrigerant = trim(post("refrigerant", true));
         $type = trim(post("type", true));
         $capacity = (float) post("capacity", true);
+        $min_flowrate = post("min_flowrate", false);
+        $max_flowrate = post("max_flowrate", false);
+        $max_current = post("max_current", false);
         // Update heat pump model
-        return $heatpump_model->update($id, $manufacturer_id, $model, $refrigerant, $type, $capacity);
+        return $heatpump_model->update($id, $manufacturer_id, $model, $refrigerant, $type, $capacity, $min_flowrate, $max_flowrate, $max_current);
     }
 
     if ($route->action == "delete" && $session['admin']) {

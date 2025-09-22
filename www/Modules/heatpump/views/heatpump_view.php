@@ -215,28 +215,36 @@
                 </div>
 
                 <br>
-                <button class="btn btn-primary btn-sm" @click="enable_edit" style="float:right" v-if="mode=='admin'">Edit</button>
+                <div style="float:right" v-if="mode=='admin'">
+                    <button class="btn btn-primary btn-sm" @click="enable_edit" v-if="!edit_properties">Edit</button>
+                    <button class="btn btn-success btn-sm me-2" @click="save_properties" v-if="edit_properties">Save</button>
+                    <button class="btn btn-secondary btn-sm" @click="cancel_edit" v-if="edit_properties">Cancel</button>
+                </div>
                 <h4>Heatpump properties</h4>
 
                 <table id="custom" class="table table-striped mt-3">
                     <tr>
                         <th>Property</th>
                         <th>Value</th>
+                        <th v-if="!edit_properties"></th>
                     </tr>
                     <tr>
                         <td>Manufacturer</th>
                         <td v-if="!edit_properties">{{ heatpump.manufacturer_name }}</td>
                         <td v-if="edit_properties"><input type="text" class="form-control" v-model="heatpump.manufacturer_name"></td>
+                        <td v-if="!edit_properties"></td>
                     </tr>
                     <tr>
                         <td>Model</th>
                         <td v-if="!edit_properties">{{ heatpump.name }}</td>
                         <td v-if="edit_properties"><input type="text" class="form-control" v-model="heatpump.name"></td>
+                        <td v-if="!edit_properties"></td>
                     </tr>
                     <tr>
                         <td>Refrigerant</th>
                         <td v-if="!edit_properties">{{ heatpump.refrigerant }}</td>
                         <td v-if="edit_properties"><input type="text" class="form-control" v-model="heatpump.refrigerant"></td>
+                        <td v-if="!edit_properties"></td>
                     </tr>
                     <tr>
                         <td>Capacity</th>
@@ -249,21 +257,47 @@
                                 </div>
                             </div>
                         </td>
+                        <td v-if="!edit_properties"></td>
                     </tr>
-                    <!--
                     <tr>
-                        <td>Minimum flow rate</th>
-                        <td v-if="!edit_properties">{{ heatpump.min_flow_rate }} L/min (Min mod @ DT5 = {{ (heatpump.min_flow_rate/60)*5*4150 | toFixed(0) }}W)</td>
+                        <td>Min flow rate</th>
+                        <td v-if="!edit_properties">{{ heatpump.min_flowrate || 'Not specified' }} <span v-if="heatpump.min_flowrate">L/min</span></td>
                         <td v-if="edit_properties">
                             <div class="input-group">
-                                <input type="text" class="form-control" v-model="heatpump.min_flow_rate">
+                                <input type="number" step="0.1" class="form-control" v-model="heatpump.min_flowrate" placeholder="e.g. 10.5">
                                 <div class="input-group-append">
                                     <span class="input-group-text">L/min</span>
                                 </div>
                             </div>
                         </td>
+                        <td v-if="!edit_properties">@ DT5 = {{ (heatpump.min_flowrate/60)*5*4.150 | toFixed(1) }} kW</td>
                     </tr>
-                    -->
+                    <tr>
+                        <td>Max/nominal flow rate</th>
+                        <td v-if="!edit_properties">{{ heatpump.max_flowrate || 'Not specified' }} <span v-if="heatpump.max_flowrate">L/min</span></td>
+                        <td v-if="edit_properties">
+                            <div class="input-group">
+                                <input type="number" step="0.1" class="form-control" v-model="heatpump.max_flowrate" placeholder="e.g. 25.0">
+                                <div class="input-group-append">
+                                    <span class="input-group-text">L/min</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td v-if="!edit_properties">@ DT5 = {{ (heatpump.max_flowrate/60)*5*4.150 | toFixed(1) }} kW</td>
+                    </tr>
+                    <tr>
+                        <td>Max current</th>
+                        <td v-if="!edit_properties">{{ heatpump.max_current || 'Not specified' }} <span v-if="heatpump.max_current">A</span></td>
+                        <td v-if="edit_properties">
+                            <div class="input-group">
+                                <input type="number" step="0.1" class="form-control" v-model="heatpump.max_current" placeholder="e.g. 15.0">
+                                <div class="input-group-append">
+                                    <span class="input-group-text">A</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td v-if="!edit_properties"></td>
+                    </tr>
                 </table>
             </div>
         </div>
@@ -282,6 +316,7 @@
             edit_properties: false,
             path: "<?php echo $path; ?>",
             heatpump: {},
+            original_heatpump: {}, // Backup for cancel functionality
             // Min
             min_cap_tests: [],
             average_min_cap_test: 0,
@@ -306,7 +341,38 @@
         },
         methods: {
             enable_edit: function() {
+                this.original_heatpump = JSON.parse(JSON.stringify(this.heatpump)); // Deep copy for cancel
                 this.edit_properties = true;
+            },
+            save_properties: function() {
+                // Send update request
+                $.post(this.path+'heatpump/update', {
+                    id: this.heatpump.id,
+                    manufacturer_id: this.heatpump.manufacturer_id,
+                    model: this.heatpump.name,
+                    refrigerant: this.heatpump.refrigerant,
+                    type: this.heatpump.type,
+                    capacity: this.heatpump.capacity,
+                    min_flowrate: this.heatpump.min_flowrate,
+                    max_flowrate: this.heatpump.max_flowrate,
+                    max_current: this.heatpump.max_current
+                })
+                .done(response => {
+                    if (response.success) {
+                        this.edit_properties = false;
+                        this.load_heatpump(); // Reload to get fresh data
+                        alert('Heat pump properties updated successfully');
+                    } else {
+                        alert('Error: ' + response.message);
+                    }
+                })
+                .fail(() => {
+                    alert('Failed to update heat pump properties');
+                });
+            },
+            cancel_edit: function() {
+                this.heatpump = this.original_heatpump; // Restore original values
+                this.edit_properties = false;
             },
             load_heatpump: function() {
                 $.get(this.path+'heatpump/get?id='+this.id)
