@@ -290,7 +290,7 @@ class Heatpump
             WHERE 
                 sm.hp_manufacturer LIKE ?
                 AND sm.hp_model LIKE ? 
-                AND sm.hp_output LIKE ? 
+                AND sm.hp_output = ? 
                 AND sm.refrigerant LIKE ?
                 AND sm.published = '1' 
                 AND sm.share = '1'
@@ -300,7 +300,7 @@ class Heatpump
         $manufacturer_pattern = '%' . $manufacturer . '%';
         $model_pattern = '%' . $model . '%';
         $refrigerant_pattern = '%' . $refrigerant . '%';
-        $capacity_pattern = '%' . $capacity . '%';
+        $capacity_pattern = $capacity;
         $stmt->bind_param("ssss", $manufacturer_pattern, $model_pattern, $capacity_pattern, $refrigerant_pattern);
         $stmt->execute();
         
@@ -346,7 +346,8 @@ class Heatpump
             "number_of_systems_last365" => $cop_count,
             "average_spf" => $average_spf,
             "lowest_spf" => number_format($min_cop,2,".","")*1,
-            "highest_spf" => number_format($max_cop,2,".","")*1
+            "highest_spf" => number_format($max_cop,2,".","")*1,
+            "heatpumps" => $heatpumps
         );
     }
 
