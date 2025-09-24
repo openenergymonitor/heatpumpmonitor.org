@@ -71,7 +71,7 @@
                     </tr>
                     <tr v-for="(test,index) in min_cap_tests" :class="{'table-warning': test.review_status != 1}">
                         <td>{{ index+1 }}</td>
-                        <td>{{ test.system_id }}</td>
+                        <td :title="test.system_hp_model+' '+test.system_refrigerant+' '+test.system_hp_output+'kW'"><a :href="path+'system/view?id='+test.system_id">{{ test.system_id }}</a></td>
                         <td>{{ test.date }}</td>
                         <td>{{ test.data_length / 60 | toFixed(0) }} mins</td>
                         <td>{{ test.flowT | toFixed(1) }}&deg;C</td>
@@ -131,7 +131,7 @@
                     </tr>
                     <tr v-for="(test,index) in max_cap_tests" :class="{'table-warning': test.review_status != 1}">
                         <td>{{ index+1 }}</td>
-                        <td>{{ test.system_id }}</td>
+                        <td :title="test.system_hp_model+' '+test.system_refrigerant+' '+test.system_hp_output+'kW'"><a :href="path+'system/view?id='+test.system_id">{{ test.system_id }}</a></td>
                         <td>{{ test.date }}</td>
                         <td>{{ test.data_length / 3600 | toFixed(1) }} hrs</td>
                         <td>{{ test.flowT | toFixed(1) }}&deg;C</td>

@@ -28,6 +28,21 @@ class HeatpumpTests
         $result = $this->mysqli->query("SELECT * FROM heatpump_{$test_type}_cap_test WHERE model_id = $model_id ORDER BY heat DESC");
         $tests = array();
         while ($row = $result->fetch_object()) {
+
+            $system_id = (int)$row->system_id;
+            // Get heatpump model from system_meta
+            $result2 = $this->mysqli->query("SELECT hp_model,hp_output,refrigerant FROM system_meta WHERE id = $system_id");
+            if ($system = $result2->fetch_object()) {
+                $row->system_hp_model = $system->hp_model;
+                $row->system_hp_output = $system->hp_output;
+                $row->system_refrigerant = $system->refrigerant;
+            } else {
+                $row->system_hp_model = null;
+                $row->system_hp_output = null;
+                $row->system_refrigerant = null;
+            }
+
+
             $tests[] = $row;
         }
         return $tests;
