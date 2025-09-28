@@ -27,7 +27,9 @@ if (isset($_GET['id'])) {
                     <option value="kwh_at_outside">Outside temperature vs kWh heat delivered</option>  
                     <option value="kwh_at_flow_minus_outside">Flow minus outside temperature vs kWh heat delivered</option>
                     <option value="kwh_at_ideal_carnot">Ideal carnot COP vs heat delivered</option>
-                    <!--<option value="flow_temp_curve">Flow temperature curve</option>-->
+                    <option value="kwh_at_power_elec">Power vs kWh electricity consumed</option>
+                    <option value="kwh_at_power_heat">Power vs kWh heat output</option>
+<!--<option value="flow_temp_curve">Flow temperature curve</option>-->
                 </select>
                 <br>
 
@@ -182,6 +184,14 @@ if (isset($_GET['id'])) {
                     this.xaxis_title = "Ideal Carnot COP";
                     this.x_min = 0;
                     this.x_max = 20;
+                } else if (this.histogram_type == "kwh_at_power_elec") {
+                    this.xaxis_title = "Electric consumption";
+                    this.x_min = 0;
+                    this.x_max = 6000;
+                } else if (this.histogram_type == "kwh_at_power_heat") {
+                    this.xaxis_title = "Heat output";
+                    this.x_min = 0;
+                    this.x_max = 18000;
                 }
 
                 for (var i=0; i<app.selected_systems.length; i++) {
@@ -393,6 +403,10 @@ if (isset($_GET['id'])) {
                     options.xaxis.axisLabel = "Ideal carnot COP";
                 } else if (app.histogram_type=="flow_temp_curve") {
                     options.xaxis.axisLabel = "Outside temperature (°C)";
+                } else if (app.histogram_type=="kwh_at_power_elec") {
+                    options.xaxis.axisLabel = "Electric consumption (W)";
+                } else if (app.histogram_type=="kwh_at_power_heat") {
+                    options.xaxis.axisLabel = "Heat output (W)";
                 }
             }
         });

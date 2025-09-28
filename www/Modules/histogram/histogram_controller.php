@@ -81,6 +81,47 @@ function histogram_controller() {
         if ($output==null) $output = $result;
         return $output;
     }
+
+    // Get kWh vs power histogram
+    if ($route->action=="kwh_at_power_elec") {
+        $route->format = "json";
+        // Parameters
+        $params = array(
+            "power"=>$config->elec,
+            "start"=>$_GET['start'],
+            "end"=>$_GET['end'],
+            "div"=>20,
+            "interval"=>300,
+            "x_min"=>$_GET['x_min'],
+            "x_max"=>$_GET['x_max']
+        );
+        if ($config->apikey!="") $params['apikey'] = $config->apikey;
+        $result = file_get_contents("$config->server/histogram/data/kwh_at_power?".http_build_query($params));
+        $output = json_decode($result);
+        if ($output==null) $output = $result;
+        return $output;
+    }
+    
+    if ($route->action=="kwh_at_power_heat") {
+        $route->format = "json";
+        // Parameters
+        $params = array(
+            "power"=>$config->heat,
+            "start"=>$_GET['start'],
+            "end"=>$_GET['end'],
+            "div"=>100,
+            "interval"=>300,
+            "x_min"=>$_GET['x_min'],
+            "x_max"=>$_GET['x_max']
+        );
+        if ($config->apikey!="") $params['apikey'] = $config->apikey;
+        $result = file_get_contents("$config->server/histogram/data/kwh_at_power?".http_build_query($params));
+        $output = json_decode($result);
+        if ($output==null) $output = $result;
+        return $output;
+    }
+    
+    
     
     // Get kWh vs temperature histogram
     if ($route->action=="kwh_at_flow_minus_outside") {
