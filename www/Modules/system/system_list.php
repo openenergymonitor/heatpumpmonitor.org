@@ -384,7 +384,14 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     </div>
                 </div>
 
-                <table id="custom" class="table table-striped table-sm mt-3">
+                <div v-if="loading" class="text-center p-4">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading systems...</p>
+                </div>
+
+                <table v-else id="custom" class="table table-striped table-sm mt-3">
                     <tr>
                         <th v-if="mode=='admin'" @click="sort('id', 'asc')" style="cursor:pointer">ID</th>
                         <th v-if="mode=='admin'" @click="sort('name', 'asc')" style="cursor:pointer">User
@@ -435,7 +442,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     </tr>
                 </table>
                 
-                <div class="card">
+                <div class="card" v-if="!loading">
                   <h5 class="card-header">Totals</h5>
                   <div class="card-body">
                     <p class="card-text">Number of systems in selection: <b>{{ totals.listed_system_count }}</b></p>
@@ -876,6 +883,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         data: {
             systems: systems,
             fSystems: [],
+            loading: true,
             mode: "<?php echo $mode; ?>",
             chart_enable: show_chart,
             columns: columns,
@@ -1371,9 +1379,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         app.sort_only(app.currentSortColumn);
 
                         app.filter_systems();
+                        app.loading = false;
                         
                     })
                     .catch(error => {
+                        app.loading = false;
                         alert("Error loading data: " + error);
                     });
             },
