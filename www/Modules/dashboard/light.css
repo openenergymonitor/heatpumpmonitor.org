@@ -79,6 +79,7 @@ body {
   cursor:pointer;
   min-width:30px;
   text-align:center;
+  box-sizing: content-box;
 }
 
 .bluenav:hover {
@@ -95,6 +96,8 @@ body {
   float:left;
 }
 .col2-inner { padding:10px; }
+
+.container-fluid { padding:0 }
 
 .navbar-fixed-top {
     margin-left: 0px;
@@ -116,6 +119,7 @@ body {
   .bluenav { font-size:12px; padding:8px; min-width:15px; }
   .block-title { font-size:12px; padding:8px; }
   .dmy {display:none}
+  .hide-mobile {display:none}
   
   #app-block { padding:5px; }
   .col2 { width:100%; }

@@ -27,6 +27,51 @@ function timeseries_controller() {
         return $config;
     }
     
+    if ($route->action == "values") {
+        $route->format = "json";
+        $system_id = (int) get("id",true);
+        $feed_keys = explode(",",get("feeds",true));
+        
+        $available = array();
+        
+        $config = $system_stats->get_system_config_with_meta($session['userid'], $system_id);
+        if (is_array($config) && isset($config['success'])) {
+            return $config;
+        }
+        if (!$config->apikey) return false;
+
+        $feedids = array();
+        $feed_map = array();
+        foreach ($config->feeds as $key=>$f) {
+            if (in_array($key,$feed_keys)) {
+                $feedids[] = $f->feedid;
+                $feed_map[$f->feedid] = $key;
+            }
+        }
+        
+        $url = "$config->server/feed/list.json?apikey=".$config->apikey;
+
+        $result = json_decode(file_get_contents($url));
+        
+        $remapped = array();
+
+        if ($result) {
+            foreach ($result as $data) {
+                if (isset($feed_map[$data->id])) {
+                    $key = $feed_map[$data->id];
+                    $remapped[$key] = array(
+                        "time"=> (int) $data->time,
+                        "value"=> (float) $data->value
+                    );
+                }
+            }
+        }
+
+        return $remapped;
+     
+        return $config;
+    }
+    
     if ($route->action == "data") {
         $route->format = "json";
 

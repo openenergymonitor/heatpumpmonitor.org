@@ -835,7 +835,7 @@ class SystemStats
             $field_select = "*";
         }
         
-        $out = implode(", ",$valid_fields)."\n";
+        $out = implode(",",$valid_fields)."\n";
 
         $date = new DateTime();
         $date->setTimezone(new DateTimeZone('Europe/London'));
@@ -861,7 +861,7 @@ class SystemStats
             
                 $data[] = $value;
             }
-            $out .= implode(", ",$data)."\n";
+            $out .= implode(",",$data)."\n";
         }
         
         return $out;

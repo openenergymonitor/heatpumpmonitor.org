@@ -76,7 +76,7 @@
 }
 
 .show_stats_category {
-  width:25%; 
+  width:20%; 
   text-align:center;
   cursor:pointer;
 }
@@ -93,4 +93,20 @@
   font-size:14px;
   font-weight:bold;
   cursor:pointer;
+}
+
+#emitter-spec-volume {
+  float: right;
+  padding:11px;
+  font-size:14px;
+}
+
+svg.icon {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  stroke-width: 0;
+  stroke: currentColor;
+  fill: currentColor;
+  vertical-align: -0.15em;
 }

@@ -1,70 +1,103 @@
 <?php
 defined('EMONCMS_EXEC') or die('Restricted access');
 global $path, $session, $v;
-$v=1;
+$v=2;
 ?>
 <link href="<?php echo $path; ?>Modules/dashboard/config.css?v=<?php echo $v; ?>" rel="stylesheet">
 <link href="<?php echo $path; ?>Modules/dashboard/light.css?v=<?php echo $v; ?>" rel="stylesheet">
 
 <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Montserrat&amp;lang=en" />
 
-<script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+
 <script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/flot/0.8.3/jquery.flot.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/flot/0.8.3/jquery.flot.time.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/flot/0.8.3/jquery.flot.selection.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/flot/0.8.3/jquery.flot.stack.min.js"></script>
 
 <script type="text/javascript" src="<?php echo $path; ?>Modules/dashboard/date.format.js?v=<?php echo $v; ?>"></script>
 <script type="text/javascript" src="<?php echo $path; ?>Modules/dashboard/vis.helper.js?v=<?php echo $v; ?>"></script>
-<link href="<?php echo $path; ?>Modules/dashboard/style.css?v=39>" rel="stylesheet">
+<!--<script type="text/javascript" src="<?php echo $path; ?>Modules/dashboard/clipboard.js?v=<?php echo $v; ?>"></script>-->
+<link href="<?php echo $path; ?>Modules/dashboard/style.css?v=50>" rel="stylesheet">
 
-<div id="app" class="bg-light">
-    <div style=" background-color:#f0f0f0; padding-top:20px; padding-bottom:10px">
-        <div class="container" style="max-width:1060px;">
-            <div style="float:right" v-if="admin"><a :href="path+'system/log?id='+system.id" class="btn btn-light">Change log</a></div>
 
-            <div v-if="system.hp_model!=''">
-                <h3>{{ system.hp_output }} kW, {{ system.hp_model }}</h3>
-                <p>{{ system.location }}, <span v-if="system.installer_name"><a :href="system.installer_url">{{ system.installer_name }}</a></span></p>
-            </div>
-        </div>
-    </div>
-</div>
+<?php echo file_get_contents($path."Modules/dashboard/svg_icons.svg"); ?>
 
-<script>
-      var app = new Vue({
-        el: '#app',
-        data: {
-            admin: false,
-            path: path,
-            mode: "view", // edit, view
-            system: <?php echo json_encode($system_data); ?>,
-        }
-      });
-</script>
 
-<div class="container" style="max-width:1100px;">
+
+<div style="max-width:1150px; line-height:20px; margin: 0px auto">
 
 <div style="font-family: Montserrat, Veranda, sans-serif;">
   <div id="app-block">
 
+    <div class="col1" style="box-sizing: border-box">
+      <div class="col1-inner">
+        <div class="block-bound">
+          <div style="float:right">
+            <a id="permalink" href="" title="Share this view" class="myheatpump-top-buttons"><i class="fas fa-share-square" style="color:#fff"></i></a>
+            <div class="myheatpump-top-buttons config-open">
+              <i class="icon-wrench icon-white" title="Configure app"></i>
+            </div>
+          </div>
+
+          <div class="block-title" id="app_name"><?php echo $system_data->hp_output."kW ".$system_data->hp_model." ".$system_data->refrigerant.", ".$system_data->location; ?></div>
+        </div>
+
+        <div style="background-color:#fff; color:#333">
+          <br>
+          <div id="last_updated" class="title1" style="text-align:center; height:40px; display:none">Last updated 3rd of June 2022</div>
+
+          <table id="live_table" style="width:100%; color:#333">
+            <tr>
+
+              <td style="width:25%; text-align:center; cursor:pointer" valign="top" id="realtime_cop_div">
+                <div class="title1" id="realtime_cop_title">COP 30 mins</div>
+                <div class="value1" id="realtime_cop_value">---</div>
+              </td>
+
+              <td style="width:25%; text-align:center" valign="top">
+                <div class="title1">Electric</div>
+                <div class="value1"><span id="heatpump_elec">---</span>
+                  <div class="units1">W</div>
+                </div>
+              </td>
+
+              <td style="width:25%; text-align:center" valign="top">
+                <div class="title1">Heat Output</div>
+                <div class="value1"><span id="heatpump_heat">---</span>
+                  <div class="units1">W</div>
+                </div>
+              </td>
+
+              <td style="width:25%; text-align:center" valign="top">
+                <div class="title1">Flow</div>
+                <div class="value1"><span id="heatpump_flowT">---</span>
+                  <div class="units1">&deg;C</div>
+                </div>
+              </td>
+            </tr>
+          </table>
+        </div>
+
+      </div>
+    </div>
     <div class="col1">
       <div class="col1-inner">
 
         <div class="block-bound">
 
           <div class="bargraph-navigation">
-            <div class="bluenav bargraph_mode" mode="combined" style="float:left">ALL</div>
-            <div class="bluenav bargraph_mode" mode="running" style="float:left">RUN</div>
-            <div class="bluenav bargraph_mode" mode="space" style="float:left">SPACE</div>
-            <div class="bluenav bargraph_mode" mode="water" style="float:left">DHW</div>
-
+            <div class="bluenav bargraph_mode" mode="combined" title="Combined" style="float:left">ALL</div>
+            <div class="bluenav bargraph_mode" mode="running" title="When running" style="float:left;padding: 12px 8px 0px 7px; height: 30px; font-size:20px"><svg class="icon"><use xlink:href="#icon-play"></use></svg></div>
+            <div class="bluenav bargraph_mode" mode="space" title="Space heating" style="float:left;padding: 8px 8px 0px 7px;height: 35px; font-size:28px"><svg class="icon"><use xlink:href="#icon-radiator"></use></svg></div>
+            <div class="bluenav bargraph_mode" mode="water" title="Water heating" style="float:left;padding: 12px 8px 0px 7px;height: 30px; font-size:20px"><svg class="icon"><use xlink:href="#icon-shower"></use></svg></div>
+            <div class="bluenav bargraph_mode" mode="cooling" title="Cooling" style="float:left;padding: 12px 8px 0px 7px;height: 30px; font-size:20px"><svg class="icon"><use xlink:href="#icon-snowflake"></use></svg></div>
 
             <div class="bluenav bargraph-alltime">ALL</div>
             <div class="bluenav bargraph-period" days=365>YEAR</div>
-            <div class="bluenav bargraph-period" days=90>3 MONTHS</div>
+            <div class="bluenav bargraph-period wide" days=90>3 MONTHS</div>
             <div class="bluenav bargraph-period" days=30>MONTH</div>
-            <div class="bluenav bargraph-period" days=7>WEEK</div>
+            <div class="bluenav bargraph-period wide" days=7>WEEK</div>
             <div class="bluenav bargraph-day">DAY</div>
           </div>
 
@@ -97,6 +130,8 @@ $v=1;
 
           <div id='data-error' style="display:none">DATA ERROR</div>
 
+          <div id="emitter-spec-volume" style="display:none"></div>
+
           <div style="padding:10px">
             COP in window: <b id="window-cop" style="cursor:pointer"></b> <span id="window-carnot-cop"></span>
           </div>
@@ -105,7 +140,7 @@ $v=1;
         <div id="advanced-block" style="background-color:#fff; padding:10px; display:none">
           <div style="color:#000">
 
-
+            <div id="error-message" style="display:none" class="alert alert-error"></div>
 
             <table style="width:100%; color:#333;">
               <tr>
@@ -128,6 +163,11 @@ $v=1;
                   <div class="cop-title">Water heating</div>
                   <div class="cop-value"><span class="cop_water_heating">---</span></div>
                 </td>
+
+                <td valign="top" class="show_stats_category" key="cooling" style="color:#014656; display:none">
+                  <div class="cop-title">Cooling</div>
+                  <div class="cop-value"><span class="cop_cooling">---</span></div>
+                </td>
               </tr>
             </table>
 
@@ -145,17 +185,27 @@ $v=1;
               <tbody class="stats_category" key="when_running" style="display:none"></tbody>
               <tbody class="stats_category" key="water_heating" style="display:none"></tbody>
               <tbody class="stats_category" key="space_heating" style="display:none"></tbody>
+              <tbody class="stats_category" key="cooling" style="display:none"></tbody>
             </table>
+
+            <div id="show_immersion_bound" style="display:none" class="advanced-options">
+              <div style="float:right"><span id="immersion_kwh"></span> kWh</div>
+              <input id="show_immersion" type="checkbox" class="advanced-options-checkbox">
+              <b>Show immersion</b>
+            </div>
 
             <div id="show_flow_rate_bound" style="display:none" class="advanced-options">
               <input id="show_flow_rate" type="checkbox" class="advanced-options-checkbox">
               <b>Show flow rate</b>
             </div>
-
+            <div id="show_dhw_temp_bound" style="display:none" class="advanced-options">
+              <input id="show_dhw_temp" type="checkbox" class="advanced-options-checkbox">
+              <b>Show DHW temperature/charge</b>
+            </div>
             <div id="show_cooling_bound" class="advanced-options">
-              <div style="float:right"><span id="total_negative_heat_kwh"></span> kWh (<span id="prc_negative_heat"></span>%)</div>
-              <input id="show_negative_heat" type="checkbox" class="advanced-options-checkbox">
-              <b>Show cooling / defrosts</b>
+              <div style="float:right"><span id="total_defrost_and_loss_kwh"></span> kWh (<span id="prc_defrost_and_loss"></span>%)</div>
+              <input id="show_defrost_and_loss" type="checkbox" class="advanced-options-checkbox">
+              <b>Show defrosts and other heat lost</b>
             </div>
 
             <div id="show_inst_cop_bound" class="advanced-options">
@@ -226,23 +276,48 @@ $v=1;
               <input id="emitter_spec_enable" type="checkbox" class="advanced-options-checkbox">
               <b>Calculate emitter spec and system volume</b>
               <div id="emitter_spec_options" style="margin-top:10px; display:none">
-                <p>1. Select period of steady state operation where flow and return temperatures are flat</p>
-
+                <p>Make sure there is at least a short period of steady state running in the window.<br>Heat output spikes after hot water cycles can skew results.</p>
                 <div class="input-append" style="margin-top:5px">
                   <input type="text" style="width:50px" id="kW_at_50" disabled>
                   <span class="add-on">kW @ DT50</span>
-                  <button class="btn" id="use_for_volume_calc">Use for volume calc</button>
+                  <span class="add-on">Fix <input type="checkbox" id="fix_kW_at_50"></span>
                 </div>
-
-                <p>2. Select space heating period with increasing flow and return temperatures</p>
-
                 <div class="input-append" style="margin-top:5px">
                   <input type="text" style="width:50px" id="system_volume" disabled>
                   <span class="add-on">Litres</span>
                 </div>
+                <br>
+                <div class="input-prepend input-append" style="margin-top:5px">
+                  <span class="add-on">Room temperature</span>
+
+                  <input type="text" style="width:50px" id="room_temperature" disabled>
+                  <span class="add-on">&deg;C</span>
+                  <span class="add-on">Manual <input type="checkbox" id="manual_roomT_enable"></span>
+                </div>
               </div>
             </div>
-
+            <!-- DHW Standby Heat Loss Calculation Option -->
+            <div class="advanced-options" style="border-bottom:1px solid #ccc">
+              <input id="standby_dhw_hl_enable" type="checkbox" class="advanced-options-checkbox">
+              <b>Calculate DHW Standby Heat Loss Coefficient</b>
+              <div id="standby_dhw_hl_options" style="margin-top:10px; display:none;">
+                  <p style="font-size:0.9em; color:#555;"><i>Ensure the selected window only shows natural DHW temperature decay (no heating cycles, no DHW use such as showering). Cylinder volume and environmental temperature are required to compute standby heat loss coefficient, which only works if DHW temperature is measured in °C and not % Charge. </i></p>
+                  <div class="input-prepend input-append" style="margin-top:5px; margin-bottom:5px;">
+                    <span class="add-on">Cylinder Volume (V<sub>cyl</sub>)</span>
+                    <input type="text" style="width:60px" id="cylinder_volume" value="200">
+                    <span class="add-on">L</span>
+                  </div>
+                  <div class="input-prepend input-append" style="margin-top:5px; margin-bottom:5px;">
+                    <span class="add-on">Environment Temp (T<sub>env</sub>)</span>
+                    <input type="text" style="width:50px" id="env_temperature" value="15">
+                    <span class="add-on">°C</span>
+                  </div>
+                  <div style="margin-top:10px;">
+                      DHW Heat Loss Coefficient (U): <b id="standby_dhw_hl_result">---</b> W/K |  DHW charge half-life (T<sub>1/2</sub>): <b id="standby_dhw_t_half_result">---</b> days
+                  </div>
+              </div>
+            </div>
+            <!-- End DHWStandby Heat Loss -->
             <div class="advanced-options" style="border-bottom:1px solid #ccc">
               <div style="float:right"><span id="standby_kwh"></span> kWh</span></div>
               <input id="configure_standby" type="checkbox" class="advanced-options-checkbox">
@@ -273,7 +348,7 @@ $v=1;
           <table style="width:100%; color:#333;">
             <tr>
               <td style="width:33.3%; text-align:center" valign="top">
-                <div class="title1">Total Electricity input</div>
+                <div class="title1">Total Electricity <span class="hide-mobile">input</span></div>
                 <div class="value1"><span id="total_elec"></span>
                   <div class="units1">kWh</div>
                 </div>
@@ -364,6 +439,31 @@ $v=1;
   </div>
 </div>
 
+<section id="app-setup" class="hide pb-3" style="display:none">
+  <!-- instructions and settings -->
+  <div class="px-3">
+    <div class="row-fluid">
+      <div class="span7 xapp-config-description">
+        <div class="xapp-config-description-inner text-light">
+          <h2 class="app-config-title text-primary">My Heatpump</h2>
+          <p class="lead">The My Heatpump app can be used to explore the performance of a heatpump including, electricity consumption, heat output, COP and system temperatures.</p>
+          <p><strong class="text-white">Auto configure:</strong> This app can auto-configure connecting to emoncms feeds with the names shown on the right, alternatively feeds can be selected by clicking on the edit button.</p>
+          <p><strong class="text-white">Cumulative kWh</strong> feeds can be created from power feeds using the power_to_kwh input processor, which converts power data (measured in watts) into energy consumption data (measured in kWh).</p>
+          <p><strong class="text-white">Share publicly:</strong> Check the "public" check box if you want to share your dashboard publicly, and ensure that the associated feeds are also made public by adjusting their settings on the feeds page.</p>
+          <p><strong class="text-white">Start date:</strong> To modify the start date for cumulative total electricity consumption, heat output and SCOP, input a unix timestamp corresponding to your desired starting date and time.</p>
+
+
+          <button class="btn btn-danger mt-3" id="clear-daily-data" style="display:none">Reload daily data</button>
+
+
+        </div>
+      </div>
+      <div class="span5 app-config pt-3"></div>
+    </div>
+  </div>
+</section>
+
+
 <div class="ajax-loader"></div>
 
 <script>
@@ -374,5 +474,9 @@ $v=1;
   config.id = <?php echo $id; ?>;
   config.db = {};
 </script>
-<script type="text/javascript" src="<?php echo $path; ?>Modules/dashboard/myheatpump.js?v=<?php echo time(); ?>"></script>
-<script type="text/javascript" src="<?php echo $path; ?>Modules/dashboard/myheatpump_process.js?v=1"></script>
+
+<?php $v=time(); ?>
+<script type="text/javascript" src="<?php echo $path; ?>Modules/dashboard/myheatpump_process.js?v=<?php echo $v; ?>"></script>
+<script type="text/javascript" src="<?php echo $path; ?>Modules/dashboard/myheatpump_powergraph.js?v=<?php echo $v; ?>"></script>
+<script type="text/javascript" src="<?php echo $path; ?>Modules/dashboard/myheatpump_bargraph.js?v=<?php echo $v; ?>"></script>
+<script type="text/javascript" src="<?php echo $path; ?>Modules/dashboard/myheatpump.js?v=<?php echo $v; ?>"></script>
