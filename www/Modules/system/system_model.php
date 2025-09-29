@@ -112,8 +112,8 @@ class System
         }
         $row = $this->typecast($row);
         
-        // If public then return system
-        if ($row->share==1 && $row->published==1) {
+        // If user is an admin return system
+        if ($this->is_admin($userid)) {
             return $row;
         }
         
@@ -122,8 +122,9 @@ class System
             return $row;
         }
         
-        // If user is an admin return system
-        if ($this->is_admin($userid)) {
+        // If public then return system
+        if ($row->share==1 && $row->published==1) {
+            unset($row->url);
             return $row;
         }
         
