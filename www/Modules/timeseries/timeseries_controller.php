@@ -26,7 +26,7 @@ function timeseries_controller() {
      
         return $config;
     }
-    
+        
     if ($route->action == "values") {
         $route->format = "json";
         $system_id = (int) get("id",true);
@@ -41,13 +41,20 @@ function timeseries_controller() {
         if (!$config->apikey) return false;
 
         $feedids = array();
-        $feed_map = array();
+        $feed_map = array(); // Maps feedid to array of feed keys
         foreach ($config->feeds as $key=>$f) {
             if (in_array($key,$feed_keys)) {
                 $feedids[] = $f->feedid;
-                $feed_map[$f->feedid] = $key;
+                // Store multiple keys that map to the same feedid
+                if (!isset($feed_map[$f->feedid])) {
+                    $feed_map[$f->feedid] = array();
+                }
+                $feed_map[$f->feedid][] = $key;
             }
         }
+        
+        // Remove duplicate feedids
+        $feedids = array_unique($feedids);
         
         $url = "$config->server/feed/list.json?apikey=".$config->apikey;
 
@@ -58,18 +65,18 @@ function timeseries_controller() {
         if ($result) {
             foreach ($result as $data) {
                 if (isset($feed_map[$data->id])) {
-                    $key = $feed_map[$data->id];
-                    $remapped[$key] = array(
-                        "time"=> (int) $data->time,
-                        "value"=> (float) $data->value
-                    );
+                    // Create entries for all feed keys that map to this feedid
+                    foreach ($feed_map[$data->id] as $key) {
+                        $remapped[$key] = array(
+                            "time"=> (int) $data->time,
+                            "value"=> (float) $data->value
+                        );
+                    }
                 }
             }
         }
 
         return $remapped;
-     
-        return $config;
     }
     
     if ($route->action == "data") {
