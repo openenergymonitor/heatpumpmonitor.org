@@ -412,8 +412,15 @@
                     // send url in post request to server
                     $.post(this.path+'heatpump/' + type + '_cap_test/load?id='+this.id, {url: this['new_' + type + '_cap_test_url']})
                         .done(response => {
-                            this.load_cap_test_list(type);
-                            this['new_' + type + '_cap_test_url'] = null;
+                            if (response.error) {
+                                alert('Error: ' + response.error);
+                            } else {
+                                this.load_cap_test_list(type);
+                                this['new_' + type + '_cap_test_url'] = null;
+                            }
+                        })
+                        .fail((xhr, status, error) => {
+                            alert('Failed to load test data: ' + error);
                         });
                 }
             },
