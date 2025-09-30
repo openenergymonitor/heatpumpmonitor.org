@@ -42,6 +42,9 @@ class HeatpumpTests
                 $row->system_refrigerant = null;
             }
 
+            // Remove test_url
+            unset($row->test_url);
+
 
             $tests[] = $row;
         }
