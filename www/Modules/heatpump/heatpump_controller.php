@@ -5,7 +5,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 function heatpump_controller() {
 
-    global $session, $route, $user, $mysqli, $settings, $system, $system_stats;
+    global $session, $route, $user, $mysqli, $settings, $system, $system_stats, $path;
 
     // List of heat pump models
     if ($route->action == "") {
@@ -163,10 +163,12 @@ function heatpump_controller() {
             $stmt->bind_param("i", $system_id);
             $stmt->execute();
             if (!$stmt->get_result()->num_rows) {
+                $stmt->close();
                 return array("error" => "System not found");
             }
+            $stmt->close();
 
-            $stats = json_decode(file_get_contents("https://heatpumpmonitor.org/dashboard/getstats?id=$system_id&start=$start&end=$end"));
+            $stats = json_decode(file_get_contents($path."dashboard/getstats?id=$system_id&start=$start&end=$end"));
             if ($stats === null) {
                 return array("error" => "Failed to load or parse stats from URL");
             }
