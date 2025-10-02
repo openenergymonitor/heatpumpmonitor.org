@@ -108,4 +108,4 @@ if (id) {
 }
 </script>
 
-<script src="views/compare.js?v=15"></script>
+<script src="views/compare.js?v=16"></script>

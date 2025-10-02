@@ -1,6 +1,22 @@
 
 var system_list = [];
-$.ajax({ dataType: "json", url: path + "system/list/public.json", async: false, success: function (result) { system_list = result; } });
+$.ajax({ 
+    dataType: "json", 
+    url: path + "system/list/public.json", 
+    async: false, 
+    success: function (result) { 
+
+        // sort by location
+        result.sort(function(a, b) {
+            // sort by location string
+            if (a.location < b.location) return -1;
+            if (a.location > b.location) return 1;
+            return 0;
+        });
+
+        system_list = result; 
+    }
+});
 
 var app = new Vue({
     el: '#app',
