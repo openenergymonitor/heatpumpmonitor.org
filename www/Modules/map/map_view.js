@@ -432,7 +432,7 @@
     function updateFiltersFromURL() {
         const params = new URLSearchParams(window.location.search);
         if (params.has('filter')) {
-            SystemFilter.filterKey = params.get('filter');
+            SystemFilter.filterKey = params.get('filter').trim();
         }
         if (params.has('minDays')) {
             const val = parseInt(params.get('minDays'), 10);
