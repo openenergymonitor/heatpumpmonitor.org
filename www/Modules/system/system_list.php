@@ -518,6 +518,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     for (var key in default_settings) {
         if (urlParams.has(key)) {
             page_settings[key] = urlParams.get(key);
+            // Trim string values to handle Safari's trailing space issue
+            if (key === 'filter' && typeof page_settings[key] === 'string') {
+                page_settings[key] = page_settings[key].trim();
+            }
         }
     }
 
@@ -2010,7 +2014,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         mapUrl.searchParams.set('filter', this.filterKey);
                         mapUrl.searchParams.set('period', this.stats_time_start);
                         mapUrl.searchParams.set('minDays', this.minDays);
-                        mapLink.href = decodeURIComponent(mapUrl.toString());
+                        mapLink.href = mapUrl.toString();
                     }
                 }
 

@@ -280,7 +280,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 // Get URL parameters
 var urlParams = new URLSearchParams(window.location.search);
-var initialFilterKey = urlParams.get('filter') || '';
+var initialFilterKey = (urlParams.get('filter') || '').trim();
 
 var app = new Vue({
     el: '#app',
