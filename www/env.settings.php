@@ -10,5 +10,6 @@ $settings = array(
     ),
     "mailersend_api_key"=>"",
     "change_notifications_enabled"=>false,
-    "public_mode_enabled"=>true
+    "public_mode_enabled"=>true,
+    "emoncmsorg_only"=>false
 );
