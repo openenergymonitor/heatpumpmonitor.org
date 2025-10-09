@@ -15,9 +15,13 @@ RUN apt-get update \
     && docker-php-ext-configure gettext \
     && docker-php-ext-install gettext
 
+RUN pecl install xdebug 
+
 COPY config/php.ini /usr/local/etc/php/
+COPY config/xdebug.ini /usr/local/etc/php/conf.d/xdebug.ini
 
 COPY config/heatpumpmonitororg.conf /etc/apache2/sites-available/heatpumpmonitororg.conf
+
 RUN a2dissite 000-default.conf
 RUN a2ensite heatpumpmonitororg
 
