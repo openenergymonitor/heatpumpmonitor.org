@@ -21,6 +21,22 @@ $navigation = array(
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1">
     <title>HeatpumpMonitor.org</title>
+    <meta name="description" content="An open-source initiative to share and compare heat pump performance data. Join our community of heat pump owners sharing real-world performance data.">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://heatpumpmonitor.org/">
+    <meta property="og:title" content="HeatpumpMonitor.org - Heat Pump Performance Data">
+    <meta property="og:description" content="An open-source initiative to share and compare heat pump performance data. Join our community of heat pump owners sharing real-world performance data.">
+    <meta property="og:image" content="https://heatpumpmonitor.org/heatpumpmonitor.png">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://heatpumpmonitor.org/">
+    <meta property="twitter:title" content="HeatpumpMonitor.org - Heat Pump Performance Data">
+    <meta property="twitter:description" content="An open-source initiative to share and compare heat pump performance data. Join our community of heat pump owners sharing real-world performance data.">
+    <meta property="twitter:image" content="https://heatpumpmonitor.org/heatpumpmonitor.png">
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
     <link href="https://openenergymonitor.org/homepage/theme/favicon.ico" rel="shortcut icon">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css">
