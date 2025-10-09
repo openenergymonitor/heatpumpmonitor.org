@@ -26,6 +26,10 @@ if (file_exists("settings.php")) {
     require "env.settings.php";
 }
 
+if (!isset($settings['emoncmsorg_only'])) {
+    $settings['emoncmsorg_only'] = true;
+}
+
 $mysqli = @new mysqli(
     $settings["sql"]["server"],
     $settings["sql"]["username"],

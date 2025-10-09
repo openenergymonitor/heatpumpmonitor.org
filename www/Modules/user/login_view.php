@@ -2,8 +2,7 @@
 // no direct access
 defined('EMONCMS_EXEC') or die('Restricted access');
 
-$enable_register = false;
-$emoncmsorg_only = true;
+global $settings;
 
 ?>
 
@@ -15,50 +14,20 @@ $emoncmsorg_only = true;
     <div class="card">
         <div class="card-body bg-light">
 
-            <div v-if="!mode">
-                <button type="button" class="btn btn-primary btn-lg" style="width:100%" @click="mode='emoncmsorg'">Login with emoncms.org</button>
-                <button type="button" class="btn btn-outline-primary btn-lg" style="width:100%; margin-top:10px" @click="mode='selfhost'">Self hosted data</button>
+            <h1 class="h3 mb-3 fw-normal">Login <span v-if="emoncmsorg_only">with emoncms.org</span><span v-if="!emoncmsorg_only">(dev env)</span></h1>
+
+            <label>Username</label>
+            <div class="input-group mb-3">
+                <input type="text" class="form-control" v-model="username">
             </div>
 
-            <div v-else>
-                <div v-if="mode!='register'">
-                    <h1 class="h3 mb-3 fw-normal">Login <span v-if="mode=='emoncmsorg'">with emoncms.org</span><span style="color:#888" v-if="mode=='selfhost'">Self hosted data</span></h1>
-                </div>
-                <div v-if="mode=='register'">
-                    <h1 class="h3 mb-3 fw-normal">Register</h1>
-                    <p>If you already have an emoncms.org account, you can login with that. Click cancel and select Login with emoncms.org.</p>
-                </div>
-
-                <label>Username</label>
-                <div class="input-group mb-3">
-                    <input type="text" class="form-control" v-model="username">
-                </div>
-
-                <label>Password</label>
-                <div class="input-group mb-3">
-                    <input type="password" class="form-control" v-model="password">
-                </div>
-
-                <?php if ($enable_register) { ?>
-                <div v-if="mode=='register'">
-                    <label>Repeat password</label>
-                    <div class="input-group mb-3">
-                        <input type="password" class="form-control" v-model="password2">
-                    </div>
-
-                    <label>Email</label>
-                    <div class="input-group mb-3">
-                        <input type="text" class="form-control" v-model="email">
-                    </div>
-                </div>
-                <?php } ?>
-
-                <button type="button" class="btn btn-primary" @click="login" v-if="mode!='register'">Login</button>
-                <?php if ($enable_register) { ?><button type="button" class="btn btn-primary" @click="register" v-if="mode=='register'">Register</button><?php } ?>
-                <?php if (!$emoncmsorg_only) { ?><button type="button" class="btn btn-light" @click="mode=false" v-if="public_mode_enabled">Cancel</button><?php } ?>
-                <?php if ($enable_register) { ?><button type="button" class="btn btn-light" v-if="mode!='emoncmsorg' && mode!='register' && public_mode_enabled" @click="mode='register'">Register</button> <?php } ?>
-                <!--<a href="#" v-if="mode=='selfhost'">Forgot password</a>-->
+            <label>Password</label>
+            <div class="input-group mb-3">
+                <input type="password" class="form-control" v-model="password">
             </div>
+
+            <button type="button" class="btn btn-primary" @click="login">Login</button>
+
 
             <div class="alert alert-danger" style="margin-top:20px; margin-bottom: 5px;" v-if="error" v-html="error"></div>
             <div class="alert alert-success" style="margin-top:20px; margin-bottom: 5px;" v-if="success" v-html="success"></div>
@@ -72,7 +41,7 @@ $emoncmsorg_only = true;
 
     document.body.style.backgroundColor = "#1d8dbc";
 
-    var emoncmsorg_only = <?php echo $emoncmsorg_only ? "true" : "false"; ?>;
+    var emoncmsorg_only = <?php echo $settings['emoncmsorg_only'] ? "true" : "false"; ?>;
 
     var app = new Vue({
         el: '#app',
@@ -83,21 +52,13 @@ $emoncmsorg_only = true;
             email: "",
             error: false,
             success: false,
-            mode: 'emoncmsorg',
-            public_mode_enabled: public_mode_enabled
+            emoncmsorg_only: emoncmsorg_only
         },
         methods: {
             login: function() {
                 const params = new URLSearchParams();
                 params.append('username', this.username);
                 params.append('password', this.password);
-                if (emoncmsorg_only) {
-                    params.append('emoncmsorg', 0);
-                } else {
-                    params.append('emoncmsorg', this.mode == "emoncmsorg" ? 1 : 0);
-                }
-
-                params.append('emoncmsorg', this.mode == "emoncmsorg" ? 1 : 0);
 
                 axios.post(path + "user/login.json", params)
                     .then(function(response) {
@@ -112,39 +73,9 @@ $emoncmsorg_only = true;
                     .catch(function(error) {
                         console.log(error);
                     });
-            },
-            register: function() {
-                const params = new URLSearchParams();
-                params.append('username', this.username);
-                params.append('password', this.password);
-                params.append('password2', this.password2);
-                params.append('email', this.email);
-
-                axios.post(path + "user/register.json", params)
-                    .then(function(response) {
-                        if (response.data.success) {
-                            app.error = false;
-                            if (response.data.verifyemail!=undefined && response.data.verifyemail) {
-                                app.mode = 'login';
-                                app.success = "Registration successful, please check your email to verify your account";
-                            } else {
-                                window.location.href = path + "system/list/user"
-                            }
-                        } else {
-                            app.error = response.data.message;
-                            app.success = false;
-                        }
-                    })
-                    .catch(function(error) {
-                        console.log(error);
-                    });
             }
         }
     });
-    
-    if (!public_mode_enabled) {
-        app.mode = 'standard';
-    }
 
     var result = <?php echo json_encode($result); ?>;
     if (result.success!=undefined) {

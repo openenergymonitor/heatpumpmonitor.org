@@ -14,7 +14,8 @@ function user_controller() {
                 header('Location: '.$path);
             }
         } else if ($route->format=="json") {
-            return $user->login(post("username"),post("password"),post("emoncmsorg"));
+            global $settings;
+            return $user->login(post("username"),post("password"),$settings['emoncmsorg_only']);
         }
     }
 
