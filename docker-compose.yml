@@ -29,6 +29,7 @@ services:
     volumes:
       # Mount emoncms files from local FS for dev
       - ./www:/var/www/heatpumpmonitororg
+      - ./load_dev_env_data.php:/var/load_dev_env_data.php:ro
     env_file:
       # Use default enviroment variables file for dev
       - 'default.docker-env'
