@@ -253,7 +253,7 @@ function system_controller() {
         // return array("success"=>false, "message"=>"Reloading stats temporarily disabled");
 
         if ($session['userid']) {
-            $systemid = get("id",false);
+            $systemid = (int) get("id",false);
             
             // Check if user has access
             if ($system->has_access($session['userid'],$systemid)==false) {
