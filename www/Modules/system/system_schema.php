@@ -57,7 +57,7 @@ $schema['system_meta'] = array(
     ),
 
     'installer_url' => array(
-        'type' => 'varchar(64)', 
+        'type' => 'varchar(255)', 
         'editable' => true, 
         'optional' => true, 
         'name' => 'Installer URL', 
