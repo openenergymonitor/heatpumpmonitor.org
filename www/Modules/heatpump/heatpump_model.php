@@ -341,12 +341,21 @@ class Heatpump
 
         $average_spf = $cop_count > 0 ? number_format($sum_cop / $cop_count, 2, ".", "") * 1 : 0;
 
+        if ($min_cop !== null) {
+            $min_cop = number_format($min_cop, 2, ".", "") * 1;
+        }
+
+        if ($max_cop !== null) {
+            $max_cop = number_format($max_cop, 2, ".", "") * 1;
+        }
+
+
         return array(
             "number_of_systems" => $number_of_systems,
             "number_of_systems_last365" => $cop_count,
             "average_spf" => $average_spf,
-            "lowest_spf" => number_format($min_cop,2,".","")*1,
-            "highest_spf" => number_format($max_cop,2,".","")*1,
+            "lowest_spf" => $min_cop,
+            "highest_spf" => $max_cop,
             "heatpumps" => $heatpumps
         );
     }
