@@ -66,9 +66,12 @@ $output = "";
 
 // Dynamically load the controller based on the route
 $controller_file = "Modules/".$route->controller."/".$route->controller."_controller.php";
-if (file_exists($controller_file)) {
-    require $controller_file;
-    $fn = $route->controller."_controller";
+// Resolve and restrict included controller files to the Modules directory to prevent path traversal
+$modules_real = realpath('Modules');
+$controller_real = realpath($controller_file);
+if ($modules_real !== false && $controller_real !== false && strpos($controller_real, $modules_real . DIRECTORY_SEPARATOR) === 0) {
+    require $controller_real;
+    $fn = $route->controller . "_controller";
     if (function_exists($fn)) {
         $output = $fn();
     }

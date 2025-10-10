@@ -110,6 +110,8 @@ class Route
         // filter out all except alphanumerics and / . _ -
         $q = preg_replace('/[^.\/_A-Za-z0-9-]/', '', $q);
 
+        // additionally ensure controller/action contain no directory traversal or control chars later
+
         // Split by /
         $args = preg_split('/[\/]/', $q);
 
@@ -122,16 +124,16 @@ class Route
         $args[$lastArgIndex] = $lastArgSplit[0];
 
         if (count($args) > 0) {
-            $this->controller = $args[0];
+            $this->controller = preg_replace('/[^A-Za-z0-9_\-]/', '', $args[0]);
         }
         if (count($args) > 1) {
-            $this->action = $args[1];
+            $this->action = preg_replace('/[^A-Za-z0-9_\-]/', '', $args[1]);
         }
         if (count($args) > 2) {
-            $this->subaction = $args[2];
+            $this->subaction = preg_replace('/[^A-Za-z0-9_\-]/', '', $args[2]);
         }
         if (count($args) > 3) {
-            $this->subaction2 = $args[3];
+            $this->subaction2 = preg_replace('/[^A-Za-z0-9_\-]/', '', $args[3]);
         }
         $this->query = parse_url($_SERVER['REQUEST_URI'], PHP_URL_QUERY);
 

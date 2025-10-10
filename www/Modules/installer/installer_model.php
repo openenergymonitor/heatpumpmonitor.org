@@ -328,7 +328,7 @@ class Installer
             if ($host_parts[0] == "www") {
                 $i++;
             }
-            $filename = $host_parts[$i];
+                $filename = preg_replace('/[^A-Za-z0-9_\-]/', '', $host_parts[$i]);
                 
             $image_data = $this->getFaviconContent($url['host']);
             if ($image_data === false) {
@@ -342,23 +342,18 @@ class Installer
                 $finfo = new finfo(FILEINFO_MIME_TYPE);
                 $mimeType = $finfo->buffer($image_data);
                 
-                // Determine file extension based on MIME type
-                switch ($mimeType) {
-                    case 'image/jpeg':
-                        $extension = '.jpg';
-                        break;
-                    case 'image/png':
-                        $extension = '.png';
-                        break;
-                    case 'image/gif':
-                        $extension = '.gif';
-                        break;
-                    default:
-                        $extension = ''; // Or assume a default extension or handle error
-                        break;
-                }
-                
+                // Determine file extension based on MIME type - only allow safe image types
+                $allowed = array(
+                    'image/jpeg' => '.jpg',
+                    'image/png' => '.png',
+                    'image/gif' => '.gif'
+                );
+                if (!isset($allowed[$mimeType])) return false;
+                $extension = $allowed[$mimeType];
+
+                // final filename and safe path
                 $filename .= $extension;
+                $filename = basename($filename); // ensure no path components
                 return array(
                     'filename' => $filename,
                     'data' => $image_data
