@@ -51,7 +51,9 @@ class Installer
         $result = $this->mysqli->query("SELECT installer_name,mid_metering FROM system_meta WHERE published = '1' AND share = '1'");
         $installer_systems = [];
         while ($row = $result->fetch_object()) {
-            $installer_name = trim($row->installer_name);
+            if ($row->installer_name !== null) {
+                $installer_name = trim($row->installer_name);
+            }
             if (!isset($installer_systems[$installer_name])) {
                 $installer_systems[$installer_name] = array(
                     'all' => 0, // Total systems
