@@ -540,7 +540,7 @@ class System
         }
 
         // Get changes
-        $result = $this->mysqli->query("SELECT * FROM system_meta_changes $where ORDER BY timestamp ASC");
+        $result = $this->mysqli->query("SELECT * FROM system_meta_changes $where ORDER BY timestamp DESC LIMIT 1000");
         $list = array();
         while ($row = $result->fetch_object()) {
 

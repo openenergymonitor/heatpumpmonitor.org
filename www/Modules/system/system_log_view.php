@@ -5,6 +5,7 @@
     <div style=" background-color:#f0f0f0; padding-top:20px; padding-bottom:10px">
         <div class="container-fluid">
             <h3>Change log</h3>
+            <p>Lists last 1000 changes to system meta data</p>
         </div>
     </div>
     <div class="container-fluid">
