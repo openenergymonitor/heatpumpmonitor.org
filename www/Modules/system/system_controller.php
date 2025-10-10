@@ -266,7 +266,11 @@ function system_controller() {
             }
             fclose($fp);
             
-            shell_exec("php /opt/openenergymonitor/heatpumpmonitor/load_and_process_cli.php $systemid all > /var/log/heatpumpmonitor/reload$systemid.log 2>&1 &");
+            // Use escapeshellarg and explicit casting to avoid command injection
+            $systemid_arg = escapeshellarg((int)$systemid);
+            $logfile = '/var/log/heatpumpmonitor/reload' . (int)$systemid . '.log';
+            $cmd = "php /opt/openenergymonitor/heatpumpmonitor/load_and_process_cli.php {$systemid_arg} all > " . escapeshellarg($logfile) . " 2>&1 &";
+            shell_exec($cmd);
             return array("success"=>false, "message"=>"Loading data and processing in background, check back in 5 minutes.");
         }
     }
