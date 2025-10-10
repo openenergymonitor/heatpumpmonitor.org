@@ -2,7 +2,7 @@
 
 An open source initiative to share and compare heat pump performance data.
 
-### See: [https://heatpumpmonitor.org](https://heatpumpmonitor.org)
+## See: [https://heatpumpmonitor.org](https://heatpumpmonitor.org)
 
 ![heatpumpmonitor.png](heatpumpmonitor.png)
 
@@ -30,7 +30,11 @@ Login using 'Self hosted data' and username and password: admin:admin
 
 ## Run using Docker
 
-    docker-compose build
-    docker-compose up
+    docker compose build
+    docker compose up
 
-Site should now be running on http://localhost:8080
+Site should now be running on <http://localhost:8080>
+
+## Users
+
+Login using 'Self hosted data' and username and password: `admin:admin` for the admin user and `user<N>:password` for any of the users accounts
