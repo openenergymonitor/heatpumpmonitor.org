@@ -1,3 +1,7 @@
+<?php
+defined('EMONCMS_EXEC') or die('Restricted access');
+?>
+
 <script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
 

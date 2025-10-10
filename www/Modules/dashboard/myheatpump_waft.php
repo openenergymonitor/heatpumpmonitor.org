@@ -1,5 +1,7 @@
 <?php
 
+defined('EMONCMS_EXEC') or die('Restricted access');
+
 function process_weighted_averages($feed, $app, $start, $end) {
 
     $interval = 120;

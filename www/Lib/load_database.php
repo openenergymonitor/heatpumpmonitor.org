@@ -1,6 +1,6 @@
 <?php
 
-define('EMONCMS_EXEC', 1);
+defined('EMONCMS_EXEC') or die('Restricted access');
 error_reporting(E_ALL);
 ini_set('display_errors', 'on');
 

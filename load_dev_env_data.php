@@ -15,6 +15,7 @@ chdir("/var/www/heatpumpmonitororg");
 
 
 // Load the database
+define('EMONCMS_EXEC', 1);
 require "Lib/load_database.php";
 require "core.php";
 require "Lib/dbschemasetup.php";

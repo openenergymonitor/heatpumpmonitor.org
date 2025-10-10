@@ -1,4 +1,6 @@
 <?php
+defined('EMONCMS_EXEC') or die('Restricted access');
+
 $id = 2;
 if (isset($_GET['id'])) {
     $id = $_GET['id'];

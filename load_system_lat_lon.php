@@ -2,6 +2,7 @@
 $dir = dirname(__FILE__);
 chdir("$dir/www");
 
+define('EMONCMS_EXEC', 1);
 require "Lib/load_database.php";
 
 if (!isset($settings['opencagedata_api_key'])) {

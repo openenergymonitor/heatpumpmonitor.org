@@ -14,6 +14,7 @@ http://openenergymonitor.org
 // Designed to keep dependencies to a minimum and to implement only the basics.
 
 // Load mysql & redis database
+define('EMONCMS_EXEC', 1);
 require "Lib/load_database.php";
 require "core.php";
 require "route.php";

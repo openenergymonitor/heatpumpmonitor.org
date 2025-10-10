@@ -7,6 +7,7 @@ chdir("$dir/www");
 $username = "midterrace";
 
 // Load database
+define('EMONCMS_EXEC', 1);
 require "Lib/load_database.php";
 
 // Load user model

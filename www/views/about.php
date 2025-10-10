@@ -1,5 +1,5 @@
 <?php
-
+defined('EMONCMS_EXEC') or die('Restricted access');
 // Get current date Month and Year: June 2024
 $date = date('F Y');
 

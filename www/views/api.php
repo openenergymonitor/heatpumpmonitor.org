@@ -1,4 +1,7 @@
-<?php global $path; ?>
+<?php 
+defined('EMONCMS_EXEC') or die('Restricted access');
+global $path; 
+?>
 <div id="app">
     <div style=" background-color:#f0f0f0; padding-top:20px; padding-bottom:10px">
         <div class="container">

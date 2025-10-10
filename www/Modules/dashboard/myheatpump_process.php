@@ -1,5 +1,7 @@
 <?php
 
+defined('EMONCMS_EXEC') or die('Restricted access');
+
 function process_error_data($data, $interval, $starting_power) {
     $total_error_time = 0;
     $min_error_time = 120;

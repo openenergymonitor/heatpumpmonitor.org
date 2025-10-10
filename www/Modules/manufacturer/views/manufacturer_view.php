@@ -1,4 +1,7 @@
 
+<?php
+defined('EMONCMS_EXEC') or die('Restricted access');
+?>
 <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 

@@ -1,3 +1,6 @@
+<?php
+defined('EMONCMS_EXEC') or die('Restricted access');
+?>
 <p>Hello <?php echo $name; ?>,</p>
 
 <p>Thank you for sharing your heat pump data on HeatpumpMonitor.org.</p>

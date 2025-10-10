@@ -6,6 +6,7 @@ chdir("$dir/www");
 $fp = fopen("/home/oem/hpmon_main/hpmon.lock", "w");
 if (! flock($fp, LOCK_EX | LOCK_NB)) { echo "Already running\n"; die; }
 
+define('EMONCMS_EXEC', 1);
 require "Lib/load_database.php";
 
 require("Modules/user/user_model.php");
