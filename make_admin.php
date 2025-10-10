@@ -12,7 +12,7 @@ require "Lib/load_database.php";
 
 // Load user model
 require("Modules/user/user_model.php");
-$user = new User($mysqli);
+$user = new User($mysqli, false);
 
 // Get userid from username
 $userid = $user->get_id($username);

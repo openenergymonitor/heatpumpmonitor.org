@@ -566,21 +566,16 @@ class System
         $userid = (int) $userid;
 
         // Get this username
-        $result = $this->mysqli->query("SELECT username FROM users WHERE id='$userid'");
-        $row = $result->fetch_object();
-        $username = $row->username;
-
-        // Get emoncmsorg apikey
-        $result = $this->mysqli->query("SELECT * FROM emoncmsorg_link WHERE userid='$userid'");
+        $result = $this->mysqli->query("SELECT username, apikey_read, apikey_write FROM users WHERE id='$userid'");
         if (!$row = $result->fetch_object()) {
             return array();
         }
 
         // Master account
-        $myheatpump_apps = $this->append_app_list(array(), $username, $row->emoncmsorg_apikey_read);
+        $myheatpump_apps = $this->append_app_list(array(), $row->username, $row->apikey_read);
 
         // Get sub accounts
-        $result = file_get_contents("https://emoncms.org/account/list.json?apikey=$row->emoncmsorg_apikey_write");
+        $result = file_get_contents("https://emoncms.org/account/list.json?apikey=$row->apikey_write");
         if (!$result) return $myheatpump_apps;
 
         $accounts = json_decode($result);
