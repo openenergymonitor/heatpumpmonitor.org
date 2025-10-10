@@ -260,13 +260,13 @@ function system_controller() {
                 return array("success"=>false, "message"=>"Invalid access");
             }
             
-            $fp = fopen("/home/oem/hpmon_main/hpmon.lock", "w");
+            $fp = fopen("/opt/openenergymonitor/heatpumpmonitor/hpmon.lock", "w");
             if (!flock($fp, LOCK_EX | LOCK_NB)) {
                 return array("success"=>false, "message"=>"Already running");
             }
             fclose($fp);
             
-            shell_exec("php /home/oem/hpmon_main/load_and_process_cli.php $systemid all > /var/log/hpmon/reload$systemid.log 2>&1 &");
+            shell_exec("php /opt/openenergymonitor/heatpumpmonitor/load_and_process_cli.php $systemid all > /var/log/heatpumpmonitor/reload$systemid.log 2>&1 &");
             return array("success"=>false, "message"=>"Loading data and processing in background, check back in 5 minutes.");
         }
     }
@@ -284,8 +284,8 @@ function system_controller() {
             }
 
             // check if file exists
-            if (file_exists("/var/log/hpmon/reload$systemid.log")) {
-                $log = file_get_contents("/var/log/hpmon/reload$systemid.log");
+            if (file_exists("/var/log/heatpumpmonitor/reload$systemid.log")) {
+                $log = file_get_contents("/var/log/heatpumpmonitor/reload$systemid.log");
                 return $log;
             } else {
                 return "No log file found";
