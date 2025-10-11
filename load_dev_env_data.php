@@ -11,8 +11,6 @@ $heatpumpmonitor_host = "https://heatpumpmonitor.org";
 // Change to www directory
 $dir = dirname(__FILE__);
 chdir("$dir/www");
-chdir("/var/www/heatpumpmonitororg");
-
 
 // Load the database
 define('EMONCMS_EXEC', 1);
@@ -44,6 +42,7 @@ if ($systems==null) die("Error: could not load data from heatpumpmonitor.org");
 // -------------------------------------------------------------------------------------
 
 $reload_all = 0;
+$clear_db = 0;
 $load_users = 0;
 $load_system_meta = 0;
 $load_running_stats = 0;
@@ -54,8 +53,18 @@ $load_daily_stats = 0;
 if (isset($_ENV["RELOAD_ALL"])) {
    $reload_all = (int) $_ENV["RELOAD_ALL"];
 } else {
-    if (confirm("Would you like to reload all data?")) $reload_all = 1;
+    if (confirm("Would you like to reload all data (this will pull in monthly and daily data which is slow, recommend to skip)?")) $reload_all = 1;
 }
+
+// If not reload all then check if we should clear the database
+if ($reload_all==0) {
+    if (isset($_ENV["CLEAR_DB"])) {
+        $clear_db = (int) $_ENV["CLEAR_DB"];
+    } else {
+        if (confirm("Would you like to clear the database?")) $clear_db = 1;
+    }
+}
+if ($reload_all) $clear_db = 1;
 
 // Check if we should load users
 if (isset($_ENV["LOAD_USERS"])) {
@@ -102,7 +111,7 @@ if ($reload_all) $load_daily_stats = 1;
 // 1. Clear the database
 // -------------------------------------------------------------------------------------
 
-if ($reload_all) {
+if ($clear_db) {
     $result = $mysqli->query("SHOW TABLES");
     while ($row = $result->fetch_row()) {
         $mysqli->query("DROP TABLE IF EXISTS `$row[0]`");
@@ -119,8 +128,10 @@ db_schema_setup($mysqli, $schema, true);
 if ($load_users) {
     // Get list of userid's
     $users = array();
+    $userid = 1;
     foreach ($systems as $system) {
-        $users[$system->userid] = $system->location;
+        $users[$userid] = $system->location;
+        $userid++;
     }
 
     // Create users using userid and dummy data
@@ -130,28 +141,24 @@ if ($load_users) {
 
         $username = "user".$userid;
         $email = "example@heatpumpmonitor.org";
-        $password = "password";
 
         // Make first user admin
         if ($index==0) {
             $admin = 1;
             $username = "admin";
-            $password = "admin";
         } else {
             $admin = 0;
         }
 
-        $hash = hash('sha256', $password);
-        $salt = generate_secure_key(16);
-        $hash = hash('sha256', $salt . $hash);
-
+        // Password not needed as using dev environment login admin:admin
+        // enable in settings.php: dev_env_login_enabled = true
 
         // Check if username already exists without prepared statement
         $result = $mysqli->query("SELECT * FROM users WHERE username='$username'");
         if ($result->num_rows==0) {
             $created = time();
-            $stmt = $mysqli->prepare("INSERT INTO users ( id, username, hash, email, salt, created, email_verified, admin) VALUES (?,?,?,?,?,?,1,?)");
-            $stmt->bind_param("issssii", $userid, $username, $hash, $email, $salt, $created, $admin);
+            $stmt = $mysqli->prepare("INSERT INTO users ( id, username, email, created, admin) VALUES (?,?,?,?,?)");
+            $stmt->bind_param("isssi", $userid, $username, $email, $created, $admin);
             $stmt->execute();
             $stmt->close();
             $created_users++;
