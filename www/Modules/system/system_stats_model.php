@@ -31,11 +31,66 @@ class SystemStats
         $this->schema['system_stats_daily'] = $this->system->populate_codes($schema['system_stats_daily']);
     }
 
+    public function has_read_access($userid, $systemid) {
+        $userid = (int) $userid;
+        $systemid = (int) $systemid;
+
+        // A user has read access to a system:
+        // - in all cases if the user is an admin
+        // - if the user owns the system
+        // - if the system is both shared and published
+        
+        $result = $this->mysqli->query("SELECT userid,share,published FROM system_meta WHERE id='$systemid'");
+        if (!$row = $result->fetch_object()) {
+            return false;
+        }
+
+        // 1. The system is public anyway
+        if ($row->share == 1 && $row->published == 1) {
+            return true;
+        }
+
+        // 2. The user owns the system
+        if ($userid === $row->userid) {
+            return true;
+        }
+
+        // 3. The user is an admin
+        if ($this->is_admin($userid)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public function is_admin($userid) {
+        $userid = (int) $userid;
+        $result = $this->mysqli->query("SELECT admin FROM users WHERE id='$userid'");
+        if (!$row = $result->fetch_object()) {
+            return false;
+        }
+        if ($row->admin==1) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+
     public function get_system_config($userid, $systemid)
     {
         // get config if owned by user or public
         $userid = (int) $userid;
-        $result = $this->mysqli->query("SELECT url FROM system_meta WHERE id='$systemid' AND ((share=1 AND published=1) OR userid='$userid')");
+        $systemid = (int) $systemid;
+
+        if (!$this->has_read_access($userid, $systemid)) {
+            return array(
+                "success" => false,
+                "message" => "Invalid access"
+            );
+        }
+
+        $result = $this->mysqli->query("SELECT url FROM system_meta WHERE id='$systemid'");
         $row = $result->fetch_object();
 
         $url_parts = parse_url($row->url);
@@ -75,6 +130,16 @@ class SystemStats
     
     public function get_system_config_with_meta($userid, $systemid)
     {
+        $userid = (int) $userid;
+        $systemid = (int) $systemid;
+
+        if (!$this->has_read_access($userid, $systemid)) {
+            return array(
+                "success" => false,
+                "message" => "Invalid access"
+            );
+        }
+
         if ($result = $this->redis->get("appconfig:$systemid")) {
             $config = json_decode($result);
             $config->config_cache = true;
@@ -82,8 +147,7 @@ class SystemStats
         }
             
         // get config if owned by user or public
-        $userid = (int) $userid;
-        $result = $this->mysqli->query("SELECT url FROM system_meta WHERE id='$systemid' AND ((share=1 AND published=1) OR userid='$userid')");
+        $result = $this->mysqli->query("SELECT url FROM system_meta WHERE id='$systemid'");
         if (!$row = $result->fetch_object()) {
             return array("success"=>false, "message"=>"System does not exist");   
         }

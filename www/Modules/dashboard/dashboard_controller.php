@@ -10,11 +10,14 @@ function dashboard_controller() {
         $systemid = (int) $_GET['id'];
         $route->format = "html";
         $system_data = $system->get($session['userid'],$systemid);
-
-        return view("Modules/dashboard/myheatpump.php", array(
-            "id"=>$systemid,
-            "system_data"=>$system_data
-        ));
+        if (is_array($system_data) && isset($system_data['success']) && $system_data['success']==false) {
+            // 
+        } else {
+            return view("Modules/dashboard/myheatpump.php", array(
+                "id"=>$systemid,
+                "system_data"=>$system_data
+            ));
+        }
     }
 
     // API actions
