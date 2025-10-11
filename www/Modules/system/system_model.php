@@ -24,10 +24,13 @@ class System
         $result = $this->mysqli->query("SELECT * FROM system_meta WHERE share=1 AND published=1 OR userid='$userid'");
         $list = array();
         while ($row = $result->fetch_object()) {
+            $row = $this->typecast($row);
             unset($row->url);
             unset($row->userid);
             unset($row->emoncmsorg_userid);
-            $list[] = $this->typecast($row);
+            unset($row->app_id);
+            unset($row->readkey);
+            $list[] = $row;
         }
         return $list;
     }
