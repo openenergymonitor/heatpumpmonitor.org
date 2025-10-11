@@ -285,6 +285,7 @@ class User
         $accounts = array();
         foreach ($accounts_all_data as $account) {
             $accounts[] = array(
+                'userid' => (int) $account->id,
                 'username' => $account->username
             );
         }

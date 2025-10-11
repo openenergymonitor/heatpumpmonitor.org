@@ -41,7 +41,7 @@ class System
 
     // All systems
     public function list_admin() {
-        $result = $this->mysqli->query("SELECT system_meta.*,users.name,users.username,users.email FROM system_meta JOIN users ON system_meta.userid = users.id ORDER BY system_meta.id");
+        $result = $this->mysqli->query("SELECT system_meta.*,users.username FROM system_meta JOIN users ON system_meta.userid = users.id ORDER BY system_meta.id");
         $list = array();
         while ($row = $result->fetch_object()) {
             $list[] = $this->typecast($row);
@@ -52,11 +52,26 @@ class System
     // User systems
     public function list_user($userid=false) {
         $userid = (int) $userid;
-        $result = $this->mysqli->query("SELECT system_meta.*,users.name,users.username,users.email FROM system_meta JOIN users ON system_meta.userid = users.id WHERE system_meta.userid='$userid' ORDER BY system_meta.id");
+
+        $result = $this->mysqli->query("SELECT system_meta.*,users.username FROM system_meta JOIN users ON system_meta.userid = users.id WHERE system_meta.userid='$userid' ORDER BY system_meta.id");
         $list = array();
         while ($row = $result->fetch_object()) {
             $list[] = $this->typecast($row);
         }
+
+        // Get list of sub-account userids!
+        $sub_accounts = $this->get_sub_accounts($userid);
+        if ($sub_accounts['success']==true) {
+            foreach ($sub_accounts['accounts'] as $account) {
+                $sub_userid = (int) $account['userid'];
+                $result = $this->mysqli->query("SELECT * FROM system_meta WHERE userid='$sub_userid' ORDER BY id");
+                while ($row = $result->fetch_object()) {
+                    $row->username = $account->username;
+                    $list[] = $this->typecast($row);
+                }
+            }
+        }
+
         return $list;
     }
 
@@ -637,4 +652,42 @@ class System
             $stmt->execute();
         }
     }
+
+    public function get_sub_accounts($userid) {
+        $userid = (int) $userid;
+
+        // Get this username
+        $result = $this->mysqli->query("SELECT apikey_write FROM users WHERE id='$userid'");
+        if (!$row = $result->fetch_object()) {
+            return array(
+                'success' => false,
+                'message' => "User not found"
+            );
+        }
+        
+	    if (!$row->apikey_write) {
+            return array(
+                'success' => false,
+                'message' => "No apikey found"
+            );
+        }
+
+        // Get sub accounts
+        $result = file_get_contents("https://emoncms.org/account/list.json?apikey=$row->apikey_write");
+        $accounts_all_data = json_decode($result);
+
+        $accounts = array();
+        foreach ($accounts_all_data as $account) {
+            $accounts[] = array(
+                'userid' => (int) $account->id,
+                'username' => $account->username
+            );
+        }
+
+        return array(
+            'success' => true,
+            'accounts' => $accounts
+        );
+    }
+
 }

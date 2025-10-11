@@ -129,7 +129,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     <h3 v-if="mode=='user'">My Systems</h3>
                     <h3 v-if="mode=='admin'">Admin Systems</h3>
 
-                    <p v-if="mode=='user'">Add, edit and view systems associated with your account.</p>
+                    <p v-if="mode=='user'">Add, edit and view systems associated with your account and sub-accounts.</p>
                     <p v-if="mode=='admin'">Add, edit and view all systems</p>
                     
                     <p v-if="mode=='public' && showContent">If you're monitoring a heat pump with <a href="https://openenergymonitor.org">OpenEnergyMonitor</a> login to add your system</p>
