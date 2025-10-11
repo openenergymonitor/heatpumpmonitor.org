@@ -4,6 +4,8 @@ chdir("$dir/www");
 
 $admin_userid = 2;
 
+define('EMONCMS_EXEC', 1);
+
 require "Lib/load_database.php";
 
 require("Modules/user/user_model.php");
@@ -140,6 +142,13 @@ foreach ($data as $row) {
             
             if (!$result) {
                 print "error reading kwh data from system: $systemid\n";
+                print $url."\n";
+                //print $result_str."\n";
+                continue;
+            }
+
+            if (!is_array($result)) {
+                print "error decoding kwh data from system: $systemid\n";
                 print $url."\n";
                 //print $result_str."\n";
                 continue;

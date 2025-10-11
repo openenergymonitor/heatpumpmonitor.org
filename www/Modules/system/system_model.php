@@ -25,6 +25,8 @@ class System
         $list = array();
         while ($row = $result->fetch_object()) {
             unset($row->url);
+            unset($row->userid);
+            unset($row->get_emoncmsorg_userid);
             $list[] = $this->typecast($row);
         }
         return $list;
