@@ -34,8 +34,10 @@ services:
       # Use default enviroment variables file for dev
       - 'default.docker-env'
     environment:
-      # Clear database before loading data
+      # Dont reload all data, just users and system meta data
       - "RELOAD_ALL=0"
+      # Clear database before loading data
+      - "CLEAR_DB=1"
       # Load the users
       - "LOAD_USERS=1"
       # Load system meta data

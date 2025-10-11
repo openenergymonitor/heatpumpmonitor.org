@@ -15,5 +15,5 @@ $settings = array(
     // Enable development environment login (default admin/admin)
     // This enables a simple login method for development environments
     // Do not enable on production systems
-    "dev_env_login_enabled"=>false
+    "dev_env_login_enabled"=>$_ENV["DEV_ENV_LOGIN_ENABLED"]
 );
