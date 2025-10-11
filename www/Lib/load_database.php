@@ -26,8 +26,8 @@ if (file_exists("settings.php")) {
     require "env.settings.php";
 }
 
-if (!isset($settings['emoncmsorg_only'])) {
-    $settings['emoncmsorg_only'] = true;
+if (!isset($settings['dev_env_login_enabled'])) {
+    $settings['dev_env_login_enabled'] = false;
 }
 
 $mysqli = @new mysqli(

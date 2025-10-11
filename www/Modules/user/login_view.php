@@ -14,7 +14,7 @@ global $settings;
     <div class="card">
         <div class="card-body bg-light">
 
-            <h1 class="h3 mb-3 fw-normal">Login <span v-if="emoncmsorg_only">with emoncms.org</span><span v-if="!emoncmsorg_only">(dev env)</span></h1>
+            <h1 class="h3 mb-3 fw-normal">Login <?php if (!$settings['dev_env_login_enabled']) echo "with emoncms.org"; else echo "(dev env)"; ?></h1>
 
             <label>Username</label>
             <div class="input-group mb-3">
@@ -41,8 +41,6 @@ global $settings;
 
     document.body.style.backgroundColor = "#1d8dbc";
 
-    var emoncmsorg_only = <?php echo $settings['emoncmsorg_only'] ? "true" : "false"; ?>;
-
     var app = new Vue({
         el: '#app',
         data: {
@@ -52,7 +50,6 @@ global $settings;
             email: "",
             error: false,
             success: false,
-            emoncmsorg_only: emoncmsorg_only
         },
         methods: {
             login: function() {

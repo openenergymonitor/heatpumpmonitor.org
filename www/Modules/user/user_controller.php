@@ -4,7 +4,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 function user_controller() {
 
-    global $mysqli, $session, $route, $user, $path;
+    global $mysqli, $session, $route, $user, $path, $settings;
 
     if ($route->action=="login") {
         if ($route->format=="html") {
@@ -14,31 +14,13 @@ function user_controller() {
                 header('Location: '.$path);
             }
         } else if ($route->format=="json") {
-            global $settings;
-            return $user->login(post("username"),post("password"),$settings['emoncmsorg_only']);
+            if ($settings['dev_env_login_enabled']) {
+                return $user->login_using_dev_env(post("username", true),post("password", true));
+            } else {
+                return $user->login_using_emoncms(post("username", true),post("password", true));
+            }
         }
     }
-
-    /*
-
-    // Disable non emoncms.org user registration
-
-    if ($route->action=="register") {
-        $route->format = "json";
-        $password1 = post("password");
-        $password2 = post("password2");
-        if ($password1!=$password2) {
-            return array("success"=>false,"message"=>"Passwords do not match");
-        }
-        return $user->register(post("username"),$password1,post("email"));
-    }
-
-    if ($route->action == 'verify') {
-        $email = get('email',true);
-        $key = get('key',true);
-        $result = $user->verify_email($email,$key);
-        return view("Modules/user/login_view.php", array("result"=>$result));  
-    }*/
 
     if ($route->action=="view" && $session['userid']) {
         return view("Modules/user/account_view.php", array('account'=>$user->get($session['userid'])));  
@@ -54,18 +36,6 @@ function user_controller() {
         $user->admin_switch_user($userid);
         header("Location: ".$path."user/view");
         exit();
-    }
-
-    if ($route->action=="delete" && $session['admin']) {
-        $route->format = "json";
-        $userid = get('userid');
-        return $user->admin_delete_user($userid);
-    }
-
-    if ($route->action=="welcome" && $session['admin']) {
-        $route->format = "json";
-        $userid = get('userid');
-        return $user->send_welcome_email($userid);
     }
 
     if ($route->action=="logout" && $session['userid']) {
