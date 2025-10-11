@@ -43,6 +43,11 @@ function user_controller() {
         header("Location: ".$path);
         exit();
     }
+
+    if ($route->action=="subaccounts" && $session['userid']) {
+        $route->format = "json";
+        return $user->get_sub_accounts($session['userid']);
+    }
     
     return false;
 }

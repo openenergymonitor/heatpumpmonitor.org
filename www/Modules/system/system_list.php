@@ -394,10 +394,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 <table v-else id="custom" class="table table-striped table-sm mt-3">
                     <tr>
                         <th v-if="mode=='admin'" @click="sort('id', 'asc')" style="cursor:pointer">ID</th>
-                        <th v-if="mode=='admin'" @click="sort('name', 'asc')" style="cursor:pointer">User
+                        <th v-if="mode=='admin' || mode=='user'" @click="sort('name', 'asc')" style="cursor:pointer">User
                             <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='name'"></i>
                         </th>
-                        <th v-if="mode=='admin'">LINK</th>
                         <th v-for="column in selected_columns" @click="sort(column, 'desc')" style="cursor:pointer" :title="columns[column].helper"><span v-html="columns[column].heading"></span>
                             <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn==column"></i>
                         </th>
@@ -408,8 +407,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     </tr>
                     <tr v-for="(system,index) in fSystems" v-if="mode!='public' || (mode=='public' && system.combined_data_length!=0)">
                         <td v-if="mode=='admin'">{{ system.id }}</td>
-                        <td v-if="mode=='admin'" :title="system.username+'\n'+system.email"><span v-if="system.name">{{ system.name }}</span><span v-if="!system.name" style="color:#888">{{ system.username }}</span></td>
-                        <td v-if="mode=='admin'"><a v-if="system.emoncmsorg_userid" :href="'https://emoncms.org/admin/setuser?id='+system.emoncmsorg_userid" target="_blank">{{ system.emoncmsorg_userid }}</a></td>
+                        <td v-if="mode=='admin' || mode=='user'"><span style="color:#888">{{ system.username }}</span></td>
                         <td v-for="column in selected_columns" v-html="column_format(system,column)" v-bind:class="sinceClass(system,column)" style=""></td>
                         <td v-if="mode!='public' && public_mode_enabled">
                             <span v-if="system.share" class="badge bg-success">Shared</span>

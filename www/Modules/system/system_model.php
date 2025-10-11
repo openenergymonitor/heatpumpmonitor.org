@@ -26,7 +26,7 @@ class System
         while ($row = $result->fetch_object()) {
             unset($row->url);
             unset($row->userid);
-            unset($row->get_emoncmsorg_userid);
+            unset($row->emoncmsorg_userid);
             $list[] = $this->typecast($row);
         }
         return $list;
@@ -44,31 +44,15 @@ class System
         $result = $this->mysqli->query("SELECT system_meta.*,users.name,users.username,users.email FROM system_meta JOIN users ON system_meta.userid = users.id ORDER BY system_meta.id");
         $list = array();
         while ($row = $result->fetch_object()) {
-            if (!isset($row->emoncmsorg_userid)) {
-                $row->emoncmsorg_userid = $this->get_emoncmsorg_userid($row->userid);
-                if ($row->emoncmsorg_userid) $row->emoncmsorg_userid = (int) $row->emoncmsorg_userid;
-            }
             $list[] = $this->typecast($row);
         }
         return $list;
     }
 
-    // Get emoncmsorg userid
-    public function get_emoncmsorg_userid($userid) {
-        $userid = (int) $userid;
-        $result = $this->mysqli->query("SELECT emoncmsorg_userid FROM emoncmsorg_link WHERE userid='$userid'");
-        if ($result->num_rows > 0) {
-            $row = $result->fetch_object();
-            return $row->emoncmsorg_userid;
-        } else {
-            return false;
-        }
-    }
-
     // User systems
     public function list_user($userid=false) {
         $userid = (int) $userid;
-        $result = $this->mysqli->query("SELECT * FROM system_meta WHERE userid='$userid'");
+        $result = $this->mysqli->query("SELECT system_meta.*,users.name,users.username,users.email FROM system_meta JOIN users ON system_meta.userid = users.id WHERE system_meta.userid='$userid' ORDER BY system_meta.id");
         $list = array();
         while ($row = $result->fetch_object()) {
             $list[] = $this->typecast($row);
@@ -572,6 +556,9 @@ class System
         if (!$row = $result->fetch_object()) {
             return array();
         }
+        
+        if (!$row->apikey_read) return array();
+	    if (!$row->apikey_write) return array();
 
         // Master account
         $myheatpump_apps = $this->append_app_list(array(), $row->username, $row->apikey_read);

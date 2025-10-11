@@ -37,6 +37,27 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         <button class="btn btn-danger" style="float:right">Delete account</button>-->
         <br>
         <br>
+
+        <div class="card mb-3" v-if="sub_accounts.length>0">
+            <div class="card-header">
+                <b>Sub accounts</b>
+            </div>
+            <div class="card-body">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="sub_account in sub_accounts">
+                            <td>{{ sub_account.username }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+            
         
     </div>
 </div>
@@ -49,7 +70,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         data: {
             account: {...account},
             email_changed: false,
-            username_changed: false
+            username_changed: false,
+            sub_accounts: []
         },
         methods: {
             onchange_username: function() {
@@ -65,7 +87,22 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 } else {
                     this.email_changed = false;
                 }
-            }       
+            },
+            get_sub_accounts: function() {
+                axios.get("<?php echo $path ?>user/subaccounts")
+                .then(response => {
+                    if (response.data.success) {
+                        this.sub_accounts = response.data.accounts;
+                    } else {
+                        console.log(response.data.message);
+                    }
+                })
+                .catch(error => {
+                    console.log(error);
+                });
+            }  
         }
     });
+
+    app.get_sub_accounts();
 </script>

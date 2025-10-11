@@ -117,7 +117,7 @@ class User
         } else {
             // Update fields in users table
             $stmt = $this->mysqli->prepare("UPDATE users SET username=?, email=?, apikey_read=?, apikey_write=? WHERE id=?");
-            $stmt->bind_param("ssssi", $username, $email, $apikey_read, $apikey_write, $emoncmsorg_userid);
+            $stmt->bind_param("ssssi", $username, $email, $apikey_read, $apikey_write, $userid);
             $stmt->execute();
             $stmt->close();
         }
@@ -256,5 +256,43 @@ class User
             $row = $result->fetch_object();
             return $row->admin ? true : false;
         }
-    }    
+    }
+
+    // Get list of sub accounts
+    public function get_sub_accounts($userid) {
+        $userid = (int) $userid;
+
+        // Get this username
+        $result = $this->mysqli->query("SELECT apikey_write FROM users WHERE id='$userid'");
+        if (!$row = $result->fetch_object()) {
+            return array(
+                'success' => false,
+                'message' => "User not found"
+            );
+        }
+        
+	    if (!$row->apikey_write) {
+            return array(
+                'success' => false,
+                'message' => "No apikey found"
+            );
+        }
+
+        // Get sub accounts
+        $result = file_get_contents("https://emoncms.org/account/list.json?apikey=$row->apikey_write");
+        $accounts_all_data = json_decode($result);
+
+        $accounts = array();
+        foreach ($accounts_all_data as $account) {
+            $accounts[] = array(
+                'username' => $account->username
+            );
+        }
+
+        return array(
+            'success' => true,
+            'accounts' => $accounts
+        );
+    }
+
 }
