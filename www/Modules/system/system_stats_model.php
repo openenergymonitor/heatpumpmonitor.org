@@ -32,6 +32,9 @@ class SystemStats
         $this->schema['system_stats_daily'] = $this->system->populate_codes($schema['system_stats_daily']);
     }
     
+    // --------------------------------------------------------------------------------------------
+
+    // Get system config with meta data (server, apikey)
     public function get_system_config_with_meta($userid, $systemid)
     {
         $userid = (int) $userid;
@@ -50,40 +53,18 @@ class SystemStats
             return $config;
         }
 
-        $result = $this->mysqli->query("SELECT app_id, readkey FROM system_meta WHERE id='$systemid'");
-        if (!$row = $result->fetch_object()) {
-            return array("success"=>false, "message"=>"System does not exist");   
+        $result = $this->emoncms_app_request($systemid, 'getconfigmeta');
+        if ($result['success']) {
+            $config = $result['data'];
+            $config->server = $this->host;
+            $config->apikey = $result['readkey'];
+            if ($config->apikey=="") $config->apikey = false;
+
+            $this->redis->set("appconfig:$systemid",json_encode($config));
+            $this->redis->expire("appconfig:$systemid",10);
         }
-
-        try {
-            $result = file_get_contents("https://emoncms.org/app/getconfigmeta.json?id=$row->app_id&apikey=$row->readkey");
-        } catch (Exception $e) {
-            return array(
-                "success"=>false, 
-                "message"=>"Error fetching config meta"
-            );
-        }
-    
-        $config = json_decode($result);  
-        
-        if (!$config) {
-            return array(
-                "success"=>false, 
-                "message"=>"Empty response from detailed data server"
-            );
-        }
-
-        $config->server = "https://emoncms.org";
-        $config->apikey = $row->readkey;
-        if ($config->apikey=="") $config->apikey = false;
-
-        $this->redis->set("appconfig:$systemid",json_encode($config));
-        $this->redis->expire("appconfig:$systemid",10);
-
-        return $config;
+        return $result;
     }
-
-    // --------------------------------------------------------------------------------------------
 
     // Load processed stats from emoncms app
     public function load_from_emoncms($systemid, $start = false, $end = false, $api = 'getstats') {
@@ -149,14 +130,16 @@ class SystemStats
         if ($httpCode == 200) {
             $data = json_decode($result);
 
-            if ($data === null) {
-                return array("success" => false, "message" => $result);
-            } else {
-                return array("success" => true, "data" => $data);
+            if ($data !== null) {
+                return array(
+                    "success" => true, 
+                    "data" => $data,
+                    "readkey" => $row->readkey
+                );
             }
-        } else {
-            return array("success" => false, "message" => $httpCode);
         }
+
+        return array("success" => false, "http_code" => $httpCode, "message" => $result);
     }
     
     // --------------------------------------------------------------------------------------------
