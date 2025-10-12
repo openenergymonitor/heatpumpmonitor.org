@@ -90,28 +90,16 @@ class SystemStats
             );
         }
 
-        $result = $this->mysqli->query("SELECT url FROM system_meta WHERE id='$systemid'");
-        $row = $result->fetch_object();
-
-        $url_parts = parse_url($row->url);
-        $server = $url_parts['scheme'] . '://' . $url_parts['host'];
-        // check if url was to /app/view instead of username
-        if (preg_match('/^(.*)\/app\/view$/', $url_parts['path'], $matches)) {
-            $getconfig = "$server$matches[1]/app/getconfig";
-        } else {
-            $getconfig = $server . $url_parts['path'] . "/app/getconfig";
-        }
-        // if url has query string, pull out the readkey
-        $readkey = '';
-        if (isset($url_parts['query'])) {
-            parse_str($url_parts['query'], $url_args);
-            if (isset($url_args['readkey'])) {
-                $readkey = $url_args['readkey'];
-                $getconfig .= '?' . $url_parts['query'];
-            }
+        $result = $this->mysqli->query("SELECT app_id, readkey FROM system_meta WHERE id='$systemid'");
+        if (!$row = $result->fetch_object()) {
+            return array("success"=>false, "message"=>"System does not exist");   
         }
 
-        $config = json_decode(file_get_contents($getconfig));
+        $getconfig = file_get_contents("https://emoncms.org/app/getconfig.json?id=$row->app_id&apikey=$row->readkey");
+        $config = json_decode($getconfig);
+        if (!$config) {
+            return array("success"=>false, "message"=>"Error getting config");
+        }
 
         $output = new stdClass();
         $output->elec = (int) $config->config->heatpump_elec;
@@ -145,49 +133,18 @@ class SystemStats
             $config->config_cache = true;
             return $config;
         }
-            
-        // get config if owned by user or public
-        $result = $this->mysqli->query("SELECT url FROM system_meta WHERE id='$systemid'");
+
+        $result = $this->mysqli->query("SELECT app_id, readkey FROM system_meta WHERE id='$systemid'");
         if (!$row = $result->fetch_object()) {
             return array("success"=>false, "message"=>"System does not exist");   
         }
 
-        $url_parts = parse_url($row->url);
-
-        if (!isset($url_parts['scheme']) || !isset($url_parts['host']) || !isset($url_parts['path'])) {
-            return array("success"=>false, "message"=>"Invalid URL"); 
-        }
-
-        $server = $url_parts['scheme'] . '://' . $url_parts['host'];
-
-        // check if url was to /app/view instead of username
-        if (preg_match('/^(.*)\/app\/view$/', $url_parts['path'], $matches)) {
-            $getconfig = "$server$matches[1]/app/getconfigmeta.json";
-            $server .= $matches[1];
-        } else {
-            $getconfig = $server . $url_parts['path'] . "/app/getconfigmeta.json";
-        }
-        // if url has query string, pull out the readkey
-        $readkey = '';
-        if (isset($url_parts['query'])) {
-            parse_str($url_parts['query'], $url_args);
-            if (isset($url_args['readkey'])) {
-                $readkey = $url_args['readkey'];
-                $getconfig .= '?' . $url_parts['query'];
-            }
-        }
-        
-        if ($server != "https://emoncms.org" && $server != "http://emoncms.org") {
-            // return array("success"=>false, "message"=>"API only supported by systems hosted on emoncms.org");
-        }
-
         try {
-            $result = file_get_contents($getconfig);
+            $result = file_get_contents("https://emoncms.org/app/getconfigmeta.json?id=$row->app_id&apikey=$row->readkey");
         } catch (Exception $e) {
             return array(
                 "success"=>false, 
-                "message"=>"Empty response from detailed data server",
-                "url"=>$getconfig
+                "message"=>"Error fetching config meta"
             );
         }
     
@@ -196,14 +153,12 @@ class SystemStats
         if (!$config) {
             return array(
                 "success"=>false, 
-                "message"=>"Empty response from detailed data server",
-                "url"=>$getconfig
+                "message"=>"Empty response from detailed data server"
             );
-
         }
 
-        $config->server = $server;
-        $config->apikey = $readkey;
+        $config->server = "https://emoncms.org";
+        $config->apikey = $row->readkey;
         if ($config->apikey=="") $config->apikey = false;
 
         $this->redis->set("appconfig:$systemid",json_encode($config));
