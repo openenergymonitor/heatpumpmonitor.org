@@ -50,11 +50,11 @@ $load_monthly_stats = 0;
 $load_daily_stats = 0;
 
 // Check if we should reload all data
-if (isset($_ENV["RELOAD_ALL"])) {
-   $reload_all = (int) $_ENV["RELOAD_ALL"];
-} else {
-    if (confirm("Would you like to reload all data (this will pull in monthly and daily data which is slow, recommend to skip)?")) $reload_all = 1;
-}
+//if (isset($_ENV["RELOAD_ALL"])) {
+//   $reload_all = (int) $_ENV["RELOAD_ALL"];
+//} else {
+//    if (confirm("Would you like to reload all data (this will pull in monthly and daily data which is slow, recommend to skip)?")) $reload_all = 1;
+//}
 
 // If not reload all then check if we should clear the database
 if ($reload_all==0) {
@@ -174,6 +174,7 @@ if ($load_users) {
 
 if ($load_system_meta) {
     $created_systems = 0;
+    $system_userid = 1;
     foreach ($systems as $system) {
 
         // Check if system already exists
@@ -184,9 +185,9 @@ if ($load_system_meta) {
         }
 
         // Create system
-        $mysqli->query("INSERT INTO system_meta (id,userid) VALUES ('$system->id', '$system->userid')");
+        $mysqli->query("INSERT INTO system_meta (id,userid) VALUES ('$system->id', '$system_userid')");
 
-        $result = $system_class->save($system->userid, $system->id, $system, false);
+        $result = $system_class->save($system_userid, $system->id, $system, false);
         if ($result['success']==false) {
             echo "Error: could not save system: ".$system->id."\n";
             print_r($result);
@@ -194,6 +195,7 @@ if ($load_system_meta) {
         } else {
             $created_systems++;
         }
+        $system_userid++;
     }
     $mysqli->query("UPDATE system_meta SET published=1");
     print "- Created ".$created_systems." systems\n";
