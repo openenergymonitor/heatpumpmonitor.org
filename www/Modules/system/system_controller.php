@@ -230,7 +230,7 @@ function system_controller() {
         $route->format = "text";
         if ($session['userid']) {
             $systemid = get("id",false);
-            if ($system->has_access($session['userid'],$systemid)) {
+            if ($system->has_write_access($session['userid'],$systemid)) {
                 return 1;
             } else {
                 return 0;
@@ -256,7 +256,7 @@ function system_controller() {
             $systemid = (int) get("id",false);
             
             // Check if user has access
-            if ($system->has_access($session['userid'],$systemid)==false) {
+            if ($system->has_write_access($session['userid'],$systemid)==false) {
                 return array("success"=>false, "message"=>"Invalid access");
             }
             
@@ -283,7 +283,7 @@ function system_controller() {
             $systemid = (int) get("id",false);
             
             // Check if user has access
-            if ($system->has_access($session['userid'],$systemid)==false) {
+            if ($system->has_write_access($session['userid'],$systemid)==false) {
                 return array("success"=>false, "message"=>"Invalid access");
             }
 
