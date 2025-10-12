@@ -158,6 +158,11 @@ function system_controller() {
             $system_id = (int) $_GET['id'];
         }
 
+        // check userid has access to system
+        if ($system_id!==false && !$system_stats->has_read_access($session['userid'], $system_id)) {
+            return array("success"=>false, "message"=>"Invalid access");
+        }
+
         // stats?start=2016-01-01&end=2016-01-02
         if ($route->subaction == "") {
             return $system_stats->get_monthly(
