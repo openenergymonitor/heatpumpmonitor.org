@@ -95,10 +95,22 @@ class SystemStats
             return array("success"=>false, "message"=>"System does not exist");   
         }
 
-        $getconfig = file_get_contents("https://emoncms.org/app/getconfig.json?id=$row->app_id&apikey=$row->readkey");
-        $config = json_decode($getconfig);
+        try {
+            $result = file_get_contents("https://emoncms.org/app/getconfig.json?id=$row->app_id&apikey=$row->readkey");
+        } catch (Exception $e) {
+            return array(
+                "success"=>false, 
+                "message"=>"Error fetching config meta"
+            );
+        }
+    
+        $config = json_decode($result);  
+        
         if (!$config) {
-            return array("success"=>false, "message"=>"Error getting config");
+            return array(
+                "success"=>false, 
+                "message"=>"Empty response from detailed data server"
+            );
         }
 
         $output = new stdClass();
@@ -110,8 +122,8 @@ class SystemStats
         if (isset($config->config->heatpump_outsideT)) {
             $output->outsideT = (int) $config->config->heatpump_outsideT;
         }
-        $output->server = $server;
-        $output->apikey = $readkey;
+        $output->server = "https://emoncms.org";
+        $output->apikey = $row->readkey;
 
         return $output;
     }
@@ -167,31 +179,18 @@ class SystemStats
         return $config;
     }
 
-    public function load_from_url($url, $start = false, $end = false, $api = 'getstats')
+    public function load_from_emoncms($systemid, $start = false, $end = false, $api = 'getstats')
     {
-        # decode the url to separate out any args
-        $url_parts = parse_url($url);
-        $server = $url_parts['scheme'] . '://' . $url_parts['host'];
+        $systemid = (int) $systemid;
 
-        $time_range_query = '';
+        $result = $this->mysqli->query("SELECT app_id, readkey FROM system_meta WHERE id='$systemid'");
+        if (!$row = $result->fetch_object()) {
+            return array("success"=>false, "message"=>"System does not exist");   
+        }
+
+        $getstats = "https://emoncms.org/app/$api.json?id=$row->app_id&apikey=$row->readkey";
         if ($start && $end) {
-            $time_range_query = "&start=$start&end=$end";
-        }
-
-        # check if url was to /app/view instead of username
-        if (preg_match('/^(.*)\/app\/view$/', $url_parts['path'], $matches)) {
-            $getstats = "$server$matches[1]/app/" . $api . $time_range_query;
-        } else {
-            $getstats = $server . $url_parts['path'] . "/app/" . $api . $time_range_query;
-        }
-
-        # if url has query string, pull out the readkey
-        if (isset($url_parts['query'])) {
-            parse_str($url_parts['query'], $url_args);
-            if (isset($url_args['readkey'])) {
-                // $readkey = $url_args['readkey'];
-                $getstats .= '?' . $url_parts['query'];
-            }
+            $getstats .= "&start=$start&end=$end";
         }
 
         $ch = curl_init();
@@ -215,31 +214,16 @@ class SystemStats
         }
     }
 
-    public function process_data($url, $timeout = 5) {
-        # decode the url to separate out any args
-        $url_parts = parse_url($url);
-        if (!isset($url_parts['scheme']) || !isset($url_parts['host']) || !isset($url_parts['path'])) {
-            return array("success" => false, "message" => "Invalid URL"); 
-        }
-        $server = $url_parts['scheme'] . '://' . $url_parts['host'];
+    public function process_data($systemid, $timeout = 5) 
+    {
+        $systemid = (int) $systemid;
+        $timeout = (int) $timeout;
 
-        # check if url was to /app/view instead of username
-        if (preg_match('/^(.*)\/app\/view$/', $url_parts['path'], $matches)) {
-            $getstats = "$server$matches[1]/app/processdaily.json";
-        } else {
-            $getstats = $server . $url_parts['path'] . "/app/processdaily.json";
+        $result = $this->mysqli->query("SELECT app_id, readkey FROM system_meta WHERE id='$systemid'");
+        if (!$row = $result->fetch_object()) {
+            return array("success"=>false, "message"=>"System does not exist");   
         }
-
-        # if url has query string, pull out the readkey
-        if (isset($url_parts['query'])) {
-            parse_str($url_parts['query'], $url_args);
-            if (isset($url_args['readkey'])) {
-                // $readkey = $url_args['readkey'];
-                $getstats .= '?' . $url_parts['query']."&timeout=$timeout";
-            }
-        } else {
-            $getstats .= "?timeout=$timeout";
-        }        
+        $getstats = "https://emoncms.org/app/processdaily.json?id=$row->app_id&apikey=$row->readkey&timeout=$timeout";     
         
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $getstats);
@@ -256,43 +240,21 @@ class SystemStats
         }
     }
 
-    public function clear_daily($url) {
+    public function clear_daily($systemid) {
 
         global $settings;
         $clearkey = $settings['clearkey'];
 
-        # decode the url to separate out any args
-        $url_parts = parse_url($url);
-        if (!isset($url_parts['scheme']) || !isset($url_parts['host']) || !isset($url_parts['path'])) {
-            return array("success" => false, "message" => "Invalid URL"); 
-        }
-        $server = $url_parts['scheme'] . '://' . $url_parts['host'];
+        $systemid = (int) $systemid;
 
-        // Only allow emoncms.org
-        if ($url_parts['host'] != 'emoncms.org') {
-            return array("success" => false, "message" => "Invalid URL"); 
+        $result = $this->mysqli->query("SELECT app_id, readkey FROM system_meta WHERE id='$systemid'");
+        if (!$row = $result->fetch_object()) {
+            return array("success"=>false, "message"=>"System does not exist");   
         }
-
-        # check if url was to /app/view instead of username
-        if (preg_match('/^(.*)\/app\/view$/', $url_parts['path'], $matches)) {
-            $getstats = "$server$matches[1]/app/cleardaily.json";
-        } else {
-            $getstats = $server . $url_parts['path'] . "/app/cleardaily.json";
-        }
-
-        # if url has query string, pull out the readkey
-        if (isset($url_parts['query'])) {
-            parse_str($url_parts['query'], $url_args);
-            if (isset($url_args['readkey'])) {
-                // $readkey = $url_args['readkey'];
-                $getstats .= '?' . $url_parts['query']."&clearkey=$clearkey";
-            }
-        } else {
-            $getstats .= "?clearkey=$clearkey";
-        }  
+        $request_url = "https://emoncms.org/app/cleardaily.json?id=$row->app_id&apikey=$row->readkey&clearkey=$clearkey";  
         
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $getstats);
+        curl_setopt($ch, CURLOPT_URL, $request_url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
         $result = curl_exec($ch);
@@ -306,72 +268,43 @@ class SystemStats
         }
     }
 
-    public function enable_daily_mode($url) {
-        # decode the url to separate out any args
-        $url_parts = parse_url($url);
-        if (!isset($url_parts['scheme']) || !isset($url_parts['host']) || !isset($url_parts['path'])) {
-            return array("success" => false, "message" => "Invalid URL"); 
-        }
-        $server = $url_parts['scheme'] . '://' . $url_parts['host'];
-
-        # check if url was to /app/view instead of username
-        if (preg_match('/^(.*)\/app\/view$/', $url_parts['path'], $matches)) {
-            $getstats = "$server$matches[1]/app/enabledailymode.json";
-        } else {
-            $getstats = $server . $url_parts['path'] . "/app/enabledailymode.json";
-        }
-
-        # if url has query string, pull out the readkey
-        if (isset($url_parts['query'])) {
-            parse_str($url_parts['query'], $url_args);
-            if (isset($url_args['readkey'])) {
-                // $readkey = $url_args['readkey'];
-                $getstats .= '?' . $url_parts['query'];
-            }
-        }      
-        
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $getstats);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
-        $result = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-        
-        if ($httpCode == 200) { // Check if successful response
-            return json_decode($result,true);
-        } else {
-            return array("success" => false, "message" => $httpCode);
-        }
-    }
-
-    public function get_data_period($url)
+    public function enable_daily_mode($systemid) 
     {
-        # decode the url to separate out any args
-        $url_parts = parse_url($url);
-        if (!isset($url_parts['scheme']) || !isset($url_parts['host']) || !isset($url_parts['path'])) {
-            return array("success" => false, "message" => "Invalid URL"); 
-        }
-        $server = $url_parts['scheme'] . '://' . $url_parts['host'];
+        $systemid = (int) $systemid;
 
-        # check if url was to /app/view instead of username
-        if (preg_match('/^(.*)\/app\/view$/', $url_parts['path'], $matches)) {
-            $getstats = "$server$matches[1]/app/getdailydatarange";
-        } else {
-            $getstats = $server . $url_parts['path'] . "/app/getdailydatarange";
+        $result = $this->mysqli->query("SELECT app_id, readkey FROM system_meta WHERE id='$systemid'");
+        if (!$row = $result->fetch_object()) {
+            return array("success"=>false, "message"=>"System does not exist");   
         }
-
-        # if url has query string, pull out the readkey
-        if (isset($url_parts['query'])) {
-            parse_str($url_parts['query'], $url_args);
-            if (isset($url_args['readkey'])) {
-                // $readkey = $url_args['readkey'];
-                $getstats .= '?' . $url_parts['query'];
-            }
-        }
+        $request_url = "https://emoncms.org/app/enabledailymode.json?id=$row->app_id&apikey=$row->readkey";
         
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $getstats);
+        curl_setopt($ch, CURLOPT_URL, $request_url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+        $result = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        
+        if ($httpCode == 200) { // Check if successful response
+            return json_decode($result,true);
+        } else {
+            return array("success" => false, "message" => $httpCode);
+        }
+    }
+
+    public function get_data_period($systemid)
+    {
+        $systemid = (int) $systemid;
+
+        $result = $this->mysqli->query("SELECT app_id, readkey FROM system_meta WHERE id='$systemid'");
+        if (!$row = $result->fetch_object()) {
+            return array("success"=>false, "message"=>"System does not exist");   
+        }
+        $request_url = "https://emoncms.org/app/getdailydatarange.json?id=$row->app_id&apikey=$row->readkey";
+        
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $request_url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
         $stats_rx = curl_exec($ch);

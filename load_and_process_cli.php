@@ -98,7 +98,7 @@ function load_daily_stats_system($meta, $reload) {
 
     if ($reload !== false) {
         // Clearing daily data on data server
-        $result = $system_stats->clear_daily($meta->url);
+        $result = $system_stats->clear_daily($systemid);
         if (isset($result['success']) && $result['success']) {
             logger("- daily data cleared");
         } else {
@@ -109,7 +109,7 @@ function load_daily_stats_system($meta, $reload) {
     }
 
     for ($i=0; $i<1000; $i++) {
-        $result = $system_stats->process_data($meta->url,10);
+        $result = $system_stats->process_data($systemid,10);
 
         if ($result == null || !isset($result['days_left'])) {
             logger(json_encode($result));
@@ -121,7 +121,7 @@ function load_daily_stats_system($meta, $reload) {
             logger("- days left: ".$result['days_left']);
             
             // Enable daily mode in dashboard
-            $system_stats->enable_daily_mode($meta->url);
+            $system_stats->enable_daily_mode($systemid);
 
             break;
         } else {
@@ -131,7 +131,7 @@ function load_daily_stats_system($meta, $reload) {
     }
 
     // get data period
-    $result = $system_stats->get_data_period($meta->url);
+    $result = $system_stats->get_data_period($systemid);
 
     if (!$result['success']) {
         logger("- error loading data period");
@@ -217,7 +217,7 @@ function load_daily_stats_system($meta, $reload) {
             }
         }
 
-        if ($result = $system_stats->load_from_url($meta->url, $start, $end, 'getdailydata')) 
+        if ($result = $system_stats->load_from_emoncms($systemid, $start, $end, 'getdailydata')) 
         {
             // split csv into array, first line is header
             $csv = explode("\n", $result);
