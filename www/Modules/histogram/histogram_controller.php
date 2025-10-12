@@ -17,15 +17,15 @@ function histogram_controller() {
     // System id required
     $systemid = (int) get('id',true);
     // Load system config
-    $config = $system_stats->get_system_config($session['userid'], $systemid);    
+    $config = $system_stats->get_system_config_with_meta($session['userid'], $systemid);
 
     // Get kWh vs COP histogram
     if ($route->action=="kwh_at_cop") {
         $route->format = "json";
         // Parameters
         $params = array(
-            "elec"=>$config->elec,
-            "heat"=>$config->heat,
+            "elec"=>$config->feeds->heatpump_elec->feedid,
+            "heat"=>$config->feeds->heatpump_heat->feedid,
             "start"=>get('start',true),
             "end"=>get('end',true),
             "div"=>0.1,
@@ -45,8 +45,8 @@ function histogram_controller() {
         $route->format = "json";
         // Parameters
         $params = array(
-            "power"=>$config->heat,
-            "temperature"=>$config->flowT,
+            "power"=>$config->feeds->heatpump_heat->feedid,
+            "temperature"=>$config->feeds->heatpump_flowT->feedid,
             "start"=>$_GET['start'],
             "end"=>$_GET['end'],
             "div"=>0.5,
@@ -66,8 +66,8 @@ function histogram_controller() {
         $route->format = "json";
         // Parameters
         $params = array(
-            "power"=>$config->heat,
-            "temperature"=>$config->outsideT,
+            "power"=>$config->feeds->heatpump_heat->feedid,
+            "temperature"=>$config->feeds->heatpump_outsideT->feedid,
             "start"=>$_GET['start'],
             "end"=>$_GET['end'],
             "div"=>0.5,
@@ -87,7 +87,7 @@ function histogram_controller() {
         $route->format = "json";
         // Parameters
         $params = array(
-            "power"=>$config->elec,
+            "power"=>$config->feeds->heatpump_elec->feedid,
             "start"=>$_GET['start'],
             "end"=>$_GET['end'],
             "div"=>20,
@@ -106,7 +106,7 @@ function histogram_controller() {
         $route->format = "json";
         // Parameters
         $params = array(
-            "power"=>$config->heat,
+            "power"=>$config->feeds->heatpump_heat->feedid,
             "start"=>$_GET['start'],
             "end"=>$_GET['end'],
             "div"=>100,
@@ -128,9 +128,9 @@ function histogram_controller() {
         $route->format = "json";
         // Parameters
         $params = array(
-            "power"=>$config->heat,
-            "flow"=>$config->flowT,
-            "outside"=>$config->outsideT,
+            "power"=>$config->feeds->heatpump_heat->feedid,
+            "flow"=>$config->feeds->heatpump_flowT->feedid,
+            "outside"=>$config->feeds->heatpump_outsideT->feedid,
             "start"=>$_GET['start'],
             "end"=>$_GET['end'],
             "div"=>0.5,
@@ -150,9 +150,9 @@ function histogram_controller() {
         $route->format = "json";
         // Parameters
         $params = array(
-            "power"=>$config->heat,
-            "flow"=>$config->flowT,
-            "outside"=>$config->outsideT,
+            "power"=>$config->feeds->heatpump_heat->feedid,
+            "flow"=>$config->feeds->heatpump_flowT->feedid,
+            "outside"=>$config->feeds->heatpump_outsideT->feedid,
             "start"=>$_GET['start'],
             "end"=>$_GET['end'],
             "div"=>0.1,
@@ -172,9 +172,9 @@ function histogram_controller() {
     if ($route->action=="flow_temp_curve") {
         // Parameters
         $params = array(
-            "outsideT"=>$config->outsideT,
-            "flowT"=>$config->flowT,
-            "heat"=>$config->heat,
+            "outsideT"=>$config->feeds->heatpump_outsideT->feedid,
+            "flowT"=>$config->feeds->heatpump_flowT->feedid,
+            "heat"=>$config->feeds->heatpump_heat->feedid,
             "start"=>$_GET['start'],
             "end"=>$_GET['end'],
             "div"=>0.5,

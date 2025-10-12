@@ -75,58 +75,6 @@ class SystemStats
             return false;
         }
     }
-
-
-    public function get_system_config($userid, $systemid)
-    {
-        // get config if owned by user or public
-        $userid = (int) $userid;
-        $systemid = (int) $systemid;
-
-        if (!$this->has_read_access($userid, $systemid)) {
-            return array(
-                "success" => false,
-                "message" => "Invalid access"
-            );
-        }
-
-        $result = $this->mysqli->query("SELECT app_id, readkey FROM system_meta WHERE id='$systemid'");
-        if (!$row = $result->fetch_object()) {
-            return array("success"=>false, "message"=>"System does not exist");   
-        }
-
-        try {
-            $result = file_get_contents("https://emoncms.org/app/getconfig.json?id=$row->app_id&apikey=$row->readkey");
-        } catch (Exception $e) {
-            return array(
-                "success"=>false, 
-                "message"=>"Error fetching config meta"
-            );
-        }
-    
-        $config = json_decode($result);  
-        
-        if (!$config) {
-            return array(
-                "success"=>false, 
-                "message"=>"Empty response from detailed data server"
-            );
-        }
-
-        $output = new stdClass();
-        $output->elec = (int) $config->config->heatpump_elec;
-        $output->heat = (int) $config->config->heatpump_heat;
-        $output->flowT = (int) $config->config->heatpump_flowT;
-        $output->returnT = (int) $config->config->heatpump_returnT;
-
-        if (isset($config->config->heatpump_outsideT)) {
-            $output->outsideT = (int) $config->config->heatpump_outsideT;
-        }
-        $output->server = "https://emoncms.org";
-        $output->apikey = $row->readkey;
-
-        return $output;
-    }
     
     public function get_system_config_with_meta($userid, $systemid)
     {
