@@ -25,7 +25,7 @@ class System
     // Returns a list of public systems
     public function list_public($userid=false) {
         $userid = (int) $userid;
-        $result = $this->mysqli->query("SELECT * FROM system_meta WHERE share=1 AND published=1 OR userid='$userid'");
+        $result = $this->mysqli->query("SELECT * FROM system_meta WHERE share=1 AND published=1"); // OR userid='$userid' (removed for now)
         $list = array();
         while ($row = $result->fetch_object()) {
             $row = $this->typecast($row);
@@ -65,18 +65,24 @@ class System
             $list[] = $this->typecast($row);
         }
 
-        // Get list of sub-account userids!
-        $sub_accounts = $this->get_sub_accounts($userid);
-        if ($sub_accounts['success']==true) {
-            foreach ($sub_accounts['accounts'] as $account) {
-                $sub_userid = (int) $account['userid'];
-                $result = $this->mysqli->query("SELECT * FROM system_meta WHERE userid='$sub_userid' ORDER BY id");
-                while ($row = $result->fetch_object()) {
-                    $row->username = $account->username;
-                    $list[] = $this->typecast($row);
-                }
-            }
+        // Add systems from system_access table
+        $result = $this->mysqli->query("SELECT system_meta.*,users.username FROM system_meta JOIN users ON system_meta.userid = users.id JOIN system_access ON system_meta.id = system_access.systemid WHERE system_access.userid='$userid' AND system_access.access>0 ORDER BY system_meta.id");
+        while ($row = $result->fetch_object()) {
+            $list[] = $this->typecast($row);
         }
+
+        // Get list of sub-account userids!
+        // $sub_accounts = $this->get_sub_accounts($userid);
+        // if ($sub_accounts['success']==true) {
+        //     foreach ($sub_accounts['accounts'] as $account) {
+        //         $sub_userid = (int) $account['userid'];
+        //         $result = $this->mysqli->query("SELECT * FROM system_meta WHERE userid='$sub_userid' ORDER BY id");
+        //         while ($row = $result->fetch_object()) {
+        //             $row->username = $account->username;
+        //             $list[] = $this->typecast($row);
+        //         }
+        //     }
+        // }
 
         return $list;
     }
@@ -112,30 +118,18 @@ class System
     public function get($userid,$systemid) {
         $userid = (int) $userid;
         $systemid = (int) $systemid;
+
+        // Check if user has access
+        if ($this->has_read_access($userid,$systemid)==false) {
+            return array("success"=>false, "message"=>"Invalid access");
+        }
         
         $result = $this->mysqli->query("SELECT * FROM system_meta WHERE id='$systemid'");
         if (!$row = $result->fetch_object()) {
             return array("success"=>false, "message"=>"System does not exist");
         }
-        $row = $this->typecast($row);
         
-        // If user is an admin return system
-        if ($this->is_admin($userid)) {
-            return $row;
-        }
-        
-        // If it's the users system then return system
-        if ($userid == $row->userid) {
-            return $row;
-        }
-        
-        // If public then return system
-        if ($row->share==1 && $row->published==1) {
-            unset($row->url);
-            return $row;
-        }
-        
-        return array("success"=>false, "message"=>"Invalid access");
+        return $this->typecast($row);
     }
 
     public function validate($userid,$form_data,$full_validation=false) {
@@ -184,6 +178,13 @@ class System
         } else {
             $validate_result = array("success"=>true, "warning_log"=>array());
         }
+
+        // Check that the app_id, readkey and userid are valid
+        // Check that the readkey matches the userid
+        // If they are valid and the userid has not been created on heatpumpmonitor.org we also create the user
+
+
+
 
         $new_system = false;
         if ($systemid==false) {
@@ -322,6 +323,10 @@ class System
         }
         // Delete the system
         $this->mysqli->query("DELETE FROM system_meta WHERE id='$systemid'");
+
+        // Delete any access control entries
+        $this->mysqli->query("DELETE FROM system_access WHERE systemid='$systemid'");
+
         return array("success"=>true, "message"=>"Deleted");
     }
 
@@ -676,14 +681,31 @@ class System
     public function has_write_access($userid,$systemid) {
         $userid = (int) $userid;
         $systemid = (int) $systemid;
+
         $result = $this->mysqli->query("SELECT userid FROM system_meta WHERE id='$systemid'");
         if (!$row = $result->fetch_object()) {
             return false;
         }
-        if ($userid!=$row->userid && $this->is_admin($userid)==false) {
-            return false;
+
+        // 1. The user owns the system
+        if ($userid === $row->userid) {
+            return true;
         }
-        return true;
+
+        // 2. The user is an admin
+        if ($this->is_admin($userid)) {
+            return true;
+        }
+
+        // 3. User has been granted write access via the system_access table
+        $result = $this->mysqli->query("SELECT access FROM system_access WHERE systemid='$systemid' AND userid='$userid'");
+        if ($row = $result->fetch_object()) {
+            if ($row->access==2) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function has_read_access($userid, $systemid) {
@@ -713,6 +735,14 @@ class System
         // 3. The user is an admin
         if ($this->is_admin($userid)) {
             return true;
+        }
+
+        // 4. User has been granted access via the system_access table
+        $result = $this->mysqli->query("SELECT access FROM system_access WHERE systemid='$systemid' AND userid='$userid'");
+        if ($row = $result->fetch_object()) {
+            if ($row->access>0) {
+                return true;
+            }
         }
 
         return false;

@@ -70,19 +70,6 @@ function system_controller() {
         ));
     }
     
-    if ($route->action=="dashboard") {
-        $route->format = "html";
-        $systemid = get("id",false);
-        $system_data = $system->get($session['userid'],$systemid);
-        return view("Modules/system/system_dashboard.php", array(
-            "mode"=>"view", 
-            "system_data"=>$system_data, 
-            'admin'=>$session['admin'], 
-            'schema'=>$system->schema_meta,
-            'system_stats_monthly'=>$system_stats->schema['system_stats_monthly_v2']
-        ));
-    }
-    
     if ($route->action=="log" && $session['admin']) {
         if ($route->format=="json") {
             $system_id = get("id",false);
@@ -102,7 +89,7 @@ function system_controller() {
             if ($route->subaction=="public" && $settings['public_mode_enabled']) {
                 return view("Modules/system/system_list.php",array(
                     "mode"=>"public",
-                    "systems"=>$system->list_public($session['userid']),
+                    "systems"=>$system->list_public(),
                     "columns"=>$system->get_columns(),
                     "stats_columns"=>$system_stats->schema['system_stats_monthly_v2']
                 ));
@@ -132,7 +119,7 @@ function system_controller() {
         } else {
             // Public list view
             if ($route->subaction=="public") {
-                return $system->list_public($session['userid']);
+                return $system->list_public();
 
             // User list view
             } else if ($route->subaction=="user") {
