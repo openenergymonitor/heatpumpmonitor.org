@@ -206,13 +206,19 @@ function system_controller() {
             );
         } else if ($route->subaction=="monthly") {
             $route->format = "json";
-            return $system_stats->system_get_monthly(get('id',true));
+            return $system_stats->system_get_monthly($system_id);
         }
     }
 
     if ($route->action=="monthly") {
         $route->format = "json";
-        return $system_stats->system_get_monthly(get('id',true));
+        $system_id = (int) get('id',true);
+        // check userid has access to system
+        if ($system_id!==false && !$system_stats->has_read_access($session['userid'], $system_id)) {
+            return array("success"=>false, "message"=>"Invalid access");
+        }
+
+        return $system_stats->system_get_monthly($system_id);
     }
 
     if ($route->action=="get") {
