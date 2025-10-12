@@ -6,6 +6,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 class User
 {
     private $mysqli;
+    private $host = "https://emoncms.org";
     private $rememberme;
     private $email_verification = true;
 
@@ -13,6 +14,9 @@ class User
     {
         $this->mysqli = $mysqli;
         $this->rememberme = $rememberme;
+
+        global $settings;
+        $this->host = $settings['emoncms_host'];
     }
 
     public function emon_session_start()
@@ -91,10 +95,8 @@ class User
     {
         if (!$username || !$password) return array('success' => false, 'message' => _("Username or password empty"));
 
-        $host = "https://emoncms.org";
-
-        // Login using emoncms.org/user/auth.json
-        if (!$result = http_request("POST", $host."/user/auth.json", array("username" => $username, "password" => $password))) {
+        // Login using emoncms/user/auth.json
+        if (!$result = http_request("POST", $this->host."/user/auth.json", array("username" => $username, "password" => $password))) {
             return array('success' => false, 'message' => _("Login error"));
         }
         $result = json_decode($result);
@@ -104,8 +106,8 @@ class User
         $apikey_read = $result->apikey_read;
         $apikey_write = $result->apikey_write;
 
-        // Fetch email using emoncms.org/user/get.json
-        $user_get = json_decode(file_get_contents($host."/user/get.json?apikey=" . $apikey_write));
+        // Fetch email using emoncms/user/get.json
+        $user_get = json_decode(file_get_contents($this->host."/user/get.json?apikey=" . $apikey_write));
         $email = $user_get->email;
 
         if (!$this->userid_exists($userid)) {
@@ -279,7 +281,7 @@ class User
         }
 
         // Get sub accounts
-        $result = file_get_contents("https://emoncms.org/account/list.json?apikey=$row->apikey_write");
+        $result = file_get_contents($this->host."/account/list.json?apikey=$row->apikey_write");
         $accounts_all_data = json_decode($result);
 
         $accounts = array();

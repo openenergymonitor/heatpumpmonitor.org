@@ -173,18 +173,7 @@ function load_daily_stats_system($meta, $reload) {
         
         $start = $date->getTimestamp();
         $start_str = $date->format("Y-m-d");
-
-        if ($host != "emoncms.org") {
-            //echo "host != emoncms.org\n";
-            //break;
-        }
-
-        // +30 days
-        if ($host=="emoncms.org") {
-            $date->modify("+364 days");
-        } else {
-            $date->modify("+7 days"); 
-        }
+        $date->modify("+364 days");
 
         $last_end = $end;
         $end = $date->getTimestamp();

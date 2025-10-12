@@ -16,6 +16,9 @@ class SystemStats
     {
         $this->mysqli = $mysqli;
         $this->system = $system;
+
+        global $settings;
+        $this->host = $settings['emoncms_host'];
         
         global $redis;
         $this->redis = $redis;

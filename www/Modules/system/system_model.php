@@ -6,11 +6,15 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 class System
 {
     private $mysqli;
+    private $host = "https://emoncms.org";
     public $schema_meta;
 
     public function __construct($mysqli)
     {
         $this->mysqli = $mysqli;
+
+        global $settings;
+        $this->host = $settings['emoncms_host'];
 
         $schema = array();
         require "Modules/system/system_schema.php";
@@ -556,7 +560,7 @@ class System
         $myheatpump_apps = $this->append_app_list(array(), $row->username, $row->apikey_read);
 
         // Get sub accounts
-        $result = file_get_contents("https://emoncms.org/account/list.json?apikey=$row->apikey_write");
+        $result = file_get_contents($this->host."/account/list.json?apikey=$row->apikey_write");
         if (!$result) return $myheatpump_apps;
 
         $accounts = json_decode($result);
@@ -570,7 +574,7 @@ class System
     }
 
     private function append_app_list($myheatpump_apps, $username, $readkey) {
-        $result = file_get_contents("https://emoncms.org/app/list.json?apikey=".$readkey);
+        $result = file_get_contents($this->host."/app/list.json?apikey=".$readkey);
         if (!$result) return $myheatpump_apps;
 
         $apps = json_decode($result);
@@ -580,7 +584,7 @@ class System
             if ($app->app=="myheatpump") {
                 $app->username = $username;
                 // Generate url
-                $url = "https://emoncms.org/app/view?name=".$app->name."&readkey=".$readkey;
+                $url = $this->host."/app/view?name=".$app->name."&readkey=".$readkey;
                 $app->url = $url;
 
                 // Check if app is already added, skip if it is
@@ -651,7 +655,7 @@ class System
         }
 
         // Get sub accounts
-        $result = file_get_contents("https://emoncms.org/account/list.json?apikey=$row->apikey_write");
+        $result = file_get_contents($this->host."/account/list.json?apikey=$row->apikey_write");
         $accounts_all_data = json_decode($result);
 
         $accounts = array();

@@ -780,16 +780,6 @@ global $settings, $session, $path;
                 this.filtered_schema_groups = filtered_schema_groups;
             },
 
-            validate_url: function() {
-                // Check if URL is valid
-                // url host must be emoncms.org
-                var url = this.system.url;
-                var url_host = new URL(url).host;
-                if (url_host != 'emoncms.org') {
-                    alert('Please enter a valid Emoncms.org dashboard URL');
-                }
-            },
-
             load_manufacturers: function() {
                 $.get(this.path+'manufacturer/list')
                     .done(response => {

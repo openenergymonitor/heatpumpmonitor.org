@@ -58,7 +58,7 @@ $delta = 1;
 $timeformat = "notime";
 
 // Load agile data feedid 473228 (AGILE-22-07-22:K_Southern_Wales)
-$url = "https://emoncms.org/feed/data.json?id=473228&start=$start&end=$end&interval=$interval&average=0&delta=0&skipmissing=0&timeformat=$timeformat";
+$url = $settings["emoncms_host"]."/feed/data.json?id=473228&start=$start&end=$end&interval=$interval&average=0&delta=0&skipmissing=0&timeformat=$timeformat";
 $agile = json_decode(file_get_contents($url));
 
 // Generate Octopus Cosy data

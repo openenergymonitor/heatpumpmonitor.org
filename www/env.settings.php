@@ -1,6 +1,9 @@
 <?php
 
 $settings = array(
+    // HeatpumpMonitor requires a linked Emoncms installation
+    "emoncms_host"=>$_ENV["EMONCMS_HOST"],
+
     "sql"=>array(
         "server"=>$_ENV["MYSQL_HOST"],
         "username"=>$_ENV["MYSQL_USER"],
