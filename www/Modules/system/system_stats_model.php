@@ -62,6 +62,7 @@ class SystemStats
 
             $this->redis->set("appconfig:$systemid",json_encode($config));
             $this->redis->expire("appconfig:$systemid",10);
+            return $config;
         }
         return $result;
     }
