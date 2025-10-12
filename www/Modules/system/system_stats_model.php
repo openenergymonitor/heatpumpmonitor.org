@@ -8,6 +8,7 @@ class SystemStats
     private $mysqli;
     private $system;
     private $redis;
+    private $host = 'https://emoncms.org';
     
     public $schema = array();
 
@@ -82,70 +83,60 @@ class SystemStats
         return $config;
     }
 
-    public function load_from_emoncms($systemid, $start = false, $end = false, $api = 'getstats')
-    {
-        if (!$request_url = $this->construct_request_url($systemid, $api)) {
-            return array("success"=>false, "message"=>"System does not exist");
-        }
-        
+    // --------------------------------------------------------------------------------------------
+
+    // Load processed stats from emoncms app
+    public function load_from_emoncms($systemid, $start = false, $end = false, $api = 'getstats') {
+        $params = array();
         if ($start && $end) {
-            $request_url .= "&start=$start&end=$end";
+            $params = array("start"=>$start, "end"=>$end);
         }
-
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $request_url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
-        $stats_rx = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-        
-        if ($httpCode == 200) { // Check if successful response
-            return $stats_rx;
-        } else {
-            return false; // Or handle error as needed
-        }
-
-        if (!$stats = json_decode($stats_rx)) {
-            return array("success" => false, "message" => $stats_rx);
-        } else {
-            return array("success" => true, "stats" => $stats);
-        }
+        return $this->emoncms_app_request($systemid, $api, $params);
     }
 
-    public function process_data($systemid, $timeout = 5) 
-    {
-        if (!$request_url = $this->construct_request_url($systemid, 'processdaily')) {
-            return array("success"=>false, "message"=>"System does not exist");
-        }
-
-        $timeout = (int) $timeout;
-        $request_url .= "&timeout=$timeout";
-        
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $request_url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
-        $result = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-        
-        if ($httpCode == 200) { // Check if successful response
-            return json_decode($result,true);
-        } else {
-            return array("success" => false, "message" => $httpCode);
-        }
+    // Trigger processing of daily data
+    public function process_data($systemid, $timeout = 5) {
+        return $this->emoncms_app_request($systemid, 'processdaily', array('timeout' => (int) $timeout));
     }
 
-    public function clear_daily($systemid) 
-    {
-        if (!$request_url = $this->construct_request_url($systemid, 'cleardaily')) {
-            return array("success"=>false, "message"=>"System does not exist");
-        }
-
+    // Clear daily data
+    public function clear_daily($systemid) {
         global $settings;
-        $request_url .= "&clearkey=".$settings['clearkey'];
-        
+        return $this->emoncms_app_request($systemid, 'cleardaily', array('clearkey' => $settings['clearkey']));
+    }
+
+    // Enable daily mode
+    public function enable_daily_mode($systemid) {
+        return $this->emoncms_app_request($systemid, 'enabledailymode');
+    }
+
+    // Get data period
+    public function get_data_period($systemid) {
+        return $this->emoncms_app_request($systemid, 'getdailydatarange');
+    }
+
+    // Make request to emoncms app (generic reusable function)
+    private function emoncms_app_request($systemid, $action, $params = array()) 
+    {
+        $systemid = (int) $systemid;
+
+        // 1. Get app_id and readkey from system_meta table
+        $result = $this->mysqli->query("SELECT app_id, readkey FROM system_meta WHERE id='$systemid'");
+        if (!$row = $result->fetch_object()) {
+            return array("success"=>false, "message"=>"System does not exist");
+        }
+
+        // 2. Construct request URL
+        $request_url = $this->host."/app/$action.json?id=$row->app_id&apikey=$row->readkey";
+
+        // 3. Add additional parameters
+        if (!empty($params)) {
+            foreach ($params as $key => $value) {
+                $request_url .= "&$key=$value";
+            }
+        }
+
+        // 4. Make the request
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $request_url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
@@ -154,70 +145,21 @@ class SystemStats
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
         
-        if ($httpCode == 200) { // Check if successful response
-            return json_decode($result,true);
-        } else {
-            return array("success" => false, "message" => $httpCode);
-        }
-    }
+        // 5. Handle the response
+        if ($httpCode == 200) {
+            $data = json_decode($result);
 
-    public function enable_daily_mode($systemid) 
-    {
-        if (!$request_url = $this->construct_request_url($systemid, 'enabledailymode')) {
-            return array("success"=>false, "message"=>"System does not exist");
-        }
-        
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $request_url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
-        $result = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-        
-        if ($httpCode == 200) { // Check if successful response
-            return json_decode($result,true);
-        } else {
-            return array("success" => false, "message" => $httpCode);
-        }
-    }
-
-    public function get_data_period($systemid)
-    {
-        if (!$request_url = $this->construct_request_url($systemid, 'getdailydatarange')) {
-            return array("success"=>false, "message"=>"System does not exist");
-        }
-        
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $request_url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
-        $stats_rx = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-        
-        if ($httpCode == 200) { // Check if successful response
-            if (!$period = json_decode($stats_rx)) {
-                return array("success" => false, "message" => $stats_rx);
+            if ($data === null) {
+                return array("success" => false, "message" => $result);
             } else {
-                return array("success" => true, "period" => $period);
+                return array("success" => true, "data" => $data);
             }
         } else {
             return array("success" => false, "message" => $httpCode);
         }
     }
-
-    private function construct_request_url($systemid, $action) 
-    {
-        $systemid = (int) $systemid;
-
-        $result = $this->mysqli->query("SELECT app_id, readkey FROM system_meta WHERE id='$systemid'");
-        if (!$row = $result->fetch_object()) {
-            return false;   
-        }
-        return "https://emoncms.org/app/$action.json?id=$row->app_id&apikey=$row->readkey";
-    }
-
+    
+    // --------------------------------------------------------------------------------------------
 
     // Save day
     public function save_day($systemid, $row) 

@@ -99,7 +99,7 @@ function load_daily_stats_system($meta, $reload) {
     if ($reload !== false) {
         // Clearing daily data on data server
         $result = $system_stats->clear_daily($systemid);
-        if (isset($result['success']) && $result['success']) {
+        if ($result['success']) {
             logger("- daily data cleared");
         } else {
             logger(json_encode($result));
@@ -110,23 +110,22 @@ function load_daily_stats_system($meta, $reload) {
 
     for ($i=0; $i<1000; $i++) {
         $result = $system_stats->process_data($systemid,10);
+        if ($result['success']) {
+            if ($result['data']->days_left <= 0) {
+                logger("- days left: ".$result['data']->days_left);
 
-        if ($result == null || !isset($result['days_left'])) {
-            logger(json_encode($result));
-            logger("- error loading data");
-            return false;
-        }
-        
-        if ($result['days_left'] <= 0) {
-            logger("- days left: ".$result['days_left']);
-            
-            // Enable daily mode in dashboard
-            $system_stats->enable_daily_mode($systemid);
+                // Enable daily mode in dashboard
+                $system_stats->enable_daily_mode($systemid);
 
-            break;
+                break;
+            } else {
+                logger("- days left: ".$result['data']->days_left);
+                sleep(1);
+            }
         } else {
-            logger("- days left: ".$result['days_left']);
-            sleep(1);
+            logger(json_encode($result));
+            logger("- error processing daily data");
+            return false;
         }
     }
 
@@ -140,8 +139,8 @@ function load_daily_stats_system($meta, $reload) {
 
     $end = false;
 
-    $data_start = $result['period']->start;
-    $data_end = $result['period']->end;
+    $data_start = $result['data']->start;
+    $data_end = $result['data']->end;
     $start = $data_start;
 
     if ($reload !== false) {
@@ -217,10 +216,10 @@ function load_daily_stats_system($meta, $reload) {
             }
         }
 
-        if ($result = $system_stats->load_from_emoncms($systemid, $start, $end, 'getdailydata')) 
-        {
+        $result = $system_stats->load_from_emoncms($systemid, $start, $end, 'getdailydata');
+        if ($result['success']) {
             // split csv into array, first line is header
-            $csv = explode("\n", $result);
+            $csv = explode("\n", $result['data']);
             $fields = str_getcsv($csv[0]);
             if ($fields[1]!="timestamp") {
                 echo $result;

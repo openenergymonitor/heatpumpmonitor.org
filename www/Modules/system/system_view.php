@@ -819,7 +819,7 @@ global $settings, $session, $path;
     app.filter_schema_groups();
     app.load_manufacturers();
 
-    axios.get(path + 'system/monthly?id=' + app.system.id)
+    axios.get(path + 'system/stats/monthly?id=' + app.system.id)
         .then(function(response) {
             app.monthly = response.data;
             // draw_chart();
