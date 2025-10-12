@@ -161,9 +161,28 @@ global $settings, $session, $path;
     </div>
 
     <div class="container mt-3" style="max-width:800px" v-if="mode=='edit'">
-    <div class="input-group mt-3">
-            <span class="input-group-text">URL</span>
-            <input type="text" class="form-control" v-model="system.url" placeholder="Or enter dashboard URL manually here" @change="validate_url">
+
+        <div class="row">
+            <div class="col-4">
+                <div class="input-group mt-3">
+                    <span class="input-group-text">App ID</span>
+                    <input type="text" class="form-control" v-model="system.app_id" placeholder="App ID" disabled>
+                </div>
+            </div>
+            <div class="col">
+                <div class="input-group mt-3">
+                    <span class="input-group-text">Read API Key</span>
+                    <input type="text" class="form-control" v-model="system.readkey" placeholder="Read API Key" disabled>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <div class="input-group mt-3">
+                    <span class="input-group-text">URL</span>
+                    <input type="text" class="form-control" v-model="system.url" placeholder="Full app URL" disabled>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -548,12 +567,15 @@ global $settings, $session, $path;
             },
             load_app: function() {
                 var app_id = app.new_app_selection;
+                console.log('Loading app', app_id);
 
                 var selected_app = null;
                 for (var appx in app.available_apps) {
                     if (app.available_apps[appx].id == app_id) {
                         selected_app = app.available_apps[appx];
                         app.system.url = selected_app.url;
+                        app.system.app_id = selected_app.id;
+                        app.system.readkey = selected_app.readkey;
                     }
                 }
                 

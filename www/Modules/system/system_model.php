@@ -621,6 +621,7 @@ class System
                     "id" => (int) $app->id,
                     "username" => $app->username,
                     "name" => $app->name,
+                    "readkey" => $readkey,
                     "url" => $app->url,
                     "public" => (int) $app->public,
                     "in_use" => $app->in_use

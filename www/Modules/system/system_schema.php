@@ -18,8 +18,8 @@ $schema['system_meta'] = array(
     'emoncmsorg_userid' => array('type' => 'int(11)', 'editable' => false),
 
     // New method of linking an emoncms.org myheatpump app
-    'app_id' => array('type' => 'int(11)', 'editable' => false),
-    'readkey' => array('type' => 'varchar(64)', 'editable' => false),
+    'app_id' => array('type' => 'int(11)', 'editable' => true),
+    'readkey' => array('type' => 'varchar(64)', 'editable' => true),
     
     /* ------------------------------ Overview ----------------------------- */
 
