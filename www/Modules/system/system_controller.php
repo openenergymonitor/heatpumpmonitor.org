@@ -159,7 +159,7 @@ function system_controller() {
         }
 
         // check userid has access to system
-        if ($system_id!==false && !$system_stats->has_read_access($session['userid'], $system_id)) {
+        if ($system_id!==false && !$system->has_read_access($session['userid'], $system_id)) {
             return array("success"=>false, "message"=>"Invalid access");
         }
 

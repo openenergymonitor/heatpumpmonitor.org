@@ -322,32 +322,6 @@ class System
         return array("success"=>true, "message"=>"Deleted");
     }
 
-    public function has_access($userid,$systemid) {
-        $userid = (int) $userid;
-        $systemid = (int) $systemid;
-        $result = $this->mysqli->query("SELECT userid FROM system_meta WHERE id='$systemid'");
-        if (!$row = $result->fetch_object()) {
-            return false;
-        }
-        if ($userid!=$row->userid && $this->is_admin($userid)==false) {
-            return false;
-        }
-        return true;
-    }
-
-    public function is_admin($userid) {
-        $userid = (int) $userid;
-        $result = $this->mysqli->query("SELECT admin FROM users WHERE id='$userid'");
-        if (!$row = $result->fetch_object()) {
-            return false;
-        }
-        if ($row->admin==1) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
     public function get_system_userid($systemid) {
         $systemid = (int) $systemid;
         $result = $this->mysqli->query("SELECT userid FROM system_meta WHERE id='$systemid'");
@@ -693,5 +667,64 @@ class System
             'accounts' => $accounts
         );
     }
+    
+    // Access control
 
+    public function has_access($userid,$systemid) {
+        $userid = (int) $userid;
+        $systemid = (int) $systemid;
+        $result = $this->mysqli->query("SELECT userid FROM system_meta WHERE id='$systemid'");
+        if (!$row = $result->fetch_object()) {
+            return false;
+        }
+        if ($userid!=$row->userid && $this->is_admin($userid)==false) {
+            return false;
+        }
+        return true;
+    }
+
+    public function has_read_access($userid, $systemid) {
+        $userid = (int) $userid;
+        $systemid = (int) $systemid;
+
+        // A user has read access to a system:
+        // - in all cases if the user is an admin
+        // - if the user owns the system
+        // - if the system is both shared and published
+        
+        $result = $this->mysqli->query("SELECT userid,share,published FROM system_meta WHERE id='$systemid'");
+        if (!$row = $result->fetch_object()) {
+            return false;
+        }
+
+        // 1. The system is public anyway
+        if ($row->share == 1 && $row->published == 1) {
+            return true;
+        }
+
+        // 2. The user owns the system
+        if ($userid === $row->userid) {
+            return true;
+        }
+
+        // 3. The user is an admin
+        if ($this->is_admin($userid)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public function is_admin($userid) {
+        $userid = (int) $userid;
+        $result = $this->mysqli->query("SELECT admin FROM users WHERE id='$userid'");
+        if (!$row = $result->fetch_object()) {
+            return false;
+        }
+        if ($row->admin==1) {
+            return true;
+        } else {
+            return false;
+        }
+    }
 }

@@ -30,58 +30,13 @@ class SystemStats
         $this->schema['system_stats_all_v2'] = $this->system->populate_codes($schema['system_stats_all_v2']);
         $this->schema['system_stats_daily'] = $this->system->populate_codes($schema['system_stats_daily']);
     }
-
-    public function has_read_access($userid, $systemid) {
-        $userid = (int) $userid;
-        $systemid = (int) $systemid;
-
-        // A user has read access to a system:
-        // - in all cases if the user is an admin
-        // - if the user owns the system
-        // - if the system is both shared and published
-        
-        $result = $this->mysqli->query("SELECT userid,share,published FROM system_meta WHERE id='$systemid'");
-        if (!$row = $result->fetch_object()) {
-            return false;
-        }
-
-        // 1. The system is public anyway
-        if ($row->share == 1 && $row->published == 1) {
-            return true;
-        }
-
-        // 2. The user owns the system
-        if ($userid === $row->userid) {
-            return true;
-        }
-
-        // 3. The user is an admin
-        if ($this->is_admin($userid)) {
-            return true;
-        }
-
-        return false;
-    }
-
-    public function is_admin($userid) {
-        $userid = (int) $userid;
-        $result = $this->mysqli->query("SELECT admin FROM users WHERE id='$userid'");
-        if (!$row = $result->fetch_object()) {
-            return false;
-        }
-        if ($row->admin==1) {
-            return true;
-        } else {
-            return false;
-        }
-    }
     
     public function get_system_config_with_meta($userid, $systemid)
     {
         $userid = (int) $userid;
         $systemid = (int) $systemid;
 
-        if (!$this->has_read_access($userid, $systemid)) {
+        if (!$this->system->has_read_access($userid, $systemid)) {
             return array(
                 "success" => false,
                 "message" => "Invalid access"
@@ -610,26 +565,6 @@ class SystemStats
         if ($stats['unit_rate_go'] === 0) $stats['unit_rate_go'] = null;
         if ($stats['unit_rate_eon_next_pumped_v2'] === 0) $stats['unit_rate_eon_next_pumped_v2'] = null;
 
-        // Weighted average calculations
-        /*
-    'weighted_flowT' => array('type' => 'float', 'name'=>'Weighted flowT', 'group'=>'Weighted averages', 'dp'=>1, 'unit'=>'°C'),
-    'weighted_outsideT' => array('type' => 'float', 'name'=>'Weighted outsideT', 'group'=>'Weighted averages', 'dp'=>1, 'unit'=>'°C'),
-    'weighted_flowT_minus_outsideT' => array('type' => 'float', 'name'=>'Weighted flowT - outsideT', 'group'=>'Weighted averages', 'dp'=>1, 'unit'=>'°C'),
-    'weighted_flowT_minus_returnT' => array('type' => 'float', 'name'=>'Weighted flowT - returnT', 'group'=>'Weighted averages', 'dp'=>1, 'unit'=>'°C'),
-    'weighted_elec' => array('type' => 'float', 'name'=>'Weighted elec', 'group'=>'Weighted averages', 'dp'=>0, 'unit'=>'W'),
-    'weighted_heat' => array('type' => 'float', 'name'=>'Weighted heat', 'group'=>'Weighted averages', 'dp'=>0, 'unit'=>'W'),
-    'weighted_prc_carnot' => array('type' => 'float', 'name'=>'Weighted % Carnot', 'group'=>'Weighted averages', 'dp'=>1, 'unit'=>'%'),
-    'weighted_kwh_elec' => array('type' => 'float', 'name'=>'Weighted elec kWh', 'group'=>'Weighted averages', 'dp'=>4, 'unit'=>'kWh'),
-    'weighted_kwh_heat' => array('type' => 'float', 'name'=>'Weighted heat kWh', 'group'=>'Weighted averages', 'dp'=>4, 'unit'=>'kWh'),
-    'weighted_kwh_heat_running' => array('type' => 'float', 'name'=>'Weighted heat running kWh', 'group'=>'Weighted averages', 'dp'=>4, 'unit'=>'kWh'),
-    'weighted_kwh_elec_running' => array('type' => 'float', 'name'=>'Weighted elec running kWh', 'group'=>'Weighted averages', 'dp'=>4, 'unit'=>'kWh'),
-    'weighted_kwh_carnot_elec' => array('type' => 'float', 'name'=>'Weighted Carnot elec kWh', 'group'=>'Weighted averages', 'dp'=>4, 'unit'=>'kWh'),
-    'weighted_time_on' => array('type' => 'float', 'name'=>'Weighted time on', 'group'=>'Weighted averages', 'dp'=>0, 'unit'=>'s'),
-    'weighted_time_total' => array('type' => 'float', 'name'=>'Weighted time total', 'group'=>'Weighted averages', 'dp'=>0, 'unit'=>'s'),
-    'weighted_cycle_count' => array('type' => 'float', 'name'=>'Weighted cycle count', 'group'=>'Weighted averages', 'dp'=>0, 'unit'=>''),
-    */
-
-
         $weighted_flowT_sum = 0;
         $weighted_outsideT_sum = 0;
         $weighted_flowT_minus_outsideT_sum = 0;
@@ -760,8 +695,10 @@ class SystemStats
         return $out;
     }
     
-    public function export_daily($systemid) {
-    
+    public function export_daily($systemid) 
+    {
+        $systemid = (int) $systemid;
+                    
         $filename = "daily.csv";
         $where = '';
         if ($systemid>0) {
