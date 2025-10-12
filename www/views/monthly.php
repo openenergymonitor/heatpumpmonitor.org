@@ -161,7 +161,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     function load_system_data(idx) {
         var system = app.selected_systems[idx];
 
-        axios.get(path + 'system/monthly?id=' + system.id)
+        axios.get(path + 'system/stats/monthly?id=' + system.id)
             .then(function(response) {
                 app.selected_systems[idx].monthly = response.data;             
                 draw_chart();

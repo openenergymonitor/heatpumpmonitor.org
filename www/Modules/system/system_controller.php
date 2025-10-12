@@ -210,17 +210,6 @@ function system_controller() {
         }
     }
 
-    if ($route->action=="monthly") {
-        $route->format = "json";
-        $system_id = (int) get('id',true);
-        // check userid has access to system
-        if ($system_id!==false && !$system_stats->has_read_access($session['userid'], $system_id)) {
-            return array("success"=>false, "message"=>"Invalid access");
-        }
-
-        return $system_stats->system_get_monthly($system_id);
-    }
-
     if ($route->action=="get") {
         $route->format = "json";
         $systemid = get("id",true);
