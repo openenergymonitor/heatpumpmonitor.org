@@ -31,7 +31,6 @@ class System
             $row = $this->typecast($row);
             unset($row->url);
             unset($row->userid);
-            unset($row->emoncmsorg_userid);
             unset($row->app_id);
             unset($row->readkey);
             $list[] = $row;
