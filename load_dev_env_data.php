@@ -10,7 +10,14 @@ $heatpumpmonitor_host = "https://heatpumpmonitor.org";
 
 // Change to www directory
 $dir = dirname(__FILE__);
-chdir("$dir/www");
+
+if(is_dir("/var/www/heatpumpmonitororg")) {
+    chdir("/var/www/heatpumpmonitororg");
+} elseif(is_dir("$dir/www")) {
+    chdir("$dir/www");
+} else {
+    die("Error: could not find heatpumpmonitor.org directory");
+}
 
 // Load the database
 define('EMONCMS_EXEC', 1);
