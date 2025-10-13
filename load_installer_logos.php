@@ -1,6 +1,12 @@
 <?php
 $dir = dirname(__FILE__);
-chdir("$dir/www");
+if(is_dir(filename: "/var/www/heatpumpmonitororg")) {
+    chdir("/var/www/heatpumpmonitororg");
+} elseif(is_dir("$dir/www")) {
+    chdir("$dir/www");
+} else {
+    die("Error: could not find heatpumpmonitor.org directory");
+}
 
 define('EMONCMS_EXEC', 1);
 require "Lib/load_database.php";
@@ -12,6 +18,17 @@ require "Modules/installer/installer_model.php";
 $installer_model = new Installer($mysqli);
 
 $fails = array();
+
+$installers_img_dir = "theme/img/installers";
+if (!file_exists($installers_img_dir)) {
+    if (mkdir($installers_img_dir, 0755, true)) {
+        chown($installers_img_dir, 'www-data');
+        chgrp($installers_img_dir, 'www-data');
+        echo "Created directory: $installers_img_dir\n";
+    } else {
+        echo "Failed to create directory: $installers_img_dir\n";
+    }
+}
 
 $data = $system->list_admin();
 foreach ($data as $row) {
@@ -27,7 +44,7 @@ foreach ($data as $row) {
             continue; // Skip to the next iteration if fetching fails
         }
         // Write the image data to the file
-        file_put_contents("theme/img/installers/".$image['filename'], $image['data']);
+        file_put_contents("$installers_img_dir/".$image['filename'], $image['data']);
         $installer_logo = $image['filename'];
         print "success: ".$installer_logo."\n";
     }

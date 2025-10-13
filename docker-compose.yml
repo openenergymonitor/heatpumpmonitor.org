@@ -30,6 +30,7 @@ services:
       # Mount emoncms files from local FS for dev
       - ./www:/var/www/heatpumpmonitororg
       - ./load_dev_env_data.php:/var/load_dev_env_data.php:ro
+      - ./load_installer_logos.php:/var/load_installer_logos.php:ro
     env_file:
       # Use default enviroment variables file for dev
       - 'default.docker-env'
@@ -68,6 +69,8 @@ services:
       driver: json-file
       options:
         max-size: "10m"
+    ports:
+      - 3306:3306
     healthcheck:
       test:
         [
