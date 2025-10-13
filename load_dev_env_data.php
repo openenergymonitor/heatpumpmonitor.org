@@ -206,6 +206,18 @@ if ($load_system_meta) {
     }
     $mysqli->query("UPDATE system_meta SET published=1");
     print "- Created ".$created_systems." systems\n";
+
+    // TODO: Download system images if available
+    $system_img_dir = "theme/img/system";
+    if (!file_exists($system_img_dir)) {
+        if (mkdir($system_img_dir, 0755, true)) {
+            chown($system_img_dir, 'www-data');
+            chgrp($system_img_dir, 'www-data');
+            echo "Created directory: $system_img_dir\n";
+        } else {
+            echo "Failed to create directory: $system_img_dir\n";
+        }
+    }
 }
 
 // -------------------------------------------------------------------------------------

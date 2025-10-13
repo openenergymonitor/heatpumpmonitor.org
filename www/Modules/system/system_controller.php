@@ -305,6 +305,38 @@ function system_controller() {
         }
     }
 
+    // Upload photo endpoint
+    if ($route->action=="upload-photo") {
+        $route->format = "json";
+        if ($session['userid']) {
+            return $system->upload_photo($session['userid']);
+        }
+        return array("success" => false, "message" => "Authentication required");
+    }
+
+    // Get photos for a system
+    if ($route->action=="photos") {
+        $route->format = "json";
+        $system_id = get("id", false);
+        if ($system_id) {
+            return $system->get_photos($session['userid'], $system_id);
+        }
+        return array("success" => false, "message" => "System ID required");
+    }
+
+    // Delete photo
+    if ($route->action=="delete-photo") {
+        $route->format = "json";
+        if ($session['userid']) {
+            $photo_id = get("photo_id", false);
+            if ($photo_id) {
+                return $system->delete_photo($session['userid'], $photo_id);
+            }
+            return array("success" => false, "message" => "Photo ID required");
+        }
+        return array("success" => false, "message" => "Authentication required");
+    }
+
 
     return false;
 }

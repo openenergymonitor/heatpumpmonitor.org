@@ -7,6 +7,22 @@ $schema['system_access'] = array(
     'access' => array('type' => 'int(11)') 
 );
 
+$schema['system_images'] = array(
+    'id' => array(
+        'type' => 'int(11)', 
+        'Null' => false, 
+        'Key' => 'PRI', 
+        'Extra' => 'auto_increment'
+    ),
+    'system_id' => array('type' => 'int(11)', 'Null' => false),
+    'image_path' => array('type' => 'varchar(255)', 'Null' => false),
+    'original_filename' => array('type' => 'varchar(255)', 'Null' => false),
+    'width' => array('type' => 'int(11)', 'Null' => true),
+    'height' => array('type' => 'int(11)', 'Null' => true),
+    'file_size' => array('type' => 'int(11)', 'Null' => true),
+    'date_uploaded' => array('type' => 'int(11)', 'Null' => false)
+);
+
 $schema['system_meta'] = array(
 
     // Form meta data
@@ -77,12 +93,11 @@ $schema['system_meta'] = array(
     
     'installer_logo' => array(
         'type' => 'varchar(64)', 
-        'editable' => true, 
+        'editable' => false, 
         'optional' => true, 
         'name' => 'Installer Logo', 
         'heading' => '',
-        'group' => 'Overview',
-        'editable' => false
+        'group' => 'Overview'
     ),
 
     'heatgeek' => array(

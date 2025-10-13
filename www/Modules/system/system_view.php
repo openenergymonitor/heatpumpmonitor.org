@@ -1090,7 +1090,31 @@ global $settings, $session, $path;
             },
 
             removePhoto: function(index) {
-                this.uploaded_photos.splice(index, 1);
+                const photo = this.uploaded_photos[index];
+                
+                // If photo has an ID, it's been uploaded to server, so delete it
+                if (photo.id) {
+                    if (confirm('Are you sure you want to delete this photo?')) {
+                        axios.post(this.path + 'system/delete-photo?photo_id=' + photo.id)
+                            .then(response => {
+                                if (response.data.success) {
+                                    this.uploaded_photos.splice(index, 1);
+                                    // Update photo upload visibility
+                                    this.show_photo_upload = this.uploaded_photos.length == 0;
+                                } else {
+                                    alert('Failed to delete photo: ' + response.data.message);
+                                }
+                            })
+                            .catch(error => {
+                                alert('Failed to delete photo: ' + (error.response?.data?.message || 'Unknown error'));
+                            });
+                    }
+                } else {
+                    // Photo is still being uploaded or failed, just remove from array
+                    this.uploaded_photos.splice(index, 1);
+                    // Update photo upload visibility
+                    this.show_photo_upload = this.uploaded_photos.length == 0;
+                }
             },
 
             uploadPhoto: function(photo) {
@@ -1102,35 +1126,31 @@ global $settings, $session, $path;
                 formData.append('photo', photo.file);
                 formData.append('system_id', this.system.id);
 
-                // Simulate upload progress (replace with actual upload logic)
-                const progressInterval = setInterval(() => {
-                    photo.progress += 10;
-                    if (photo.progress >= 100) {
-                        clearInterval(progressInterval);
-                        photo.uploading = false;
-                        photo.uploaded = true;
-                        photo.progress = 100;
+                // Upload to server
+                axios.post(this.path + 'system/upload-photo', formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    },
+                    onUploadProgress: (progressEvent) => {
+                        photo.progress = Math.round((progressEvent.loaded / progressEvent.total) * 100);
                     }
-                }, 200);
-
-                // TODO: Replace with actual upload to your server
-                // axios.post(this.path + 'system/upload-photo', formData, {
-                //     headers: {
-                //         'Content-Type': 'multipart/form-data'
-                //     },
-                //     onUploadProgress: (progressEvent) => {
-                //         photo.progress = Math.round((progressEvent.loaded / progressEvent.total) * 100);
-                //     }
-                // })
-                // .then(response => {
-                //     photo.uploading = false;
-                //     photo.uploaded = true;
-                //     photo.serverUrl = response.data.url; // Store server URL
-                // })
-                // .catch(error => {
-                //     photo.uploading = false;
-                //     photo.error = 'Upload failed. Please try again.';
-                // });
+                })
+                .then(response => {
+                    photo.uploading = false;
+                    if (response.data.success) {
+                        photo.uploaded = true;
+                        photo.serverUrl = response.data.url; // Store server URL
+                        photo.id = response.data.image_id; // Store image ID for deletion
+                        // Update photo upload visibility
+                        this.show_photo_upload = this.uploaded_photos.length == 0;
+                    } else {
+                        photo.error = response.data.message || 'Upload failed. Please try again.';
+                    }
+                })
+                .catch(error => {
+                    photo.uploading = false;
+                    photo.error = error.response?.data?.message || 'Upload failed. Please try again.';
+                }); 
             },
 
             showFileError: function(message) {
@@ -1167,8 +1187,37 @@ global $settings, $session, $path;
             console.log(error);
         });
 
-    // TODO: Load existing Photos
-    app.data.show_photo_upload = app.uploaded_photos.length == 0;
+    // Load existing photos for this system
+    if (app.system.id) {
+        axios.get(path + 'system/photos?id=' + app.system.id)
+            .then(function(response) {
+                if (response.data.success) {
+                    app.uploaded_photos = response.data.photos.map(photo => {
+                        return {
+                            id: photo.id,
+                            name: photo.original_filename,
+                            preview: path + photo.url,
+                            serverUrl: path + photo.url,
+                            uploading: false,
+                            uploaded: true,
+                            progress: 100,
+                            error: null,
+                            width: photo.width,
+                            height: photo.height,
+                            file_size: photo.file_size,
+                            date_uploaded: photo.date_uploaded
+                        };
+                    });
+                }
+                app.show_photo_upload = app.uploaded_photos.length == 0;
+            })
+            .catch(function(error) {
+                console.log('Error loading photos:', error);
+                app.show_photo_upload = app.uploaded_photos.length == 0;
+            });
+    } else {
+        app.show_photo_upload = app.uploaded_photos.length == 0;
+    }
     
     // Load available apps
     if (app.mode == 'edit') {
