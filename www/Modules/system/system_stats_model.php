@@ -225,6 +225,14 @@ class SystemStats
     // Get system stats
     public function get($table_name, $start=false, $end=false, $system_id = false, $session_userid = false, $mode = "public")
     {
+        // Generate cache key for public mode
+        if ($mode === "public" && $start === false && $end === false && $system_id === false) {
+            // Try to get from cache first
+            if ($cached_result = $this->redis->get($table_name."_public_cache")) {
+                return json_decode($cached_result, true);
+            }
+        }
+
 
         $where = '';
         if ($start!==false && $end!==false) {
@@ -318,6 +326,12 @@ class SystemStats
             if ($stats[$systemid]['combined_cop']!==null) {
                 //$stats[$systemid]['combined_cop'] = number_format($stats[$systemid]['combined_cop'],1,'.','')*1;
             }
+        }
+
+        // Cache the result if mode is public
+        if ($mode === "public" && $start === false && $end === false && $system_id === false && $stats !== false) {
+            $this->redis->set($table_name."_public_cache", json_encode($stats));
+            $this->redis->expire($table_name."_public_cache", 3600); // 1 hour = 3600 seconds
         }
 
         return $stats;
