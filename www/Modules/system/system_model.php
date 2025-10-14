@@ -656,6 +656,14 @@ class System
             return true;
         }
 
+        // 3. The user is an admin of the account that owns the system
+        $result = $this->mysqli->query("SELECT COUNT(*) as count FROM accounts WHERE linkeduser='{$row->userid}' AND adminuser='$userid'");
+        if ($row = $result->fetch_object()) {
+            if ($row->count>0) {
+                return true;
+            }
+        }
+
         // 3. User has been granted write access via the system_access table
         // $result = $this->mysqli->query("SELECT access FROM system_access WHERE systemid='$systemid' AND userid='$userid'");
         // if ($row = $result->fetch_object()) {
@@ -694,6 +702,14 @@ class System
         // 3. The user is an admin
         if ($this->is_admin($userid)) {
             return true;
+        }
+
+        // 4. The user is an admin of the account that owns the system
+        $result = $this->mysqli->query("SELECT COUNT(*) as count FROM accounts WHERE linkeduser='{$row->userid}' AND adminuser='$userid'");
+        if ($row = $result->fetch_object()) {
+            if ($row->count>0) {
+                return true;
+            }
         }
 
         // 4. User has been granted access via the system_access table
