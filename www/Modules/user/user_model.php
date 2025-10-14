@@ -217,6 +217,12 @@ class User
             $result2 = $this->mysqli->query("SELECT id FROM system_meta WHERE userid='$row->id'");
             $row->systems = $result2->num_rows;
 
+            // Count number of systems in sub accounts
+            $result2 = $this->mysqli->query("SELECT COUNT(*) as subsystems FROM system_meta JOIN users ON system_meta.userid = users.id JOIN accounts ON users.id = accounts.linkeduser WHERE accounts.adminuser='$row->id'");
+            $subsystem_row = $result2->fetch_object();
+            $row->subsystems = (int) $subsystem_row->subsystems;
+            $row->systems += $row->subsystems;
+
             // Count number of sub accounts in accounts table
             $result2 = $this->mysqli->query("SELECT linkeduser FROM accounts WHERE adminuser='$row->id'");
             $row->subaccounts = $result2->num_rows;
