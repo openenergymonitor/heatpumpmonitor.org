@@ -112,7 +112,7 @@ function load_daily_stats_system($meta, $reload) {
         $result = $system_stats->process_data($systemid,10);
         if ($result['success']) {
             if ($result['data']->days_left <= 0) {
-                logger("- days left: ".$result['data']->days_left);
+                logger("- total days: ".$result['data']->days.", processed: ".$result['data']->days_processed.", remaining: ".$result['data']->days_left);
 
                 // Enable daily mode in dashboard
                 $system_stats->enable_daily_mode($systemid);
@@ -135,6 +135,8 @@ function load_daily_stats_system($meta, $reload) {
     if (!$result['success']) {
         logger("- error loading data period");
         return false;
+    } else {
+        logger("- data period: ".$result['data']->days." days");
     }
 
     $end = false;
@@ -185,27 +187,28 @@ function load_daily_stats_system($meta, $reload) {
 
         logger("- start: ".$start_str." end: ".$end_str);
         if ($start_str==$end_str) {
-            echo "start_str == end_str\n";
+            echo "- start_str == end_str\n";
             break;
         }
 
         if ($end<=$start) {
-            echo "end <= start\n";
+            echo "- end <= start\n";
             break;
         }
 
         if ($x>1) {
             if ($start==$last_start) {
-                echo "start == last_start\n";
+                echo "- start == last_start\n";
                 break;
             }    
             if ($end==$last_end) {
-                echo "end == last_end\n";
+                echo "- end == last_end\n";
                 break;
             }
         }
 
         $result = $system_stats->load_from_emoncms($systemid, $start, $end, 'getdailydata');
+
         if ($result['success']) {
             // split csv into array, first line is header
             $csv = explode("\n", $result['data']);
@@ -234,7 +237,7 @@ function load_daily_stats_system($meta, $reload) {
             }
             logger("- days: $days");
         }
-        sleep(1);
+        // sleep(1);
         
 
         if ($end==$data_end) {
@@ -387,7 +390,7 @@ function process_monthly_stats($systemlist, $single_system, $reload) {
 
     global $starttimer;
     $elapsed = time()-$starttimer;
-    logger("- ".$elapsed);
+    logger("- time elapsed: ".$elapsed);
 }
 
 function logger($message) {
