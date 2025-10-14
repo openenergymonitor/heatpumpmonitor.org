@@ -65,23 +65,16 @@ class System
             $list[] = $this->typecast($row);
         }
 
+        // Add any systems from sub-accounts, join system_meta, users and accounts tables
+        $result = $this->mysqli->query("SELECT system_meta.*,users.username FROM system_meta JOIN users ON system_meta.userid = users.id JOIN accounts ON users.id = accounts.linkeduser WHERE accounts.adminuser='$userid' ORDER BY system_meta.id");
+        while ($row = $result->fetch_object()) {
+            $list[] = $this->typecast($row);
+        }
+
         // Add systems from system_access table
         // $result = $this->mysqli->query("SELECT system_meta.*,users.username FROM system_meta JOIN users ON system_meta.userid = users.id JOIN system_access ON system_meta.id = system_access.systemid WHERE system_access.userid='$userid' AND system_access.access>0 ORDER BY system_meta.id");
         // while ($row = $result->fetch_object()) {
         //     $list[] = $this->typecast($row);
-        // }
-
-        // Get list of sub-account userids!
-        // $sub_accounts = $this->get_sub_accounts($userid);
-        // if ($sub_accounts['success']==true) {
-        //     foreach ($sub_accounts['accounts'] as $account) {
-        //         $sub_userid = (int) $account['userid'];
-        //         $result = $this->mysqli->query("SELECT * FROM system_meta WHERE userid='$sub_userid' ORDER BY id");
-        //         while ($row = $result->fetch_object()) {
-        //             $row->username = $account->username;
-        //             $list[] = $this->typecast($row);
-        //         }
-        //     }
         // }
 
         return $list;
@@ -558,20 +551,23 @@ class System
         }
         
         if (!$row->apikey_read) return array();
-	    if (!$row->apikey_write) return array();
 
         // Master account
         $myheatpump_apps = $this->append_app_list(array(), $row->username, $row->apikey_read);
 
-        // Get sub accounts
-        $result = file_get_contents($this->host."/account/list.json?apikey=$row->apikey_write");
-        if (!$result) return $myheatpump_apps;
-
-        $accounts = json_decode($result);
-        if (!$accounts) return $myheatpump_apps;
+        // Get sub accounts from local accounts table
+        $result = $this->mysqli->query("SELECT u.id, u.username, u.apikey_read FROM accounts a JOIN users u ON a.linkeduser = u.id WHERE a.adminuser = '$userid'");
+        $accounts = array();
+        while ($row = $result->fetch_object()) {
+            $accounts[] = array(
+                'userid' => (int) $row->id,
+                'username' => $row->username,
+                'apikey_read' => $row->apikey_read
+            );
+        }
         
         foreach ($accounts as $account) {
-            $myheatpump_apps = $this->append_app_list($myheatpump_apps, $account->username, $account->apikey_read);
+            $myheatpump_apps = $this->append_app_list($myheatpump_apps, $account['username'], $account['apikey_read']);
         }
 
         return $myheatpump_apps;
@@ -637,43 +633,6 @@ class System
             $stmt->bind_param("ddi", $latitude, $longitude, $id);
             $stmt->execute();
         }
-    }
-
-    public function get_sub_accounts($userid) {
-        $userid = (int) $userid;
-
-        // Get this username
-        $result = $this->mysqli->query("SELECT apikey_write FROM users WHERE id='$userid'");
-        if (!$row = $result->fetch_object()) {
-            return array(
-                'success' => false,
-                'message' => "User not found"
-            );
-        }
-        
-	    if (!$row->apikey_write) {
-            return array(
-                'success' => false,
-                'message' => "No apikey found"
-            );
-        }
-
-        // Get sub accounts
-        $result = file_get_contents($this->host."/account/list.json?apikey=$row->apikey_write");
-        $accounts_all_data = json_decode($result);
-
-        $accounts = array();
-        foreach ($accounts_all_data as $account) {
-            $accounts[] = array(
-                'userid' => (int) $account->id,
-                'username' => $account->username
-            );
-        }
-
-        return array(
-            'success' => true,
-            'accounts' => $accounts
-        );
     }
     
     // Access control
