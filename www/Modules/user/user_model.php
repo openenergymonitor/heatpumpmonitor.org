@@ -136,6 +136,9 @@ class User
         // Remember me
         $this->rememberme->remember_me($userid);
 
+        // Sync accounts
+        $this->sync_accounts($userid);
+
         return array('success' => true, 'message' => _("Login successful"));
     }
 
@@ -233,6 +236,10 @@ class User
             $_SESSION['username'] = $row->username;
             $_SESSION['admin'] = 0;
             $_SESSION['email'] = $row->email;
+
+            // Sync accounts
+            $this->sync_accounts($userid);
+
             return true;
         }
     }
@@ -264,8 +271,29 @@ class User
     public function get_sub_accounts($userid) {
         $userid = (int) $userid;
 
+        // Get sub accounts from local accounts table
+        $result = $this->mysqli->query("SELECT u.id, u.username FROM accounts a JOIN users u ON a.linkeduser = u.id WHERE a.adminuser = '$userid'");
+        $accounts = array();
+        while ($row = $result->fetch_object()) {
+            $accounts[] = array(
+                'userid' => (int) $row->id,
+                'username' => $row->username
+            );
+        }
+
+        return array(
+            'success' => true,
+            'accounts' => $accounts
+        );
+    }
+
+
+    // Account syncronisation
+    public function sync_accounts($adminuserid) {
+        $adminuserid = (int) $adminuserid;
+
         // Get this username
-        $result = $this->mysqli->query("SELECT apikey_write FROM users WHERE id='$userid'");
+        $result = $this->mysqli->query("SELECT apikey_write FROM users WHERE id='$adminuserid'");
         if (!$row = $result->fetch_object()) {
             return array(
                 'success' => false,
@@ -286,10 +314,49 @@ class User
 
         $accounts = array();
         foreach ($accounts_all_data as $account) {
+
+            // Check if local user exists
+            if (!$this->userid_exists($account->id)) {
+                // Create new user fetch userid
+                $stmt = $this->mysqli->prepare("INSERT INTO users (id, username, email, apikey_read, apikey_write, admin) VALUES (?, ?, ?, ?, '', 0)");
+                $stmt->bind_param("isss", $account->id, $account->username, $account->email, $account->apikey_read);
+                $stmt->execute();
+                $stmt->close();
+            }
+
+            // Check if account link exists
+            $result = $this->mysqli->query("SELECT * FROM accounts WHERE adminuser='$adminuserid' AND linkeduser='$account->id'");
+            if ($result->num_rows == 0) {
+                // Create account link
+                $stmt = $this->mysqli->prepare("INSERT INTO accounts (adminuser, linkeduser) VALUES (?, ?)");
+                $stmt->bind_param("ii", $adminuserid, $account->id);
+                $stmt->execute();
+                $stmt->close();
+            }
+
             $accounts[] = array(
                 'userid' => (int) $account->id,
                 'username' => $account->username
             );
+        }
+
+        // Remove any locally linked accounts that are no longer in emoncms.org account list
+        $result = $this->mysqli->query("SELECT linkeduser FROM accounts WHERE adminuser='$adminuserid'");
+        while ($row = $result->fetch_object()) {
+            $found = false;
+            foreach ($accounts_all_data as $account) {
+                if ($row->linkeduser == $account->id) {
+                    $found = true;
+                    break;
+                }
+            }
+            if (!$found) {
+                // Remove account link
+                $stmt = $this->mysqli->prepare("DELETE FROM accounts WHERE adminuser=? AND linkeduser=?");
+                $stmt->bind_param("ii", $adminuserid, $row->linkeduser);
+                $stmt->execute();
+                $stmt->close();
+            }
         }
 
         return array(
@@ -297,5 +364,4 @@ class User
             'accounts' => $accounts
         );
     }
-
 }

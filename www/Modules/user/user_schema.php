@@ -23,3 +23,8 @@ $schema['user_sessions'] = array(
     'hash_validator' => array('type' => 'varchar(255)'),
     'expires' => array('type' => 'int(11)')
 );
+
+$schema['accounts'] = array(
+    'adminuser' => array('type' => 'int(11)'),
+    'linkeduser' => array('type' => 'int(11)')
+);
