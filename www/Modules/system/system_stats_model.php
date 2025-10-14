@@ -245,9 +245,9 @@ class SystemStats
         if ($system_id!==false) {
             $system_id = (int) $system_id;
             if ($where=='') {
-                $where = "WHERE id=$system_id";
+                $where = "WHERE sm.id=$system_id";
             } else {
-                $where .= " AND id=$system_id";
+                $where .= " AND sm.id=$system_id";
             }
         }
 
