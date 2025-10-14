@@ -32,6 +32,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     <th scope="col" @click="sort_list('last_login')">Last login</th>
                     <th scope="col" @click="sort_list('systems')">Systems</th>
                     <th scope="col" @click="sort_list('subaccounts')">Sub accounts</th>
+                    <th scope="col" @click="sort_list('adminusername')">Admin user</th>
                     <th scope="col">Actions</th>
                 </tr>
             </thead>
@@ -46,6 +47,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     <td style="font-size:14px">{{ user.last_login | formatTime }}</td>
                     <td>{{ user.systems }}</td>
                     <td>{{ user.subaccounts }}</td>
+                    <td>{{ user.adminusername }}</td>
                     <td>
                         <button class="btn btn-primary btn-sm" v-on:click="switch_user(user.id)">Switch</button>
                     </td>

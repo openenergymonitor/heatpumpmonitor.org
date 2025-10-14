@@ -121,8 +121,17 @@ class System
         if (!$row = $result->fetch_object()) {
             return array("success"=>false, "message"=>"System does not exist");
         }
-        
-        return $this->typecast($row);
+
+        $row = $this->typecast($row);
+        // remove readkey and app_id
+
+        if ($this->has_write_access($userid,$systemid)===false) {
+            unset($row->url);
+            unset($row->userid);
+            unset($row->app_id);
+            unset($row->readkey);
+        }
+        return $row;
     }
 
     public function validate($userid,$form_data,$full_validation=false) {

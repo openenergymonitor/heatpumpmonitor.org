@@ -227,6 +227,16 @@ class User
             $result2 = $this->mysqli->query("SELECT linkeduser FROM accounts WHERE adminuser='$row->id'");
             $row->subaccounts = $result2->num_rows;
 
+            // if user is a linked user get admin user id and username
+            $result2 = $this->mysqli->query("SELECT adminuser FROM accounts WHERE linkeduser='$row->id'");
+            if ($row2 = $result2->fetch_object()) {
+                $result3 = $this->mysqli->query("SELECT username FROM users WHERE id='$row2->adminuser'");
+                if ($row3 = $result3->fetch_object()) {
+                    $row->adminuser = $row2->adminuser;
+                    $row->adminusername = $row3->username;
+                }
+            }
+
 
             $row->admin = $row->admin ? 'Yes' : '';
             $users[] = $row;
