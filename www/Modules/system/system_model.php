@@ -66,10 +66,10 @@ class System
         }
 
         // Add systems from system_access table
-        $result = $this->mysqli->query("SELECT system_meta.*,users.username FROM system_meta JOIN users ON system_meta.userid = users.id JOIN system_access ON system_meta.id = system_access.systemid WHERE system_access.userid='$userid' AND system_access.access>0 ORDER BY system_meta.id");
-        while ($row = $result->fetch_object()) {
-            $list[] = $this->typecast($row);
-        }
+        // $result = $this->mysqli->query("SELECT system_meta.*,users.username FROM system_meta JOIN users ON system_meta.userid = users.id JOIN system_access ON system_meta.id = system_access.systemid WHERE system_access.userid='$userid' AND system_access.access>0 ORDER BY system_meta.id");
+        // while ($row = $result->fetch_object()) {
+        //     $list[] = $this->typecast($row);
+        // }
 
         // Get list of sub-account userids!
         // $sub_accounts = $this->get_sub_accounts($userid);
@@ -325,7 +325,7 @@ class System
         $this->mysqli->query("DELETE FROM system_meta WHERE id='$systemid'");
 
         // Delete any access control entries
-        $this->mysqli->query("DELETE FROM system_access WHERE systemid='$systemid'");
+        // $this->mysqli->query("DELETE FROM system_access WHERE systemid='$systemid'");
 
         return array("success"=>true, "message"=>"Deleted");
     }
@@ -698,12 +698,12 @@ class System
         }
 
         // 3. User has been granted write access via the system_access table
-        $result = $this->mysqli->query("SELECT access FROM system_access WHERE systemid='$systemid' AND userid='$userid'");
-        if ($row = $result->fetch_object()) {
-            if ($row->access==2) {
-                return true;
-            }
-        }
+        // $result = $this->mysqli->query("SELECT access FROM system_access WHERE systemid='$systemid' AND userid='$userid'");
+        // if ($row = $result->fetch_object()) {
+        //     if ($row->access==2) {
+        //         return true;
+        //     }
+        // }
 
         return false;
     }
@@ -738,12 +738,12 @@ class System
         }
 
         // 4. User has been granted access via the system_access table
-        $result = $this->mysqli->query("SELECT access FROM system_access WHERE systemid='$systemid' AND userid='$userid'");
-        if ($row = $result->fetch_object()) {
-            if ($row->access>0) {
-                return true;
-            }
-        }
+        // $result = $this->mysqli->query("SELECT access FROM system_access WHERE systemid='$systemid' AND userid='$userid'");
+        // if ($row = $result->fetch_object()) {
+        //     if ($row->access>0) {
+        //         return true;
+        //     }
+        // }
 
         return false;
     }
