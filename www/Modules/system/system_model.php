@@ -192,7 +192,7 @@ class System
         }
 
         // Check if user has access
-        if ($this->has_access($userid,$systemid)==false) {
+        if ($this->has_write_access($userid,$systemid)==false) {
             return array("success"=>false, "message"=>"Invalid access");
         }
 
@@ -317,7 +317,7 @@ class System
         $systemid = (int) $systemid;
 
         // Check if user has access
-        if ($this->has_access($userid,$systemid)==false) {
+        if ($this->has_write_access($userid,$systemid)==false) {
             return array("success"=>false, "message"=>"Invalid access");
         }
         // Delete the system
@@ -673,7 +673,7 @@ class System
     
     // Access control
 
-    public function has_access($userid,$systemid) {
+    public function has_write_access($userid,$systemid) {
         $userid = (int) $userid;
         $systemid = (int) $systemid;
         $result = $this->mysqli->query("SELECT userid FROM system_meta WHERE id='$systemid'");

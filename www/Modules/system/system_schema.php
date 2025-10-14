@@ -1,5 +1,12 @@
 <?php
 
+$schema['system_access'] = array(
+    'systemid' => array('type' => 'int(11)'),
+    'userid' => array('type' => 'int(11)'),
+    // 0 = no access, 1 = read only, 2 = read and write
+    'access' => array('type' => 'int(11)') 
+);
+
 $schema['system_meta'] = array(
 
     // Form meta data
