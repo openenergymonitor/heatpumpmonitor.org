@@ -10,7 +10,8 @@
             "request": "launch",
             "port": 9003,
             "pathMappings": {
-                "/var/www/heatpumpmonitororg": "${workspaceRoot}/www"
+                "/var/www/heatpumpmonitororg": "${workspaceRoot}/www",
+                "/var": "${workspaceRoot}"
             }
         }
     ]

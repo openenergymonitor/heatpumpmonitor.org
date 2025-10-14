@@ -76,7 +76,7 @@ class SystemStats
         if ($start && $end) {
             $params = array("start"=>$start, "end"=>$end);
         }
-        return $this->emoncms_app_request($systemid, $api, $params);
+        return $this->emoncms_app_request($systemid, $api, $params, 'csv');
     }
 
     // Trigger processing of daily data
@@ -101,7 +101,7 @@ class SystemStats
     }
 
     // Make request to emoncms app (generic reusable function)
-    private function emoncms_app_request($systemid, $action, $params = array()) 
+    private function emoncms_app_request($systemid, $action, $params = array(), $format = 'json') 
     {
         $systemid = (int) $systemid;
 
@@ -132,9 +132,19 @@ class SystemStats
         
         // 5. Handle the response
         if ($httpCode == 200) {
+
+            if ($format != 'json') {
+                return array("success" => true, "data" => $result, "readkey" => $row->readkey);
+            }
+
             $data = json_decode($result);
 
             if ($data !== null) {
+
+                if (isset($data->success) && $data->success === false) {
+                    return array("success" => false, "http_code" => $httpCode, "message" => $data->message);
+                }
+
                 return array(
                     "success" => true, 
                     "data" => $data,
