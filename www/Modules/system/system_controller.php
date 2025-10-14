@@ -230,7 +230,7 @@ function system_controller() {
     if ($route->action=="delete") {
         $route->format = "json";
         if ($session['userid']) {
-            $systemid = get("id",false);
+            $systemid = (int) get("id",true);
             return $system->delete($session['userid'],$systemid);
         }
     }

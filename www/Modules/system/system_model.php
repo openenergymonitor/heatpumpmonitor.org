@@ -113,7 +113,7 @@ class System
         $systemid = (int) $systemid;
 
         // Check if user has access
-        if ($this->has_read_access($userid,$systemid)==false) {
+        if ($this->has_read_access($userid,$systemid)===false) {
             return array("success"=>false, "message"=>"Invalid access");
         }
         
@@ -647,7 +647,7 @@ class System
         }
 
         // 1. The user owns the system
-        if ($userid === $row->userid) {
+        if ($userid === intval($row->userid)) {
             return true;
         }
 
@@ -690,12 +690,12 @@ class System
         }
 
         // 1. The system is public anyway
-        if ($row->share == 1 && $row->published == 1) {
+        if (intval($row->share) === 1 && intval($row->published) === 1) {
             return true;
         }
 
         // 2. The user owns the system
-        if ($userid === $row->userid) {
+        if ($userid === (int) $row->userid) {
             return true;
         }
 
