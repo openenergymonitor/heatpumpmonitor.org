@@ -145,6 +145,15 @@ function system_controller() {
             $system_id = (int) $_GET['id'];
         }
 
+        $mode = "public";
+        if (isset($_GET['mode'])) {
+            if ($_GET['mode']=="user") {
+                $mode = "user";
+            } else if ($_GET['mode']=="admin" && $system->is_admin($session['userid'])) {
+                $mode = "admin";
+            }
+        }
+
         // check userid has access to system
         if ($system_id!==false && !$system->has_read_access($session['userid'], $system_id)) {
             return array("success"=>false, "message"=>"Invalid access");
@@ -160,23 +169,23 @@ function system_controller() {
             
         // stats/last7
         } else if ($route->subaction == "last7") { 
-            return $system_stats->get_last7($system_id);
+            return $system_stats->get_last7($session['userid'], $system_id, $mode);
 
         // stats/last30
         } else if ($route->subaction == "last30") { 
-            return $system_stats->get_last30($system_id);
+            return $system_stats->get_last30($session['userid'], $system_id, $mode);
 
         // stats/last90
         } else if ($route->subaction == "last90") { 
-            return $system_stats->get_last90($system_id);
+            return $system_stats->get_last90($session['userid'], $system_id, $mode);
 
         // stats/last365
         } else if ($route->subaction == "last365") {
-            return $system_stats->get_last365($system_id);
+            return $system_stats->get_last365($session['userid'], $system_id, $mode);
 
         // stats/all
         } else if ($route->subaction == "all") {
-            return $system_stats->get_all($system_id);
+            return $system_stats->get_all($session['userid'], $system_id, $mode);
 
         } else if ($route->subaction == "export") {
             if ($route->subaction2 == "daily") {

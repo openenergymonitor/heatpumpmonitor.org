@@ -1287,6 +1287,13 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     url = path+'system/stats/'+start;
                     params = {};
                 }
+
+                if (mode == "user") {
+                    params.mode = "user";
+                } else if (mode == "admin") {
+                    params.mode = "admin";
+                }
+
                 // Load system/stats data
                 axios.get(url, {
                         params: params
