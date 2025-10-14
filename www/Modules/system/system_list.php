@@ -722,6 +722,18 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     template_views['costs']['wide'] = ['installer_logo', 'training', 'location' , 'hp_type', 'hp_make_model', 'hp_output', 'electricity_tariff', 'selected_unit_rate', 'combined_cop', 'combined_heat_unit_cost', 'combined_cost', 'learnmore'];
     template_views['costs']['narrow'] = ['installer_logo', 'training', 'hp_make_model', 'hp_output', 'combined_heat_unit_cost', 'learnmore'];
 
+    // Filter out installer columns for user mode
+    if (mode == 'user') {
+        for (var template in template_views) {
+            for (var view in template_views[template]) {
+                // Remove installer_logo and installer_name from all views
+                template_views[template][view] = template_views[template][view].filter(function(column) {
+                    return column !== 'installer_name';
+                });
+            }
+        }
+    }
+
     // add to template views
     for (var key in template_views) {
         for (var view in template_views[key]) {
