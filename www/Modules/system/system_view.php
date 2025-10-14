@@ -150,12 +150,16 @@ global $settings, $session, $path;
         <div class="card mt-3">
             <h5 class="card-header">Select Emoncms.org dashboard</h5>
             <div class="card-body">
-
-                <select class="form-select"  style="width:100%" v-model="new_app_selection" @change="load_app">
+                <div v-if="loading_available_apps" class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading available dashboards...</p>
+                </div>
+                <select v-else class="form-select"  style="width:100%" v-model="new_app_selection" @change="load_app">
                     <option value="">PLEASE SELECT</option>
                     <option v-for="(app,index) in available_apps" :value="app.id" :disabled="app.in_use==1">{{ app.username }}: {{ app.name }} {{ app.in_use_msg }}</option>
                 </select>
-
             </div>
         </div>
     </div>
@@ -418,6 +422,7 @@ global $settings, $session, $path;
             form_type: form_type,
             new_app_selection: '',
             available_apps: [],
+            loading_available_apps: false,
             path: path,
             mode: "<?php echo $mode; ?>", // edit, view
             system: system,
@@ -829,6 +834,7 @@ global $settings, $session, $path;
 
     // Load available apps
     if (app.mode == 'edit') {
+        app.loading_available_apps = true;
         axios.get(path + 'system/available')
             .then(function(response) {
                 // Add in_use_msg
@@ -846,10 +852,12 @@ global $settings, $session, $path;
                 }
 
                 app.available_apps = response.data;
+                app.loading_available_apps = false;
                 console.log(app.available_apps);
             })
             .catch(function(error) {
                 console.log(error);
+                app.loading_available_apps = false;
             });
     }
 
