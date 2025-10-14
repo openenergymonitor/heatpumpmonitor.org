@@ -217,6 +217,10 @@ class User
             $result2 = $this->mysqli->query("SELECT id FROM system_meta WHERE userid='$row->id'");
             $row->systems = $result2->num_rows;
 
+            // Count number of sub accounts in accounts table
+            $result2 = $this->mysqli->query("SELECT linkeduser FROM accounts WHERE adminuser='$row->id'");
+            $row->subaccounts = $result2->num_rows;
+
 
             $row->admin = $row->admin ? 'Yes' : '';
             $users[] = $row;
@@ -287,7 +291,6 @@ class User
         );
     }
 
-
     // Account syncronisation
     public function sync_accounts($adminuserid) {
         $adminuserid = (int) $adminuserid;
@@ -301,7 +304,7 @@ class User
             );
         }
         
-	    if (!$row->apikey_write) {
+	    if (!$row->apikey_write || $row->apikey_write == '') {
             return array(
                 'success' => false,
                 'message' => "No apikey found"
@@ -311,6 +314,12 @@ class User
         // Get sub accounts
         $result = file_get_contents($this->host."/account/list.json?apikey=$row->apikey_write");
         $accounts_all_data = json_decode($result);
+        if (!$accounts_all_data) {
+            return array(
+                'success' => false,
+                'message' => "Error fetching account list"
+            );
+        }
 
         $accounts = array();
         foreach ($accounts_all_data as $account) {
