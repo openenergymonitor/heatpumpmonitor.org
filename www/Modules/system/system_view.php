@@ -495,11 +495,11 @@ global $settings, $session, $path;
                     <div class="photo-thumbnail-grid">
                         <div 
                             class="photo-thumbnail-item" 
-                            v-for="(photo, index) in uploaded_photos" 
+                            v-for="(photo, index) in system_photos" 
                             :key="photo.id"
                             @click="openLightbox(index)"
                         >
-                            <img :src="photo.serverUrl" :alt="photo.name" class="gallery-thumbnail">
+                            <img :src="photo.preview" :alt="photo.name" class="gallery-thumbnail">
                             <div class="thumbnail-overlay">
                                 <i class="fas fa-expand-alt"></i>
                             </div>
@@ -520,26 +520,26 @@ global $settings, $session, $path;
             <button 
                 class="lightbox-nav lightbox-prev" 
                 @click="previousPhoto" 
-                v-if="uploaded_photos && uploaded_photos.length > 1"
+                v-if="system_photos && system_photos.length > 1"
             >
                 <i class="fas fa-chevron-left"></i>
             </button>
             
             <div class="lightbox-image-container">
                 <img 
-                    :src="uploaded_photos[currentPhotoIndex].serverUrl" 
-                    :alt="uploaded_photos[currentPhotoIndex].name"
+                    :src="system_photos[currentPhotoIndex].server_url" 
+                    :alt="system_photos[currentPhotoIndex].name"
                     class="lightbox-image"
                 >
                 <div class="lightbox-caption">
-                    Photo {{ currentPhotoIndex + 1 }} of {{ uploaded_photos.length }}
+                    Photo {{ currentPhotoIndex + 1 }} of {{ system_photos.length }}
                 </div>
             </div>
             
             <button 
                 class="lightbox-nav lightbox-next" 
                 @click="nextPhoto" 
-                v-if="uploaded_photos && uploaded_photos.length > 1"
+                v-if="system_photos && system_photos.length > 1"
             >
                 <i class="fas fa-chevron-right"></i>
             </button>
@@ -555,7 +555,7 @@ global $settings, $session, $path;
                 <div class="photo-upload-container">                    
                     <!-- Uploaded Photos Preview -->
                     <div class="uploaded-photos-grid">
-                        <div class="photo-item" v-for="(photo, index) in uploaded_photos" :key="index">
+                        <div class="photo-item" v-for="(photo, index) in system_photos" :key="index">
                             <div class="photo-preview">
                                 <img :src="photo.preview" :alt="'Photo ' + (index + 1)" class="photo-thumbnail">
                                 <div class="photo-overlay">
@@ -591,9 +591,9 @@ global $settings, $session, $path;
                         type="button" 
                         class="btn btn-outline-secondary mt-3" 
                         @click="show_photo_upload = true"
-                        v-if="show_photo_upload == false && uploaded_photos.length < 4"
+                        v-if="show_photo_upload == false && system_photos.length < 4"
                     >
-                        <i class="fas fa-plus"></i> Add More Photos ({{ uploaded_photos.length }}/4)
+                        <i class="fas fa-plus"></i> Add More Photos ({{ system_photos.length }}/4)
                     </button>
 
                     <!-- Drag and Drop Zone -->
@@ -603,7 +603,7 @@ global $settings, $session, $path;
                         @dragleave.prevent="handleDragLeave"
                         @drop.prevent="handleDrop"
                         :class="{ 'drag-active': isDragActive }"
-                        v-if="show_photo_upload && uploaded_photos.length < 4"
+                        v-if="show_photo_upload && system_photos.length < 4"
                     >
                         <div class="drop-zone-content">
                             <i class="fas fa-cloud-upload-alt fa-3x mb-3" style="color: #6c757d;"></i>
@@ -887,7 +887,7 @@ global $settings, $session, $path;
             types: all_types,
 
             // Photo upload properties
-            uploaded_photos: [],
+            system_photos: [],
             show_photo_upload: true,
             isDragActive: false,
             max_photos: 4,
@@ -912,7 +912,7 @@ global $settings, $session, $path;
             },
             
             hasPhotos() {
-                return this.uploaded_photos && this.uploaded_photos.length > 0;
+                return this.system_photos && this.system_photos.length > 0;
             }
         },
         filters: {
@@ -1309,9 +1309,9 @@ global $settings, $session, $path;
                 });
 
                 // Check if we would exceed max photos
-                const totalPhotos = this.uploaded_photos.length + validFiles.length;
+                const totalPhotos = this.system_photos.length + validFiles.length;
                 if (totalPhotos > this.max_photos) {
-                    const allowedFiles = this.max_photos - this.uploaded_photos.length;
+                    const allowedFiles = this.max_photos - this.system_photos.length;
                     this.showFileError(`You can only upload ${allowedFiles} more photo(s). Maximum is ${this.max_photos} photos.`);
                     return;
                 }
@@ -1340,7 +1340,7 @@ global $settings, $session, $path;
                         error: null
                     };
                     
-                    this.uploaded_photos.push(photo);
+                    this.system_photos.push(photo);
                     // Auto-upload the photo
                     this.uploadPhoto(photo);
                 };
@@ -1348,7 +1348,7 @@ global $settings, $session, $path;
             },
 
             removePhoto: function(index) {
-                const photo = this.uploaded_photos[index];
+                const photo = this.system_photos[index];
                 
                 // If photo has an ID, it's been uploaded to server, so delete it
                 if (photo.id) {
@@ -1356,9 +1356,9 @@ global $settings, $session, $path;
                         axios.post(this.path + 'system/delete-photo?photo_id=' + photo.id)
                             .then(response => {
                                 if (response.data.success) {
-                                    this.uploaded_photos.splice(index, 1);
+                                    this.system_photos.splice(index, 1);
                                     // Update photo upload visibility
-                                    this.show_photo_upload = this.uploaded_photos.length == 0;
+                                    this.show_photo_upload = this.system_photos.length == 0;
                                 } else {
                                     alert('Failed to delete photo: ' + response.data.message);
                                 }
@@ -1369,9 +1369,9 @@ global $settings, $session, $path;
                     }
                 } else {
                     // Photo is still being uploaded or failed, just remove from array
-                    this.uploaded_photos.splice(index, 1);
+                    this.system_photos.splice(index, 1);
                     // Update photo upload visibility
-                    this.show_photo_upload = this.uploaded_photos.length == 0;
+                    this.show_photo_upload = this.system_photos.length == 0;
                 }
             },
 
@@ -1397,10 +1397,10 @@ global $settings, $session, $path;
                     photo.uploading = false;
                     if (response.data.success) {
                         photo.uploaded = true;
-                        photo.serverUrl = response.data.url; // Store server URL
+                        photo.server_url = response.data.url; // Store server URL
                         photo.id = response.data.image_id; // Store image ID for deletion
                         // Update photo upload visibility
-                        this.show_photo_upload = this.uploaded_photos.length == 0;
+                        this.show_photo_upload = this.system_photos.length == 0;
                     } else {
                         photo.error = response.data.message || 'Upload failed. Please try again.';
                     }
@@ -1422,7 +1422,7 @@ global $settings, $session, $path;
 
             // Photo gallery/lightbox methods
             openLightbox: function(index) {
-                if (!this.uploaded_photos || this.uploaded_photos.length === 0) return;
+                if (!this.system_photos || this.system_photos.length === 0) return;
                 this.currentPhotoIndex = index;
                 this.lightboxOpen = true;
                 // Prevent body scrolling when lightbox is open
@@ -1437,8 +1437,8 @@ global $settings, $session, $path;
             },
 
             nextPhoto: function() {
-                if (!this.uploaded_photos || this.uploaded_photos.length === 0) return;
-                if (this.currentPhotoIndex < this.uploaded_photos.length - 1) {
+                if (!this.system_photos || this.system_photos.length === 0) return;
+                if (this.currentPhotoIndex < this.system_photos.length - 1) {
                     this.currentPhotoIndex++;
                 } else {
                     this.currentPhotoIndex = 0; // Loop back to first photo
@@ -1446,11 +1446,11 @@ global $settings, $session, $path;
             },
 
             previousPhoto: function() {
-                if (!this.uploaded_photos || this.uploaded_photos.length === 0) return;
+                if (!this.system_photos || this.system_photos.length === 0) return;
                 if (this.currentPhotoIndex > 0) {
                     this.currentPhotoIndex--;
                 } else {
-                    this.currentPhotoIndex = this.uploaded_photos.length - 1; // Loop to last photo
+                    this.currentPhotoIndex = this.system_photos.length - 1; // Loop to last photo
                 }
             }
 
@@ -1504,14 +1504,14 @@ global $settings, $session, $path;
         axios.get(path + 'system/photos?id=' + app.system.id)
             .then(function(response) {
                 if (response.data.success) {
-                    app.uploaded_photos = response.data.photos.map(photo => {
+                    app.system_photos = response.data.photos.map(photo => {
                         return {
                             id: photo.id,
                             name: photo.original_filename,
                             preview: path + photo.url,
-                            serverUrl: path + photo.url,
+                            server_url: path + photo.url,
                             uploading: false,
-                            uploaded: true,
+                            uploaded: false,
                             progress: 100,
                             error: null,
                             width: photo.width,
@@ -1521,14 +1521,14 @@ global $settings, $session, $path;
                         };
                     });
                 }
-                app.show_photo_upload = app.uploaded_photos.length == 0;
+                app.show_photo_upload = app.system_photos.length == 0;
             })
             .catch(function(error) {
                 console.log('Error loading photos:', error);
-                app.show_photo_upload = app.uploaded_photos.length == 0;
+                app.show_photo_upload = app.system_photos.length == 0;
             });
     } else {
-        app.show_photo_upload = app.uploaded_photos.length == 0;
+        app.show_photo_upload = app.system_photos.length == 0;
     }
     
     // Load available apps
