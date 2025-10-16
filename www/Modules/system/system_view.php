@@ -136,6 +136,196 @@ global $settings, $session, $path;
     .upload-status {
         margin-top: 5px;
     }
+    
+    /* Photo Gallery - View Mode Styles */
+    .photo-gallery {
+        margin-top: 10px;
+    }
+    
+    .photo-thumbnail-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 15px;
+    }
+    
+    .photo-thumbnail-item {
+        position: relative;
+        cursor: pointer;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 2px solid #dee2e6;
+        transition: all 0.3s ease;
+        aspect-ratio: 1;
+    }
+    
+    .photo-thumbnail-item:hover {
+        border-color: #0d6efd;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    .gallery-thumbnail {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+    
+    .thumbnail-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        color: white;
+        font-size: 1.5rem;
+    }
+    
+    .photo-thumbnail-item:hover .thumbnail-overlay {
+        opacity: 1;
+    }
+    
+    /* Lightbox Styles */
+    .photo-lightbox {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1050;
+        backdrop-filter: blur(4px);
+    }
+    
+    .lightbox-content {
+        position: relative;
+        max-width: 90vw;
+        max-height: 90vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .lightbox-close {
+        position: absolute;
+        top: -50px;
+        right: 0;
+        background: rgba(255, 255, 255, 0.1);
+        border: none;
+        color: white;
+        font-size: 1.5rem;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        z-index: 1051;
+    }
+    
+    .lightbox-close:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+    
+    .lightbox-nav {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgba(255, 255, 255, 0.1);
+        border: none;
+        color: white;
+        font-size: 1.5rem;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        z-index: 1051;
+    }
+    
+    .lightbox-nav:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: translateY(-50%) scale(1.1);
+    }
+    
+    .lightbox-prev {
+        left: -70px;
+    }
+    
+    .lightbox-next {
+        right: -70px;
+    }
+    
+    .lightbox-image-container {
+        position: relative;
+        text-align: center;
+    }
+    
+    .lightbox-image {
+        max-width: 100%;
+        max-height: 80vh;
+        object-fit: contain;
+        border-radius: 8px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+    
+    .lightbox-caption {
+        position: absolute;
+        bottom: -40px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: white;
+        background: rgba(0, 0, 0, 0.7);
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        white-space: nowrap;
+    }
+    
+    /* Responsive adjustments for lightbox */
+    @media (max-width: 768px) {
+        .lightbox-nav {
+            width: 40px;
+            height: 40px;
+            font-size: 1.2rem;
+        }
+        
+        .lightbox-prev {
+            left: -50px;
+        }
+        
+        .lightbox-next {
+            right: -50px;
+        }
+        
+        .lightbox-close {
+            top: -40px;
+            right: 10px;
+        }
+        
+        .lightbox-image {
+            max-height: 70vh;
+        }
+        
+        .photo-thumbnail-grid {
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+        }
+    }
 </style>
 
 <div id="app" class="bg-light">
@@ -296,13 +486,72 @@ global $settings, $session, $path;
         </div>
     </div>
 
+    <!-- System Photos - View Mode -->
+    <div class="container mt-3" style="max-width:800px" v-if="mode=='view' && hasPhotos">
+        <div class="card mt-3">
+            <h5 class="card-header">System Photos</h5>
+            <div class="card-body">
+                <div class="photo-gallery">
+                    <div class="photo-thumbnail-grid">
+                        <div 
+                            class="photo-thumbnail-item" 
+                            v-for="(photo, index) in uploaded_photos" 
+                            :key="photo.id"
+                            @click="openLightbox(index)"
+                        >
+                            <img :src="photo.serverUrl" :alt="photo.name" class="gallery-thumbnail">
+                            <div class="thumbnail-overlay">
+                                <i class="fas fa-expand-alt"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Photo Lightbox -->
+    <div class="photo-lightbox" v-if="lightboxOpen" @click="closeLightbox">
+        <div class="lightbox-content" @click.stop>
+            <button class="lightbox-close" @click="closeLightbox">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <button 
+                class="lightbox-nav lightbox-prev" 
+                @click="previousPhoto" 
+                v-if="uploaded_photos && uploaded_photos.length > 1"
+            >
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            
+            <div class="lightbox-image-container">
+                <img 
+                    :src="uploaded_photos[currentPhotoIndex].serverUrl" 
+                    :alt="uploaded_photos[currentPhotoIndex].name"
+                    class="lightbox-image"
+                >
+                <div class="lightbox-caption">
+                    Photo {{ currentPhotoIndex + 1 }} of {{ uploaded_photos.length }}
+                </div>
+            </div>
+            
+            <button 
+                class="lightbox-nav lightbox-next" 
+                @click="nextPhoto" 
+                v-if="uploaded_photos && uploaded_photos.length > 1"
+            >
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- System Photos - Edit Mode -->
     <div class="container mt-3" style="max-width:800px" v-if="mode=='edit' && (session_userid==system.userid || !system.userid)">
         <div class="card mt-3">
             <h5 class="card-header">System Photos</h5>
-            <div class="card-body">                
-                <p>Add photos of your heat pump system (maximum 4 images, up to 5MB each). Supported formats: JPG, PNG, WebP.</p>
-
-                <!-- Photo Upload Area -->
+            <div class="card-body">
+                <p>Add photos of your heat pump system (maximum 4 images, up to 5MB each). Supported formats: JPG, PNG, WebP.</p>                <!-- Photo Upload Area -->
                 <div class="photo-upload-container">                    
                     <!-- Uploaded Photos Preview -->
                     <div class="uploaded-photos-grid">
@@ -645,7 +894,12 @@ global $settings, $session, $path;
             max_file_size: 5 * 1024 * 1024, // 5MB
             allowed_types: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
             show_photo_error: false,
-            photo_message: ''
+            photo_message: '',
+
+            // Photo gallery/lightbox properties
+            lightboxOpen: false,
+            currentPhotoIndex: 0
+
         },
         computed: {
             qualityColor() {
@@ -655,6 +909,10 @@ global $settings, $session, $path;
                     if (score == 0) return '#ccc';
                     return `hsl(${hue}, 100%, 50%)`; // Convert hue value to HSL color
                 }
+            },
+            
+            hasPhotos() {
+                return this.uploaded_photos && this.uploaded_photos.length > 0;
             }
         },
         filters: {
@@ -1160,10 +1418,64 @@ global $settings, $session, $path;
                 setTimeout(() => {
                     this.show_photo_error = false;
                 }, 5000);
+            },
+
+            // Photo gallery/lightbox methods
+            openLightbox: function(index) {
+                if (!this.uploaded_photos || this.uploaded_photos.length === 0) return;
+                this.currentPhotoIndex = index;
+                this.lightboxOpen = true;
+                // Prevent body scrolling when lightbox is open
+                document.body.style.overflow = 'hidden';
+            },
+
+            closeLightbox: function() {
+                this.lightboxOpen = false;
+                this.currentPhotoIndex = 0;
+                // Restore body scrolling
+                document.body.style.overflow = '';
+            },
+
+            nextPhoto: function() {
+                if (!this.uploaded_photos || this.uploaded_photos.length === 0) return;
+                if (this.currentPhotoIndex < this.uploaded_photos.length - 1) {
+                    this.currentPhotoIndex++;
+                } else {
+                    this.currentPhotoIndex = 0; // Loop back to first photo
+                }
+            },
+
+            previousPhoto: function() {
+                if (!this.uploaded_photos || this.uploaded_photos.length === 0) return;
+                if (this.currentPhotoIndex > 0) {
+                    this.currentPhotoIndex--;
+                } else {
+                    this.currentPhotoIndex = this.uploaded_photos.length - 1; // Loop to last photo
+                }
             }
 
 
         },
+        mounted: function() {
+            // Add keyboard event listener for lightbox navigation
+            document.addEventListener('keydown', (event) => {
+                if (this.lightboxOpen) {
+                    switch(event.key) {
+                        case 'Escape':
+                            this.closeLightbox();
+                            break;
+                        case 'ArrowLeft':
+                            event.preventDefault();
+                            this.previousPhoto();
+                            break;
+                        case 'ArrowRight':
+                            event.preventDefault();
+                            this.nextPhoto();
+                            break;
+                    }
+                }
+            });
+        }
     });
 
     app.filter_schema_groups();
