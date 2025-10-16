@@ -1,7 +1,7 @@
 <?php
 
 $schema['users'] = array(
-    // user id should link to emoncms.org user id
+    // user id should link to emoncms user id
     'id' => array('type' => 'int(11)', 'Null'=>false, 'Key'=>'PRI', 'Extra'=>'auto_increment'),
     'username' => array('type' => 'varchar(30)'),
     'name' => array('type' => 'varchar(30)'),

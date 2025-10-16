@@ -23,7 +23,7 @@ $schema['system_meta'] = array(
     'published' => array('type' => 'tinyint(1)', 'editable' => false, 'optional' => false, 'name' => 'Published', 'group' => 'Overview'),
     'last_updated' => array('type' => 'int(11)', 'editable' => false, 'name' => 'Last updated', 'group' => 'Overview'),
 
-    // New method of linking an emoncms.org myheatpump app
+    // New method of linking an emoncms instance myheatpump app
     'app_id' => array('type' => 'int(11)', 'editable' => true),
     'readkey' => array('type' => 'varchar(64)', 'editable' => true),
     
@@ -135,7 +135,7 @@ $schema['system_meta'] = array(
         'editable' => true, 
         'optional' => false, 
         'name' => 'MyHeatpump App URL',
-        'helper' => 'Requires an account on emoncms.org, or a self-hosted instance of emoncms',
+        'helper' => '',
         // 'group' => 'Overview',
         'show' => false,
         'show_to_admin' => true

@@ -6,9 +6,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 class User
 {
     private $mysqli;
-    private $host = "https://emoncms.org";
+    private $host;
     private $rememberme;
-    private $email_verification = true;
 
     public function __construct($mysqli, $rememberme)
     {
@@ -365,7 +364,7 @@ class User
             );
         }
 
-        // Remove any locally linked accounts that are no longer in emoncms.org account list
+        // Remove any locally linked accounts that are no longer in emoncms account list
         $result = $this->mysqli->query("SELECT linkeduser FROM accounts WHERE adminuser='$adminuserid'");
         while ($row = $result->fetch_object()) {
             $found = false;

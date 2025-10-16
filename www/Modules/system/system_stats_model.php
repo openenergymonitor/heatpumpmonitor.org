@@ -8,7 +8,7 @@ class SystemStats
     private $mysqli;
     private $system;
     private $redis;
-    private $host = 'https://emoncms.org';
+    private $host;
     
     public $schema = array();
 

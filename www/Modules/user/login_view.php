@@ -3,6 +3,8 @@
 defined('EMONCMS_EXEC') or die('Restricted access');
 
 global $settings;
+// get only the domain part of the URL
+$emoncms_host = parse_url($settings['emoncms_host'], PHP_URL_HOST);
 
 ?>
 
@@ -14,7 +16,7 @@ global $settings;
     <div class="card">
         <div class="card-body bg-light">
 
-            <h1 class="h3 mb-3 fw-normal">Login <?php if (!$settings['dev_env_login_enabled']) echo "with emoncms.org"; else echo "(dev env)"; ?></h1>
+            <h1 class="h3 mb-3 fw-normal">Login <?php if (!$settings['dev_env_login_enabled']) echo "with $emoncms_host"; else echo "(dev env)"; ?></h1>
 
             <label>Username</label>
             <div class="input-group mb-3">

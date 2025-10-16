@@ -293,7 +293,7 @@ function system_controller() {
         }
     }
 
-    // Get list off myheatpump apps associated with linked emoncms.org account
+    // Get list off myheatpump apps associated with linked emoncms account
     if ($route->action=="available") {
         $route->format = "json";
         if ($session['userid']) {

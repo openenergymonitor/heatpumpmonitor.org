@@ -6,7 +6,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 class System
 {
     private $mysqli;
-    private $host = "https://emoncms.org";
+    private $host;
     public $schema_meta;
 
     public function __construct($mysqli)
