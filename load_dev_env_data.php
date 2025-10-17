@@ -99,7 +99,12 @@ if ($reload_all) $load_running_stats = 1;
 
 // Check if we should load monthly stats
 if (isset($_ENV["LOAD_MONTHLY_STATS"])) {
-    $load_monthly_stats = (int) $_ENV["LOAD_MONTHLY_STATS"];
+    // If the variable is a JSON array of system ids, load those systems only else load all systems
+    if (substr($_ENV["LOAD_MONTHLY_STATS"],0,1)=="[") {
+        $load_monthly_stats = json_decode($_ENV["LOAD_MONTHLY_STATS"],true);
+    } else {
+        $load_monthly_stats = (int) $_ENV["LOAD_MONTHLY_STATS"];
+    }
 } else {
     if (confirm("Would you like to load monthly stats? This takes a little while, please only do this if required so as not to overload the server.")) $load_monthly_stats = 1;
 }
@@ -108,6 +113,12 @@ if ($reload_all) $load_monthly_stats = 1;
 // Check if we should load daily stats
 if (isset($_ENV["LOAD_DAILY_STATS"])) {
     $load_daily_stats = (int) $_ENV["LOAD_DAILY_STATS"];
+    // If the variable is a JSON array of system ids, load those systems only else load all systems
+    if (substr($_ENV["LOAD_DAILY_STATS"],0,1)=="[") {
+        $load_daily_stats = json_decode($_ENV["LOAD_DAILY_STATS"],true);
+    } else {
+        $load_daily_stats = (int) $_ENV["LOAD_DAILY_STATS"];
+    }
 } else {
     if (confirm("Would you like to load daily stats? This takes ages, please only do this if required so as not to overload the server.")) $load_daily_stats = 1;
 }
@@ -232,10 +243,20 @@ if ($load_running_stats) {
 // 4. Load monthly summaries
 // -------------------------------------------------------------------------------------
 if ($load_monthly_stats) {
-    foreach ($systems as $system) {
-        print "- Loading monthly stats for system: $system->id ";
+    if( is_int($load_monthly_stats)) {
+        // If load_monthly_stats is an integer load all systems
+        $system_ids = array();
+        foreach ($systems as $system) {
+            $system_ids[] = $system->id;
+        }
+    } else {
+        // Else load only the specified systems
+        $system_ids = $load_monthly_stats;
+    }
+    foreach ($system_ids as $system_id) {
+        print "- Loading monthly stats for system: $system_id ";
         // https://heatpumpmonitor.org/system/stats/monthly?id=2
-        $data = file_get_contents("$heatpumpmonitor_host/system/stats/monthly?id=$system->id");
+        $data = file_get_contents("$heatpumpmonitor_host/system/stats/monthly?id=$system_id");
         $stats = json_decode($data,true);
         if ($stats==null) {
             print "Error: could not load monthly data from heatpumpmonitor.org\n";
@@ -253,14 +274,22 @@ if ($load_monthly_stats) {
 // 5. Load daily data
 // -------------------------------------------------------------------------------------
 if ($load_daily_stats) {
-    foreach ($systems as $system) {
-        $id = $system->id;
-
-        print "- Loading daily stats for system: $id ";
+    if( is_int($load_daily_stats)) {
+        // If load_daily_stats is an integer load all systems
+        $system_ids = array();
+        foreach ($systems as $system) {
+            $system_ids[] = $system->id;
+        }
+    } else {
+        // Else load only the specified systems
+        $system_ids = $load_daily_stats;
+    }
+    foreach ($system_ids as $system_id) {
+        print "- Loading daily stats for system: $system_id ";
         $days = 0;
 
         // Initialize cURL session to download the CSV
-        $apiUrl = 'https://heatpumpmonitor.org/system/stats/export/daily?id='.$id;
+        $apiUrl = 'https://heatpumpmonitor.org/system/stats/export/daily?id='.$system_id;
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $apiUrl);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -276,14 +305,14 @@ if ($load_daily_stats) {
         if (($handle = fopen($tempFilePath, 'r')) !== FALSE) {
 
             // Skip the header row
-            $header = fgetcsv($handle, 2000, ",");
+            $header = fgetcsv($handle, 2000, ",", escape: "\\");
 
             // Read the rest of the file
-            while (($data = fgetcsv($handle, 2000, ",")) !== FALSE) {
+            while (($data = fgetcsv($handle, 2000, ",", escape: "\\")) !== FALSE) {
                 // Build an associative array from the CSV data
                 $row = array();
                 foreach ($header as $i => $field) {
-                    $row[$field] = $data[$i];
+                    $row[$field] = $data[$i]; 
                 }
 
                 // Save the data to the database
