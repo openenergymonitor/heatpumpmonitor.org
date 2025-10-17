@@ -9,4 +9,5 @@ www/webhook.php
 sheet.tsv
 www/settings.php
 www/theme/img/installers/*
+www/theme/img/system/*
 mysqlbackup
