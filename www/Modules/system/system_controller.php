@@ -187,6 +187,13 @@ function system_controller() {
         } else if ($route->subaction == "all") {
             return $system_stats->get_all($session['userid'], $system_id, $mode);
 
+        // stats/custom
+        } else if ($route->subaction == "custom") {
+            return $system_stats->get_custom($session['userid'], $system_id, $mode,
+                get('start',true),
+                get('end',true)
+            );
+
         } else if ($route->subaction == "export") {
             if ($route->subaction2 == "daily") {
                 $system_stats->export_daily($system_id);

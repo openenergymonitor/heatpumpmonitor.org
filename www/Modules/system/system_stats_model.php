@@ -222,6 +222,10 @@ class SystemStats
         return $this->get('system_stats_all_v2',false,false,$system_id,$session_userid,$mode);
     }
 
+    public function get_custom($session_userid, $system_id = false, $mode = "public", $start = false, $end = false) {
+        return $this->get('system_stats_daily',$start,$end,$system_id,$session_userid,$mode);
+    }
+
     // Get system stats
     public function get($table_name, $start=false, $end=false, $system_id = false, $session_userid = false, $mode = "public")
     {
