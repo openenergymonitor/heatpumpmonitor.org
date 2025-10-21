@@ -223,7 +223,6 @@ class SystemStats
     }
 
     public function get_custom($session_userid, $system_id = false, $mode = "public", $start = false, $end = false) {
-
         if (!$start) return false;
         if (!$end) return false;
         if ($mode != "public") return false;
