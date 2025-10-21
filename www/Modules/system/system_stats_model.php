@@ -223,7 +223,29 @@ class SystemStats
     }
 
     public function get_custom($session_userid, $system_id = false, $mode = "public", $start = false, $end = false) {
-        return $this->get('system_stats_daily',$start,$end,$system_id,$session_userid,$mode);
+
+        if (!$start) return false;
+        if (!$end) return false;
+        if ($mode != "public") return false;
+
+        $date = new DateTime();
+        $date->setTimezone(new DateTimeZone('Europe/London'));
+        $date->setTime(0, 0, 0);
+        // start
+        $date->modify($start);
+        $start = $date->getTimestamp();
+        // end
+        $date->modify($end);
+        $date->modify('+1 month');
+        $end = $date->getTimestamp();
+
+        $stats = array();
+        $result = $this->mysqli->query("SELECT id FROM system_meta WHERE share=1 AND published=1"); // OR userid='$userid' (removed for now)
+        while ($row = $result->fetch_object()) {
+            $system_stats_result = $this->process_from_daily($row->id, $start, $end);
+            $stats[] = $system_stats_result;
+        }
+        return $stats;
     }
 
     // Get system stats
