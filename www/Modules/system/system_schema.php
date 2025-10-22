@@ -219,7 +219,7 @@ $schema['system_meta'] = array(
         'optional' => true, 
         'name' => 'Refrigerant', 
         'group' => 'Heat pump', 
-        'options'=>array('R290','R32','CO2','R410A','R210A','R134A','R407C','R454C','R452B'),
+        'options'=>array('R290','R32','CO2','R410A','R210A','R134A','R407C','R454B','R454C','R452B'),
         'show' => false
     ),
 
