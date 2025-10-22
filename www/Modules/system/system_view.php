@@ -411,7 +411,7 @@ global $settings, $session, $path;
     }
 
     // Reset to these values if model is not set
-    var all_refrigerants = ["R290", "R32", "CO2", "R410A", "R210A", "R134A", "R407C", "R454C", "R452B"];
+    var all_refrigerants = ["R290", "R32", "CO2", "R410A", "R210A", "R134A", "R407C", "R454B", "R454C", "R452B"];
     var all_types = ["Air Source", "Ground Source", "Water Source", "Air-to-Air", "Other"];
 
     var app = new Vue({
