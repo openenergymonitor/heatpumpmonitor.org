@@ -5,7 +5,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 function system_controller() {
 
-    global $session, $route, $user, $system, $mysqli, $system_stats, $settings;
+    global $session, $route, $user, $system, $mysqli, $system_stats, $system_photos, $settings;
 
 
 
@@ -309,7 +309,7 @@ function system_controller() {
     if ($route->action=="upload-photo") {
         $route->format = "json";
         if ($session['userid']) {
-            return $system->upload_photo($session['userid']);
+            return $system_photos->upload_photo($session['userid']);
         }
         return array("success" => false, "message" => "Authentication required");
     }
@@ -319,7 +319,7 @@ function system_controller() {
         $route->format = "json";
         $system_id = get("id", false);
         if ($system_id) {
-            return $system->get_photos($session['userid'], $system_id);
+            return $system_photos->get_photos($session['userid'], $system_id);
         }
         return array("success" => false, "message" => "System ID required");
     }
@@ -330,7 +330,7 @@ function system_controller() {
         if ($session['userid']) {
             $photo_id = get("photo_id", false);
             if ($photo_id) {
-                return $system->delete_photo($session['userid'], $photo_id);
+                return $system_photos->delete_photo($session['userid'], $photo_id);
             }
             return array("success" => false, "message" => "Photo ID required");
         }
