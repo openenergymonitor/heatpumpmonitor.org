@@ -23,7 +23,6 @@ global $settings, $session, $path;
         padding: 5px;
         text-align: center;
         border: 1px solid #fff;
-        color: #fff;
         font-size: 14px;
     }
     
@@ -399,31 +398,31 @@ global $settings, $session, $path;
                     </tr>
                     <tr>
                         <td>Elec</td>
-                        <td v-for="month in monthly" :style="{ backgroundColor: qualityColor(month.quality_elec) }">
+                        <td v-for="month in monthly" :style="{ backgroundColor: qualityColor(month.quality_elec), color: qualityColorText(month.quality_elec) }">
                         {{ month.quality_elec | toFixed(0) }}
                         </td>
                     </tr>
                     <tr>
                         <td>Heat</td>
-                        <td v-for="month in monthly" :style="{ backgroundColor: qualityColor(month.quality_heat) }">
+                        <td v-for="month in monthly" :style="{ backgroundColor: qualityColor(month.quality_heat), color: qualityColorText(month.quality_heat) }">
                             {{ month.quality_heat | toFixed(0) }}
                         </td>
                     </tr>
                     <tr>
                         <td>Flow</td>
-                        <td v-for="month in monthly" :style="{ backgroundColor: qualityColor(month.quality_flowT) }">
+                        <td v-for="month in monthly" :style="{ backgroundColor: qualityColor(month.quality_flowT), color: qualityColorText(month.quality_flowT) }">
                             {{ month.quality_flowT | toFixed(0) }}
                         </td>
                     </tr>
                     <tr>
                         <td>Return</td>
-                        <td v-for="month in monthly" :style="{ backgroundColor: qualityColor(month.quality_returnT) }">
+                        <td v-for="month in monthly" :style="{ backgroundColor: qualityColor(month.quality_returnT), color: qualityColorText(month.quality_returnT) }">
                             {{ month.quality_returnT | toFixed(0) }}
                         </td>
                     </tr>
                     <tr>
                         <td>Outside</td>
-                        <td v-for="month in monthly" :style="{ backgroundColor: qualityColor(month.quality_outsideT) }">
+                        <td v-for="month in monthly" :style="{ backgroundColor: qualityColor(month.quality_outsideT), color: qualityColorText(month.quality_outsideT) }">
                             {{ month.quality_outsideT | toFixed(0) }}
                         </td>
                     </tr>
@@ -450,12 +449,16 @@ global $settings, $session, $path;
         <div class="card mt-3">
             <h5 class="card-header">Select Emoncms.org dashboard</h5>
             <div class="card-body">
-
-                <select class="form-select"  style="width:100%" v-model="new_app_selection" @change="load_app">
+                <div v-if="loading_available_apps" class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading available dashboards...</p>
+                </div>
+                <select v-else class="form-select"  style="width:100%" v-model="new_app_selection" @change="load_app">
                     <option value="">PLEASE SELECT</option>
                     <option v-for="(app,index) in available_apps" :value="app.id" :disabled="app.in_use==1">{{ app.username }}: {{ app.name }} {{ app.in_use_msg }}</option>
                 </select>
-
             </div>
         </div>
     </div>
@@ -861,6 +864,7 @@ global $settings, $session, $path;
             form_type: form_type,
             new_app_selection: '',
             available_apps: [],
+            loading_available_apps: false,
             path: path,
             mode: "<?php echo $mode; ?>", // edit, view
             system: system,
@@ -908,6 +912,46 @@ global $settings, $session, $path;
                     // if score = 0 grey
                     if (score == 0) return '#ccc';
                     return `hsl(${hue}, 100%, 50%)`; // Convert hue value to HSL color
+                }
+            },
+            qualityColorText() {
+                return function(score) {
+                    if (score == 0) return '#000'; // Black text for grey background (#ccc has ~80% lightness)
+                    
+                    // Calculate perceived brightness of the HSL color
+                    const hue = (score / 100) * 120; // Same calculation as qualityColor
+                    const saturation = 100;
+                    const lightness = 50;
+                    
+                    // Convert HSL to RGB for luminance calculation
+                    const c = (1 - Math.abs(2 * lightness/100 - 1)) * saturation/100;
+                    const x = c * (1 - Math.abs((hue / 60) % 2 - 1));
+                    const m = lightness/100 - c/2;
+                    
+                    let r, g, b;
+                    if (hue >= 0 && hue < 60) {
+                        r = c; g = x; b = 0;
+                    } else if (hue >= 60 && hue < 120) {
+                        r = x; g = c; b = 0;
+                    } else if (hue >= 120 && hue < 180) {
+                        r = 0; g = c; b = x;
+                    } else if (hue >= 180 && hue < 240) {
+                        r = 0; g = x; b = c;
+                    } else if (hue >= 240 && hue < 300) {
+                        r = x; g = 0; b = c;
+                    } else {
+                        r = c; g = 0; b = x;
+                    }
+                    
+                    r = (r + m) * 255;
+                    g = (g + m) * 255;
+                    b = (b + m) * 255;
+                    
+                    // Calculate relative luminance using WCAG formula
+                    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+                    
+                    // Use white text for dark backgrounds (luminance < 0.5), black for light
+                    return luminance < 0.5 ? '#fff' : '#000';
                 }
             },
             
@@ -1533,6 +1577,7 @@ global $settings, $session, $path;
     
     // Load available apps
     if (app.mode == 'edit') {
+        app.loading_available_apps = true;
         axios.get(path + 'system/available')
             .then(function(response) {
                 // Add in_use_msg
@@ -1550,10 +1595,12 @@ global $settings, $session, $path;
                 }
 
                 app.available_apps = response.data;
+                app.loading_available_apps = false;
                 console.log(app.available_apps);
             })
             .catch(function(error) {
                 console.log(error);
+                app.loading_available_apps = false;
             });
     }
 

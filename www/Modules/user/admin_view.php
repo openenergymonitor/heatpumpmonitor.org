@@ -10,10 +10,16 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     <div style=" background-color:#f0f0f0; padding-top:20px; padding-bottom:10px">
         <div class="container-fluid">
             <h3>Admin users</h3>
+            <p>Number of users: {{ filteredUsers.length }} ({{ users.length }} total)</p>
         </div>
     </div>
     <div class="container-fluid">
         <br>
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <input type="text" class="form-control" placeholder="Search users..." v-model="search">
+            </div>
+        </div>
         <table class="table table-striped">
             <thead>
                 <tr>
@@ -25,11 +31,13 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     <th scope="col" @click="sort_list('created')">Created</th>
                     <th scope="col" @click="sort_list('last_login')">Last login</th>
                     <th scope="col" @click="sort_list('systems')">Systems</th>
+                    <th scope="col" @click="sort_list('subaccounts')">Sub accounts</th>
+                    <th scope="col" @click="sort_list('adminusername')">Admin user</th>
                     <th scope="col">Actions</th>
                 </tr>
             </thead>
             <tbody>
-                <tr v-for="user in users">
+                <tr v-for="user in filteredUsers">
                     <td>{{ user.id }}</td>
                     <td>{{ user.username }}</td>       
                     <td>{{ user.name }}</td>
@@ -38,6 +46,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     <td style="font-size:14px">{{ user.created | formatTime }}</td>
                     <td style="font-size:14px">{{ user.last_login | formatTime }}</td>
                     <td>{{ user.systems }}</td>
+                    <td>{{ user.subaccounts }}</td>
+                    <td>{{ user.adminusername }}</td>
                     <td>
                         <button class="btn btn-primary btn-sm" v-on:click="switch_user(user.id)">Switch</button>
                     </td>
@@ -54,8 +64,27 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         el: '#app',
         data: {
             users: users,
+            search: '',
             sort_by: 'systems',
             sort_order: 'desc'
+        },
+        computed: {
+            filteredUsers: function() {
+                if (!this.search) {
+                    return this.users;
+                }
+                
+                var searchTerm = this.search.toLowerCase();
+                return this.users.filter(function(user) {
+                    return String(user.id).toLowerCase().includes(searchTerm) ||
+                           String(user.username || '').toLowerCase().includes(searchTerm) ||
+                           String(user.name || '').toLowerCase().includes(searchTerm) ||
+                           String(user.email || '').toLowerCase().includes(searchTerm) ||
+                           String(user.admin || '').toLowerCase().includes(searchTerm) ||
+                           String(user.systems || '').toLowerCase().includes(searchTerm) ||
+                           String(user.subaccounts || '').toLowerCase().includes(searchTerm);
+                });
+            }
         },
         methods: {
             switch_user: function(userid) {
@@ -72,7 +101,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     this.sort_by = key;
                     this.sort_order = 'asc';
                 }
-                this.users.sort(function(a,b) {
+                this.filteredUsers.sort(function(a,b) {
                     if (app.sort_order=='asc') {
                         return a[app.sort_by] > b[app.sort_by];
                     } else {

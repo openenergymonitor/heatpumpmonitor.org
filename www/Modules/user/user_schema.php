@@ -1,7 +1,7 @@
 <?php
 
 $schema['users'] = array(
-    // user id should link to emoncms.org user id
+    // user id should link to emoncms user id
     'id' => array('type' => 'int(11)', 'Null'=>false, 'Key'=>'PRI', 'Extra'=>'auto_increment'),
     'username' => array('type' => 'varchar(30)'),
     'name' => array('type' => 'varchar(30)'),
@@ -22,4 +22,9 @@ $schema['user_sessions'] = array(
     // hashed validator
     'hash_validator' => array('type' => 'varchar(255)'),
     'expires' => array('type' => 'int(11)')
+);
+
+$schema['accounts'] = array(
+    'adminuser' => array('type' => 'int(11)'),
+    'linkeduser' => array('type' => 'int(11)')
 );

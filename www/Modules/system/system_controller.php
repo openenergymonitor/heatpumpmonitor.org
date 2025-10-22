@@ -70,19 +70,6 @@ function system_controller() {
         ));
     }
     
-    if ($route->action=="dashboard") {
-        $route->format = "html";
-        $systemid = get("id",false);
-        $system_data = $system->get($session['userid'],$systemid);
-        return view("Modules/system/system_dashboard.php", array(
-            "mode"=>"view", 
-            "system_data"=>$system_data, 
-            'admin'=>$session['admin'], 
-            'schema'=>$system->schema_meta,
-            'system_stats_monthly'=>$system_stats->schema['system_stats_monthly_v2']
-        ));
-    }
-    
     if ($route->action=="log" && $session['admin']) {
         if ($route->format=="json") {
             $system_id = get("id",false);
@@ -102,7 +89,7 @@ function system_controller() {
             if ($route->subaction=="public" && $settings['public_mode_enabled']) {
                 return view("Modules/system/system_list.php",array(
                     "mode"=>"public",
-                    "systems"=>$system->list_public($session['userid']),
+                    "systems"=>$system->list_public(),
                     "columns"=>$system->get_columns(),
                     "stats_columns"=>$system_stats->schema['system_stats_monthly_v2']
                 ));
@@ -132,7 +119,7 @@ function system_controller() {
         } else {
             // Public list view
             if ($route->subaction=="public") {
-                return $system->list_public($session['userid']);
+                return $system->list_public();
 
             // User list view
             } else if ($route->subaction=="user") {
@@ -158,6 +145,15 @@ function system_controller() {
             $system_id = (int) $_GET['id'];
         }
 
+        $mode = "public";
+        if (isset($_GET['mode'])) {
+            if ($_GET['mode']=="user") {
+                $mode = "user";
+            } else if ($_GET['mode']=="admin" && $system->is_admin($session['userid'])) {
+                $mode = "admin";
+            }
+        }
+
         // check userid has access to system
         if ($system_id!==false && !$system->has_read_access($session['userid'], $system_id)) {
             return array("success"=>false, "message"=>"Invalid access");
@@ -173,23 +169,31 @@ function system_controller() {
             
         // stats/last7
         } else if ($route->subaction == "last7") { 
-            return $system_stats->get_last7($system_id);
+            return $system_stats->get_last7($session['userid'], $system_id, $mode);
 
         // stats/last30
         } else if ($route->subaction == "last30") { 
-            return $system_stats->get_last30($system_id);
+            return $system_stats->get_last30($session['userid'], $system_id, $mode);
 
         // stats/last90
         } else if ($route->subaction == "last90") { 
-            return $system_stats->get_last90($system_id);
+            return $system_stats->get_last90($session['userid'], $system_id, $mode);
 
         // stats/last365
         } else if ($route->subaction == "last365") {
-            return $system_stats->get_last365($system_id);
+            return $system_stats->get_last365($session['userid'], $system_id, $mode);
 
         // stats/all
         } else if ($route->subaction == "all") {
-            return $system_stats->get_all($system_id);
+            return $system_stats->get_all($session['userid'], $system_id, $mode);
+
+        // stats/custom
+        } else if ($route->subaction == "custom") {
+            return false;
+            return $system_stats->get_custom($session['userid'], $system_id, $mode,
+                get('start',true),
+                get('end',true)
+            );
 
         } else if ($route->subaction == "export") {
             if ($route->subaction2 == "daily") {
@@ -243,7 +247,7 @@ function system_controller() {
     if ($route->action=="delete") {
         $route->format = "json";
         if ($session['userid']) {
-            $systemid = get("id",false);
+            $systemid = (int) get("id",true);
             return $system->delete($session['userid'],$systemid);
         }
     }
@@ -297,7 +301,7 @@ function system_controller() {
         }
     }
 
-    // Get list off myheatpump apps associated with linked emoncms.org account
+    // Get list off myheatpump apps associated with linked emoncms account
     if ($route->action=="available") {
         $route->format = "json";
         if ($session['userid']) {

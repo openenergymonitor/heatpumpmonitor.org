@@ -8,7 +8,7 @@ class SystemStats
     private $mysqli;
     private $system;
     private $redis;
-    private $host = 'https://emoncms.org';
+    private $host;
     
     public $schema = array();
 
@@ -76,7 +76,7 @@ class SystemStats
         if ($start && $end) {
             $params = array("start"=>$start, "end"=>$end);
         }
-        return $this->emoncms_app_request($systemid, $api, $params);
+        return $this->emoncms_app_request($systemid, $api, $params, 'csv');
     }
 
     // Trigger processing of daily data
@@ -101,7 +101,7 @@ class SystemStats
     }
 
     // Make request to emoncms app (generic reusable function)
-    private function emoncms_app_request($systemid, $action, $params = array()) 
+    private function emoncms_app_request($systemid, $action, $params = array(), $format = 'json') 
     {
         $systemid = (int) $systemid;
 
@@ -132,9 +132,19 @@ class SystemStats
         
         // 5. Handle the response
         if ($httpCode == 200) {
+
+            if ($format != 'json') {
+                return array("success" => true, "data" => $result, "readkey" => $row->readkey);
+            }
+
             $data = json_decode($result);
 
             if ($data !== null) {
+
+                if (isset($data->success) && $data->success === false) {
+                    return array("success" => false, "http_code" => $httpCode, "message" => $data->message);
+                }
+
                 return array(
                     "success" => true, 
                     "data" => $data,
@@ -192,29 +202,65 @@ class SystemStats
         return $this->get('system_stats_monthly_v2',$start,$end,$system_id);
     }
 
-    public function get_last7($system_id = false) {
-        return $this->get('system_stats_last7_v2',false,false,$system_id);
+    public function get_last7($session_userid, $system_id = false, $mode = "public") {
+        return $this->get('system_stats_last7_v2',false,false,$system_id,$session_userid,$mode);
     }
 
-    public function get_last30($system_id = false) {
-        return $this->get('system_stats_last30_v2',false,false,$system_id);
-    }
-   
-    public function get_last90($system_id = false) {
-        return $this->get('system_stats_last90_v2',false,false,$system_id);
+    public function get_last30($session_userid, $system_id = false, $mode = "public") {
+        return $this->get('system_stats_last30_v2',false,false,$system_id,$session_userid,$mode);
     }
 
-    public function get_last365($system_id = false) {
-        return $this->get('system_stats_last365_v2',false,false,$system_id);
+    public function get_last90($session_userid, $system_id = false, $mode = "public") {
+        return $this->get('system_stats_last90_v2',false,false,$system_id,$session_userid,$mode);
+    }
+
+    public function get_last365($session_userid, $system_id = false, $mode = "public") {
+        return $this->get('system_stats_last365_v2',false,false,$system_id,$session_userid,$mode);
     }
     
-    public function get_all($system_id = false) {
-        return $this->get('system_stats_all_v2',false,false,$system_id);
+    public function get_all($session_userid, $system_id = false, $mode = "public") {
+        return $this->get('system_stats_all_v2',false,false,$system_id,$session_userid,$mode);
+    }
+
+    public function get_custom($session_userid, $system_id = false, $mode = "public", $start = false, $end = false) {
+        if (!$start) return false;
+        if (!$end) return false;
+        if ($mode != "public") return false;
+
+        $date = new DateTime();
+        $date->setTimezone(new DateTimeZone('Europe/London'));
+        $date->setTime(0, 0, 0);
+        // start
+        $date->modify($start);
+        $start = $date->getTimestamp();
+        // end
+        $date->modify($end);
+        $date->modify('+1 month');
+        $end = $date->getTimestamp();
+
+        $stats = array();
+        $result = $this->mysqli->query("SELECT id FROM system_meta WHERE share=1 AND published=1"); // OR userid='$userid' (removed for now)
+        while ($row = $result->fetch_object()) {
+            $system_stats_result = $this->process_from_daily($row->id, $start, $end);
+            if ($system_stats_result !== false) {
+                $stats[] = $system_stats_result;
+            }
+        }
+        return $stats;
     }
 
     // Get system stats
-    public function get($table_name, $start=false, $end=false, $system_id = false)
+    public function get($table_name, $start=false, $end=false, $system_id = false, $session_userid = false, $mode = "public")
     {
+        // Generate cache key for public mode
+        if ($mode === "public" && $start === false && $end === false && $system_id === false) {
+            // Try to get from cache first
+            if ($cached_result = $this->redis->get($table_name."_public_cache")) {
+                return json_decode($cached_result, true);
+            }
+        }
+
+
         $where = '';
         if ($start!==false && $end!==false) {
             $date = new DateTime();
@@ -232,15 +278,34 @@ class SystemStats
         }
 
         if ($system_id!==false) {
+            $system_id = (int) $system_id;
             if ($where=='') {
-                $where = "WHERE id=$system_id";
+                $where = "WHERE sm.id=$system_id";
             } else {
-                $where .= " AND id=$system_id";
+                $where .= " AND sm.id=$system_id";
+            }
+        }
+
+        else if ($mode == "public") {
+            if ($where=='') {
+                $where = "WHERE sm.published=1 AND sm.share=1";
+            } else {
+                $where .= " AND sm.published=1 AND sm.share=1";
+            }
+        }
+
+        else if ($mode == "user" && $session_userid!==false) {
+            $session_userid = (int) $session_userid;
+            if ($where=='') {
+                $where = "WHERE sm.userid=$session_userid";
+            } else {
+                $where .= " AND sm.userid=$session_userid";
             }
         }
         
         $system_rows = array();
-        $result = $this->mysqli->query("SELECT * FROM $table_name $where");
+        $result = $this->mysqli->query("SELECT s.* FROM $table_name s JOIN system_meta sm ON s.id = sm.id $where");
+
         while ($row = $result->fetch_object()) {
             $systemid = $row->id;
             if (!isset($system_rows[$systemid])) {
@@ -249,6 +314,38 @@ class SystemStats
             $system_rows[$systemid][] = $row;
         }
 
+        // and sub-account systems
+        if ($mode == "user" && $session_userid!==false) {
+            $session_userid = (int) $session_userid;
+            
+            // Build additional where clause for sub-accounts
+            $sub_where = '';
+            if ($start!==false && $end!==false) {
+                $sub_where = "WHERE s.timestamp>=$start AND s.timestamp<$end";
+            }
+            
+            // Add any systems from sub-accounts
+            $sub_query = "SELECT s.* FROM $table_name s 
+                         JOIN system_meta sm ON s.id = sm.id 
+                         JOIN users u ON sm.userid = u.id 
+                         JOIN accounts a ON u.id = a.linkeduser 
+                         WHERE a.adminuser='$session_userid'";
+            
+            if ($sub_where != '') {
+                $sub_query .= " AND " . str_replace("WHERE ", "", $sub_where);
+            }
+            
+            $result = $this->mysqli->query($sub_query);
+            while ($row = $result->fetch_object()) {
+                $systemid = $row->id;
+                if (!isset($system_rows[$systemid])) {
+                    $system_rows[$systemid] = array();
+                }
+                $system_rows[$systemid][] = $row;
+            }
+        }
+
+
         $stats = array();        
         foreach ($system_rows as $systemid => $rows) {
             $stats[$systemid] = $this->process($rows,$systemid,$start);
@@ -256,6 +353,12 @@ class SystemStats
             if ($stats[$systemid]['combined_cop']!==null) {
                 //$stats[$systemid]['combined_cop'] = number_format($stats[$systemid]['combined_cop'],1,'.','')*1;
             }
+        }
+
+        // Cache the result if mode is public
+        if ($mode === "public" && $start === false && $end === false && $system_id === false && $stats !== false) {
+            $this->redis->set($table_name."_public_cache", json_encode($stats));
+            $this->redis->expire($table_name."_public_cache", 3600); // 1 hour = 3600 seconds
         }
 
         return $stats;

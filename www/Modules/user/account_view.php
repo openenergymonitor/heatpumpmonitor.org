@@ -1,6 +1,7 @@
 <?php
 // no direct access
 defined('EMONCMS_EXEC') or die('Restricted access');
+global $settings;
 ?>
 
 <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
@@ -14,11 +15,6 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     </div>
     <div class="container" style="max-width:800px">
         <br>
-        <div class="card" v-if="account.emoncmsorg_link" style="margin-bottom:10px">
-            <div class="card-body">
-                <b>This account is linked to an emoncms.org account</b><br>Please update account details on emoncms.org, logout and log back in here to update details.
-            </div>
-        </div>
 
         <label><b>Username</b></label>
         <div class="input-group mb-3">
