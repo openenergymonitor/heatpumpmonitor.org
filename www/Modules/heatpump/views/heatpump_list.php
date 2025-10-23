@@ -117,7 +117,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Refrigerant</label>
-                        <!-- R290','R32','CO2','R410A','R210A','R134A','R407C','R454C','R452B -->
+                        <!-- R290','R32','CO2','R410A','R210A','R134A','R407C','R454B','R454C','R452B -->
                         <select v-model="newHeatpump.refrigerant" class="form-control">
                             <option value="">Select refrigerant...</option>
                             <option v-for="refrigerant in refrigerants" :value="refrigerant">
@@ -305,7 +305,7 @@ var app = new Vue({
         editRefrigerant: "",
         editType: "",
         editCapacity: "",
-        refrigerants: ["R290", "R32", "CO2", "R410A", "R210A", "R134A", "R407C", "R454C", "R452B"],
+        refrigerants: ["R290", "R32", "CO2", "R410A", "R210A", "R134A", "R407C", "R454B", "R454C", "R452B"],
         currentSortColumn: "number_of_systems",
         currentSortDir: "desc",
         filterKey: initialFilterKey
