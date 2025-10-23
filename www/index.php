@@ -34,6 +34,9 @@ $system = new System($mysqli);
 require ("Modules/system/system_stats_model.php");
 $system_stats = new SystemStats($mysqli,$system);
 
+require_once "Modules/system/system_photos_model.php";
+$system_photos = new SystemPhotos($mysqli, $system);
+
 // Path and route
 $path = get_application_path(false);
 $route = new Route(get('q'), server('DOCUMENT_ROOT'), server('REQUEST_METHOD'));
