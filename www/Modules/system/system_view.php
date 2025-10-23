@@ -236,7 +236,7 @@ global $settings, $session, $path;
     </div>
 
     <!-- System Photos - Edit Mode -->
-    <div class="container mt-3" style="max-width:800px" v-if="mode=='edit' && (session_userid==system.userid || !system.userid)">
+    <div class="container mt-3" style="max-width:800px" v-if="mode=='edit' && (session_userid==system.userid || !system.userid || admin)">
         <div class="card mt-3">
             <h5 class="card-header">System Photos</h5>
             <div class="card-body">
