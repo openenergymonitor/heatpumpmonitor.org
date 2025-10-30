@@ -998,12 +998,16 @@ $schema['system_stats_last90_v2'] = $schema['system_stats_daily'];
 $schema['system_stats_last365_v2'] = $schema['system_stats_daily'];
 $schema['system_stats_all_v2'] = $schema['system_stats_daily'];
 
+// Used for specific date range 05 September 2024 to 04 September 2025
+$schema['system_stats_custom'] = $schema['system_stats_daily'];
+
 // Remove the timestamp field from the aggregated stats
 unset($schema['system_stats_last7_v2']['timestamp']);
 unset($schema['system_stats_last30_v2']['timestamp']);
 unset($schema['system_stats_last90_v2']['timestamp']);
 unset($schema['system_stats_last365_v2']['timestamp']);
 unset($schema['system_stats_all_v2']['timestamp']);
+unset($schema['system_stats_custom']['timestamp']);
 
 $schema['system_stats_script'] = array(
 
