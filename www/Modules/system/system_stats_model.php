@@ -31,6 +31,7 @@ class SystemStats
         $this->schema['system_stats_last30_v2'] = $this->system->populate_codes($schema['system_stats_last30_v2']);
         $this->schema['system_stats_last90_v2'] = $this->system->populate_codes($schema['system_stats_last90_v2']);
         $this->schema['system_stats_last365_v2'] = $this->system->populate_codes($schema['system_stats_last365_v2']);
+        $this->schema['system_stats_custom'] = $this->system->populate_codes($schema['system_stats_custom']);
         $this->schema['system_stats_all_v2'] = $this->system->populate_codes($schema['system_stats_all_v2']);
         $this->schema['system_stats_daily'] = $this->system->populate_codes($schema['system_stats_daily']);
     }
@@ -219,11 +220,16 @@ class SystemStats
     public function get_last365($session_userid, $system_id = false, $mode = "public") {
         return $this->get('system_stats_last365_v2',false,false,$system_id,$session_userid,$mode);
     }
+
+    public function get_custom($session_userid, $system_id = false, $mode = "public") {
+        return $this->get('system_stats_custom',false,false,$system_id,$session_userid,$mode);
+    }
     
     public function get_all($session_userid, $system_id = false, $mode = "public") {
         return $this->get('system_stats_all_v2',false,false,$system_id,$session_userid,$mode);
     }
 
+    /*
     public function get_custom($session_userid, $system_id = false, $mode = "public", $start = false, $end = false) {
         if (!$start) return false;
         if (!$end) return false;
@@ -249,7 +255,7 @@ class SystemStats
             }
         }
         return $stats;
-    }
+    }*/
 
     // Get system stats
     public function get($table_name, $start=false, $end=false, $system_id = false, $session_userid = false, $mode = "public")
@@ -258,7 +264,7 @@ class SystemStats
         if ($mode === "public" && $start === false && $end === false && $system_id === false) {
             // Try to get from cache first
             if ($cached_result = $this->redis && $this->redis->get($table_name."_public_cache")) {
-                return json_decode($cached_result, true);
+                // return json_decode($cached_result, true);
             }
         }
 
@@ -359,8 +365,8 @@ class SystemStats
 
         // Cache the result if mode is public
         if ($this->redis && $mode === "public" && $start === false && $end === false && $system_id === false && $stats !== false) {
-            $this->redis->set($table_name."_public_cache", json_encode($stats));
-            $this->redis->expire($table_name."_public_cache", 3600); // 1 hour = 3600 seconds
+            //$this->redis->set($table_name."_public_cache", json_encode($stats));
+            //$this->redis->expire($table_name."_public_cache", 3600); // 1 hour = 3600 seconds
         }
 
         return $stats;

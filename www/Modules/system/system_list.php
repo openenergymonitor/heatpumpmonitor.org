@@ -150,12 +150,13 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             <option value="last30">Last 30 days</option>
                             <option value="last90">Last 90 days</option>
                             <option value="last365">Last 365 days</option>
+                            <option value="custom">Custom (5th Sep 24 to 4th Sep 25)</option>
                             <option v-for="month in available_months_start">{{ month }}</option>
                         </select>
                         
                         <span class="input-group-text" v-if="stats_time_end!='only'">to</span>
 
-                        <select class="form-control" v-model="stats_time_end" v-if="stats_time_start!='all' && stats_time_start!='last7' && stats_time_start!='last30' && stats_time_start!='last90' && stats_time_start!='last365'" @change="stats_time_end_change" style="width:120px">
+                        <select class="form-control" v-model="stats_time_end" v-if="stats_time_start!='all' && stats_time_start!='last7' && stats_time_start!='last30' && stats_time_start!='last90' && stats_time_start!='last365' && stats_time_start!='custom'" @change="stats_time_end_change" style="width:120px">
                             <option value="only">Only</option>
                             <option v-for="month in available_months_end">{{ month }}</option>
                         </select>
@@ -538,14 +539,15 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         currentSortColumn = 'id';
     }
 
-    var periods_available = ['last365','last90','last30','last7','all'];
+    var periods_available = ['last365','last90','last30','last7','all','custom'];
 
     var default_minDays = {
         'last365': 330,
         'last90': 72,
         'last30': 24,
         'last7': 5,
-        'all': 0
+        'all': 0,
+        'custom':330
     };
 
     // Get URL parameters
@@ -1257,7 +1259,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             },
             stats_time_start_change: function () {
                 // change available_months_end to only show months after start
-                if (this.stats_time_start=='last7' || this.stats_time_start=='last30' || this.stats_time_start=='last90' || this.stats_time_start=='last365' || this.stats_time_start=='all') {
+                if (this.stats_time_start=='last7' || this.stats_time_start=='last30' || this.stats_time_start=='last90' || this.stats_time_start=='last365' || this.stats_time_start=='all' || this.stats_time_start=='custom') {
                     this.stats_time_end = 'only';
                 } else {
                     let start_index = this.available_months_start.indexOf(this.stats_time_start);
@@ -1284,6 +1286,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     if (this.mode == 'public') this.minDays = default_minDays['last7'];
                     columns['combined_cop'].name = 'COP';
                     columns['combined_cop'].heading = 'COP';
+                } else if (this.stats_time_start=='custom') {
+                    if (this.mode == 'public') this.minDays = default_minDays['custom'];
+                    columns['combined_cop'].name = 'SPF';
+                    columns['combined_cop'].heading = 'SPF';
                 } else {
                     if (this.mode == 'public') this.minDays = default_minDays['all'];
                     columns['combined_cop'].name = 'COP';
@@ -1300,7 +1306,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 
                 // Start
                 let start = this.stats_time_start;
-                if (start!='last7' && start!='last30' && start!='last90' && start!='last365' && start!='all') {
+                if (start!='last7' && start!='last30' && start!='last90' && start!='last365' && start!='all' && start!='custom') {
                     // Convert e.g Mar 2023 to 2023-03-01
                     let months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sept','Oct','Nov','Dec'];
                     let month = start.split(' ')[0];
@@ -1326,7 +1332,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     end: end
                 };
 
-                if (start == 'last7' || start == 'last30' || start == 'last90' || start == 'last365' || start == 'all') {
+                if (start == 'last7' || start == 'last30' || start == 'last90' || start == 'last365' || start == 'all' || start == 'custom') {
                     
                     url = path+'system/stats/'+start;
                     params = {};
@@ -1666,7 +1672,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     if (system.combined_cop==0) {
                         return 'partial ';
                     }
-                    if (this.stats_time_start=='last365' || this.stats_time_start=='all') {
+                    if (this.stats_time_start=='last365' || this.stats_time_start=='all' || this.stats_time_start=='custom') {
                         
                         return (days<=330) ? 'partial ' : '';
                     } else if (this.stats_time_start=='last90') {
