@@ -15,6 +15,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 <link rel="stylesheet" href="<?php echo $path; ?>Lib/autocomplete.css?v=4">
 <script src="Lib/autocomplete.js?v=8"></script>
+<link rel="stylesheet" href="<?php echo $path; ?>Modules/system/system_view.css">
 
 <style>
     .sticky {
@@ -454,6 +455,42 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         </div>
 
     </div>
+    
+    <!-- Photo Lightbox -->
+    <div class="photo-lightbox" v-if="lightboxOpen" @click="closeLightbox">
+        <div class="lightbox-content" @click.stop>
+            <button class="lightbox-close" @click="closeLightbox">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <button 
+                class="lightbox-nav lightbox-prev" 
+                @click="previousPhoto" 
+                v-if="system_photos && system_photos.length > 1"
+            >
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            
+            <div class="lightbox-image-container" v-if="system_photos && system_photos.length > 0">
+                <img 
+                    :src="system_photos[currentPhotoIndex].server_url" 
+                    :alt="system_photos[currentPhotoIndex].name"
+                    class="lightbox-image"
+                >
+                <div class="lightbox-caption">
+                    Photo {{ currentPhotoIndex + 1 }} of {{ system_photos.length }}
+                </div>
+            </div>
+            
+            <button 
+                class="lightbox-nav lightbox-next" 
+                @click="nextPhoto" 
+                v-if="system_photos && system_photos.length > 1"
+            >
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -592,6 +629,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     // custom columns
     columns['training'] = { name: "Combined", heading: "Training", group: "Training", helper: "Training" };
     columns['learnmore'] = { name: "Combined", heading: "", group: "Learn more" };
+    columns['photos'] = { name: "Photos", heading: "", group: "Learn more" };
     columns['boundary'] = { name: "Boundary", heading: "Hx", group: "Metering" };
     columns['data_flag'].heading = "";
 
@@ -711,16 +749,16 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     // Template views
     var template_views = {}
     template_views['topofthescops'] = {}
-    template_views['topofthescops']['wide'] = ['location', 'installer_logo', 'installer_name', 'training', 'hp_type', 'hp_make_model', 'hp_output', 'combined_data_length', 'data_flag', 'combined_cop', 'water_cop', 'boundary' , 'mid_metering', 'learnmore'];
-    template_views['topofthescops']['narrow'] = ['installer_logo', 'training', 'hp_make_model', 'hp_output', 'combined_cop', 'learnmore'];
+    template_views['topofthescops']['wide'] = ['location', 'installer_logo', 'installer_name', 'training', 'hp_type', 'hp_make_model', 'hp_output', 'combined_data_length', 'data_flag', 'combined_cop', 'water_cop', 'boundary' , 'mid_metering', 'learnmore', 'photos'];
+    template_views['topofthescops']['narrow'] = ['installer_logo', 'training', 'hp_make_model', 'hp_output', 'combined_cop', 'learnmore', 'photos'];
 
     template_views['heatpumpfabric'] = {}
     template_views['heatpumpfabric']['wide'] = ['installer_logo', 'location', 'property', 'insulation', 'age', 'floor_area', 'hp_type', 'hp_model', 'hp_output', 'combined_cop', 'combined_elec_kwh_per_m2', 'combined_heat_kwh_per_m2'];
     template_views['heatpumpfabric']['narrow'] = ['installer_logo', 'hp_make_model', 'hp_output', 'combined_elec_kwh_per_m2'];
 
     template_views['costs'] = {}
-    template_views['costs']['wide'] = ['installer_logo', 'training', 'location' , 'hp_type', 'hp_make_model', 'hp_output', 'electricity_tariff', 'selected_unit_rate', 'combined_cop', 'combined_heat_unit_cost', 'combined_cost', 'learnmore'];
-    template_views['costs']['narrow'] = ['installer_logo', 'training', 'hp_make_model', 'hp_output', 'combined_heat_unit_cost', 'learnmore'];
+    template_views['costs']['wide'] = ['installer_logo', 'training', 'location' , 'hp_type', 'hp_make_model', 'hp_output', 'electricity_tariff', 'selected_unit_rate', 'combined_cop', 'combined_heat_unit_cost', 'combined_cost', 'learnmore', 'photos'];
+    template_views['costs']['narrow'] = ['installer_logo', 'training', 'hp_make_model', 'hp_output', 'combined_heat_unit_cost', 'learnmore', 'photos'];
 
     // Filter out installer columns for user mode
     if (mode == 'user') {
@@ -940,7 +978,13 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             selected_color: page_settings.selected_color,
             chart_info: '',
             enable_line_best_fit: true,
-            admin_restricted_list: true
+            admin_restricted_list: true,
+            
+            // Photo lightbox
+            lightboxOpen: false,
+            currentPhotoIndex: 0,
+            system_photos: [],
+            loadingPhotos: false
         },
         methods: {
             tariff_mode_changed: function() {
@@ -1530,6 +1574,13 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
                     return learnmore;
                 }
+                if (key=='photos') {
+                    var photos = "";
+                    if (system['photo_count'] && system['photo_count'] > 0) {
+                        photos += "<a href='javascript:void(0)' onclick='app.openSystemPhotos(" + system['id'] + ")' style='color: #0d6efd; font-size: 1.2em; text-decoration: none;' title='View system photos (" + system['photo_count'] + ")'><i class='fas fa-camera'></i></a>";
+                    }
+                    return photos;
+                }
                 if (key=='hp_type') {
                     if (val=="Air Source") {
                         return "<span style='color:#4f8baa'>Air</span>";
@@ -2040,6 +2091,85 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 this.admin_restricted_list = !this.admin_restricted_list;
                 this.filter_systems();
             },
+            
+            // Photo lightbox methods
+            openSystemPhotos: function(systemId) {
+                this.loadingPhotos = true;
+                this.system_photos = [];
+                
+                axios.get(path + 'system/photos?id=' + systemId)
+                    .then(response => {
+                        if (response.data.success && response.data.photos.length > 0) {
+                            this.system_photos = response.data.photos.map(photo => {
+                                return {
+                                    id: photo.id,
+                                    name: photo.original_filename,
+                                    preview: path + photo.url,
+                                    server_url: path + photo.url,
+                                    width: photo.width,
+                                    height: photo.height
+                                };
+                            });
+                            this.currentPhotoIndex = 0;
+                            this.lightboxOpen = true;
+                        }
+                        this.loadingPhotos = false;
+                    })
+                    .catch(error => {
+                        console.log('Error loading photos:', error);
+                        this.loadingPhotos = false;
+                    });
+            },
+            
+            openLightbox: function(index) {
+                this.currentPhotoIndex = index;
+                this.lightboxOpen = true;
+                this.addKeyboardListeners();
+            },
+            
+            closeLightbox: function() {
+                this.lightboxOpen = false;
+                this.removeKeyboardListeners();
+            },
+            
+            nextPhoto: function() {
+                if (this.system_photos.length > 1) {
+                    this.currentPhotoIndex = (this.currentPhotoIndex + 1) % this.system_photos.length;
+                }
+            },
+            
+            previousPhoto: function() {
+                if (this.system_photos.length > 1) {
+                    this.currentPhotoIndex = (this.currentPhotoIndex - 1 + this.system_photos.length) % this.system_photos.length;
+                }
+            },
+            
+            addKeyboardListeners: function() {
+                document.addEventListener('keydown', this.handleKeydown);
+            },
+            
+            removeKeyboardListeners: function() {
+                document.removeEventListener('keydown', this.handleKeydown);
+            },
+            
+            handleKeydown: function(event) {
+                if (!this.lightboxOpen) return;
+                
+                switch(event.key) {
+                    case 'Escape':
+                        event.preventDefault();
+                        this.closeLightbox();
+                        break;
+                    case 'ArrowLeft':
+                        event.preventDefault();
+                        this.previousPhoto();
+                        break;
+                    case 'ArrowRight':
+                        event.preventDefault();
+                        this.nextPhoto();
+                        break;
+                }
+            }
        },
         filters: {
             toFixed: function(val, dp) {
