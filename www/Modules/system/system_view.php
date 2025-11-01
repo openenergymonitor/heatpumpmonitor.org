@@ -9,23 +9,9 @@ global $settings, $session, $path;
 <script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
 
 <link rel="stylesheet" href="<?php echo $path; ?>Lib/autocomplete.css?v=4">
-<script src="<?php echo $path; ?>Lib/autocomplete.js?v=10"></script>
+<link rel="stylesheet" href="<?php echo $path; ?>Modules/system/system_view.css?v=1">
 
-<style>
-    .quality-bound {
-        background-color: #ddd;
-        padding:5px;
-    }
-    .quality {
-        width: 100%;
-    }
-    .quality td {
-        padding: 5px;
-        text-align: center;
-        border: 1px solid #fff;
-        font-size: 14px;
-    }
-</style>
+<script src="<?php echo $path; ?>Lib/autocomplete.js?v=10"></script>
 
 <div id="app" class="bg-light">
     <div style=" background-color:#f0f0f0; padding-top:20px; padding-bottom:10px">
@@ -184,6 +170,149 @@ global $settings, $session, $path;
                 <div class="input-group mt-3">
                     <span class="input-group-text">URL</span>
                     <input type="text" class="form-control" v-model="system.url" placeholder="Full app URL" disabled>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Photos - View Mode -->
+    <div class="container mt-3" style="max-width:800px" v-if="mode=='view' && hasPhotos">
+        <div class="card mt-3">
+            <h5 class="card-header">System Photos</h5>
+            <div class="card-body">
+                <div class="photo-gallery">
+                    <div class="photo-thumbnail-grid">
+                        <div 
+                            class="photo-thumbnail-item" 
+                            v-for="(photo, index) in system_photos" 
+                            :key="photo.id"
+                            @click="openLightbox(index)"
+                        >
+                            <img :src="photo.preview" :alt="photo.name" class="gallery-thumbnail">
+                            <div class="thumbnail-overlay">
+                                <i class="fas fa-expand-alt"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Photo Lightbox -->
+    <div class="photo-lightbox" v-if="lightboxOpen" @click="closeLightbox">
+        <div class="lightbox-content" @click.stop>
+            <button class="lightbox-close" @click="closeLightbox">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <button 
+                class="lightbox-nav lightbox-prev" 
+                @click="previousPhoto" 
+                v-if="system_photos && system_photos.length > 1"
+            >
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            
+            <div class="lightbox-image-container">
+                <img 
+                    :src="system_photos[currentPhotoIndex].server_url" 
+                    :alt="system_photos[currentPhotoIndex].name"
+                    class="lightbox-image"
+                >
+                <div class="lightbox-caption">
+                    Photo {{ currentPhotoIndex + 1 }} of {{ system_photos.length }}
+                </div>
+            </div>
+            
+            <button 
+                class="lightbox-nav lightbox-next" 
+                @click="nextPhoto" 
+                v-if="system_photos && system_photos.length > 1"
+            >
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- System Photos - Edit Mode -->
+    <div class="container mt-3" style="max-width:800px" v-if="mode=='edit' && (session_userid==system.userid || !system.userid || admin)">
+        <div class="card mt-3">
+            <h5 class="card-header">System Photos</h5>
+            <div class="card-body">
+                <p>Add photos of your heat pump system (maximum 4 images, up to 5MB each). Supported formats: JPG, PNG, WebP.</p>                <!-- Photo Upload Area -->
+                <div class="photo-upload-container">                    
+                    <!-- Uploaded Photos Preview -->
+                    <div class="uploaded-photos-grid">
+                        <div class="photo-item" v-for="(photo, index) in system_photos" :key="index">
+                            <div class="photo-preview">
+                                <img :src="photo.preview" :alt="'Photo ' + (index + 1)" class="photo-thumbnail">
+                                <div class="photo-overlay">
+                                    <button 
+                                        type="button" 
+                                        class="btn btn-sm btn-danger photo-remove-btn" 
+                                        @click="removePhoto(index)"
+                                        title="Remove photo"
+                                    >
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="photo-info">
+                                <small class="text-muted">{{ photo.name }}</small>
+                                <div class="upload-progress" v-if="photo.uploading">
+                                    <div class="progress">
+                                        <div class="progress-bar" :style="{ width: photo.progress + '%' }"></div>
+                                    </div>
+                                </div>
+                                <div class="upload-status" v-if="photo.uploaded">
+                                    <small class="text-success"><i class="fas fa-check"></i> Uploaded</small>
+                                </div>
+                                <div class="upload-status" v-if="photo.error">
+                                    <small class="text-danger"><i class="fas fa-exclamation-triangle"></i> {{ photo.error }}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Add More Photos Button -->
+                    <button 
+                        type="button" 
+                        class="btn btn-outline-secondary mt-3" 
+                        @click="show_photo_upload = true"
+                        v-if="show_photo_upload == false && system_photos.length < 4"
+                    >
+                        <i class="fas fa-plus"></i> Add More Photos ({{ system_photos.length }}/4)
+                    </button>
+
+                    <!-- Drag and Drop Zone -->
+                    <div 
+                        class="photo-drop-zone" 
+                        @dragover.prevent="handleDragOver"
+                        @dragleave.prevent="handleDragLeave"
+                        @drop.prevent="handleDrop"
+                        :class="{ 'drag-active': isDragActive }"
+                        v-if="show_photo_upload && system_photos.length < 4"
+                    >
+                        <div class="drop-zone-content">
+                            <i class="fas fa-cloud-upload-alt fa-3x mb-3" style="color: #6c757d;"></i>
+                            <h5>Drag and drop photos here</h5>
+                            <p class="text-muted">or</p>
+                            <button type="button" class="btn btn-outline-primary" @click="triggerFileSelect">
+                                <i class="fas fa-folder-open"></i> Select Photos
+                            </button>
+                            <input 
+                                type="file" 
+                                ref="fileInput" 
+                                @change="handleFileSelect" 
+                                multiple 
+                                accept="image/jpeg,image/jpg,image/png,image/webp"
+                                style="display: none;"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="alert alert-danger" role="alert" v-if="show_photo_error" v-html="photo_message"></div>
                 </div>
             </div>
         </div>
@@ -445,7 +574,21 @@ global $settings, $session, $path;
             hp_type: '',
             hp_capacity: '',
             refrigerants: all_refrigerants,
-            types: all_types
+            types: all_types,
+
+            // Photo upload properties
+            system_photos: [],
+            show_photo_upload: true,
+            isDragActive: false,
+            max_photos: 4,
+            max_file_size: 5 * 1024 * 1024, // 5MB
+            allowed_types: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
+            show_photo_error: false,
+            photo_message: '',
+
+            // Photo gallery/lightbox properties
+            lightboxOpen: false,
+            currentPhotoIndex: 0
 
         },
         computed: {
@@ -496,6 +639,10 @@ global $settings, $session, $path;
                     // Use white text for dark backgrounds (luminance < 0.5), black for light
                     return luminance < 0.5 ? '#fff' : '#000';
                 }
+            },
+            
+            hasPhotos() {
+                return this.system_photos && this.system_photos.length > 0;
             }
         },
         filters: {
@@ -846,8 +993,219 @@ global $settings, $session, $path;
                     });
             },
 
+            // Photo upload methods
+            triggerFileSelect: function() {
+                this.$refs.fileInput.click();
+            },
+
+            handleFileSelect: function(event) {
+                const files = Array.from(event.target.files);
+                this.processFiles(files);
+                // Clear the input so the same file can be selected again
+                event.target.value = '';
+            },
+
+            handleDragOver: function(event) {
+                event.preventDefault();
+                this.isDragActive = true;
+            },
+
+            handleDragLeave: function(event) {
+                event.preventDefault();
+                this.isDragActive = false;
+            },
+
+            handleDrop: function(event) {
+                event.preventDefault();
+                this.isDragActive = false;
+                const files = Array.from(event.dataTransfer.files);
+                this.processFiles(files);
+            },
+
+            processFiles: function(files) {
+                // Filter valid image files
+                const validFiles = files.filter(file => {
+                    // Check file type
+                    if (!this.allowed_types.includes(file.type)) {
+                        this.showFileError(`"${file.name}" is not a supported image format.`);
+                        return false;
+                    }
+                    // Check file size
+                    if (file.size > this.max_file_size) {
+                        this.showFileError(`"${file.name}" is too large. Maximum size is 5MB.`);
+                        return false;
+                    }
+                    return true;
+                });
+
+                // Check if we would exceed max photos
+                const totalPhotos = this.system_photos.length + validFiles.length;
+                if (totalPhotos > this.max_photos) {
+                    const allowedFiles = this.max_photos - this.system_photos.length;
+                    this.showFileError(`You can only upload ${allowedFiles} more photo(s). Maximum is ${this.max_photos} photos.`);
+                    return;
+                }
+
+                this.show_photo_upload = 0 == validFiles.length;
+
+                // Process each valid file
+                validFiles.forEach(file => {
+                    this.addPhoto(file);
+                });
+            },
+
+            addPhoto: function(file) {
+                // Create file reader for preview
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const photo = {
+                        id: Date.now() + Math.random(),
+                        file: file,
+                        name: file.name,
+                        size: file.size,
+                        preview: e.target.result,
+                        uploading: false,
+                        uploaded: false,
+                        progress: 0,
+                        error: null
+                    };
+                    
+                    this.system_photos.push(photo);
+                    // Auto-upload the photo
+                    this.uploadPhoto(photo);
+                };
+                reader.readAsDataURL(file);
+            },
+
+            removePhoto: function(index) {
+                const photo = this.system_photos[index];
+                
+                // If photo has an ID, it's been uploaded to server, so delete it
+                if (photo.id) {
+                    if (confirm('Are you sure you want to delete this photo?')) {
+                        axios.post(this.path + 'system/delete-photo?photo_id=' + photo.id)
+                            .then(response => {
+                                if (response.data.success) {
+                                    this.system_photos.splice(index, 1);
+                                    // Update photo upload visibility
+                                    this.show_photo_upload = this.system_photos.length == 0;
+                                } else {
+                                    alert('Failed to delete photo: ' + response.data.message);
+                                }
+                            })
+                            .catch(error => {
+                                alert('Failed to delete photo: ' + (error.response?.data?.message || 'Unknown error'));
+                            });
+                    }
+                } else {
+                    // Photo is still being uploaded or failed, just remove from array
+                    this.system_photos.splice(index, 1);
+                    // Update photo upload visibility
+                    this.show_photo_upload = this.system_photos.length == 0;
+                }
+            },
+
+            uploadPhoto: function(photo) {
+                photo.uploading = true;
+                photo.progress = 0;
+
+                // Create FormData for upload
+                const formData = new FormData();
+                formData.append('photo', photo.file);
+                formData.append('system_id', this.system.id);
+
+                // Upload to server
+                axios.post(this.path + 'system/upload-photo', formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    },
+                    onUploadProgress: (progressEvent) => {
+                        photo.progress = Math.round((progressEvent.loaded / progressEvent.total) * 100);
+                    }
+                })
+                .then(response => {
+                    photo.uploading = false;
+                    if (response.data.success) {
+                        photo.uploaded = true;
+                        photo.server_url = response.data.url; // Store server URL
+                        photo.id = response.data.image_id; // Store image ID for deletion
+                        // Update photo upload visibility
+                        this.show_photo_upload = this.system_photos.length == 0;
+                    } else {
+                        photo.error = response.data.message || 'Upload failed. Please try again.';
+                    }
+                })
+                .catch(error => {
+                    photo.uploading = false;
+                    photo.error = error.response?.data?.message || 'Upload failed. Please try again.';
+                }); 
+            },
+
+            showFileError: function(message) {
+                this.show_photo_error = true;
+                this.photo_message = message;
+                // Auto-hide error after 5 seconds
+                setTimeout(() => {
+                    this.show_photo_error = false;
+                }, 5000);
+            },
+
+            // Photo gallery/lightbox methods
+            openLightbox: function(index) {
+                if (!this.system_photos || this.system_photos.length === 0) return;
+                this.currentPhotoIndex = index;
+                this.lightboxOpen = true;
+                // Prevent body scrolling when lightbox is open
+                document.body.style.overflow = 'hidden';
+            },
+
+            closeLightbox: function() {
+                this.lightboxOpen = false;
+                this.currentPhotoIndex = 0;
+                // Restore body scrolling
+                document.body.style.overflow = '';
+            },
+
+            nextPhoto: function() {
+                if (!this.system_photos || this.system_photos.length === 0) return;
+                if (this.currentPhotoIndex < this.system_photos.length - 1) {
+                    this.currentPhotoIndex++;
+                } else {
+                    this.currentPhotoIndex = 0; // Loop back to first photo
+                }
+            },
+
+            previousPhoto: function() {
+                if (!this.system_photos || this.system_photos.length === 0) return;
+                if (this.currentPhotoIndex > 0) {
+                    this.currentPhotoIndex--;
+                } else {
+                    this.currentPhotoIndex = this.system_photos.length - 1; // Loop to last photo
+                }
+            }
+
 
         },
+        mounted: function() {
+            // Add keyboard event listener for lightbox navigation
+            document.addEventListener('keydown', (event) => {
+                if (this.lightboxOpen) {
+                    switch(event.key) {
+                        case 'Escape':
+                            this.closeLightbox();
+                            break;
+                        case 'ArrowLeft':
+                            event.preventDefault();
+                            this.previousPhoto();
+                            break;
+                        case 'ArrowRight':
+                            event.preventDefault();
+                            this.nextPhoto();
+                            break;
+                    }
+                }
+            });
+        }
     });
 
     app.filter_schema_groups();
@@ -871,6 +1229,38 @@ global $settings, $session, $path;
             console.log(error);
         });
 
+    // Load existing photos for this system
+    if (app.system.id) {
+        axios.get(path + 'system/photos?id=' + app.system.id)
+            .then(function(response) {
+                if (response.data.success) {
+                    app.system_photos = response.data.photos.map(photo => {
+                        return {
+                            id: photo.id,
+                            name: photo.original_filename,
+                            preview: path + photo.url,
+                            server_url: path + photo.url,
+                            uploading: false,
+                            uploaded: false,
+                            progress: 100,
+                            error: null,
+                            width: photo.width,
+                            height: photo.height,
+                            file_size: photo.file_size,
+                            date_uploaded: photo.date_uploaded
+                        };
+                    });
+                }
+                app.show_photo_upload = app.system_photos.length == 0;
+            })
+            .catch(function(error) {
+                console.log('Error loading photos:', error);
+                app.show_photo_upload = app.system_photos.length == 0;
+            });
+    } else {
+        app.show_photo_upload = app.system_photos.length == 0;
+    }
+    
     // Load available apps
     if (app.mode == 'edit') {
         app.loading_available_apps = true;
