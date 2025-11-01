@@ -182,4 +182,107 @@ class SystemPhotos
             return array("success" => false, "message" => "Failed to delete photo from database");
         }
     }
+
+    // Admin method to get all photos with pagination
+    public function get_all_photos_admin($userid, $page = 1, $limit = 50) {
+        $userid = (int) $userid;
+        $page = (int) $page;
+        $limit = (int) $limit;
+        
+        // Check if user is admin
+        if ($this->system && !$this->system->is_admin($userid)) {
+            return array("success" => false, "message" => "Admin access required");
+        }
+        
+        $offset = ($page - 1) * $limit;
+        
+        // Get total count
+        $count_result = $this->mysqli->query("SELECT COUNT(*) as total FROM system_images");
+        $total_photos = $count_result->fetch_assoc()['total'];
+        
+        // Get photos with system info, ordered by upload date (newest first)
+        $stmt = $this->mysqli->prepare("
+            SELECT si.id, si.system_id, si.image_path, si.original_filename, 
+                   si.width, si.height, si.file_size, si.date_uploaded,
+                   sm.location, sm.hp_manufacturer, sm.hp_model, sm.hp_output
+            FROM system_images si 
+            JOIN system_meta sm ON si.system_id = sm.id 
+            ORDER BY si.date_uploaded DESC 
+            LIMIT ? OFFSET ?
+        ");
+        $stmt->bind_param("ii", $limit, $offset);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        $photos = array();
+        while ($row = $result->fetch_assoc()) {
+            $photos[] = array(
+                'id' => (int)$row['id'],
+                'system_id' => (int)$row['system_id'],
+                'url' => $row['image_path'],
+                'original_filename' => $row['original_filename'],
+                'width' => $row['width'] ? (int)$row['width'] : null,
+                'height' => $row['height'] ? (int)$row['height'] : null,
+                'file_size' => $row['file_size'] ? (int)$row['file_size'] : null,
+                'date_uploaded' => (int)$row['date_uploaded'],
+                'system_location' => $row['location'],
+                'system_info' => trim(($row['hp_output'] ? $row['hp_output'] . 'kW ' : '') . 
+                                    ($row['hp_manufacturer'] ? $row['hp_manufacturer'] . ' ' : '') . 
+                                    ($row['hp_model'] ? $row['hp_model'] : ''))
+            );
+        }
+        
+        $total_pages = ceil($total_photos / $limit);
+        
+        return array(
+            "success" => true, 
+            "photos" => $photos,
+            "pagination" => array(
+                "current_page" => $page,
+                "total_pages" => $total_pages,
+                "total_photos" => (int)$total_photos,
+                "limit" => $limit,
+                "has_next" => $page < $total_pages,
+                "has_prev" => $page > 1
+            )
+        );
+    }
+
+    // Admin method to delete any photo (for admin interface)
+    public function admin_delete_photo($userid, $photo_id) {
+        $userid = (int) $userid;
+        $photo_id = (int) $photo_id;
+        
+        // Check if user is admin
+        if ($this->system && !$this->system->is_admin($userid)) {
+            return array("success" => false, "message" => "Admin access required");
+        }
+        
+        // Get photo details
+        $stmt = $this->mysqli->prepare("SELECT * FROM system_images WHERE id = ?");
+        $stmt->bind_param("i", $photo_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if (!$row = $result->fetch_assoc()) {
+            return array("success" => false, "message" => "Photo not found");
+        }
+        
+        // Delete the file from filesystem
+        if (file_exists($row['image_path'])) {
+            if (!unlink($row['image_path'])) {
+                return array("success" => false, "message" => "Failed to delete image file");
+            }
+        }
+        
+        // Delete from database
+        $stmt = $this->mysqli->prepare("DELETE FROM system_images WHERE id = ?");
+        $stmt->bind_param("i", $photo_id);
+        
+        if ($stmt->execute()) {
+            return array("success" => true, "message" => "Photo deleted successfully");
+        } else {
+            return array("success" => false, "message" => "Failed to delete photo from database");
+        }
+    }
 }

@@ -322,8 +322,34 @@ function system_controller() {
         return array("success" => false, "message" => "Authentication required");
     }
 
-    // Get photos for a system
-    if ($route->action=="photos") {
+    // Admin photos page - list all uploaded photos
+    if ($route->action=="photos" && $route->subaction=="admin") {
+        if ($session['userid'] && $session['admin']) {
+            if ($route->format=="html") {
+                return view("Modules/system/system_photos_admin_view.php", array());
+            } else if ($route->format=="json") {
+                $page = get("page", 1);
+                $limit = get("limit", 50);
+                return $system_photos->get_all_photos_admin($session['userid'], $page, $limit);
+            }
+        }
+    }
+
+    // Admin delete photo endpoint
+    if ($route->action=="photos" && $route->subaction=="delete") {
+        if ($session['userid'] && $session['admin']) {
+            $route->format = "json";
+            $photo_id = get("photo_id", false);
+            if ($photo_id) {
+                return $system_photos->admin_delete_photo($session['userid'], $photo_id);
+            }
+            return array("success" => false, "message" => "Photo ID required");
+        }
+        return array("success" => false, "message" => "Authentication required");
+    }
+
+    // Get photos for a system (only if no subaction)
+    if ($route->action=="photos" && $route->subaction=="") {
         $route->format = "json";
         $system_id = get("id", false);
         if ($system_id) {
