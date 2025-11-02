@@ -20,7 +20,9 @@ $schema['system_images'] = array(
     'width' => array('type' => 'int(11)', 'Null' => true),
     'height' => array('type' => 'int(11)', 'Null' => true),
     'file_size' => array('type' => 'int(11)', 'Null' => true),
-    'date_uploaded' => array('type' => 'int(11)', 'Null' => false)
+    'date_uploaded' => array('type' => 'int(11)', 'Null' => false),
+    // JSON array of thumbnail objects: [{"width":80,"height":60,"url":"path/to/thumb_80x60.jpg"},{"width":150,"height":150,"url":"path/to/thumb_150.jpg"}]
+    'thumbnails' => array('type' => 'JSON', 'Null' => true)
 );
 
 $schema['system_meta'] = array(

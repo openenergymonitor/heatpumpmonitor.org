@@ -31,6 +31,7 @@ services:
       - ./www:/var/www/heatpumpmonitororg
       - ./load_dev_env_data.php:/var/load_dev_env_data.php:ro
       - ./load_installer_logos.php:/var/load_installer_logos.php:ro
+      - ./generate_thumbnails.php:/var/generate_thumbnails.php:ro
     env_file:
       # Use default enviroment variables file for dev
       - 'default.docker-env'
@@ -38,7 +39,7 @@ services:
       # Dont reload all data, just users and system meta data
       - "RELOAD_ALL=0"
       # Clear database before loading data
-      - "CLEAR_DB=1"
+      - "CLEAR_DB=0"
       # Load the users
       - "LOAD_USERS=1"
       # Load system meta data
@@ -47,8 +48,10 @@ services:
       - "LOAD_RUNNING_STATS=1"
       # Use only when required, this is slow and uses server bandwidth
       - "LOAD_MONTHLY_STATS=0"
+      #- "LOAD_MONTHLY_STATS=[1,2,204,789]"
       # Use only when required, this is even slower and uses server bandwidth
       - "LOAD_DAILY_STATS=0"
+      #- "LOAD_DAILY_STATS=[1,2,204,789]"
     # working_dir: /var/www/heatpumpmonitororg  # Set the working directory
     entrypoint: "php /var/load_dev_env_data.php"
     depends_on:

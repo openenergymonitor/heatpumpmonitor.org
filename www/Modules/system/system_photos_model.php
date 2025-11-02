@@ -3,15 +3,19 @@
 // no direct access
 defined('EMONCMS_EXEC') or die('Restricted access');
 
+require_once "Modules/system/thumbnail_generator.php";
+
 class SystemPhotos
 {
     private $mysqli;
     private $system;
+    private $thumbnail_generator;
 
     public function __construct($mysqli, $system = null)
     {
         $this->mysqli = $mysqli;
         $this->system = $system;
+        $this->thumbnail_generator = new ThumbnailGenerator();
     }
 
     public function upload_photo($userid) {
@@ -86,21 +90,46 @@ class SystemPhotos
         $width = $image_info ? $image_info[0] : null;
         $height = $image_info ? $image_info[1] : null;
         
+        // Generate thumbnails (don't fail upload if this fails)
+        $thumbnail_result = $this->thumbnail_generator->generateThumbnails($filepath);
+        $thumbnail_paths = $thumbnail_result['thumbnails'] ?? [];
+        
+        // Encode thumbnails as JSON
+        $thumbnails_json = !empty($thumbnail_paths) ? json_encode($thumbnail_paths) : null;
+                
         // Save to database
-        $stmt = $this->mysqli->prepare("INSERT INTO system_images (system_id, image_path, original_filename, width, height, file_size, date_uploaded) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt = $this->mysqli->prepare("INSERT INTO system_images (system_id, image_path, original_filename, width, height, file_size, date_uploaded, thumbnails) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
         $date_uploaded = time();
-        $stmt->bind_param("issiiii", $system_id, $filepath, $photo['name'], $width, $height, $photo['size'], $date_uploaded);
+        $stmt->bind_param("issiiiis", $system_id, $filepath, $photo['name'], $width, $height, $photo['size'], $date_uploaded, $thumbnails_json);
         
         if ($stmt->execute()) {
             $image_id = $this->mysqli->insert_id;
-            return array(
+            
+            // Prepare response with thumbnail information
+            $response = array(
                 "success" => true, 
                 "message" => "Photo uploaded successfully",
                 "image_id" => $image_id,
                 "url" => $filepath,
                 "width" => $width,
-                "height" => $height
+                "height" => $height,
+                "thumbnail_generation" => array(
+                    "success" => $thumbnail_result['success'],
+                    "count" => count($thumbnail_paths)
+                )
             );
+            
+            // Add thumbnail URLs if they were generated
+            if (!empty($thumbnail_paths)) {
+                $response["thumbnails"] = $thumbnail_paths;
+            }
+            
+            // Add thumbnail generation errors to response for debugging
+            if (!empty($thumbnail_result['errors'])) {
+                $response["thumbnail_generation"]["errors"] = $thumbnail_result['errors'];
+            }
+            
+            return $response;
         } else {
             // Clean up file if database insert fails
             unlink($filepath);
@@ -116,14 +145,14 @@ class SystemPhotos
             return array("success" => false, "message" => "Access denied");
         }
         
-        $stmt = $this->mysqli->prepare("SELECT id, image_path, original_filename, width, height, file_size, date_uploaded FROM system_images WHERE system_id = ? ORDER BY date_uploaded ASC");
+        $stmt = $this->mysqli->prepare("SELECT id, image_path, original_filename, width, height, file_size, date_uploaded, thumbnails FROM system_images WHERE system_id = ? ORDER BY date_uploaded ASC");
         $stmt->bind_param("i", $system_id);
         $stmt->execute();
         $result = $stmt->get_result();
         
         $photos = array();
         while ($row = $result->fetch_assoc()) {
-            $photos[] = array(
+            $photo_data = array(
                 'id' => (int)$row['id'],
                 'url' => $row['image_path'],
                 'original_filename' => $row['original_filename'],
@@ -132,6 +161,24 @@ class SystemPhotos
                 'file_size' => $row['file_size'] ? (int)$row['file_size'] : null,
                 'date_uploaded' => (int)$row['date_uploaded']
             );
+            
+            // Add thumbnails in optimized format (stored directly as array)
+            $thumbnails = array();
+            if ($row['thumbnails']) {
+                $decoded_thumbnails = json_decode($row['thumbnails'], true);
+                if ($decoded_thumbnails && is_array($decoded_thumbnails)) {
+                    // Verify files exist and filter out missing ones
+                    foreach ($decoded_thumbnails as $thumbnail) {
+                        if (isset($thumbnail['url']) && file_exists($thumbnail['url'])) {
+                            $thumbnails[] = $thumbnail;
+                        }
+                    }
+                }
+            }
+
+            if (!empty($thumbnails)) {
+                $photo_data['thumbnails'] = $thumbnails;
+            }            $photos[] = $photo_data;
         }
         
         return array("success" => true, "photos" => $photos);
@@ -165,12 +212,15 @@ class SystemPhotos
             return array("success" => false, "message" => "Access denied");
         }
         
-        // Delete the file from filesystem
+        // Delete the main file from filesystem
         if (file_exists($row['image_path'])) {
             if (!unlink($row['image_path'])) {
                 return array("success" => false, "message" => "Failed to delete image file");
             }
         }
+        
+        // Delete thumbnail files
+        $this->thumbnail_generator->deleteThumbnails($row['image_path']);
         
         // Delete from database
         $stmt = $this->mysqli->prepare("DELETE FROM system_images WHERE id = ?");
@@ -203,7 +253,7 @@ class SystemPhotos
         // Get photos with system info, ordered by upload date (newest first)
         $stmt = $this->mysqli->prepare("
             SELECT si.id, si.system_id, si.image_path, si.original_filename, 
-                   si.width, si.height, si.file_size, si.date_uploaded,
+                   si.width, si.height, si.file_size, si.date_uploaded, si.thumbnails,
                    sm.location, sm.hp_manufacturer, sm.hp_model, sm.hp_output
             FROM system_images si 
             JOIN system_meta sm ON si.system_id = sm.id 
@@ -213,10 +263,10 @@ class SystemPhotos
         $stmt->bind_param("ii", $limit, $offset);
         $stmt->execute();
         $result = $stmt->get_result();
-        
+
         $photos = array();
         while ($row = $result->fetch_assoc()) {
-            $photos[] = array(
+            $photo_data = array(
                 'id' => (int)$row['id'],
                 'system_id' => (int)$row['system_id'],
                 'url' => $row['image_path'],
@@ -230,9 +280,26 @@ class SystemPhotos
                                     ($row['hp_manufacturer'] ? $row['hp_manufacturer'] . ' ' : '') . 
                                     ($row['hp_model'] ? $row['hp_model'] : ''))
             );
-        }
-        
-        $total_pages = ceil($total_photos / $limit);
+            
+            // Add thumbnails in optimized format (stored directly as array)
+            if ($row['thumbnails']) {
+                $decoded_thumbnails = json_decode($row['thumbnails'], true);
+                if ($decoded_thumbnails && is_array($decoded_thumbnails)) {
+                    // Verify files exist and filter out missing ones
+                    $thumbnails = array();
+                    foreach ($decoded_thumbnails as $thumbnail) {
+                        if (isset($thumbnail['url']) && file_exists($thumbnail['url'])) {
+                            $thumbnails[] = $thumbnail;
+                        }
+                    }
+                    if (!empty($thumbnails)) {
+                        $photo_data['thumbnails'] = $thumbnails;
+                    }
+                }
+            }
+            
+            $photos[] = $photo_data;
+        }        $total_pages = ceil($total_photos / $limit);
         
         return array(
             "success" => true, 
@@ -275,6 +342,9 @@ class SystemPhotos
             }
         }
         
+        // Delete thumbnail files
+        $this->thumbnail_generator->deleteThumbnails($row['image_path']);
+        
         // Delete from database
         $stmt = $this->mysqli->prepare("DELETE FROM system_images WHERE id = ?");
         $stmt->bind_param("i", $photo_id);
@@ -284,5 +354,100 @@ class SystemPhotos
         } else {
             return array("success" => false, "message" => "Failed to delete photo from database");
         }
+    }
+
+    /**
+     * Generate thumbnails for existing images
+     * Intelligently handles both missing thumbnails and new sizes
+     * @param int|null $system_id If provided, only process images for this system
+     * @param bool $force_all If true, regenerate all thumbnails even if they exist
+     * @return array Results of thumbnail generation
+     */
+    public function generateThumbnails($system_id = null, $force_all = false) {
+        $where_clause = "";
+        $params = array();
+        $types = "";
+        
+        if ($system_id !== null) {
+            $where_clause = "WHERE system_id = ?";
+            $params[] = $system_id;
+            $types = "i";
+        }
+        
+        // Get all images
+        $sql = "SELECT id, system_id, image_path, original_filename, thumbnails FROM system_images" . 
+               ($where_clause ? " $where_clause" : "");
+        
+        if ($system_id !== null) {
+            $stmt = $this->mysqli->prepare($sql);
+            $stmt->bind_param($types, ...$params);
+        } else {
+            $stmt = $this->mysqli->prepare($sql);
+        }
+        
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        $results = array(
+            'total_processed' => 0,
+            'successful' => 0,
+            'failed' => 0,
+            'skipped' => 0,
+            'errors' => array()
+        );
+        
+        // Get expected thumbnail configurations
+        $expected_configs = $this->thumbnail_generator->getThumbnailSizes();
+        
+        while ($row = $result->fetch_assoc()) {
+            $results['total_processed']++;
+            $image_id = $row['id'];
+            $image_path = $row['image_path'];
+            
+            if (!file_exists($image_path)) {
+                $results['failed']++;
+                $results['errors'][] = "Image file not found for ID $image_id: $image_path";
+                continue;
+            }
+            
+            // If not forcing all, check if thumbnails need updating
+            if (!$force_all) {
+                if ($this->thumbnail_generator->needsNewSizes($image_path, 
+                    $row['thumbnails'] ? json_decode($row['thumbnails'], true) : null)) {
+                    // Needs updating
+                } else {
+                    // Skip - thumbnails are complete and files exist
+                    $results['skipped']++;
+                    continue;
+                }
+            }
+            
+            // Generate thumbnails
+            $thumbnail_result = $this->thumbnail_generator->generateThumbnails($image_path);
+            
+            if ($thumbnail_result['success']) {
+                // Update database with thumbnail paths
+                $thumbnail_paths = $thumbnail_result['thumbnails'];
+                $thumbnails_json = json_encode($thumbnail_paths);
+                
+                $update_stmt = $this->mysqli->prepare(
+                    "UPDATE system_images SET thumbnails = ? WHERE id = ?"
+                );
+                $update_stmt->bind_param("si", $thumbnails_json, $image_id);
+                
+                if ($update_stmt->execute()) {
+                    $results['successful']++;
+                } else {
+                    $results['failed']++;
+                    $results['errors'][] = "Failed to update database for image ID $image_id";
+                }
+            } else {
+                $results['failed']++;
+                $results['errors'][] = "Failed to generate thumbnails for image ID $image_id: " . 
+                                     implode(', ', $thumbnail_result['errors']);
+            }
+        }
+        
+        return $results;
     }
 }

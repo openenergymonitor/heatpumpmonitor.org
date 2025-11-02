@@ -188,7 +188,7 @@ global $settings, $session, $path;
                             :key="photo.id"
                             @click="openLightbox(index)"
                         >
-                            <img :src="photo.preview" :alt="photo.name" class="gallery-thumbnail">
+                            <img :src="selectThumbnail(photo, '150')" :alt="photo.name" class="gallery-thumbnail">
                             <div class="thumbnail-overlay">
                                 <i class="fas fa-expand-alt"></i>
                             </div>
@@ -216,7 +216,7 @@ global $settings, $session, $path;
             
             <div class="lightbox-image-container">
                 <img 
-                    :src="system_photos[currentPhotoIndex].server_url" 
+                    :src="path + system_photos[currentPhotoIndex].url" 
                     :alt="system_photos[currentPhotoIndex].name"
                     class="lightbox-image"
                 >
@@ -246,7 +246,7 @@ global $settings, $session, $path;
                     <div class="uploaded-photos-grid">
                         <div class="photo-item" v-for="(photo, index) in system_photos" :key="index">
                             <div class="photo-preview">
-                                <img :src="photo.preview" :alt="'Photo ' + (index + 1)" class="photo-thumbnail">
+                                <img :src="selectThumbnail(photo, '150')" :alt="'Photo ' + (index + 1)" class="photo-thumbnail">
                                 <div class="photo-overlay">
                                     <button 
                                         type="button" 
@@ -998,6 +998,67 @@ global $settings, $session, $path;
                 this.$refs.fileInput.click();
             },
 
+            // Select the best thumbnail size for display
+            selectThumbnail: function(photo, desired_size = '150') {
+                // If photo doesn't have thumbnails, use original
+                if (!photo.thumbnails || !Array.isArray(photo.thumbnails) || photo.thumbnails.length === 0) {
+                    return this.path + photo.url;
+                }
+
+                // Parse desired size - support both numeric and string formats
+                let desired_width, desired_height;
+                if (typeof desired_size === 'string') {
+                    if (desired_size.includes('x')) {
+                        // Format like "80x60"
+                        const parts = desired_size.split('x');
+                        desired_width = parseInt(parts[0]);
+                        desired_height = parseInt(parts[1]);
+                    } else {
+                        // Square format like "150"
+                        const size = parseInt(desired_size);
+                        desired_width = size;
+                        desired_height = size;
+                    }
+                } else {
+                    // Numeric format
+                    desired_width = desired_size;
+                    desired_height = desired_size;
+                }
+
+                // Try to find exact match by dimensions
+                const exact_match = photo.thumbnails.find(thumb => 
+                    thumb.width === desired_width && thumb.height === desired_height
+                );
+                if (exact_match) {
+                    return this.path + exact_match.url;
+                }
+
+                // Find the best fit thumbnail (smallest that's >= desired size for square thumbnails)
+                if (desired_width === desired_height) {
+                    // For square thumbnails, find smallest that's >= desired size
+                    const suitable_thumbs = photo.thumbnails.filter(thumb => 
+                        thumb.width >= desired_width && thumb.height >= desired_height
+                    );
+                    
+                    if (suitable_thumbs.length > 0) {
+                        // Sort by width and pick the smallest suitable
+                        suitable_thumbs.sort((a, b) => a.width - b.width);
+                        return this.path + suitable_thumbs[0].url;
+                    }
+                }
+
+                // If no suitable thumbnail found, use the largest available
+                if (photo.thumbnails.length > 0) {
+                    const largest = photo.thumbnails.reduce((max, thumb) => 
+                        (thumb.width * thumb.height) > (max.width * max.height) ? thumb : max
+                    );
+                    return this.path + largest.url;
+                }
+                
+                // Fallback to original image
+                return this.path + photo.url;
+            },
+
             handleFileSelect: function(event) {
                 const files = Array.from(event.target.files);
                 this.processFiles(files);
@@ -1127,8 +1188,20 @@ global $settings, $session, $path;
                     photo.uploading = false;
                     if (response.data.success) {
                         photo.uploaded = true;
-                        photo.server_url = response.data.url; // Store server URL
+                        photo.url = response.data.url; // Store relative path
+                        photo.server_url = response.data.url; // For backward compatibility
                         photo.id = response.data.image_id; // Store image ID for deletion
+                        photo.thumbnails = response.data.thumbnails || []; // Store thumbnail paths
+                        
+                        // Debug thumbnail generation status
+                        if (response.data.thumbnail_generation) {
+                            const tg = response.data.thumbnail_generation;
+                            console.log(`Thumbnail generation: ${tg.success ? 'SUCCESS' : 'FAILED'}, Count: ${tg.count}`);
+                            if (tg.errors) {
+                                console.error('Thumbnail errors:', tg.errors);
+                            }
+                        }
+                        
                         // Update photo upload visibility
                         this.show_photo_upload = this.system_photos.length == 0;
                     } else {
@@ -1238,10 +1311,12 @@ global $settings, $session, $path;
                         return {
                             id: photo.id,
                             name: photo.original_filename,
-                            preview: path + photo.url,
-                            server_url: path + photo.url,
+                            url: photo.url, // Store relative path
+                            preview: path + photo.url, // For backward compatibility in edit mode
+                            server_url: path + photo.url, // For backward compatibility
+                            thumbnails: photo.thumbnails || {}, // Store thumbnail paths
                             uploading: false,
-                            uploaded: false,
+                            uploaded: true, // Already uploaded
                             progress: 100,
                             error: null,
                             width: photo.width,

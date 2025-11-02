@@ -1,6 +1,15 @@
 FROM php:8.4-apache
 RUN docker-php-ext-install mysqli
 
+# Install GD extension for image manipulation (required for thumbnails)
+RUN apt-get update && apt-get install -y \
+    libfreetype6-dev \
+    libjpeg62-turbo-dev \
+    libpng-dev \
+    libwebp-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
+    && docker-php-ext-install gd
+
 RUN a2enmod rewrite
 
 RUN apt-get update \
@@ -28,4 +37,5 @@ RUN a2ensite heatpumpmonitororg
 COPY www/example.settings.php www/settings.php
 
 COPY load_dev_env_data.php /var/
+COPY generate_thumbnails.php /var/
 # CMD [ "php", "load_dev_env_data.php" ]

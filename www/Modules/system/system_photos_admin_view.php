@@ -43,7 +43,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <td>
                             <div class="photo-thumbnail-item" style="width: 80px; height: 60px; cursor: pointer;" @click="openLightbox(photo)">
                                 <img 
-                                    :src="path + photo.url" 
+                                    :src="selectThumbnail(photo, '80x60')" 
                                     :alt="photo.original_filename"
                                     class="gallery-thumbnail"
                                 >
@@ -150,7 +150,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     <div class="text-center">
                         <div class="photo-thumbnail-item" style="width: 200px; height: 150px; margin: 0 auto;">
                             <img 
-                                :src="path + photoToDelete.url" 
+                                :src="selectThumbnail(photoToDelete, '300')" 
                                 :alt="photoToDelete.original_filename"
                                 class="gallery-thumbnail"
                             >
@@ -370,6 +370,65 @@ var app = new Vue({
             const sizes = ['Bytes', 'KB', 'MB', 'GB'];
             const i = Math.floor(Math.log(bytes) / Math.log(k));
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        },
+
+        // Select the best thumbnail size for display
+        selectThumbnail: function(photo, desired_width = 80, desired_height = 60) {
+            // If photo doesn't have thumbnails, use original
+            if (!photo.thumbnails || !Array.isArray(photo.thumbnails) || photo.thumbnails.length === 0) {
+                return this.path + photo.url;
+            }
+
+            // Try to find exact match by dimensions
+            const exact_match = photo.thumbnails.find(thumb => 
+                thumb.width === desired_width && thumb.height === desired_height
+            );
+            if (exact_match) {
+                return this.path + exact_match.url;
+            }
+
+            // For backward compatibility, support string-based size requests
+            if (typeof desired_width === 'string') {
+                if (desired_width === '80x60') {
+                    desired_width = 80;
+                    desired_height = 60;
+                } else {
+                    // For square sizes like "150", "300"
+                    const size = parseInt(desired_width);
+                    desired_width = size;
+                    desired_height = size;
+                }
+                
+                // Try exact match again with parsed dimensions
+                const parsed_match = photo.thumbnails.find(thumb => 
+                    thumb.width === desired_width && thumb.height === desired_height
+                );
+                if (parsed_match) {
+                    return this.path + parsed_match.url;
+                }
+            }
+
+            // Find the best fit thumbnail (smallest that's >= desired size)
+            const suitable_thumbs = photo.thumbnails.filter(thumb => 
+                thumb.width >= desired_width && thumb.height >= desired_height
+            );
+            
+            if (suitable_thumbs.length > 0) {
+                // Sort by area (width * height) and pick the smallest
+                suitable_thumbs.sort((a, b) => (a.width * a.height) - (b.width * b.height));
+                return this.path + suitable_thumbs[0].url;
+            }
+
+            // If no suitable thumbnail found, use the largest available
+            if (photo.thumbnails.length > 0) {
+                const largest = photo.thumbnails.reduce((max, thumb) => 
+                    (thumb.width * thumb.height) > (max.width * max.height) ? thumb : max
+                );
+                return this.path + largest.url;
+            }
+            
+            // Fallback to original image
+            return this.path + photo.url;
         }
     },
     
