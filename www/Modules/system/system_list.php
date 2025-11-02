@@ -16,6 +16,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 <link rel="stylesheet" href="<?php echo $path; ?>Lib/autocomplete.css?v=4">
 <script src="Lib/autocomplete.js?v=8"></script>
 <link rel="stylesheet" href="<?php echo $path; ?>Modules/system/system_view.css">
+<script src="<?php echo $path; ?>Modules/system/photo_utils.js?v=1"></script>
+<script src="<?php echo $path; ?>Modules/system/photo_lightbox.js?v=1"></script>
 
 <style>
     .sticky {
@@ -457,41 +459,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
     </div>
     
-    <!-- Photo Lightbox -->
-    <div class="photo-lightbox" v-if="lightboxOpen" @click="closeLightbox">
-        <div class="lightbox-content" @click.stop>
-            <button class="lightbox-close" @click="closeLightbox">
-                <i class="fas fa-times"></i>
-            </button>
-            
-            <button 
-                class="lightbox-nav lightbox-prev" 
-                @click="previousPhoto" 
-                v-if="system_photos && system_photos.length > 1"
-            >
-                <i class="fas fa-chevron-left"></i>
-            </button>
-            
-            <div class="lightbox-image-container" v-if="system_photos && system_photos.length > 0">
-                <img 
-                    :src="system_photos[currentPhotoIndex].server_url" 
-                    :alt="system_photos[currentPhotoIndex].name"
-                    class="lightbox-image"
-                >
-                <div class="lightbox-caption">
-                    Photo {{ currentPhotoIndex + 1 }} of {{ system_photos.length }}
-                </div>
-            </div>
-            
-            <button 
-                class="lightbox-nav lightbox-next" 
-                @click="nextPhoto" 
-                v-if="system_photos && system_photos.length > 1"
-            >
-                <i class="fas fa-chevron-right"></i>
-            </button>
-        </div>
-    </div>
+    <!-- Photo Lightbox - Using shared template -->
+    <?php include "Modules/system/photo_lightbox_template.html"; ?>
 </div>
 
 <script>
@@ -934,6 +903,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
     var app = new Vue({
         el: '#app',
+        mixins: [PhotoLightboxMixin],
         data: {
             systems: systems,
             fSystems: [],
@@ -2098,7 +2068,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 this.filter_systems();
             },
             
-            // Photo lightbox methods
+            // Photo lightbox methods - Using PhotoLightboxMixin for common functionality
             openSystemPhotos: function(systemId) {
                 this.loadingPhotos = true;
                 this.system_photos = [];
@@ -2112,12 +2082,13 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                     name: photo.original_filename,
                                     preview: path + photo.url,
                                     server_url: path + photo.url,
+                                    url: photo.url, // Add url property for PhotoUtils compatibility
                                     width: photo.width,
-                                    height: photo.height
+                                    height: photo.height,
+                                    thumbnails: photo.thumbnails || []
                                 };
                             });
-                            this.currentPhotoIndex = 0;
-                            this.lightboxOpen = true;
+                            this.openLightbox(0); // Use mixin method
                         }
                         this.loadingPhotos = false;
                     })
@@ -2125,56 +2096,6 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         console.log('Error loading photos:', error);
                         this.loadingPhotos = false;
                     });
-            },
-            
-            openLightbox: function(index) {
-                this.currentPhotoIndex = index;
-                this.lightboxOpen = true;
-                this.addKeyboardListeners();
-            },
-            
-            closeLightbox: function() {
-                this.lightboxOpen = false;
-                this.removeKeyboardListeners();
-            },
-            
-            nextPhoto: function() {
-                if (this.system_photos.length > 1) {
-                    this.currentPhotoIndex = (this.currentPhotoIndex + 1) % this.system_photos.length;
-                }
-            },
-            
-            previousPhoto: function() {
-                if (this.system_photos.length > 1) {
-                    this.currentPhotoIndex = (this.currentPhotoIndex - 1 + this.system_photos.length) % this.system_photos.length;
-                }
-            },
-            
-            addKeyboardListeners: function() {
-                document.addEventListener('keydown', this.handleKeydown);
-            },
-            
-            removeKeyboardListeners: function() {
-                document.removeEventListener('keydown', this.handleKeydown);
-            },
-            
-            handleKeydown: function(event) {
-                if (!this.lightboxOpen) return;
-                
-                switch(event.key) {
-                    case 'Escape':
-                        event.preventDefault();
-                        this.closeLightbox();
-                        break;
-                    case 'ArrowLeft':
-                        event.preventDefault();
-                        this.previousPhoto();
-                        break;
-                    case 'ArrowRight':
-                        event.preventDefault();
-                        this.nextPhoto();
-                        break;
-                }
             }
        },
         filters: {

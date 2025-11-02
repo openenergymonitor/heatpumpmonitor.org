@@ -6,6 +6,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 <link rel="stylesheet" type="text/css" href="<?php echo $path; ?>Modules/system/system_view.css">
 <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
+<script src="<?php echo $path; ?>Modules/system/photo_utils.js?v=1"></script>
+<script src="<?php echo $path; ?>Modules/system/photo_lightbox.js?v=1"></script>
 
 <div id="app">
     <div style="background-color:#f0f0f0; padding-top:20px; padding-bottom:10px">
@@ -118,25 +120,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         </div>
     </div>
     
-    <!-- Photo Lightbox -->
-    <div v-if="lightboxOpen" class="photo-lightbox" @click="closeLightbox">
-        <div class="lightbox-content" @click.stop>
-            <button class="lightbox-close" @click="closeLightbox">
-                <i class="fas fa-times"></i>
-            </button>
-            
-            <div class="lightbox-image-container">
-                <img 
-                    :src="path + currentPhoto.url" 
-                    :alt="currentPhoto.original_filename"
-                    class="lightbox-image"
-                >
-                <div class="lightbox-caption">
-                    System {{ currentPhoto.system_id }} - {{ currentPhoto.original_filename }}
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Photo Lightbox - Using shared template -->
+    <?php include "Modules/system/photo_lightbox_template.html"; ?>
     
     <!-- Delete Confirmation Modal -->
     <div v-if="showDeleteModal" class="modal-backdrop">
@@ -235,6 +220,7 @@ var path = "<?php echo $path; ?>";
 
 var app = new Vue({
     el: '#app',
+    mixins: [PhotoLightboxMixin],
     data: {
         photos: [],
         pagination: {
@@ -298,16 +284,13 @@ var app = new Vue({
             }
         },
         
+        // Custom openLightbox for admin view - adapts single photo viewing to mixin
         openLightbox: function(photo) {
-            this.currentPhoto = photo;
+            // For admin view, we create a single-photo array and use the mixin
+            this.system_photos = [photo];  // Mixin expects system_photos array
+            this.currentPhotoIndex = 0;
             this.lightboxOpen = true;
             document.body.style.overflow = 'hidden';
-        },
-        
-        closeLightbox: function() {
-            this.lightboxOpen = false;
-            this.currentPhoto = {};
-            document.body.style.overflow = '';
         },
         
         confirmDelete: function(photo) {
@@ -372,63 +355,9 @@ var app = new Vue({
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         },
 
-        // Select the best thumbnail size for display
-        selectThumbnail: function(photo, desired_width = 80, desired_height = 60) {
-            // If photo doesn't have thumbnails, use original
-            if (!photo.thumbnails || !Array.isArray(photo.thumbnails) || photo.thumbnails.length === 0) {
-                return this.path + photo.url;
-            }
-
-            // Try to find exact match by dimensions
-            const exact_match = photo.thumbnails.find(thumb => 
-                thumb.width === desired_width && thumb.height === desired_height
-            );
-            if (exact_match) {
-                return this.path + exact_match.url;
-            }
-
-            // For backward compatibility, support string-based size requests
-            if (typeof desired_width === 'string') {
-                if (desired_width === '80x60') {
-                    desired_width = 80;
-                    desired_height = 60;
-                } else {
-                    // For square sizes like "150", "300"
-                    const size = parseInt(desired_width);
-                    desired_width = size;
-                    desired_height = size;
-                }
-                
-                // Try exact match again with parsed dimensions
-                const parsed_match = photo.thumbnails.find(thumb => 
-                    thumb.width === desired_width && thumb.height === desired_height
-                );
-                if (parsed_match) {
-                    return this.path + parsed_match.url;
-                }
-            }
-
-            // Find the best fit thumbnail (smallest that's >= desired size)
-            const suitable_thumbs = photo.thumbnails.filter(thumb => 
-                thumb.width >= desired_width && thumb.height >= desired_height
-            );
-            
-            if (suitable_thumbs.length > 0) {
-                // Sort by area (width * height) and pick the smallest
-                suitable_thumbs.sort((a, b) => (a.width * a.height) - (b.width * b.height));
-                return this.path + suitable_thumbs[0].url;
-            }
-
-            // If no suitable thumbnail found, use the largest available
-            if (photo.thumbnails.length > 0) {
-                const largest = photo.thumbnails.reduce((max, thumb) => 
-                    (thumb.width * thumb.height) > (max.width * max.height) ? thumb : max
-                );
-                return this.path + largest.url;
-            }
-            
-            // Fallback to original image
-            return this.path + photo.url;
+        // Use shared thumbnail selection utility
+        selectThumbnail: function(photo, desired_size = '80x60') {
+            return PhotoUtils.selectThumbnail(photo, desired_size, this.path);
         }
     },
     

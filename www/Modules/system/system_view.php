@@ -12,6 +12,9 @@ global $settings, $session, $path;
 <link rel="stylesheet" href="<?php echo $path; ?>Modules/system/system_view.css?v=1">
 
 <script src="<?php echo $path; ?>Lib/autocomplete.js?v=10"></script>
+<script src="<?php echo $path; ?>Modules/system/photo_utils.js?v=1"></script>
+<script src="<?php echo $path; ?>Modules/system/photo_lightbox.js?v=1"></script>
+<script src="<?php echo $path; ?>Modules/system/photo_upload.js?v=1"></script>
 
 <div id="app" class="bg-light">
     <div style=" background-color:#f0f0f0; padding-top:20px; padding-bottom:10px">
@@ -214,10 +217,10 @@ global $settings, $session, $path;
                 <i class="fas fa-chevron-left"></i>
             </button>
             
-            <div class="lightbox-image-container">
+            <div class="lightbox-image-container" v-if="system_photos && system_photos.length > 0">
                 <img 
-                    :src="path + system_photos[currentPhotoIndex].url" 
-                    :alt="system_photos[currentPhotoIndex].name"
+                    :src="system_photos[currentPhotoIndex].server_url || (path + system_photos[currentPhotoIndex].url)" 
+                    :alt="system_photos[currentPhotoIndex].name || system_photos[currentPhotoIndex].original_filename"
                     class="lightbox-image"
                 >
                 <div class="lightbox-caption">
@@ -545,6 +548,7 @@ global $settings, $session, $path;
 
     var app = new Vue({
         el: '#app',
+        mixins: [PhotoLightboxMixin, PhotoUploadMixin],
         data: {
             session_userid: <?php echo $session['userid']; ?>,
             form_type: form_type,
@@ -574,21 +578,7 @@ global $settings, $session, $path;
             hp_type: '',
             hp_capacity: '',
             refrigerants: all_refrigerants,
-            types: all_types,
-
-            // Photo upload properties
-            system_photos: [],
-            show_photo_upload: true,
-            isDragActive: false,
-            max_photos: 4,
-            max_file_size: 5 * 1024 * 1024, // 5MB
-            allowed_types: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
-            show_photo_error: false,
-            photo_message: '',
-
-            // Photo gallery/lightbox properties
-            lightboxOpen: false,
-            currentPhotoIndex: 0
+            types: all_types
 
         },
         computed: {
@@ -639,10 +629,6 @@ global $settings, $session, $path;
                     // Use white text for dark backgrounds (luminance < 0.5), black for light
                     return luminance < 0.5 ? '#fff' : '#000';
                 }
-            },
-            
-            hasPhotos() {
-                return this.system_photos && this.system_photos.length > 0;
             }
         },
         filters: {
@@ -998,65 +984,9 @@ global $settings, $session, $path;
                 this.$refs.fileInput.click();
             },
 
-            // Select the best thumbnail size for display
+            // Use shared thumbnail selection utility
             selectThumbnail: function(photo, desired_size = '150') {
-                // If photo doesn't have thumbnails, use original
-                if (!photo.thumbnails || !Array.isArray(photo.thumbnails) || photo.thumbnails.length === 0) {
-                    return this.path + photo.url;
-                }
-
-                // Parse desired size - support both numeric and string formats
-                let desired_width, desired_height;
-                if (typeof desired_size === 'string') {
-                    if (desired_size.includes('x')) {
-                        // Format like "80x60"
-                        const parts = desired_size.split('x');
-                        desired_width = parseInt(parts[0]);
-                        desired_height = parseInt(parts[1]);
-                    } else {
-                        // Square format like "150"
-                        const size = parseInt(desired_size);
-                        desired_width = size;
-                        desired_height = size;
-                    }
-                } else {
-                    // Numeric format
-                    desired_width = desired_size;
-                    desired_height = desired_size;
-                }
-
-                // Try to find exact match by dimensions
-                const exact_match = photo.thumbnails.find(thumb => 
-                    thumb.width === desired_width && thumb.height === desired_height
-                );
-                if (exact_match) {
-                    return this.path + exact_match.url;
-                }
-
-                // Find the best fit thumbnail (smallest that's >= desired size for square thumbnails)
-                if (desired_width === desired_height) {
-                    // For square thumbnails, find smallest that's >= desired size
-                    const suitable_thumbs = photo.thumbnails.filter(thumb => 
-                        thumb.width >= desired_width && thumb.height >= desired_height
-                    );
-                    
-                    if (suitable_thumbs.length > 0) {
-                        // Sort by width and pick the smallest suitable
-                        suitable_thumbs.sort((a, b) => a.width - b.width);
-                        return this.path + suitable_thumbs[0].url;
-                    }
-                }
-
-                // If no suitable thumbnail found, use the largest available
-                if (photo.thumbnails.length > 0) {
-                    const largest = photo.thumbnails.reduce((max, thumb) => 
-                        (thumb.width * thumb.height) > (max.width * max.height) ? thumb : max
-                    );
-                    return this.path + largest.url;
-                }
-                
-                // Fallback to original image
-                return this.path + photo.url;
+                return PhotoUtils.selectThumbnail(photo, desired_size, this.path);
             },
 
             handleFileSelect: function(event) {
