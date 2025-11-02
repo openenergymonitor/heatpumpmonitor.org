@@ -3,6 +3,9 @@
  * Shared utility functions for photo handling across components
  */
 var PhotoUtils = {
+    // Placeholder image for uploading photos (simple gray rectangle with text)
+    PLACEHOLDER_IMAGE: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent('<svg width="150" height="150" xmlns="http://www.w3.org/2000/svg"><rect width="150" height="150" fill="#f5f5f5" stroke="#ddd" stroke-width="2" stroke-dasharray="5,5"/><text x="75" y="75" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#999">Uploading...</text></svg>'),
+
     /**
      * Select the best thumbnail size for display
      * @param {Object} photo - Photo object with thumbnails array
@@ -11,9 +14,18 @@ var PhotoUtils = {
      * @returns {string} - URL of best matching thumbnail or original image
      */
     selectThumbnail: function(photo, desired_size = '150', basePath = '') {
+        // Handle uploading photos that don't have server URLs yet
+        if (photo.uploading || (!photo.url && !photo.server_url && !photo.thumbnails)) {
+            // Use preview if available (base64 from FileReader), otherwise use placeholder
+            return photo.preview || this.PLACEHOLDER_IMAGE;
+        }
+
         // If photo doesn't have thumbnails, use original
         if (!photo.thumbnails || !Array.isArray(photo.thumbnails) || photo.thumbnails.length === 0) {
             const originalUrl = photo.url || photo.preview || photo.server_url || '';
+            if (!originalUrl) {
+                return this.PLACEHOLDER_IMAGE;
+            }
             return basePath + originalUrl;
         }
 
@@ -66,6 +78,9 @@ var PhotoUtils = {
 
         // Fallback to original image
         const originalUrl = photo.url || photo.preview || photo.server_url || '';
+        if (!originalUrl) {
+            return this.PLACEHOLDER_IMAGE;
+        }
         return basePath + originalUrl;
     },
 
