@@ -79,8 +79,6 @@ var PhotoLightboxMixin = {
                             return {
                                 id: photo.id,
                                 name: photo.original_filename,
-                                preview: path + photo.url,
-                                server_url: path + photo.url,
                                 url: photo.url,
                                 width: photo.width,
                                 height: photo.height,

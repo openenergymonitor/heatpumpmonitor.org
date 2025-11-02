@@ -2080,9 +2080,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                 return {
                                     id: photo.id,
                                     name: photo.original_filename,
-                                    preview: path + photo.url,
-                                    server_url: path + photo.url,
-                                    url: photo.url, // Add url property for PhotoUtils compatibility
+                                    url: photo.url,
                                     width: photo.width,
                                     height: photo.height,
                                     thumbnails: photo.thumbnails || []

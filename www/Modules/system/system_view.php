@@ -202,41 +202,8 @@ global $settings, $session, $path;
         </div>
     </div>
 
-    <!-- Photo Lightbox -->
-    <div class="photo-lightbox" v-if="lightboxOpen" @click="closeLightbox">
-        <div class="lightbox-content" @click.stop>
-            <button class="lightbox-close" @click="closeLightbox">
-                <i class="fas fa-times"></i>
-            </button>
-            
-            <button 
-                class="lightbox-nav lightbox-prev" 
-                @click="previousPhoto" 
-                v-if="system_photos && system_photos.length > 1"
-            >
-                <i class="fas fa-chevron-left"></i>
-            </button>
-            
-            <div class="lightbox-image-container" v-if="system_photos && system_photos.length > 0">
-                <img 
-                    :src="system_photos[currentPhotoIndex].server_url || (path + system_photos[currentPhotoIndex].url)" 
-                    :alt="system_photos[currentPhotoIndex].name || system_photos[currentPhotoIndex].original_filename"
-                    class="lightbox-image"
-                >
-                <div class="lightbox-caption">
-                    Photo {{ currentPhotoIndex + 1 }} of {{ system_photos.length }}
-                </div>
-            </div>
-            
-            <button 
-                class="lightbox-nav lightbox-next" 
-                @click="nextPhoto" 
-                v-if="system_photos && system_photos.length > 1"
-            >
-                <i class="fas fa-chevron-right"></i>
-            </button>
-        </div>
-    </div>
+    <!-- Photo Lightbox - Using shared template -->
+    <?php include "Modules/system/photo_lightbox_template.html"; ?>
 
     <!-- System Photos - Edit Mode -->
     <div class="container mt-3" style="max-width:800px" v-if="mode=='edit' && (session_userid==system.userid || !system.userid || admin)">
@@ -1119,7 +1086,6 @@ global $settings, $session, $path;
                     if (response.data.success) {
                         photo.uploaded = true;
                         photo.url = response.data.url; // Store relative path
-                        photo.server_url = response.data.url; // For backward compatibility
                         photo.id = response.data.image_id; // Store image ID for deletion
                         photo.thumbnails = response.data.thumbnails || []; // Store thumbnail paths
                         
@@ -1242,9 +1208,7 @@ global $settings, $session, $path;
                             id: photo.id,
                             name: photo.original_filename,
                             url: photo.url, // Store relative path
-                            preview: path + photo.url, // For backward compatibility in edit mode
-                            server_url: path + photo.url, // For backward compatibility
-                            thumbnails: photo.thumbnails || {}, // Store thumbnail paths
+                            thumbnails: photo.thumbnails || [], // Store thumbnail paths
                             uploading: false,
                             uploaded: true, // Already uploaded
                             progress: 100,

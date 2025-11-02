@@ -15,18 +15,17 @@ var PhotoUtils = {
      */
     selectThumbnail: function(photo, desired_size = '150', basePath = '') {
         // Handle uploading photos that don't have server URLs yet
-        if (photo.uploading || (!photo.url && !photo.server_url && !photo.thumbnails)) {
+        if (photo.uploading || (!photo.url && !photo.thumbnails)) {
             // Use preview if available (base64 from FileReader), otherwise use placeholder
             return photo.preview || this.PLACEHOLDER_IMAGE;
         }
 
         // If photo doesn't have thumbnails, use original
         if (!photo.thumbnails || !Array.isArray(photo.thumbnails) || photo.thumbnails.length === 0) {
-            const originalUrl = photo.url || photo.preview || photo.server_url || '';
-            if (!originalUrl) {
+            if (!photo.url) {
                 return this.PLACEHOLDER_IMAGE;
             }
-            return basePath + originalUrl;
+            return basePath + photo.url;
         }
 
         let desired_width, desired_height_final;
@@ -77,11 +76,10 @@ var PhotoUtils = {
         }
 
         // Fallback to original image
-        const originalUrl = photo.url || photo.preview || photo.server_url || '';
-        if (!originalUrl) {
+        if (!photo.url) {
             return this.PLACEHOLDER_IMAGE;
         }
-        return basePath + originalUrl;
+        return basePath + photo.url;
     },
 
     /**
