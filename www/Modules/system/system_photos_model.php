@@ -300,7 +300,8 @@ class SystemPhotos
             }
             
             $photos[] = $photo_data;
-        }        $total_pages = ceil($total_photos / $limit);
+        }
+        $total_pages = ceil($total_photos / $limit);
         
         return array(
             "success" => true, 
