@@ -1005,7 +1005,7 @@ global $settings, $session, $path;
                     return;
                 }
 
-                this.show_photo_upload = 0 == validFiles.length;
+                this.show_photo_upload = validFiles.length === 0;
 
                 // Process each valid file
                 validFiles.forEach(file => {
