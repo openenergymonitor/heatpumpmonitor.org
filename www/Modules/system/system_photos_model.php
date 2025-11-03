@@ -178,7 +178,8 @@ class SystemPhotos
 
             if (!empty($thumbnails)) {
                 $photo_data['thumbnails'] = $thumbnails;
-            }            $photos[] = $photo_data;
+            }
+            $photos[] = $photo_data;
         }
         
         return array("success" => true, "photos" => $photos);
