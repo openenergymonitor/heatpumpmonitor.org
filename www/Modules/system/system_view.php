@@ -210,7 +210,8 @@ global $settings, $session, $path;
         <div class="card mt-3">
             <h5 class="card-header">System Photos</h5>
             <div class="card-body">
-                <p>Add photos of your heat pump system (maximum 4 images, up to 5MB each). Supported formats: JPG, PNG, WebP.</p>                <!-- Photo Upload Area -->
+                <!-- Photo Upload Area -->
+                <p>Add photos of your heat pump system (maximum 4 images, up to 5MB each). Supported formats: JPG, PNG, WebP.</p>
                 <div class="photo-upload-container">                    
                     <!-- Uploaded Photos Preview -->
                     <div class="uploaded-photos-grid">
