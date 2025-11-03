@@ -1,6 +1,6 @@
 <?php
 $dir = dirname(__FILE__);
-if(is_dir(filename: "/var/www/heatpumpmonitororg")) {
+if(is_dir("/var/www/heatpumpmonitororg")) {
     chdir("/var/www/heatpumpmonitororg");
 } elseif(is_dir("$dir/www")) {
     chdir("$dir/www");
