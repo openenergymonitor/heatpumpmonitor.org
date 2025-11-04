@@ -488,9 +488,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         hpint: 0,
         errors: 0,
         chart: 0,
-        selected_xaxis: 'running_flowT_mean',
+        selected_xaxis: 'weighted_flowT_minus_outsideT',
         selected_yaxis: 'combined_cop',
-        selected_color: 'combined_heat_kwh',
+        selected_color: 'weighted_prc_carnot',
     };
 
     if (mode != 'public') {
