@@ -70,7 +70,7 @@ function draw_scatter()
 
     // Use appropriate regression method based on toggle
     var regression;
-    if (app.use_orthogonal_regression) {
+    if (app.line_best_fit_type == 'tls') {
         regression = calculateOrthogonalRegressionWithPI(trace.x, trace.y, 0.1);
     } else {
         regression = calculateRegressionWithPredictionInterval(trace.x, trace.y, 0.1);
@@ -83,15 +83,15 @@ function draw_scatter()
     var max_x = Math.max(...trace.x);
 
     // Add line of best fit
-    if (app.enable_line_best_fit) {
+    if (app.line_best_fit_type != 'none') {
         data.push({
             type: 'scatter',
             x: [min_x, max_x],
             y: [regression.slope * min_x + regression.intercept, regression.slope * max_x + regression.intercept],
             mode: 'lines',
-            name: app.use_orthogonal_regression ? 'Orthogonal Fit Line' : 'Best Fit Line',
+            name: app.line_best_fit_type == 'tls' ? 'Orthogonal Fit Line' : 'Best Fit Line',
             line: {
-                color: app.use_orthogonal_regression ? "#ff7f0e" : "#1f77b4",
+                color: app.line_best_fit_type == 'tls' ? "#ff7f0e" : "#1f77b4",
                 width: 2
             },
             showlegend: false
@@ -106,7 +106,7 @@ function draw_scatter()
         for (let i = 0; i <= 50; i++) {
             let x = min_x + (max_x - min_x) * (i / 50);
             let bounds;
-            if (app.use_orthogonal_regression) {
+            if (app.line_best_fit_type == 'tls') {
                 bounds = calculateOrthogonalPredictionInterval(x, trace.x, trace.y, regression, 0.1);
             } else {
                 bounds = calculatePredictionInterval(x, trace.x, trace.y, regression, 0.1);
@@ -116,8 +116,8 @@ function draw_scatter()
             lower_bound.push(bounds.lower);
         }
 
-        var interval_color = app.use_orthogonal_regression ? 'rgba(255, 127, 14, 0.3)' : 'rgba(31, 119, 180, 0.3)';
-        var fill_color = app.use_orthogonal_regression ? 'rgba(255, 127, 14, 0.1)' : 'rgba(31, 119, 180, 0.1)';
+        var interval_color = app.line_best_fit_type == 'tls' ? 'rgba(255, 127, 14, 0.3)' : 'rgba(31, 119, 180, 0.3)';
+        var fill_color = app.line_best_fit_type == 'tls' ? 'rgba(255, 127, 14, 0.1)' : 'rgba(31, 119, 180, 0.1)';
 
         // Add upper prediction interval
         data.push({
@@ -210,15 +210,15 @@ function draw_scatter()
     // Calculate prediction interval at mean x for display
     var mean_x = jStat.mean(trace.x);
     var mean_bounds;
-    if (app.use_orthogonal_regression) {
+    if (app.line_best_fit_type == 'tls') {
         mean_bounds = calculateOrthogonalPredictionInterval(mean_x, trace.x, trace.y, regression, 0.1);
     } else {
         mean_bounds = calculatePredictionInterval(mean_x, trace.x, trace.y, regression, 0.1);
     }
     var pi_half_width = ((mean_bounds.upper - mean_bounds.lower)/2).toFixed(2);
 
-    var regression_type = app.use_orthogonal_regression ? "Orthogonal" : "Standard";
-    app.chart_info = regression_type + " - R: " + app.correlation.toFixed(2) + ", R²: " + app.r2.toFixed(2) + ", n=" + trace.x.length + ", (y=" + regression.slope.toFixed(2) + "x + " + regression.intercept.toFixed(2) + ")" + ", 90% PI: ±" + pi_half_width;
+    var regression_type = app.line_best_fit_type == 'tls' ? "Orthogonal" : "Standard";
+    app.chart_info = regression_type + " - R: " + app.correlation.toFixed(3) + ", R²: " + app.r2.toFixed(3) + ", n=" + trace.x.length + ", (y=" + regression.slope.toFixed(4) + "x + " + regression.intercept.toFixed(4) + ")" + ", 90% PI: ±" + pi_half_width;
 
     if (first_chart_load) {
         first_chart_load = false;
@@ -409,12 +409,6 @@ function calculatePredictionInterval(x_val, x_data, y_data, regression, alpha) {
         upper: y_pred + margin,
         lower: y_pred - margin
     };
-}
-
-// Function to toggle regression method
-function toggleRegressionMethod() {
-    app.use_orthogonal_regression = !app.use_orthogonal_regression;
-    draw_scatter(); // Redraw chart with new regression method
 }
 
 // Simplified correlation function using jStat (you can replace the existing one)

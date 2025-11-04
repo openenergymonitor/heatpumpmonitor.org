@@ -12,7 +12,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 <script src="https://cdn.plot.ly/plotly-2.16.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jstat@1.9.6/dist/jstat.min.js"></script>
 <script src="Lib/clipboard.js"></script>
-<script src="<?php echo $path; ?>Modules/system/system_list_chart.js?v=38"></script>
+<script src="<?php echo $path; ?>Modules/system/system_list_chart.js?v=40"></script>
 
 <link rel="stylesheet" href="<?php echo $path; ?>Lib/autocomplete.css?v=4">
 <script src="Lib/autocomplete.js?v=8"></script>
@@ -346,7 +346,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <div class="row">
 
                             <!-- X-axis grouped by group -->
-                            <div class="col-lg-4">
+                            <div class="col-lg-3">
                                 <div class="input-group mb-3">
                                     <span class="input-group-text">X-axis</span>
                                     <select class="form-control" v-model="selected_xaxis" @change="draw_scatter">
@@ -358,7 +358,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             </div>
 
                             <!-- Y-axis grouped by group -->
-                            <div class="col-lg-4">
+                            <div class="col-lg-3">
                                 <div class="input-group mb-3">
                                     <span class="input-group-text">Y-axis</span>
                                     <select class="form-control" v-model="selected_yaxis" @change="draw_scatter">
@@ -370,7 +370,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             </div>
 
                             <!-- Colour map -->
-                            <div class="col-lg-4">
+                            <div class="col-lg-3">
                                 <div class="input-group mb-3">
                                     <span class="input-group-text">Colour map</span>
                                     <select class="form-control" v-model="selected_color" @change="draw_scatter">
@@ -380,8 +380,21 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                     </select>
                                 </div>
                             </div>
+                            
+                            <!-- Select between no linear regression, OLS and Orthogonal -->
+                            <div class="col-lg-3">
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text">Best fit</span>
+                                    <select class="form-control" v-model="line_best_fit_type" @change="draw_scatter">
+                                        <option value="none">None</option>
+                                        <option value="ols">Ordinary Least Squares (OLS)</option>
+                                        <option value="tls">Orthogonal Regression (TLS)</option>
+                                    </select>
+                                </div>
+                            </div>
+
                         </div>
-                        <p>{{ chart_info }} <input type="checkbox" v-model="enable_line_best_fit" @change="draw_scatter"></p>
+                        <p v-if="line_best_fit_type!='none'">{{ chart_info }}</p>
                         <div id="chart"></div>
                     </div>
                 </div>
@@ -942,10 +955,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             selected_yaxis: page_settings.selected_yaxis,
             selected_color: page_settings.selected_color,
             chart_info: '',
-            enable_line_best_fit: true,
             admin_restricted_list: true,
-
-            use_orthogonal_regression: false
+            line_best_fit_type: 'ols'
         },
         methods: {
             tariff_mode_changed: function() {
