@@ -10,8 +10,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 <script src="https://cdn.jsdelivr.net/npm/vue-select@3.20.4/dist/vue-select.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
 <script src="https://cdn.plot.ly/plotly-2.16.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jstat@1.9.6/dist/jstat.min.js"></script>
 <script src="Lib/clipboard.js"></script>
-<script src="<?php echo $path; ?>Modules/system/system_list_chart.js?v=27"></script>
+<script src="<?php echo $path; ?>Modules/system/system_list_chart.js?v=33"></script>
 
 <link rel="stylesheet" href="<?php echo $path; ?>Lib/autocomplete.css?v=4">
 <script src="Lib/autocomplete.js?v=8"></script>
