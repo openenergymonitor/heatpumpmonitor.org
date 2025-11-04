@@ -178,7 +178,8 @@ class SystemPhotos
 
             if (!empty($thumbnails)) {
                 $photo_data['thumbnails'] = $thumbnails;
-            }            $photos[] = $photo_data;
+            }
+            $photos[] = $photo_data;
         }
         
         return array("success" => true, "photos" => $photos);
@@ -299,7 +300,8 @@ class SystemPhotos
             }
             
             $photos[] = $photo_data;
-        }        $total_pages = ceil($total_photos / $limit);
+        }
+        $total_pages = ceil($total_photos / $limit);
         
         return array(
             "success" => true, 
