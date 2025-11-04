@@ -12,7 +12,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 <script src="https://cdn.plot.ly/plotly-2.16.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jstat@1.9.6/dist/jstat.min.js"></script>
 <script src="Lib/clipboard.js"></script>
-<script src="<?php echo $path; ?>Modules/system/system_list_chart.js?v=33"></script>
+<script src="<?php echo $path; ?>Modules/system/system_list_chart.js?v=38"></script>
 
 <link rel="stylesheet" href="<?php echo $path; ?>Lib/autocomplete.css?v=4">
 <script src="Lib/autocomplete.js?v=8"></script>
@@ -943,7 +943,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             selected_color: page_settings.selected_color,
             chart_info: '',
             enable_line_best_fit: true,
-            admin_restricted_list: true
+            admin_restricted_list: true,
+
+            use_orthogonal_regression: false
         },
         methods: {
             tariff_mode_changed: function() {
