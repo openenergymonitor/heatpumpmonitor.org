@@ -64,7 +64,7 @@ class SystemStats
             $config->apikey = $result['readkey'];
             if ($config->apikey=="") $config->apikey = false;
 
-            if($this->redis) {
+            if ($this->redis) {
                 $this->redis->set("appconfig:$systemid",json_encode($config));
                 $this->redis->expire("appconfig:$systemid",10);
             }
@@ -263,7 +263,7 @@ class SystemStats
         // Generate cache key for public mode
         if ($mode === "public" && $start === false && $end === false && $system_id === false) {
             // Try to get from cache first
-            if ($cached_result = $this->redis && $this->redis->get($table_name."_public_cache")) {
+            if ($this->redis && ($cached_result = $this->redis->get($table_name."_public_cache"))) {
                 // return json_decode($cached_result, true);
             }
         }
