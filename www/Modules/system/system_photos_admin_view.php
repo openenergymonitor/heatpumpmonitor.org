@@ -36,6 +36,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <th scope="col" style="width:150px">Upload Date</th>
                         <th scope="col" style="width:100px">System ID</th>
                         <th scope="col">System Info</th>
+                        <th scope="col" style="width:120px">Photo Type</th>
                         <th scope="col" style="width:150px">Filename</th>
                         <th scope="col" style="width:100px">Actions</th>
                     </tr>
@@ -65,6 +66,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                 <div v-if="photo.system_info" style="font-weight: bold;">{{ photo.system_info }}</div>
                                 <div v-if="photo.system_location" style="color: #666; font-size: 0.9em;">{{ photo.system_location }}</div>
                             </div>
+                        </td>
+                        <td>
+                            <span class="badge" :class="getPhotoTypeBadgeClass(photo.photo_type)">
+                                {{ formatPhotoType(photo.photo_type) }}
+                            </span>
                         </td>
                         <td style="font-size:14px; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                             {{ photo.original_filename }}
@@ -345,6 +351,32 @@ var app = new Vue({
                 hour: '2-digit',
                 minute: '2-digit'
             });
+        },
+        
+        formatPhotoType: function(photo_type) {
+            switch(photo_type) {
+                case 'outdoor_unit':
+                    return 'Outdoor Unit';
+                case 'plant_room':
+                    return 'Plant Room';
+                case 'other':
+                    return 'Other';
+                default:
+                    return 'Other';
+            }
+        },
+        
+        getPhotoTypeBadgeClass: function(photo_type) {
+            switch(photo_type) {
+                case 'outdoor_unit':
+                    return 'bg-primary';
+                case 'plant_room':
+                    return 'bg-success';
+                case 'other':
+                    return 'bg-secondary';
+                default:
+                    return 'bg-secondary';
+            }
         },
         
         formatFileSize: function(bytes) {
