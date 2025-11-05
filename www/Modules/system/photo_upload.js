@@ -7,7 +7,9 @@ var PhotoUploadMixin = {
         return {
             system_photos: [],
             show_photo_upload: true,
+            show_other_photo_upload: false,
             isDragActive: false,
+            isDragActiveType: null,
             max_photos: 4,
             max_file_size: 5 * 1024 * 1024, // 5MB
             allowed_types: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
@@ -194,6 +196,7 @@ var PhotoUploadMixin = {
                         this.system_photos = response.data.photos.map(photo => {
                             return {
                                 id: photo.id,
+                                photo_type: photo.photo_type || 'other',
                                 name: photo.original_filename,
                                 preview: this.path + photo.url,
                                 server_url: this.path + photo.url,

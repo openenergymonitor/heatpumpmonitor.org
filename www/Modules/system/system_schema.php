@@ -15,6 +15,7 @@ $schema['system_images'] = array(
         'Extra' => 'auto_increment'
     ),
     'system_id' => array('type' => 'int(11)', 'Null' => false),
+    'photo_type' => array('type' => 'varchar(50)', 'Null' => false, 'Default' => 'other'),
     'image_path' => array('type' => 'varchar(255)', 'Null' => false),
     'original_filename' => array('type' => 'varchar(255)', 'Null' => false),
     'width' => array('type' => 'int(11)', 'Null' => true),

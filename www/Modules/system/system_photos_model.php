@@ -33,6 +33,13 @@ class SystemPhotos
         
         $system_id = (int) $_POST['system_id'];
         
+        // Get photo type from POST data (default to 'other')
+        $photo_type = isset($_POST['photo_type']) ? $_POST['photo_type'] : 'other';
+        $allowed_types = array('outdoor_unit', 'plant_room', 'other');
+        if (!in_array($photo_type, $allowed_types)) {
+            $photo_type = 'other';
+        }
+        
         // Check if user has write access to this system
         if ($this->system && !$this->system->has_write_access($userid, $system_id)) {
             return array("success" => false, "message" => "Access denied");
@@ -98,9 +105,9 @@ class SystemPhotos
         $thumbnails_json = !empty($thumbnail_paths) ? json_encode($thumbnail_paths) : null;
                 
         // Save to database
-        $stmt = $this->mysqli->prepare("INSERT INTO system_images (system_id, image_path, original_filename, width, height, file_size, date_uploaded, thumbnails) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt = $this->mysqli->prepare("INSERT INTO system_images (system_id, photo_type, image_path, original_filename, width, height, file_size, date_uploaded, thumbnails) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $date_uploaded = time();
-        $stmt->bind_param("issiiiis", $system_id, $filepath, $photo['name'], $width, $height, $photo['size'], $date_uploaded, $thumbnails_json);
+        $stmt->bind_param("isssiiiis", $system_id, $photo_type, $filepath, $photo['name'], $width, $height, $photo['size'], $date_uploaded, $thumbnails_json);
         
         if ($stmt->execute()) {
             $image_id = $this->mysqli->insert_id;
@@ -145,7 +152,7 @@ class SystemPhotos
             return array("success" => false, "message" => "Access denied");
         }
         
-        $stmt = $this->mysqli->prepare("SELECT id, image_path, original_filename, width, height, file_size, date_uploaded, thumbnails FROM system_images WHERE system_id = ? ORDER BY date_uploaded ASC");
+        $stmt = $this->mysqli->prepare("SELECT id, photo_type, image_path, original_filename, width, height, file_size, date_uploaded, thumbnails FROM system_images WHERE system_id = ? ORDER BY date_uploaded ASC");
         $stmt->bind_param("i", $system_id);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -154,6 +161,7 @@ class SystemPhotos
         while ($row = $result->fetch_assoc()) {
             $photo_data = array(
                 'id' => (int)$row['id'],
+                'photo_type' => $row['photo_type'],
                 'url' => $row['image_path'],
                 'original_filename' => $row['original_filename'],
                 'width' => $row['width'] ? (int)$row['width'] : null,
@@ -253,7 +261,7 @@ class SystemPhotos
         
         // Get photos with system info, ordered by upload date (newest first)
         $stmt = $this->mysqli->prepare("
-            SELECT si.id, si.system_id, si.image_path, si.original_filename, 
+            SELECT si.id, si.system_id, si.photo_type, si.image_path, si.original_filename, 
                    si.width, si.height, si.file_size, si.date_uploaded, si.thumbnails,
                    sm.location, sm.hp_manufacturer, sm.hp_model, sm.hp_output
             FROM system_images si 
@@ -270,6 +278,7 @@ class SystemPhotos
             $photo_data = array(
                 'id' => (int)$row['id'],
                 'system_id' => (int)$row['system_id'],
+                'photo_type' => $row['photo_type'],
                 'url' => $row['image_path'],
                 'original_filename' => $row['original_filename'],
                 'width' => $row['width'] ? (int)$row['width'] : null,
