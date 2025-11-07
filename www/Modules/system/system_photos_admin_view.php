@@ -3,7 +3,7 @@
 defined('EMONCMS_EXEC') or die('Restricted access');
 ?>
 
-<link rel="stylesheet" type="text/css" href="<?php echo $path; ?>Modules/system/system_view.css">
+<link rel="stylesheet" type="text/css" href="<?php echo $path; ?>Modules/system/system_view.css?v=2">
 <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
 <script src="<?php echo $path; ?>Modules/system/photo_utils.js?v=1"></script>
