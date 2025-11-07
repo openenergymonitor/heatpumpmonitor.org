@@ -2067,35 +2067,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 this.admin_restricted_list = !this.admin_restricted_list;
                 this.filter_systems();
             },
-            
-            // Photo lightbox methods - Using PhotoLightboxMixin for common functionality
-            openSystemPhotos: function(systemId) {
-                this.loadingPhotos = true;
-                this.system_photos = [];
-                
-                axios.get(path + 'system/photos?id=' + systemId)
-                    .then(response => {
-                        if (response.data.success && response.data.photos.length > 0) {
-                            this.system_photos = response.data.photos.map(photo => {
-                                return {
-                                    id: photo.id,
-                                    name: photo.original_filename,
-                                    url: photo.url,
-                                    width: photo.width,
-                                    height: photo.height,
-                                    thumbnails: photo.thumbnails || []
-                                };
-                            });
-                            this.openLightbox(0); // Use mixin method
-                        }
-                        this.loadingPhotos = false;
-                    })
-                    .catch(error => {
-                        console.log('Error loading photos:', error);
-                        this.loadingPhotos = false;
-                    });
-            }
-       },
+        },
         filters: {
             toFixed: function(val, dp) {
                 if (isNaN(val) || val == null) {

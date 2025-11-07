@@ -1285,43 +1285,7 @@ global $settings, $session, $path;
                 setTimeout(() => {
                     this.show_photo_error = false;
                 }, 5000);
-            },
-
-            // Photo gallery/lightbox methods
-            openLightbox: function(index) {
-                if (!this.system_photos || this.system_photos.length === 0) return;
-                this.currentPhotoIndex = index;
-                this.lightboxOpen = true;
-                // Prevent body scrolling when lightbox is open
-                document.body.style.overflow = 'hidden';
-            },
-
-            closeLightbox: function() {
-                this.lightboxOpen = false;
-                this.currentPhotoIndex = 0;
-                // Restore body scrolling
-                document.body.style.overflow = '';
-            },
-
-            nextPhoto: function() {
-                if (!this.system_photos || this.system_photos.length === 0) return;
-                if (this.currentPhotoIndex < this.system_photos.length - 1) {
-                    this.currentPhotoIndex++;
-                } else {
-                    this.currentPhotoIndex = 0; // Loop back to first photo
-                }
-            },
-
-            previousPhoto: function() {
-                if (!this.system_photos || this.system_photos.length === 0) return;
-                if (this.currentPhotoIndex > 0) {
-                    this.currentPhotoIndex--;
-                } else {
-                    this.currentPhotoIndex = this.system_photos.length - 1; // Loop to last photo
-                }
             }
-
-
         },
         mounted: function() {
             // Add keyboard event listener for lightbox navigation
