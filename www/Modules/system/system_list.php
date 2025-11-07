@@ -15,9 +15,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 <link rel="stylesheet" href="<?php echo $path; ?>Lib/autocomplete.css?v=4">
 <script src="Lib/autocomplete.js?v=8"></script>
-<link rel="stylesheet" href="<?php echo $path; ?>Modules/system/system_view.css?v=2">
+<link rel="stylesheet" href="<?php echo $path; ?>Modules/system/system_view.css?v=5">
 <script src="<?php echo $path; ?>Modules/system/photo_utils.js?v=1"></script>
-<script src="<?php echo $path; ?>Modules/system/photo_lightbox.js?v=1"></script>
+<script src="<?php echo $path; ?>Modules/system/photo_lightbox.js?v=5"></script>
 
 <style>
     .sticky {

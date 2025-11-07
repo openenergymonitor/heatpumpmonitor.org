@@ -9,11 +9,11 @@ global $settings, $session, $path;
 <script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
 
 <link rel="stylesheet" href="<?php echo $path; ?>Lib/autocomplete.css?v=4">
-<link rel="stylesheet" href="<?php echo $path; ?>Modules/system/system_view.css?v=1">
+<link rel="stylesheet" href="<?php echo $path; ?>Modules/system/system_view.css?v=6">
 
 <script src="<?php echo $path; ?>Lib/autocomplete.js?v=10"></script>
 <script src="<?php echo $path; ?>Modules/system/photo_utils.js?v=1"></script>
-<script src="<?php echo $path; ?>Modules/system/photo_lightbox.js?v=1"></script>
+<script src="<?php echo $path; ?>Modules/system/photo_lightbox.js?v=5"></script>
 <script src="<?php echo $path; ?>Modules/system/photo_upload.js?v=1"></script>
 
 <div id="app" class="bg-light">

@@ -1,42 +1,61 @@
 <!-- Photo Lightbox Component -->
 <!-- Include this template where needed and ensure the parent component uses PhotoLightboxMixin -->
-<div class="photo-lightbox" v-if="lightboxOpen" @click="closeLightbox">
+<div class="photo-lightbox" v-if="lightboxOpen" @click="handleBackgroundClick">
     <div class="lightbox-content" @click.stop>
-        <button class="lightbox-close" @click="closeLightbox">
+        
+        <button class="lightbox-close" 
+                @click.stop="closeLightbox"
+                v-show="overlayVisible"
+                :class="{ 'overlay-hidden': !overlayVisible }">
             <i class="fas fa-times"></i>
         </button>
         
         <button 
             class="lightbox-nav lightbox-prev" 
-            @click="previousPhoto" 
+            @click.stop="previousPhoto" 
             v-if="system_photos && system_photos.length > 1"
+            v-show="overlayVisible"
+            :class="{ 'overlay-hidden': !overlayVisible }"
         >
             <i class="fas fa-chevron-left"></i>
         </button>
         
-        <div class="lightbox-image-container" v-if="system_photos && system_photos.length > 0">
+        <div class="lightbox-image-container" 
+             v-if="system_photos && system_photos.length > 0"
+             @touchstart="handleTouchStart"
+             @touchend="handleTouchEnd">
             <img 
                 :src="system_photos[currentPhotoIndex].server_url || (path + system_photos[currentPhotoIndex].url)" 
                 :alt="system_photos[currentPhotoIndex].name || system_photos[currentPhotoIndex].original_filename"
                 class="lightbox-image"
+                @click="handleImageClick"
+                @dragstart.prevent
+                ref="lightboxImage"
             >
-            <div class="lightbox-caption">
-                <div class="caption-main">
-                    <strong>{{ system_photos[currentPhotoIndex].name || system_photos[currentPhotoIndex].original_filename }}</strong>
-                    <span v-if="system_photos[currentPhotoIndex].photo_type" class="photo-type-badge">
-                        {{ formatPhotoType(system_photos[currentPhotoIndex].photo_type) }}
-                    </span>
-                </div>
-                <div class="caption-info">
-                    Photo {{ currentPhotoIndex + 1 }} of {{ system_photos.length }}
-                </div>
+        </div>
+        
+        <!-- Caption moved outside container to stay fixed at bottom -->
+        <div class="lightbox-caption" 
+             v-if="system_photos && system_photos.length > 0"
+             v-show="overlayVisible"
+             :class="{ 'overlay-hidden': !overlayVisible }">
+            <div class="caption-main">
+                <strong>{{ system_photos[currentPhotoIndex].name || system_photos[currentPhotoIndex].original_filename }}</strong>
+                <span v-if="system_photos[currentPhotoIndex].photo_type" class="photo-type-badge">
+                    {{ formatPhotoType(system_photos[currentPhotoIndex].photo_type) }}
+                </span>
+            </div>
+            <div class="caption-info">
+                Photo {{ currentPhotoIndex + 1 }} of {{ system_photos.length }}
             </div>
         </div>
         
         <button 
             class="lightbox-nav lightbox-next" 
-            @click="nextPhoto" 
+            @click.stop="nextPhoto" 
             v-if="system_photos && system_photos.length > 1"
+            v-show="overlayVisible"
+            :class="{ 'overlay-hidden': !overlayVisible }"
         >
             <i class="fas fa-chevron-right"></i>
         </button>

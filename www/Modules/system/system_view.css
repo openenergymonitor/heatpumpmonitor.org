@@ -434,14 +434,37 @@
 .lightbox-image-container {
     position: relative;
     text-align: center;
+    transition: transform 0.3s ease-out;
+    transform-origin: center center;
+    min-width: 100px;
+    min-height: 100px;
+    overflow: hidden;
+    /* No fixed size constraints - let it expand with zoom */
+    width: auto;
+    height: auto;
+}
+
+.lightbox-image-container.zoomed {
+    overflow: visible;
 }
 
 .lightbox-image {
-    max-width: 100%;
+    max-width: 90vw;
     max-height: 80vh;
     object-fit: contain;
     border-radius: 8px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    cursor: grab;
+    width: auto;
+    height: auto;
+}
+
+.lightbox-image:active {
+    cursor: grabbing;
 }
 
 .lightbox-caption {
@@ -481,6 +504,35 @@
     font-size: 0.75rem;
     font-weight: normal;
     border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Mobile touch support and overlay transitions */
+.lightbox-close,
+.lightbox-nav,
+.lightbox-caption {
+    transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+}
+
+.overlay-hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.lightbox-content {
+    touch-action: manipulation;
+    overflow: hidden;
+}
+
+/* Removed duplicate .lightbox-image-container selector - consolidated above */
+
+/* Prevent text selection during touch interactions */
+.lightbox-content * {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
 }
 
 /* Responsive adjustments for lightbox */
@@ -527,6 +579,20 @@
     
     .lightbox-image {
         max-height: 70vh;
+        max-width: 95vw;
+    }
+    
+    /* Improve touch target sizes on mobile */
+    .lightbox-nav {
+        width: 50px;
+        height: 50px;
+        font-size: 1.4rem;
+    }
+    
+    .lightbox-close {
+        width: 45px;
+        height: 45px;
+        font-size: 1.4rem;
     }
     
     .photo-thumbnail-grid {
