@@ -67,6 +67,20 @@ var PhotoLightboxMixin = {
             }
         },
         
+        formatPhotoType: function(photo_type) {
+            if (!photo_type) return '';
+            switch(photo_type) {
+                case 'outdoor_unit':
+                    return 'Outdoor Unit';
+                case 'plant_room':
+                    return 'Plant Room';
+                case 'other':
+                    return 'Other';
+                default:
+                    return photo_type.charAt(0).toUpperCase() + photo_type.slice(1);
+            }
+        },
+        
         // Load photos for a specific system (used by system list)
         openSystemPhotos: function(systemId) {
             this.loadingPhotos = true;
@@ -79,6 +93,7 @@ var PhotoLightboxMixin = {
                             return {
                                 id: photo.id,
                                 name: photo.original_filename,
+                                photo_type: photo.photo_type,
                                 url: photo.url,
                                 width: photo.width,
                                 height: photo.height,

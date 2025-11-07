@@ -446,15 +446,40 @@
 
 .lightbox-caption {
     position: absolute;
-    bottom: -40px;
+    bottom: -60px;
     left: 50%;
     transform: translateX(-50%);
     color: white;
-    background: rgba(0, 0, 0, 0.7);
-    padding: 8px 16px;
-    border-radius: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 12px 20px;
+    border-radius: 8px;
     font-size: 0.9rem;
-    white-space: nowrap;
+    text-align: center;
+    min-width: 200px;
+    max-width: 400px;
+}
+
+.caption-main {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 4px;
+    flex-wrap: wrap;
+}
+
+.caption-info {
+    font-size: 0.8rem;
+    opacity: 0.9;
+}
+
+.photo-type-badge {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: normal;
+    border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 /* Responsive adjustments for lightbox */
@@ -476,6 +501,22 @@
     .lightbox-close {
         top: -40px;
         right: 10px;
+    }
+    
+    .lightbox-caption {
+        bottom: -80px;
+        padding: 8px 16px;
+        max-width: 300px;
+        font-size: 0.8rem;
+    }
+    
+    .caption-main {
+        gap: 6px;
+    }
+    
+    .photo-type-badge {
+        font-size: 0.7rem;
+        padding: 1px 6px;
     }
     
     .lightbox-image {

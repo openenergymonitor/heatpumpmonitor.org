@@ -21,7 +21,15 @@
                 class="lightbox-image"
             >
             <div class="lightbox-caption">
-                Photo {{ currentPhotoIndex + 1 }} of {{ system_photos.length }}
+                <div class="caption-main">
+                    <strong>{{ system_photos[currentPhotoIndex].name || system_photos[currentPhotoIndex].original_filename }}</strong>
+                    <span v-if="system_photos[currentPhotoIndex].photo_type" class="photo-type-badge">
+                        {{ formatPhotoType(system_photos[currentPhotoIndex].photo_type) }}
+                    </span>
+                </div>
+                <div class="caption-info">
+                    Photo {{ currentPhotoIndex + 1 }} of {{ system_photos.length }}
+                </div>
             </div>
         </div>
         
