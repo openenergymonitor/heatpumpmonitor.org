@@ -51,7 +51,7 @@ class SystemStats
             );
         }
 
-        if ($result = $this->redis->get("appconfig:$systemid")) {
+        if ($this->redis && $result = $this->redis->get("appconfig:$systemid")) {
             $config = json_decode($result);
             $config->config_cache = true;
             return $config;
@@ -64,8 +64,10 @@ class SystemStats
             $config->apikey = $result['readkey'];
             if ($config->apikey=="") $config->apikey = false;
 
-            $this->redis->set("appconfig:$systemid",json_encode($config));
-            $this->redis->expire("appconfig:$systemid",10);
+            if ($this->redis) {
+                $this->redis->set("appconfig:$systemid",json_encode($config));
+                $this->redis->expire("appconfig:$systemid",10);
+            }
             return $config;
         }
         return $result;
@@ -261,7 +263,7 @@ class SystemStats
         // Generate cache key for public mode
         if ($mode === "public" && $start === false && $end === false && $system_id === false) {
             // Try to get from cache first
-            if ($cached_result = $this->redis->get($table_name."_public_cache")) {
+            if ($this->redis && ($cached_result = $this->redis->get($table_name."_public_cache"))) {
                 // return json_decode($cached_result, true);
             }
         }
@@ -362,7 +364,7 @@ class SystemStats
         }
 
         // Cache the result if mode is public
-        if ($mode === "public" && $start === false && $end === false && $system_id === false && $stats !== false) {
+        if ($this->redis && $mode === "public" && $start === false && $end === false && $system_id === false && $stats !== false) {
             //$this->redis->set($table_name."_public_cache", json_encode($stats));
             //$this->redis->expire($table_name."_public_cache", 3600); // 1 hour = 3600 seconds
         }
