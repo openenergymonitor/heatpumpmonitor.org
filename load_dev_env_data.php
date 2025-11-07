@@ -267,6 +267,10 @@ if ($load_monthly_stats) {
     }
     foreach ($system_ids as $system_id) {
         print "- Loading monthly stats for system: $system_id ";
+
+        // Clear existing monthly data for the system
+        $mysqli->query("DELETE FROM system_stats_monthly_v2 WHERE id='$system_id'");
+        
         // https://heatpumpmonitor.org/system/stats/monthly?id=2
         $data = file_get_contents("$heatpumpmonitor_host/system/stats/monthly?id=$system_id");
         $stats = json_decode($data,true);
@@ -299,6 +303,9 @@ if ($load_daily_stats) {
     foreach ($system_ids as $system_id) {
         print "- Loading daily stats for system: $system_id ";
         $days = 0;
+
+        // Clear existing daily data for the system
+        $mysqli->query("DELETE FROM system_stats_daily WHERE id='$system_id'");
 
         // Initialize cURL session to download the CSV
         $apiUrl = 'https://heatpumpmonitor.org/system/stats/export/daily?id='.$system_id;
