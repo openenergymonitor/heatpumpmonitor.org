@@ -1,5 +1,10 @@
 <?php
 defined('EMONCMS_EXEC') or die('Restricted access');
+global $session;
+$admin = 0;
+if (isset($session['admin']) && $session['admin']) {
+    $admin = 1;
+}
 ?>
 <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
 <script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
@@ -165,6 +170,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 <script>
     var userid = <?php echo $userid; ?>;
     var systemid = <?php echo $systemid; ?>;
+    var admin = <?php echo $admin; ?>;
 
     var mode = "combined";
 
@@ -310,10 +316,15 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         }
     });
 
+    let system_list_url = path + "system/list/public.json";
+    if (admin) {
+        system_list_url = path + "system/list/admin.json";
+    }
+
     // Load list of systems
     $.ajax({
         type: "GET",
-        url: path + "system/list/public.json",
+        url: system_list_url,
         success: function(result) {
 
             // sort by location
