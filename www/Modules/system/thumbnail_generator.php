@@ -65,16 +65,18 @@ class ThumbnailGenerator
             return $result;
         }
 
-        $original_width = $image_info[0];
-        $original_height = $image_info[1];
         $mime_type = $image_info['mime'];
 
-        // Create image resource from original
+        // Create image resource from original (with EXIF rotation applied)
         $original_image = $this->createImageFromFile($original_path, $mime_type);
         if (!$original_image) {
             $result['errors'][] = "Could not create image resource from original file";
             return $result;
         }
+
+        // Get actual dimensions after EXIF rotation has been applied
+        $original_width = imagesx($original_image);
+        $original_height = imagesy($original_image);
 
         $success_count = 0;
         $base_path = pathinfo($original_path, PATHINFO_DIRNAME);
@@ -128,18 +130,171 @@ class ThumbnailGenerator
 
     /**
      * Create image resource from file based on MIME type
+     * Automatically handles EXIF rotation for JPEG images
      */
     private function createImageFromFile($file_path, $mime_type) {
+        $image = null;
+        
         switch ($mime_type) {
             case 'image/jpeg':
             case 'image/jpg':
-                return imagecreatefromjpeg($file_path);
+                $image = imagecreatefromjpeg($file_path);
+                // Handle EXIF rotation for JPEG images
+                if ($image && function_exists('exif_read_data')) {
+                    $image = $this->handleExifRotation($image, $file_path);
+                }
+                return $image;
             case 'image/png':
                 return imagecreatefrompng($file_path);
             case 'image/webp':
                 return imagecreatefromwebp($file_path);
             default:
                 return false;
+        }
+    }
+
+    /**
+     * Handle EXIF rotation data for JPEG images
+     * @param resource $image GD image resource
+     * @param string $file_path Path to original image file
+     * @return resource Rotated image resource
+     */
+    private function handleExifRotation($image, $file_path) {
+        // Check if EXIF functions are available
+        if (!function_exists('exif_read_data')) {
+            // EXIF extension not available - thumbnails will use original orientation
+            // This is acceptable fallback behavior, though not ideal for rotated mobile photos
+            return $image;
+        }
+
+        try {
+            // Suppress warnings/errors for corrupted EXIF data
+            $exif = @exif_read_data($file_path);
+            if (!$exif || !isset($exif['Orientation'])) {
+                return $image; // No EXIF orientation data or unreadable
+            }
+
+            $rotated_image = null;
+            switch ($exif['Orientation']) {
+                case 3: // 180 degrees
+                    $rotated_image = imagerotate($image, 180, 0);
+                    break;
+                case 6: // 90 degrees CW (270 degrees CCW)
+                    $rotated_image = imagerotate($image, -90, 0);
+                    break;
+                case 8: // 90 degrees CCW (270 degrees CW)
+                    $rotated_image = imagerotate($image, 90, 0);
+                    break;
+                case 2: // Horizontal flip
+                    $rotated_image = $this->flipImageHorizontal($image);
+                    break;
+                case 4: // Vertical flip
+                    $rotated_image = $this->flipImageVertical($image);
+                    break;
+                case 5: // Horizontal flip + 90 degrees CCW
+                    $temp = $this->flipImageHorizontal($image);
+                    if ($temp) {
+                        $rotated_image = imagerotate($temp, 90, 0);
+                        if ($temp !== $image) imagedestroy($temp);
+                    }
+                    break;
+                case 7: // Horizontal flip + 90 degrees CW
+                    $temp = $this->flipImageHorizontal($image);
+                    if ($temp) {
+                        $rotated_image = imagerotate($temp, -90, 0);
+                        if ($temp !== $image) imagedestroy($temp);
+                    }
+                    break;
+                case 1: // No rotation needed
+                default:
+                    return $image;
+            }
+
+            // If rotation was successful, destroy original and return rotated
+            if ($rotated_image && $rotated_image !== $image) {
+                imagedestroy($image);
+                return $rotated_image;
+            }
+        } catch (Exception $e) {
+            // If EXIF reading fails, just return the original image
+            // This ensures the thumbnail generation continues even with problematic EXIF data
+        }
+
+        return $image;
+    }
+
+    /**
+     * Flip image horizontally
+     * @param resource $image GD image resource
+     * @return resource Flipped image resource
+     */
+    private function flipImageHorizontal($image) {
+        $width = imagesx($image);
+        $height = imagesy($image);
+        $flipped = imagecreatetruecolor($width, $height);
+        
+        if (!$flipped) {
+            return $image;
+        }
+
+        // Preserve transparency
+        $this->preserveTransparency($image, $flipped);
+
+        // Copy pixels horizontally flipped
+        for ($x = 0; $x < $width; $x++) {
+            imagecopy($flipped, $image, $width - $x - 1, 0, $x, 0, 1, $height);
+        }
+
+        return $flipped;
+    }
+
+    /**
+     * Flip image vertically
+     * @param resource $image GD image resource
+     * @return resource Flipped image resource
+     */
+    private function flipImageVertical($image) {
+        $width = imagesx($image);
+        $height = imagesy($image);
+        $flipped = imagecreatetruecolor($width, $height);
+        
+        if (!$flipped) {
+            return $image;
+        }
+
+        // Preserve transparency
+        $this->preserveTransparency($image, $flipped);
+
+        // Copy pixels vertically flipped
+        for ($y = 0; $y < $height; $y++) {
+            imagecopy($flipped, $image, 0, $height - $y - 1, 0, $y, $width, 1);
+        }
+
+        return $flipped;
+    }
+
+    /**
+     * Preserve transparency for PNG/GIF images when creating new image resource
+     * @param resource $source Source image
+     * @param resource $dest Destination image
+     */
+    private function preserveTransparency($source, $dest) {
+        $transparent_index = imagecolortransparent($source);
+        if ($transparent_index >= 0) {
+            $transparent_color = imagecolorsforindex($source, $transparent_index);
+            $transparent_index = imagecolorallocate(
+                $dest,
+                $transparent_color['red'],
+                $transparent_color['green'],
+                $transparent_color['blue']
+            );
+            imagefill($dest, 0, 0, $transparent_index);
+            imagecolortransparent($dest, $transparent_index);
+        } else {
+            imagealphablending($dest, false);
+            imagesavealpha($dest, true);
+            $transparent = imagecolorallocatealpha($dest, 255, 255, 255, 127);
+            imagefill($dest, 0, 0, $transparent);
         }
     }
 

@@ -1,14 +1,15 @@
 FROM php:8.4-apache
 RUN docker-php-ext-install mysqli
 
-# Install GD extension for image manipulation (required for thumbnails)
+# Install GD and EXIF extensions for image manipulation (required for thumbnails)
 RUN apt-get update && apt-get install -y \
     libfreetype6-dev \
     libjpeg62-turbo-dev \
     libpng-dev \
     libwebp-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
-    && docker-php-ext-install gd
+    && docker-php-ext-install gd \
+    && docker-php-ext-install exif
 
 RUN a2enmod rewrite
 
