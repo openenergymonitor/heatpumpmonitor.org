@@ -1286,26 +1286,6 @@ global $settings, $session, $path;
                     this.show_photo_error = false;
                 }, 5000);
             }
-        },
-        mounted: function() {
-            // Add keyboard event listener for lightbox navigation
-            document.addEventListener('keydown', (event) => {
-                if (this.lightboxOpen) {
-                    switch(event.key) {
-                        case 'Escape':
-                            this.closeLightbox();
-                            break;
-                        case 'ArrowLeft':
-                            event.preventDefault();
-                            this.previousPhoto();
-                            break;
-                        case 'ArrowRight':
-                            event.preventDefault();
-                            this.nextPhoto();
-                            break;
-                    }
-                }
-            });
         }
     });
 

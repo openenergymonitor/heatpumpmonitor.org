@@ -139,8 +139,12 @@ class SystemPhotos
             return $response;
         } else {
             // Clean up file if database insert fails
-            unlink($filepath);
-            return array("success" => false, "message" => "Failed to save photo information to database");
+            $unlink_success = unlink($filepath);
+            $error_message = "Failed to save photo information to database";
+            if (!$unlink_success) {
+                $error_message .= " (and failed to delete uploaded file)";
+            }
+            return array("success" => false, "message" => $error_message);
         }
     }
     
@@ -227,13 +231,40 @@ class SystemPhotos
                 return array("success" => false, "message" => "Failed to delete image file");
             }
         }
-        
-        // Delete thumbnail files
-        $this->thumbnail_generator->deleteThumbnails($row['image_path']);
-        
-        // Delete from database
+
+        // Begin transaction for atomic database deletion
+        $this->mysqli->begin_transaction();
         $stmt = $this->mysqli->prepare("DELETE FROM system_images WHERE id = ?");
         $stmt->bind_param("i", $photo_id);
+        
+        if ($stmt->execute()) {
+            // Commit transaction before deleting files
+            $this->mysqli->commit();
+            
+            // Delete the main file from filesystem
+            $file_delete_success = true;
+            if (file_exists($row['image_path'])) {
+                if (!unlink($row['image_path'])) {
+                    $file_delete_success = false;
+                }
+            }
+            
+            // Delete thumbnail files
+            $thumb_delete_success = true;
+            if (!$this->thumbnail_generator->deleteThumbnails($row['image_path'])) {
+                $thumb_delete_success = false;
+            }
+            
+            if ($file_delete_success && $thumb_delete_success) {
+                return array("success" => true, "message" => "Photo deleted successfully");
+            } else {
+                // Filesystem cleanup failed after DB deletion; log error, but DB is correct
+                return array("success" => true, "message" => "Photo deleted from database, but failed to delete some files");
+            }
+        } else {
+            // Rollback transaction if DB deletion failed
+            $this->mysqli->rollback();
+        }
         
         if ($stmt->execute()) {
             return array("success" => true, "message" => "Photo deleted successfully");

@@ -54,13 +54,15 @@ $force_all = false;
 $verbose = false;
 
 // Check for command line options
-for ($i = 1; $i < count($argv); $i++) {
-    if ($argv[$i] === '--force-all') {
-        $force_all = true;
-    } elseif ($argv[$i] === '--verbose') {
-        $verbose = true;
-    } elseif (is_numeric($argv[$i])) {
-        $system_id = (int)$argv[$i];
+if (php_sapi_name() === 'cli' && isset($argv)) {
+    for ($i = 1; $i < count($argv); $i++) {
+        if ($argv[$i] === '--force-all') {
+            $force_all = true;
+        } elseif ($argv[$i] === '--verbose') {
+            $verbose = true;
+        } elseif (is_numeric($argv[$i])) {
+            $system_id = (int)$argv[$i];
+        }
     }
 }
 

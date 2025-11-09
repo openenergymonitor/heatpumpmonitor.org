@@ -28,22 +28,31 @@ var PhotoUtils = {
             return basePath + photo.url;
         }
 
-        let desired_width, desired_height_final;
-
+        // Initialize to default values
+        let desired_width = 150, desired_height_final = 150;
         // Handle different input formats
         if (typeof desired_size === 'string') {
             if (desired_size.includes('x')) {
                 // Format like '80x60'
                 const parts = desired_size.split('x');
-                desired_width = parseInt(parts[0]);
-                desired_height_final = parseInt(parts[1]);
+                const w = parseInt(parts[0]);
+                const h = parseInt(parts[1]);
+                if (!isNaN(w) && !isNaN(h)) {
+                    desired_width = w;
+                    desired_height_final = h;
+                }
             } else {
                 // Format like '150' (square)
-                desired_width = desired_height_final = parseInt(desired_size);
+                const s = parseInt(desired_size);
+                if (!isNaN(s)) {
+                    desired_width = desired_height_final = s;
+                }
             }
         } else if (typeof desired_size === 'number') {
-            desired_width = desired_size;
-            desired_height_final = desired_size; // Square
+            if (!isNaN(desired_size) && desired_size > 0) {
+                desired_width = desired_size;
+                desired_height_final = desired_size; // Square
+            }
         }
 
         // Try to find exact match by dimensions

@@ -17,7 +17,7 @@ class ThumbnailGenerator
 
     /**
      * Get thumbnail sizes configuration
-     * @return array Array of [width, height, suffix, name] for each size
+     * @return array Array of [width, height, suffix, name, crop_mode] for each size
      */
     public function getThumbnailSizes() {
         return $this->thumbnail_sizes;
