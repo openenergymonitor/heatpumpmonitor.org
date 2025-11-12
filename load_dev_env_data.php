@@ -247,6 +247,19 @@ if ($load_heatpump_models) {
     $heatpumps = json_decode($data);
     if ($heatpumps==null) die("Error: could not load heatpump model data from heatpumpmonitor.org\n");
     $created_models = 0;
+
+    // TODO: Download heatpump images if available
+    $heatpump_img_dir = "theme/img/heatpumps";
+    if (!file_exists($heatpump_img_dir)) {
+        if (mkdir($heatpump_img_dir, 0755, true)) {
+            chown($heatpump_img_dir, 'www-data');
+            chgrp($heatpump_img_dir, 'www-data');
+            echo "Created directory: $heatpump_img_dir\n";
+        } else {
+            echo "Failed to create directory: $heatpump_img_dir\n";
+        }
+    }
+
     foreach ($heatpumps as $hp) {
         // Basic fields
         $manufacturer_id = (int) $hp->manufacturer_id;

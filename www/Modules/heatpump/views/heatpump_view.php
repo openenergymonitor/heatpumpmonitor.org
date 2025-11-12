@@ -4,6 +4,62 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
 <script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
+<script src="<?php echo $path; ?>Modules/system/photo_utils.js?v=1"></script>
+<script src="<?php echo $path; ?>Modules/system/photo_lightbox.js?v=5"></script>
+
+<link rel="stylesheet" type="text/css" href="<?php echo $path; ?>Modules/system/system_view.css?v=5">
+
+<style>
+.heat-pump-image-section {
+    text-align: center;
+}
+
+.heat-pump-placeholder {
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    padding: 30px 20px;
+    background-color: #f8f9fa;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.2s ease;
+}
+
+.heat-pump-placeholder.clickable {
+    cursor: pointer;
+    border-color: #007bff;
+}
+
+.heat-pump-placeholder.clickable:hover {
+    background-color: #e3f2fd;
+    border-color: #0056b3;
+}
+
+.heat-pump-image-container img {
+    max-width: 100%;
+    max-height: 300px;
+    object-fit: contain;
+}
+
+.clickable-image {
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+.clickable-image:hover {
+    opacity: 0.9;
+}
+
+.image-controls, .replace-image-section {
+    text-align: center;
+}
+
+.placeholder-content {
+    width: 100%;
+}
+</style>
 
 <div id="app" class="bg-light">
     <div style=" background-color:#f0f0f0; padding-top:20px; padding-bottom:10px">
@@ -49,8 +105,56 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     </tr>
                 </table>
             </div>
-            <div class="col-4" v-if="heatpump.img">
-                <img :src="path+'Modules/heatpump/img/'+heatpump.img" class="img-thumbnail mt-3" :alt="heatpump.img">
+            <div class="col-4">
+                <!-- Heat pump image or placeholder -->
+                <div class="heat-pump-image-section mt-3">
+                    <div v-if="heatpump.img" class="heat-pump-image-container">
+                        <img :src="getImageUrl(heatpump.img)" 
+                             class="img-thumbnail clickable-image" 
+                             :alt="heatpump.img"
+                             @click="openImageLightbox"
+                             title="Click to view full size">
+                        <div v-if="mode=='admin'" class="image-controls mt-2">
+                            <button class="btn btn-danger btn-sm" @click="deleteImage" title="Delete image">
+                                <i class="fas fa-trash"></i> Delete Image
+                            </button>
+                        </div>
+                    </div>
+                    <div v-else class="heat-pump-placeholder">
+                        <div class="placeholder-content" @click="mode=='admin' && triggerImageUpload()" 
+                             :class="{'clickable': mode=='admin'}" 
+                             :title="mode=='admin' ? 'Click to upload heat pump image' : ''">
+                            <i class="fas fa-thermometer-half fa-3x text-muted mb-3"></i>
+                            <p class="text-muted mb-0">Heat Pump Image</p>
+                            <p v-if="mode=='admin'" class="text-muted small">Click to upload</p>
+                            <p v-else class="text-muted small">No image available</p>
+                        </div>
+                    </div>
+                    <!-- Admin upload controls -->
+                    <div v-if="mode=='admin' && heatpump.img" class="replace-image-section mt-2">
+                        <button class="btn btn-secondary btn-sm" @click="triggerImageUpload" title="Replace image">
+                            <i class="fas fa-upload"></i> Replace Image
+                        </button>
+                    </div>
+                    <!-- Hidden file input -->
+                    <input type="file" 
+                           ref="imageInput" 
+                           @change="handleImageUpload" 
+                           accept="image/jpeg,image/jpg,image/png,image/webp"
+                           style="display: none;">
+                    <!-- Upload progress -->
+                    <div v-if="uploadingImage" class="mt-2">
+                        <div class="progress">
+                            <div class="progress-bar" :style="{ width: uploadProgress + '%' }"></div>
+                        </div>
+                        <small class="text-muted">Uploading image...</small>
+                    </div>
+                    <!-- Upload error -->
+                    <div v-if="uploadError" class="alert alert-danger mt-2" role="alert">
+                        {{ uploadError }}
+                        <button type="button" class="btn-close btn-sm float-end" @click="uploadError = null"></button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -306,12 +410,51 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             </div>
         </div>
     </div>
+
+    <!-- Photo Lightbox -->
+    <div class="photo-lightbox" v-if="lightboxOpen" @click="handleBackgroundClick">
+        <div class="lightbox-content" @click.stop>
+            
+            <button class="lightbox-close" 
+                    @click.stop="closeLightbox"
+                    v-show="overlayVisible"
+                    :class="{ 'overlay-hidden': !overlayVisible }">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <div class="lightbox-image-container" 
+                 @touchstart="handleTouchStart"
+                 @touchend="handleTouchEnd">
+                <img 
+                    :src="getImageUrl(heatpump.img)" 
+                    :alt="heatpump.manufacturer_name + ' ' + heatpump.name"
+                    class="lightbox-image"
+                    @click="handleImageClick"
+                    @dragstart.prevent
+                    ref="lightboxImage"
+                >
+            </div>
+            
+            <!-- Caption -->
+            <div class="lightbox-caption" 
+                 v-show="overlayVisible"
+                 :class="{ 'overlay-hidden': !overlayVisible }">
+                <div class="caption-main">
+                    <strong>{{ heatpump.manufacturer_name }} {{ heatpump.name }} {{ heatpump.refrigerant }} {{ heatpump.capacity }}kW</strong>
+                </div>
+                <div class="caption-info">
+                    Heat Pump Image
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
 
     var app = new Vue({
         el: '#app',
+        mixins: [PhotoLightboxMixin],
         data: {
             mode: "<?php echo $mode; ?>",
             userid: <?php echo $userid; ?>,
@@ -321,6 +464,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             path: "<?php echo $path; ?>",
             heatpump: {},
             original_heatpump: {}, // Backup for cancel functionality
+            // Image upload
+            uploadingImage: false,
+            uploadProgress: 0,
+            uploadError: null,
+            imageCacheBuster: Date.now(),
             // Min
             min_cap_tests: [],
             average_min_cap_test: 0,
@@ -458,6 +606,128 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 .fail(() => {
                     alert('Failed to update test status');
                 });
+            },
+            
+            // Image upload methods
+            triggerImageUpload: function() {
+                this.$refs.imageInput.click();
+            },
+            
+            handleImageUpload: function(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+                
+                // Reset error and auto-clear after 5 seconds
+                this.uploadError = null;
+                
+                // Validate file
+                const maxSize = 5 * 1024 * 1024; // 5MB
+                if (file.size > maxSize) {
+                    this.uploadError = 'File size exceeds 5MB limit';
+                    this.clearErrorAfterDelay();
+                    return;
+                }
+                
+                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+                if (!allowedTypes.includes(file.type)) {
+                    this.uploadError = 'Invalid file type. Only JPG, PNG, and WebP are allowed';
+                    this.clearErrorAfterDelay();
+                    return;
+                }
+                
+                // Upload file
+                const formData = new FormData();
+                formData.append('image', file);
+                formData.append('heatpump_id', this.heatpump.id);
+                
+                this.uploadingImage = true;
+                this.uploadProgress = 0;
+                
+                // Use XMLHttpRequest for progress tracking
+                const xhr = new XMLHttpRequest();
+                
+                xhr.upload.addEventListener('progress', (e) => {
+                    if (e.lengthComputable) {
+                        this.uploadProgress = Math.round((e.loaded / e.total) * 100);
+                    }
+                });
+                
+                xhr.addEventListener('load', () => {
+                    this.uploadingImage = false;
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        if (response.success) {
+                            // Update cache buster to force image refresh
+                            this.imageCacheBuster = Date.now();
+                            // Reload heatpump data to get new image
+                            this.load_heatpump();
+                        } else {
+                            this.uploadError = response.message || 'Upload failed';
+                            this.clearErrorAfterDelay();
+                        }
+                    } catch (e) {
+                        this.uploadError = 'Invalid response from server';
+                        this.clearErrorAfterDelay();
+                    }
+                    // Clear file input
+                    event.target.value = '';
+                });
+                
+                xhr.addEventListener('error', () => {
+                    this.uploadingImage = false;
+                    this.uploadError = 'Upload failed. Please try again.';
+                    this.clearErrorAfterDelay();
+                    event.target.value = '';
+                });
+                
+                xhr.open('POST', this.path + 'heatpump/upload-image');
+                xhr.send(formData);
+            },
+            
+            clearErrorAfterDelay: function() {
+                setTimeout(() => {
+                    this.uploadError = null;
+                }, 5000);
+            },
+            
+            deleteImage: function() {
+                if (!confirm('Are you sure you want to delete this image?')) {
+                    return;
+                }
+                
+                $.post(this.path + 'heatpump/delete-image', {
+                    heatpump_id: this.heatpump.id
+                })
+                .done(response => {
+                    if (response.success) {
+                        this.imageCacheBuster = Date.now();
+                        this.load_heatpump(); // Reload to update image display
+                    } else {
+                        alert('Error: ' + response.message);
+                    }
+                })
+                .fail(() => {
+                    alert('Failed to delete image');
+                });
+            },
+            
+            getImageUrl: function(filename) {
+                return this.path + 'theme/img/heatpumps/' + filename + '?_t=' + this.imageCacheBuster;
+            },
+            
+            openImageLightbox: function() {
+                if (!this.heatpump.img) return;
+                
+                // Create a photo object compatible with the lightbox mixin
+                this.system_photos = [{
+                    url: 'theme/img/heatpumps/' + this.heatpump.img,
+                    server_url: this.getImageUrl(this.heatpump.img),
+                    name: this.heatpump.manufacturer_name + ' ' + this.heatpump.name,
+                    original_filename: this.heatpump.img,
+                    photo_type: 'heatpump'
+                }];
+                
+                this.openLightbox(0);
             }
         },
         computed: {
