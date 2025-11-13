@@ -53,6 +53,10 @@ $system_id = null;
 $force_all = false;
 $verbose = false;
 
+// Allow this script to allocate more memory and time if needed
+ini_set('memory_limit', '512M');
+set_time_limit(0);
+
 // Check for command line options
 if (php_sapi_name() === 'cli' && isset($argv)) {
     for ($i = 1; $i < count($argv); $i++) {

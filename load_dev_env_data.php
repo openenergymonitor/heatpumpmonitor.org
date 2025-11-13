@@ -44,6 +44,9 @@ $manufacturer_class = new Manufacturer($mysqli);
 require ("Modules/heatpump/heatpump_model.php");
 $heatpump_class = new Heatpump($mysqli,$manufacturer_class);
 
+require ("Modules/system/system_photos_model.php");
+$system_photos = new SystemPhotos($mysqli, $system_class);
+
 // Before starting load system list, if this fails we can exit before clearing the database
 $data = file_get_contents("$heatpumpmonitor_host/system/list/public.json");
 $systems = json_decode($data);
@@ -301,42 +304,140 @@ if ($load_heatpump_models) {
 if ($load_system_meta) {
     $created_systems = 0;
     $system_userid = 1;
-    foreach ($systems as $system) {
 
-        // Check if system already exists
-        $result = $mysqli->query("SELECT * FROM system_meta WHERE id='$system->id'");
-        if ($result->num_rows>0) {
-            print "- System already exists: $system->id\n";
-            continue;
-        }
+    $total_photos = 0;
+    $existing_photos = 0;
+    $failed_photos = 0;
 
-        // Create system
-        $mysqli->query("INSERT INTO system_meta (id,userid) VALUES ('$system->id', '$system_userid')");
-
-        $result = $system_class->save($system_userid, $system->id, $system, false);
-        if ($result['success']==false) {
-            echo "Error: could not save system: ".$system->id."\n";
-            print_r($result);
-            die;
-        } else {
-            $created_systems++;
-        }
-        $system_userid++;
-    }
-    $mysqli->query("UPDATE system_meta SET published=1");
-    print "- Created ".$created_systems." systems\n";
-
-    // TODO: Download system images if available
     $system_img_dir = "theme/img/system";
     if (!file_exists($system_img_dir)) {
         if (mkdir($system_img_dir, 0755, true)) {
             chown($system_img_dir, 'www-data');
             chgrp($system_img_dir, 'www-data');
-            echo "Created directory: $system_img_dir\n";
+            echo "  Created directory: $system_img_dir\n";
         } else {
-            echo "Failed to create directory: $system_img_dir\n";
+            echo "  Failed to create directory: $system_img_dir\n";
         }
     }
+
+    foreach ($systems as $system) {
+
+        // Check if system already exists
+        $result = $mysqli->query("SELECT * FROM system_meta WHERE id='$system->id'");
+        if ($result->num_rows == 0) {
+            
+            // Create system
+            $mysqli->query("INSERT INTO system_meta (id,userid) VALUES ('$system->id', '$system_userid')");
+            
+            $result = $system_class->save($system_userid, $system->id, $system, false);
+            if ($result['success']==false) {
+                echo "Error: could not save system: ".$system->id."\n";
+                print_r($result);
+                die;
+            } else {
+                $created_systems++;
+            }
+            $system_userid++;
+        } else {
+            print "- System already exists: $system->id\n";
+        }
+
+        if($system->photo_count == 0) {
+            continue;
+        }
+        
+        // Fetch photos for this system from production
+        $photos_data = file_get_contents("$heatpumpmonitor_host/system/photos?id={$system->id}");
+        $photos = json_decode($photos_data, true);
+        
+        if ($photos === null || !isset($photos['success']) || !$photos['success']) {
+            continue;
+        }
+        
+        if (empty($photos['photos'])) {
+            continue;
+        }
+        
+        // Create directory for this system
+        $system_dir = "$system_img_dir/{$system->id}";
+        if (!file_exists($system_dir)) {
+            if (!mkdir($system_dir, 0755, true)) {
+                echo "  Failed to create directory: $system_dir\n";
+                continue;
+            }
+            chown($system_dir, 'www-data');
+            chgrp($system_dir, 'www-data');
+        }
+        
+        // Download each photo
+        foreach ($photos['photos'] as $photo) {
+            // Skip if no URL
+            if (!isset($photo['url'])) {
+                continue;
+            }
+            
+            $photo_url = $heatpumpmonitor_host . '/' . $photo['url'];
+            $photo_filename = basename($photo['url']);
+            $local_path = "$system_dir/$photo_filename";
+            
+            // Skip if already exists on disk
+            if (file_exists($local_path)) {
+                // Check if it's in the database
+                $result = $system_photos->save_external_photo(
+                    $system->id,
+                    $photo['url'],
+                    $photo
+                );
+                if ($result['success']) {
+                    $existing_photos++;
+                } else {
+                    $failed_photos++;
+                }
+                continue;
+            }
+            
+            // Download the photo
+            $photo_content = @file_get_contents($photo_url);
+            if ($photo_content === false) {
+                echo "  Failed to download: $photo_url\n";
+                $failed_photos++;
+                continue;
+            }
+            
+            // Save the photo
+            if (file_put_contents($local_path, $photo_content) === false) {
+                echo "  Failed to save: $local_path\n";
+                $failed_photos++;
+                continue;
+            }
+            
+            // Set permissions
+            @chmod($local_path, 0644);
+            
+            // Save photo metadata to database using helper method
+            $result = $system_photos->save_external_photo(
+                $system->id,
+                $photo['url'],
+                $photo
+            );
+            
+            if ($result['success']) {
+                $total_photos++;
+            } else {
+                echo "  Failed to save photo metadata: {$result['message']}\n";
+                $failed_photos++;
+            }
+        }
+    }
+
+    $mysqli->query("UPDATE system_meta SET published=1");
+    print "- Created ".$created_systems." systems\n";
+    
+    print "  Downloaded $total_photos photos, $existing_photos existing";
+    if ($failed_photos > 0) {
+        print " ($failed_photos failed)";
+    }
+    print "\n";
 }
 
 // -------------------------------------------------------------------------------------
