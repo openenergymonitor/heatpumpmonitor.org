@@ -16,6 +16,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 <link rel="stylesheet" href="<?php echo $path; ?>Lib/autocomplete.css?v=4">
 <script src="Lib/autocomplete.js?v=8"></script>
+<link rel="stylesheet" href="<?php echo $path; ?>Modules/system/system_view.css?v=5">
+<script src="<?php echo $path; ?>Modules/system/photo_utils.js?v=1"></script>
+<script src="<?php echo $path; ?>Modules/system/photo_lightbox.js?v=5"></script>
 
 <style>
     .sticky {
@@ -469,6 +472,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         </div>
 
     </div>
+    
+    <!-- Photo Lightbox - Using shared template -->
+    <?php include "Modules/system/photo_lightbox_template.html"; ?>
 </div>
 
 <script>
@@ -608,6 +614,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     // custom columns
     columns['training'] = { name: "Combined", heading: "Training", group: "Training", helper: "Training" };
     columns['learnmore'] = { name: "Combined", heading: "", group: "Learn more" };
+    columns['photos'] = { name: "Photos", heading: "", group: "Learn more" };
     columns['boundary'] = { name: "Boundary", heading: "Hx", group: "Metering" };
     columns['data_flag'].heading = "";
 
@@ -727,16 +734,16 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     // Template views
     var template_views = {}
     template_views['topofthescops'] = {}
-    template_views['topofthescops']['wide'] = ['location', 'installer_logo', 'installer_name', 'training', 'hp_type', 'hp_make_model', 'hp_output', 'combined_data_length', 'data_flag', 'combined_cop', 'water_cop', 'boundary' , 'mid_metering', 'learnmore'];
-    template_views['topofthescops']['narrow'] = ['installer_logo', 'training', 'hp_make_model', 'hp_output', 'combined_cop', 'learnmore'];
+    template_views['topofthescops']['wide'] = ['location', 'installer_logo', 'installer_name', 'training', 'hp_type', 'hp_make_model', 'hp_output', 'combined_data_length', 'data_flag', 'combined_cop', 'water_cop', 'boundary' , 'mid_metering', 'learnmore', 'photos'];
+    template_views['topofthescops']['narrow'] = ['installer_logo', 'training', 'hp_make_model', 'hp_output', 'combined_cop', 'learnmore', 'photos'];
 
     template_views['heatpumpfabric'] = {}
     template_views['heatpumpfabric']['wide'] = ['installer_logo', 'location', 'property', 'insulation', 'age', 'floor_area', 'hp_type', 'hp_model', 'hp_output', 'combined_cop', 'combined_elec_kwh_per_m2', 'combined_heat_kwh_per_m2'];
     template_views['heatpumpfabric']['narrow'] = ['installer_logo', 'hp_make_model', 'hp_output', 'combined_elec_kwh_per_m2'];
 
     template_views['costs'] = {}
-    template_views['costs']['wide'] = ['installer_logo', 'training', 'location' , 'hp_type', 'hp_make_model', 'hp_output', 'electricity_tariff', 'selected_unit_rate', 'combined_cop', 'combined_heat_unit_cost', 'combined_cost', 'learnmore'];
-    template_views['costs']['narrow'] = ['installer_logo', 'training', 'hp_make_model', 'hp_output', 'combined_heat_unit_cost', 'learnmore'];
+    template_views['costs']['wide'] = ['installer_logo', 'training', 'location' , 'hp_type', 'hp_make_model', 'hp_output', 'electricity_tariff', 'selected_unit_rate', 'combined_cop', 'combined_heat_unit_cost', 'combined_cost', 'learnmore', 'photos'];
+    template_views['costs']['narrow'] = ['installer_logo', 'training', 'hp_make_model', 'hp_output', 'combined_heat_unit_cost', 'learnmore', 'photos'];
 
     // Filter out installer columns for user mode
     if (mode == 'user') {
@@ -910,6 +917,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
     var app = new Vue({
         el: '#app',
+        mixins: [PhotoLightboxMixin],
         data: {
             systems: systems,
             fSystems: [],
@@ -956,7 +964,13 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             selected_color: page_settings.selected_color,
             chart_info: '',
             admin_restricted_list: true,
-            line_best_fit_type: 'ols'
+            line_best_fit_type: 'ols',
+            
+            // Photo lightbox
+            lightboxOpen: false,
+            currentPhotoIndex: 0,
+            system_photos: [],
+            loadingPhotos: false
         },
         methods: {
             tariff_mode_changed: function() {
@@ -1550,6 +1564,13 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
                     return learnmore;
                 }
+                if (key=='photos') {
+                    var photos = "";
+                    if (system['photo_count'] && system['photo_count'] > 0) {
+                        photos += "<a href='javascript:void(0)' onclick='app.openSystemPhotos(" + system['id'] + ")' style='color: #0d6efd; font-size: 1.2em; text-decoration: none;' title='View system photos (" + system['photo_count'] + ")'><i class='fas fa-camera'></i></a>";
+                    }
+                    return photos;
+                }
                 if (key=='hp_type') {
                     if (val=="Air Source") {
                         return "<span style='color:#4f8baa'>Air</span>";
@@ -2060,7 +2081,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 this.admin_restricted_list = !this.admin_restricted_list;
                 this.filter_systems();
             },
-       },
+        },
         filters: {
             toFixed: function(val, dp) {
                 if (isNaN(val) || val == null) {
