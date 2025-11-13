@@ -40,7 +40,6 @@
              v-show="overlayVisible"
              :class="{ 'overlay-hidden': !overlayVisible }">
             <div class="caption-main">
-                <strong>{{ system_photos[currentPhotoIndex].name || system_photos[currentPhotoIndex].original_filename }}</strong>
                 <span v-if="system_photos[currentPhotoIndex].photo_type" class="photo-type-badge">
                     {{ formatPhotoType(system_photos[currentPhotoIndex].photo_type) }}
                 </span>
