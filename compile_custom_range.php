@@ -66,7 +66,7 @@ function process_rolling_stats($systemlist, $single_system) {
     $date->modify("midnight");
     // set to 05 September 2024
     $date->setTime(0,0,0);
-    $date->setDate(2024, 9, 5);
+    $date->setDate(2024, 11, 1);
     $start = $date->getTimestamp();
     echo "- start date: ".$date->format("Y-m-d")."\n";
 
