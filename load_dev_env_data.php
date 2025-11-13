@@ -38,6 +38,11 @@ $system_class = new System($mysqli);
 
 require ("Modules/system/system_stats_model.php");
 $system_stats_class = new SystemStats($mysqli,$system_class);
+// Manufacturer & Heatpump models
+require ("Modules/manufacturer/manufacturer_model.php");
+$manufacturer_class = new Manufacturer($mysqli);
+require ("Modules/heatpump/heatpump_model.php");
+$heatpump_class = new Heatpump($mysqli,$manufacturer_class);
 
 // Before starting load system list, if this fails we can exit before clearing the database
 $data = file_get_contents("$heatpumpmonitor_host/system/list/public.json");
@@ -55,6 +60,8 @@ $load_system_meta = 0;
 $load_running_stats = 0;
 $load_monthly_stats = 0;
 $load_daily_stats = 0;
+$load_manufacturers = 0;
+$load_heatpump_models = 0;
 
 // Check if we should reload all data
 //if (isset($_ENV["RELOAD_ALL"])) {
@@ -124,6 +131,22 @@ if (isset($_ENV["LOAD_DAILY_STATS"])) {
 }
 if ($reload_all) $load_daily_stats = 1;
 
+// Check if we should load manufacturers
+if (isset($_ENV["LOAD_MANUFACTURERS"])) {
+    $load_manufacturers = (int) $_ENV["LOAD_MANUFACTURERS"];    
+} else {
+    if (confirm("Would you like to load manufacturers?")) $load_manufacturers = 1;
+}
+if ($reload_all) $load_manufacturers = 1;
+
+// Check if we should load heatpump models
+if (isset($_ENV["LOAD_HEATPUMP_MODELS"])) {
+    $load_heatpump_models = (int) $_ENV["LOAD_HEATPUMP_MODELS"];    
+} else {
+    if (confirm("Would you like to load heatpump models?")) $load_heatpump_models = 1;
+}
+if ($reload_all) $load_heatpump_models = 1;
+
 
 // -------------------------------------------------------------------------------------
 // 1. Clear the database
@@ -184,6 +207,91 @@ if ($load_users) {
         $index++;
     }
     print "- Created ".$created_users." users\n";
+}
+
+// -------------------------------------------------------------------------------------
+// 3. Create manufacturers
+// -------------------------------------------------------------------------------------
+if ($load_manufacturers) {
+    print "- Loading manufacturers list ";
+    $data = file_get_contents("$heatpumpmonitor_host/manufacturer/list.json");
+    $manufacturers = json_decode($data);
+    if ($manufacturers==null) die("Error: could not load manufacturer data from heatpumpmonitor.org\n");
+    $created_manufacturers = 0;
+    foreach ($manufacturers as $m) {
+        $id = (int) $m->id;
+        $name = trim($m->name);
+        $website = isset($m->website) ? trim($m->website) : "";
+        // Skip if exists
+        $stmt = $mysqli->prepare("SELECT id FROM manufacturers WHERE id=?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $exists = $result->num_rows>0;        
+        $stmt->close();
+        if ($exists) continue;
+        $stmt = $mysqli->prepare("INSERT INTO manufacturers (id,name,website) VALUES (?,?,?)");
+        $stmt->bind_param("iss", $id, $name, $website);
+        if ($stmt->execute()) $created_manufacturers++;
+        $stmt->close();
+    }
+    print $created_manufacturers." manufacturers\n";
+}
+
+// -------------------------------------------------------------------------------------
+// 3b. Create heatpump models
+// -------------------------------------------------------------------------------------
+if ($load_heatpump_models) {
+    print "- Loading heatpump models list ";
+    $data = file_get_contents("$heatpumpmonitor_host/heatpump/list.json");
+    $heatpumps = json_decode($data);
+    if ($heatpumps==null) die("Error: could not load heatpump model data from heatpumpmonitor.org\n");
+    $created_models = 0;
+
+    // TODO: Download heatpump images if available
+    $heatpump_img_dir = "theme/img/heatpumps";
+    if (!file_exists($heatpump_img_dir)) {
+        if (mkdir($heatpump_img_dir, 0755, true)) {
+            chown($heatpump_img_dir, 'www-data');
+            chgrp($heatpump_img_dir, 'www-data');
+            echo "Created directory: $heatpump_img_dir\n";
+        } else {
+            echo "Failed to create directory: $heatpump_img_dir\n";
+        }
+    }
+
+    foreach ($heatpumps as $hp) {
+        // Basic fields
+        $manufacturer_id = (int) $hp->manufacturer_id;
+        $name = trim($hp->name);
+        $refrigerant = isset($hp->refrigerant) ? trim($hp->refrigerant) : "";
+        $type = isset($hp->type) ? trim($hp->type) : "";
+        $capacity = isset($hp->capacity) ? trim($hp->capacity) : "";
+        $min_flowrate = (isset($hp->min_flowrate) && $hp->min_flowrate!="" && $hp->min_flowrate!==null) ? (float) $hp->min_flowrate : null;
+        $max_flowrate = (isset($hp->max_flowrate) && $hp->max_flowrate!="" && $hp->max_flowrate!==null) ? (float) $hp->max_flowrate : null;
+        $max_current = (isset($hp->max_current) && $hp->max_current!="" && $hp->max_current!==null) ? (float) $hp->max_current : null;
+
+        // Ensure manufacturer exists (create if missing)
+        if (!$manufacturer_class->get_by_id($manufacturer_id)) {
+            $stmt = $mysqli->prepare("INSERT INTO manufacturers (id,name,website) VALUES (?,?,?)");
+            $blank = "";
+            $stmt->bind_param("iss", $manufacturer_id, $blank, $blank);
+            $stmt->execute();
+            $stmt->close();
+        }
+
+        // Skip if model already exists (by manufacturer + name + refrigerant + capacity)
+        if ($heatpump_class->model_exists($manufacturer_id, $name, $refrigerant, $capacity)) continue;
+
+        // Use Heatpump->add (lets DB assign id). We intentionally do not preserve production IDs here.
+        $result = $heatpump_class->add($manufacturer_id, $name, $refrigerant, $type, $capacity, $min_flowrate, $max_flowrate, $max_current);
+        if ($result['success']) {
+            $created_models++;
+        } else {
+            print "Warning: Failed to add heatpump model: ".$name." (".$result['message'].")\n";
+        }
+    }
+    print $created_models." heatpump models\n";
 }
 
 // -------------------------------------------------------------------------------------
@@ -267,6 +375,10 @@ if ($load_monthly_stats) {
     }
     foreach ($system_ids as $system_id) {
         print "- Loading monthly stats for system: $system_id ";
+
+        // Clear existing monthly data for the system
+        $mysqli->query("DELETE FROM system_stats_monthly_v2 WHERE id='$system_id'");
+        
         // https://heatpumpmonitor.org/system/stats/monthly?id=2
         $data = file_get_contents("$heatpumpmonitor_host/system/stats/monthly?id=$system_id");
         $stats = json_decode($data,true);
@@ -299,6 +411,9 @@ if ($load_daily_stats) {
     foreach ($system_ids as $system_id) {
         print "- Loading daily stats for system: $system_id ";
         $days = 0;
+
+        // Clear existing daily data for the system
+        $mysqli->query("DELETE FROM system_stats_daily WHERE id='$system_id'");
 
         // Initialize cURL session to download the CSV
         $apiUrl = 'https://heatpumpmonitor.org/system/stats/export/daily?id='.$system_id;

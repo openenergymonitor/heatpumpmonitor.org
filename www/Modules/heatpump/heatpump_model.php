@@ -3,15 +3,19 @@
 // no direct access
 defined('EMONCMS_EXEC') or die('Restricted access');
 
+require_once "Modules/system/thumbnail_generator.php";
+
 class Heatpump
 {
     private $mysqli;
     private $manufacturer_model;
+    private $thumbnail_generator;
 
     public function __construct($mysqli, $manufacturer_model)
     {
         $this->mysqli = $mysqli;
         $this->manufacturer_model = $manufacturer_model;
+        $this->thumbnail_generator = new ThumbnailGenerator();
     }
 
     /*
@@ -465,5 +469,176 @@ class Heatpump
             "min_count" => $min_count,
             "min_output" => $min_output
         );
+    }
+    
+    /*
+     * Upload image for heatpump model
+     * 
+     * @param int $id
+     * @param array $photo
+     * @return array
+     */
+    public function upload_image($id, $photo) {
+        $id = (int) $id;
+        
+        // Check for upload errors
+        if ($photo['error'] !== UPLOAD_ERR_OK) {
+            return array("success" => false, "message" => "Upload failed with error: " . $photo['error']);
+        }
+        
+        // Validate file size (5MB max)
+        $max_size = 5 * 1024 * 1024; // 5MB in bytes
+        if ($photo['size'] > $max_size) {
+            return array("success" => false, "message" => "File size exceeds 5MB limit");
+        }
+        
+        // Validate file type
+        $allowed_types = array('image/jpeg', 'image/jpg', 'image/png', 'image/webp');
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime_type = finfo_file($finfo, $photo['tmp_name']);
+        finfo_close($finfo);
+        
+        if (!in_array($mime_type, $allowed_types)) {
+            return array("success" => false, "message" => "Invalid file type. Only JPG, PNG, and WebP are allowed");
+        }
+        
+        // Check if heatpump model exists
+        $heatpump = $this->get($id, false);
+        if (!$heatpump || isset($heatpump['success'])) {
+            return array("success" => false, "message" => "Heat pump model not found");
+        }
+        
+        // Create directory structure
+        $upload_dir = "theme/img/heatpumps/";
+        if (!file_exists($upload_dir)) {
+            if (!mkdir($upload_dir, 0755, true)) {
+                return array("success" => false, "message" => "Failed to create upload directory");
+            }
+        }
+        
+        // Generate filename based on heatpump info
+        $extension = strtolower(pathinfo($photo['name'], PATHINFO_EXTENSION));
+        $safe_name = preg_replace('/[^a-z0-9_-]/', '_', strtolower($heatpump['manufacturer_name'] . '_' . $heatpump['name'] . '_' . $heatpump['capacity'] . 'kw'));
+        $filename = $safe_name . '.' . $extension;
+        $filepath = $upload_dir . $filename;
+        
+        // Remove old image if exists
+        if (!empty($heatpump['img']) && file_exists("theme/img/heatpumps/" . $heatpump['img'])) {
+            unlink("theme/img/heatpumps/" . $heatpump['img']);
+        }
+        
+        // Move uploaded file
+        if (!move_uploaded_file($photo['tmp_name'], $filepath)) {
+            return array("success" => false, "message" => "Failed to save uploaded file");
+        }
+        
+        // Get image dimensions
+        $image_info = getimagesize($filepath);
+        $width = $image_info ? $image_info[0] : null;
+        $height = $image_info ? $image_info[1] : null;
+        
+        // Generate thumbnails (don't fail upload if this fails)
+        $thumbnail_result = $this->thumbnail_generator->generateThumbnails($filepath);
+        $thumbnail_paths = $thumbnail_result['thumbnails'] ?? [];
+        
+        // Encode thumbnails as JSON
+        $thumbnails_json = !empty($thumbnail_paths) ? json_encode($thumbnail_paths) : null;
+        
+        // Update database with new filename and image info
+        $stmt = $this->mysqli->prepare("UPDATE heatpump_model SET img = ?, img_width = ?, img_height = ?, img_thumbnails = ? WHERE id = ?");
+        $stmt->bind_param("siisi", $filename, $width, $height, $thumbnails_json, $id);
+        
+        if ($stmt->execute()) {
+            $stmt->close();
+            
+            // Prepare response with thumbnail information
+            $response = array(
+                "success" => true, 
+                "message" => "Image uploaded successfully", 
+                "filename" => $filename,
+                "width" => $width,
+                "height" => $height,
+                "thumbnail_generation" => array(
+                    "success" => $thumbnail_result['success'],
+                    "count" => count($thumbnail_paths)
+                )
+            );
+            
+            // Add thumbnail URLs if they were generated
+            if (!empty($thumbnail_paths)) {
+                $response["thumbnails"] = $thumbnail_paths;
+            }
+            
+            // Add thumbnail generation errors to response for debugging
+            if (!empty($thumbnail_result['errors'])) {
+                $response["thumbnail_generation"]["errors"] = $thumbnail_result['errors'];
+            }
+            
+            return $response;
+        } else {
+            // Clean up file if database insert fails
+            $unlink_success = unlink($filepath);
+            $error_message = "Failed to save image information to database";
+            if (!$unlink_success) {
+                $error_message .= " (and failed to delete uploaded file)";
+            }
+            $stmt->close();
+            return array("success" => false, "message" => $error_message);
+        }
+    }
+    
+    /*
+     * Delete image for heatpump model
+     * 
+     * @param int $id
+     * @return array
+     */
+    public function delete_image($id) {
+        $id = (int) $id;
+        
+        // Get current image filename and thumbnails
+        $stmt = $this->mysqli->prepare("SELECT img, img_thumbnails FROM heatpump_model WHERE id = ?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $row = $result->fetch_assoc();
+        $stmt->close();
+        
+        if (!$row) {
+            return array("success" => false, "message" => "Heat pump model not found");
+        }
+        
+        $filename = $row['img'];
+        $thumbnails_json = $row['img_thumbnails'];
+        
+        // Remove from database (reset all image fields)
+        $stmt = $this->mysqli->prepare("UPDATE heatpump_model SET img = NULL, img_width = NULL, img_height = NULL, img_thumbnails = NULL WHERE id = ?");
+        $stmt->bind_param("i", $id);
+        
+        if ($stmt->execute()) {
+            // Delete main image file if it exists
+            if (!empty($filename) && file_exists("theme/img/heatpumps/" . $filename)) {
+                unlink("theme/img/heatpumps/" . $filename);
+            }
+            
+            // Delete thumbnail files if they exist
+            if (!empty($thumbnails_json)) {
+                $thumbnails = json_decode($thumbnails_json, true);
+                if (is_array($thumbnails)) {
+                    foreach ($thumbnails as $thumbnail_path) {
+                        if (!empty($thumbnail_path) && file_exists($thumbnail_path)) {
+                            unlink($thumbnail_path);
+                        }
+                    }
+                }
+            }
+            
+            $stmt->close();
+            return array("success" => true, "message" => "Image deleted successfully");
+        } else {
+            $error = $stmt->error;
+            $stmt->close();
+            return array("success" => false, "message" => "Failed to delete image: " . $error);
+        }
     }
 }

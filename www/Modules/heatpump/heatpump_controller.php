@@ -96,6 +96,29 @@ function heatpump_controller() {
             return array("error" => "Missing heatpump ID for deletion");
         }
     }
+    
+    // Upload image
+    if ($route->action == "upload-image" && $session['admin']) {
+        $route->format = "json";
+        if (!isset($_FILES['image'])) {
+            return array("success" => false, "message" => "No image uploaded");
+        }
+        if (!isset($_POST['heatpump_id'])) {
+            return array("success" => false, "message" => "Heat pump ID required");
+        }
+        $heatpump_id = (int) $_POST['heatpump_id'];
+        return $heatpump_model->upload_image($heatpump_id, $_FILES['image']);
+    }
+    
+    // Delete image
+    if ($route->action == "delete-image" && $session['admin']) {
+        $route->format = "json";
+        if (!isset($_POST['heatpump_id'])) {
+            return array("success" => false, "message" => "Heat pump ID required");
+        }
+        $heatpump_id = (int) $_POST['heatpump_id'];
+        return $heatpump_model->delete_image($heatpump_id);
+    }
 
     if ($route->action == "populate" && $session['admin']) {
         $route->format = "json";
