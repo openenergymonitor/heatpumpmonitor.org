@@ -25,7 +25,14 @@ class System
     // Returns a list of public systems
     public function list_public($userid=false) {
         $userid = (int) $userid;
-        $result = $this->mysqli->query("SELECT * FROM system_meta WHERE share=1 AND published=1"); // OR userid='$userid' (removed for now)
+        $result = $this->mysqli->query("SELECT sm.*, COALESCE(pc.photo_count, 0) as photo_count 
+                                        FROM system_meta sm 
+                                        LEFT JOIN (
+                                            SELECT system_id, COUNT(*) as photo_count 
+                                            FROM system_images 
+                                            GROUP BY system_id
+                                        ) pc ON sm.id = pc.system_id 
+                                        WHERE sm.share=1 AND sm.published=1"); // OR userid='$userid' (removed for now)
         $list = array();
         while ($row = $result->fetch_object()) {
             $row = $this->typecast($row);
@@ -47,7 +54,15 @@ class System
 
     // All systems
     public function list_admin() {
-        $result = $this->mysqli->query("SELECT system_meta.*,users.username FROM system_meta JOIN users ON system_meta.userid = users.id ORDER BY system_meta.id");
+        $result = $this->mysqli->query("SELECT sm.*, u.username, COALESCE(pc.photo_count, 0) as photo_count 
+                                        FROM system_meta sm 
+                                        JOIN users u ON sm.userid = u.id 
+                                        LEFT JOIN (
+                                            SELECT system_id, COUNT(*) as photo_count 
+                                            FROM system_images 
+                                            GROUP BY system_id
+                                        ) pc ON sm.id = pc.system_id 
+                                        ORDER BY sm.id");
         $list = array();
         while ($row = $result->fetch_object()) {
             $list[] = $this->typecast($row);
@@ -59,14 +74,33 @@ class System
     public function list_user($userid=false) {
         $userid = (int) $userid;
 
-        $result = $this->mysqli->query("SELECT system_meta.*,users.username FROM system_meta JOIN users ON system_meta.userid = users.id WHERE system_meta.userid='$userid' ORDER BY system_meta.id");
+        $result = $this->mysqli->query("SELECT sm.*, u.username, COALESCE(pc.photo_count, 0) as photo_count 
+                                        FROM system_meta sm 
+                                        JOIN users u ON sm.userid = u.id 
+                                        LEFT JOIN (
+                                            SELECT system_id, COUNT(*) as photo_count 
+                                            FROM system_images 
+                                            GROUP BY system_id
+                                        ) pc ON sm.id = pc.system_id 
+                                        WHERE sm.userid='$userid' 
+                                        ORDER BY sm.id");
         $list = array();
         while ($row = $result->fetch_object()) {
             $list[] = $this->typecast($row);
         }
 
         // Add any systems from sub-accounts, join system_meta, users and accounts tables
-        $result = $this->mysqli->query("SELECT system_meta.*,users.username FROM system_meta JOIN users ON system_meta.userid = users.id JOIN accounts ON users.id = accounts.linkeduser WHERE accounts.adminuser='$userid' ORDER BY system_meta.id");
+        $result = $this->mysqli->query("SELECT sm.*, u.username, COALESCE(pc.photo_count, 0) as photo_count 
+                                        FROM system_meta sm 
+                                        JOIN users u ON sm.userid = u.id 
+                                        JOIN accounts a ON u.id = a.linkeduser 
+                                        LEFT JOIN (
+                                            SELECT system_id, COUNT(*) as photo_count 
+                                            FROM system_images 
+                                            GROUP BY system_id
+                                        ) pc ON sm.id = pc.system_id 
+                                        WHERE a.adminuser='$userid' 
+                                        ORDER BY sm.id");
         while ($row = $result->fetch_object()) {
             $list[] = $this->typecast($row);
         }
@@ -744,4 +778,6 @@ class System
             return false;
         }
     }
+
+
 }

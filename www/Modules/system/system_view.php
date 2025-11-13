@@ -9,23 +9,12 @@ global $settings, $session, $path;
 <script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
 
 <link rel="stylesheet" href="<?php echo $path; ?>Lib/autocomplete.css?v=4">
-<script src="<?php echo $path; ?>Lib/autocomplete.js?v=10"></script>
+<link rel="stylesheet" href="<?php echo $path; ?>Modules/system/system_view.css?v=6">
 
-<style>
-    .quality-bound {
-        background-color: #ddd;
-        padding:5px;
-    }
-    .quality {
-        width: 100%;
-    }
-    .quality td {
-        padding: 5px;
-        text-align: center;
-        border: 1px solid #fff;
-        font-size: 14px;
-    }
-</style>
+<script src="<?php echo $path; ?>Lib/autocomplete.js?v=10"></script>
+<script src="<?php echo $path; ?>Modules/system/photo_utils.js?v=1"></script>
+<script src="<?php echo $path; ?>Modules/system/photo_lightbox.js?v=5"></script>
+<script src="<?php echo $path; ?>Modules/system/photo_upload.js?v=1"></script>
 
 <div id="app" class="bg-light">
     <div style=" background-color:#f0f0f0; padding-top:20px; padding-bottom:10px">
@@ -185,6 +174,212 @@ global $settings, $session, $path;
                     <span class="input-group-text">URL</span>
                     <input type="text" class="form-control" v-model="system.url" placeholder="Full app URL" disabled>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Photos - View Mode -->
+    <div class="container mt-3" style="max-width:800px" v-if="mode=='view' && hasPhotos">
+        <div class="card mt-3">
+            <h5 class="card-header">System Photos</h5>
+            <div class="card-body">
+                <div class="photo-gallery">
+                    <!-- Outdoor Unit Photo -->
+                    <div v-if="getPhotoByType('outdoor_unit')" class="photo-type-section mb-4">
+                        <h6 class="photo-section-title">Outdoor Unit</h6>
+                        <div class="photo-thumbnail-item" @click="openLightbox(getPhotoIndexByType('outdoor_unit'))">
+                            <img :src="selectThumbnail(getPhotoByType('outdoor_unit'), '150')" alt="Outdoor unit" class="gallery-thumbnail">
+                            <div class="thumbnail-overlay">
+                                <i class="fas fa-expand-alt"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Plant Room Photo -->
+                    <div v-if="getPhotoByType('plant_room')" class="photo-type-section mb-4">
+                        <h6 class="photo-section-title">Plant Room/Cylinder Cupboard</h6>
+                        <div class="photo-thumbnail-item" @click="openLightbox(getPhotoIndexByType('plant_room'))">
+                            <img :src="selectThumbnail(getPhotoByType('plant_room'), '150')" alt="Plant room" class="gallery-thumbnail">
+                            <div class="thumbnail-overlay">
+                                <i class="fas fa-expand-alt"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Other Photos -->
+                    <div v-if="getPhotosByType('other').length > 0" class="photo-type-section mb-4">
+                        <h6 class="photo-section-title">Other Photos</h6>
+                        <div class="photo-thumbnail-grid">
+                            <div 
+                                class="photo-thumbnail-item" 
+                                v-for="(photo, index) in getPhotosByType('other')" 
+                                :key="photo.id"
+                                @click="openLightbox(getPhotoIndexById(photo.id))"
+                            >
+                                <img :src="selectThumbnail(photo, '150')" :alt="photo.name" class="gallery-thumbnail">
+                                <div class="thumbnail-overlay">
+                                    <i class="fas fa-expand-alt"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Photo Lightbox - Using shared template -->
+    <?php include "Modules/system/photo_lightbox_template.html"; ?>
+
+    <!-- System Photos - Edit Mode -->
+    <div class="container mt-3" style="max-width:800px" v-if="mode=='edit' && (session_userid==system.userid || !system.userid || admin)">
+        <div class="card mt-3">
+            <h5 class="card-header">System Photos</h5>
+            <div class="card-body">
+                <p>Add photos of your heat pump system (maximum 4 images, up to 5MB each). Supported formats: JPG, PNG, WebP.</p>
+                
+                <!-- Specific Photo Type Boxes -->
+                <div class="photo-types-container">
+                    <!-- Outdoor Unit Photo -->
+                    <div class="photo-type-box" 
+                         :class="{ 'has-photo': getPhotoByType('outdoor_unit'), 'drag-active': isDragActiveType === 'outdoor_unit' && !getPhotoByType('outdoor_unit') }"
+                         @dragover.prevent="!getPhotoByType('outdoor_unit') && handleTypeDragOver('outdoor_unit')"
+                         @dragleave.prevent="!getPhotoByType('outdoor_unit') && handleTypeDragLeave('outdoor_unit')"
+                         @drop.prevent="!getPhotoByType('outdoor_unit') && handleTypeDrop('outdoor_unit', $event)"
+                         @click="!getPhotoByType('outdoor_unit') && triggerFileSelectForType('outdoor_unit')"
+                         :style="{ cursor: getPhotoByType('outdoor_unit') ? 'default' : 'pointer' }">
+                        <div v-if="getPhotoByType('outdoor_unit')" class="photo-preview-container">
+                            <img :src="selectThumbnail(getPhotoByType('outdoor_unit'), '300')" 
+                                 alt="Outdoor unit" 
+                                 class="photo-preview-image">
+                            <div class="photo-overlay">
+                                <button type="button" 
+                                        class="btn btn-sm btn-danger photo-remove-btn" 
+                                        @click.stop="removePhoto(getPhotoIndexByType('outdoor_unit'))"
+                                        title="Remove photo">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                            <div class="photo-label">Outdoor Unit</div>
+                        </div>
+                        <div v-else class="photo-placeholder">
+                            <i class="fas fa-plus fa-2x mb-2"></i>
+                            <div class="placeholder-text">Outdoor unit</div>
+                            <small class="text-muted">Click or drag photo here</small>
+                        </div>
+                    </div>
+
+                    <!-- Plant Room Photo -->
+                    <div class="photo-type-box" 
+                         :class="{ 'has-photo': getPhotoByType('plant_room'), 'drag-active': isDragActiveType === 'plant_room' && !getPhotoByType('plant_room') }"
+                         @dragover.prevent="!getPhotoByType('plant_room') && handleTypeDragOver('plant_room')"
+                         @dragleave.prevent="!getPhotoByType('plant_room') && handleTypeDragLeave('plant_room')"
+                         @drop.prevent="!getPhotoByType('plant_room') && handleTypeDrop('plant_room', $event)"
+                         @click="!getPhotoByType('plant_room') && triggerFileSelectForType('plant_room')"
+                         :style="{ cursor: getPhotoByType('plant_room') ? 'default' : 'pointer' }">
+                        <div v-if="getPhotoByType('plant_room')" class="photo-preview-container">
+                            <img :src="selectThumbnail(getPhotoByType('plant_room'), '300')" 
+                                 alt="Plant room/cylinder cupboard" 
+                                 class="photo-preview-image">
+                            <div class="photo-overlay">
+                                <button type="button" 
+                                        class="btn btn-sm btn-danger photo-remove-btn" 
+                                        @click.stop="removePhoto(getPhotoIndexByType('plant_room'))"
+                                        title="Remove photo">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                            <div class="photo-label">Plant Room</div>
+                        </div>
+                        <div v-else class="photo-placeholder">
+                            <i class="fas fa-plus fa-2x mb-2"></i>
+                            <div class="placeholder-text">Plant room/cylinder cupboard</div>
+                            <small class="text-muted">Click or drag photo here</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Other Photos Section -->
+                <div class="other-photos-section mt-4">
+                    <h6>Other Photos</h6>
+                    <div class="other-photos-grid">
+                        <!-- Existing Other Photos -->
+                        <div class="photo-item" v-for="(photo, index) in getPhotosByType('other')" :key="photo.id">
+                            <div class="photo-preview">
+                                <img :src="selectThumbnail(photo, '150')" :alt="'Other photo ' + (index + 1)" class="photo-thumbnail">
+                                <div class="photo-overlay">
+                                    <button type="button" 
+                                            class="btn btn-sm btn-danger photo-remove-btn" 
+                                            @click="removePhoto(getPhotoIndexById(photo.id))"
+                                            title="Remove photo">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="photo-info">
+                                <small class="text-muted">{{ photo.name }}</small>
+                                <div class="upload-progress" v-if="photo.uploading">
+                                    <div class="progress">
+                                        <div class="progress-bar" :style="{ width: photo.progress + '%' }"></div>
+                                    </div>
+                                </div>
+                                <div class="upload-status" v-if="photo.uploaded">
+                                    <small class="text-success"><i class="fas fa-check"></i> Uploaded</small>
+                                </div>
+                                <div class="upload-status" v-if="photo.error">
+                                    <small class="text-danger"><i class="fas fa-exclamation-triangle"></i> {{ photo.error }}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Add Other Photos Button/Drop Zone -->
+                    <div class="add-other-photos">
+                        <button type="button" 
+                                class="btn btn-outline-secondary" 
+                                @click="show_other_photo_upload = true"
+                                v-if="!show_other_photo_upload && system_photos.length < 4">
+                            <i class="fas fa-plus"></i> Add Other Photos
+                        </button>
+
+                        <!-- Other Photos Drop Zone -->
+                        <div class="photo-drop-zone-other" 
+                             @dragover.prevent="handleDragOver"
+                             @dragleave.prevent="handleDragLeave"
+                             @drop.prevent="handleOtherDrop"
+                             :class="{ 'drag-active': isDragActive }"
+                             v-if="show_other_photo_upload && system_photos.length < 4">
+                            <div class="drop-zone-content">
+                                <i class="fas fa-cloud-upload-alt fa-2x mb-2" style="color: #6c757d;"></i>
+                                <h6>Drag and drop other photos here</h6>
+                                <p class="text-muted">or</p>
+                                <button type="button" class="btn btn-outline-primary" @click="triggerFileSelectForType('other')">
+                                    <i class="fas fa-folder-open"></i> Select Photos
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hidden file inputs for each type -->
+                <input type="file" 
+                       ref="outdoorUnitInput" 
+                       @change="handleFileSelectForType('outdoor_unit', $event)" 
+                       accept="image/jpeg,image/jpg,image/png,image/webp"
+                       style="display: none;">
+                <input type="file" 
+                       ref="plantRoomInput" 
+                       @change="handleFileSelectForType('plant_room', $event)" 
+                       accept="image/jpeg,image/jpg,image/png,image/webp"
+                       style="display: none;">
+                <input type="file" 
+                       ref="otherInput" 
+                       @change="handleFileSelectForType('other', $event)" 
+                       multiple 
+                       accept="image/jpeg,image/jpg,image/png,image/webp"
+                       style="display: none;">
+
+                <div class="alert alert-danger" role="alert" v-if="show_photo_error" v-html="photo_message"></div>
             </div>
         </div>
     </div>
@@ -416,6 +611,7 @@ global $settings, $session, $path;
 
     var app = new Vue({
         el: '#app',
+        mixins: [PhotoLightboxMixin, PhotoUploadMixin],
         data: {
             session_userid: <?php echo $session['userid']; ?>,
             form_type: form_type,
@@ -846,8 +1042,251 @@ global $settings, $session, $path;
                     });
             },
 
+            // Photo upload methods
+            triggerFileSelect: function() {
+                this.$refs.fileInput.click();
+            },
 
-        },
+            triggerFileSelectForType: function(photo_type) {
+                switch(photo_type) {
+                    case 'outdoor_unit':
+                        this.$refs.outdoorUnitInput.click();
+                        break;
+                    case 'plant_room':
+                        this.$refs.plantRoomInput.click();
+                        break;
+                    case 'other':
+                        this.$refs.otherInput.click();
+                        break;
+                }
+            },
+
+            // Get photo by type
+            getPhotoByType: function(photo_type) {
+                return this.system_photos.find(photo => photo.photo_type === photo_type);
+            },
+
+            // Get photos by type (for 'other' which can have multiple)
+            getPhotosByType: function(photo_type) {
+                return this.system_photos.filter(photo => photo.photo_type === photo_type);
+            },
+
+            // Get photo index by type
+            getPhotoIndexByType: function(photo_type) {
+                return this.system_photos.findIndex(photo => photo.photo_type === photo_type);
+            },
+
+            // Get photo index by ID
+            getPhotoIndexById: function(photo_id) {
+                return this.system_photos.findIndex(photo => photo.id === photo_id);
+            },
+
+            // Type-specific drag handlers
+            handleTypeDragOver: function(photo_type) {
+                this.isDragActiveType = photo_type;
+            },
+
+            handleTypeDragLeave: function(photo_type) {
+                this.isDragActiveType = null;
+            },
+
+            handleTypeDrop: function(photo_type, event) {
+                this.isDragActiveType = null;
+                const files = Array.from(event.dataTransfer.files);
+                
+                // For specific types (outdoor_unit, plant_room), only allow one file
+                if ((photo_type === 'outdoor_unit' || photo_type === 'plant_room') && files.length > 1) {
+                    this.showFileError('Please select only one photo for ' + (photo_type === 'outdoor_unit' ? 'outdoor unit' : 'plant room'));
+                    return;
+                }
+
+                // Check if this type already has a photo (for outdoor_unit and plant_room)
+                if ((photo_type === 'outdoor_unit' || photo_type === 'plant_room') && this.getPhotoByType(photo_type)) {
+                    this.showFileError('This photo type already has an image. Please remove it first.');
+                    return;
+                }
+
+                this.processFilesForType(files, photo_type);
+            },
+
+            handleOtherDrop: function(event) {
+                this.isDragActive = false;
+                const files = Array.from(event.dataTransfer.files);
+                this.processFilesForType(files, 'other');
+            },
+
+            handleFileSelectForType: function(photo_type, event) {
+                const files = Array.from(event.target.files);
+                this.processFilesForType(files, photo_type);
+                // Clear the input
+                event.target.value = '';
+            },
+
+            processFilesForType: function(files, photo_type) {
+                // Filter valid image files
+                const validFiles = files.filter(file => {
+                    // Check file type
+                    if (!this.allowed_types.includes(file.type)) {
+                        this.showFileError(`"${file.name}" is not a supported image format.`);
+                        return false;
+                    }
+                    // Check file size
+                    if (file.size > this.max_file_size) {
+                        this.showFileError(`"${file.name}" is too large. Maximum size is 5MB.`);
+                        return false;
+                    }
+                    return true;
+                });
+
+                // For specific types, only allow one file and check if already exists
+                if ((photo_type === 'outdoor_unit' || photo_type === 'plant_room')) {
+                    if (validFiles.length > 1) {
+                        this.showFileError('Please select only one photo for ' + (photo_type === 'outdoor_unit' ? 'outdoor unit' : 'plant room'));
+                        return;
+                    }
+                    if (this.getPhotoByType(photo_type)) {
+                        this.showFileError('This photo type already has an image. Please remove it first.');
+                        return;
+                    }
+                }
+
+                // Check if we would exceed max photos
+                const totalPhotos = this.system_photos.length + validFiles.length;
+                if (totalPhotos > this.max_photos) {
+                    const allowedFiles = this.max_photos - this.system_photos.length;
+                    this.showFileError(`You can only upload ${allowedFiles} more photo(s). Maximum is ${this.max_photos} photos.`);
+                    return;
+                }
+
+                // Hide upload area for other photos after selection
+                if (photo_type === 'other') {
+                    this.show_other_photo_upload = false;
+                }
+
+                // Process each valid file
+                validFiles.forEach(file => {
+                    this.addPhotoWithType(file, photo_type);
+                });
+            },
+
+            addPhotoWithType: function(file, photo_type) {
+                // Create file reader for preview
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const photo = {
+                        id: Date.now() + Math.random(),
+                        file: file,
+                        name: file.name,
+                        size: file.size,
+                        photo_type: photo_type,
+                        preview: e.target.result,
+                        uploading: false,
+                        uploaded: false,
+                        progress: 0,
+                        error: null
+                    };
+                    
+                    this.system_photos.push(photo);
+                    // Auto-upload the photo
+                    this.uploadPhoto(photo);
+                };
+                reader.readAsDataURL(file);
+            },
+
+            // Use shared thumbnail selection utility
+            selectThumbnail: function(photo, desired_size = '150') {
+                return PhotoUtils.selectThumbnail(photo, desired_size, this.path);
+            },
+
+            // General drag handlers for other photos drop zone
+            handleDragOver: function(event) {
+                event.preventDefault();
+                this.isDragActive = true;
+            },
+
+            handleDragLeave: function(event) {
+                event.preventDefault();
+                this.isDragActive = false;
+            },
+
+            removePhoto: function(index) {
+                const photo = this.system_photos[index];
+                
+                // If photo has an ID, it's been uploaded to server, so delete it
+                if (photo.id) {
+                    if (confirm('Are you sure you want to delete this photo?')) {
+                        axios.post(this.path + 'system/delete-photo?photo_id=' + photo.id)
+                            .then(response => {
+                                if (response.data.success) {
+                                    this.system_photos.splice(index, 1);
+                                } else {
+                                    alert('Failed to delete photo: ' + response.data.message);
+                                }
+                            })
+                            .catch(error => {
+                                alert('Failed to delete photo: ' + (error.response?.data?.message || 'Unknown error'));
+                            });
+                    }
+                } else {
+                    // Photo is still being uploaded or failed, just remove from array
+                    this.system_photos.splice(index, 1);
+                }
+            },
+
+            uploadPhoto: function(photo) {
+                photo.uploading = true;
+                photo.progress = 0;
+
+                // Create FormData for upload
+                const formData = new FormData();
+                formData.append('photo', photo.file);
+                formData.append('system_id', this.system.id);
+                formData.append('photo_type', photo.photo_type);
+
+                // Upload to server
+                axios.post(this.path + 'system/upload-photo', formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    },
+                    onUploadProgress: (progressEvent) => {
+                        photo.progress = Math.round((progressEvent.loaded / progressEvent.total) * 100);
+                    }
+                })
+                .then(response => {
+                    photo.uploading = false;
+                    if (response.data.success) {
+                        photo.uploaded = true;
+                        photo.url = response.data.url; // Store relative path
+                        photo.id = response.data.image_id; // Store image ID for deletion
+                        photo.thumbnails = response.data.thumbnails || []; // Store thumbnail paths
+                        
+                        // Debug thumbnail generation status
+                        if (response.data.thumbnail_generation) {
+                            const tg = response.data.thumbnail_generation;
+                            console.log(`Thumbnail generation: ${tg.success ? 'SUCCESS' : 'FAILED'}, Count: ${tg.count}`);
+                            if (tg.errors) {
+                                console.error('Thumbnail errors:', tg.errors);
+                            }
+                        }
+                    } else {
+                        photo.error = response.data.message || 'Upload failed. Please try again.';
+                    }
+                })
+                .catch(error => {
+                    photo.uploading = false;
+                    photo.error = error.response?.data?.message || 'Upload failed. Please try again.';
+                }); 
+            },
+
+            showFileError: function(message) {
+                this.show_photo_error = true;
+                this.photo_message = message;
+                // Auto-hide error after 5 seconds
+                setTimeout(() => {
+                    this.show_photo_error = false;
+                }, 5000);
+            }
+        }
     });
 
     app.filter_schema_groups();
@@ -871,6 +1310,39 @@ global $settings, $session, $path;
             console.log(error);
         });
 
+    // Load existing photos for this system
+    if (app.system.id) {
+        axios.get(path + 'system/photos?id=' + app.system.id)
+            .then(function(response) {
+                if (response.data.success) {
+                    app.system_photos = response.data.photos.map(photo => {
+                        return {
+                            id: photo.id,
+                            photo_type: photo.photo_type || 'other',
+                            name: photo.original_filename,
+                            url: photo.url, // Store relative path
+                            thumbnails: photo.thumbnails || [], // Store thumbnail paths
+                            uploading: false,
+                            uploaded: true, // Already uploaded
+                            progress: 100,
+                            error: null,
+                            width: photo.width,
+                            height: photo.height,
+                            file_size: photo.file_size,
+                            date_uploaded: photo.date_uploaded
+                        };
+                    });
+                }
+                app.show_other_photo_upload = false;
+            })
+            .catch(function(error) {
+                console.log('Error loading photos:', error);
+                app.show_other_photo_upload = false;
+            });
+    } else {
+        app.show_other_photo_upload = false;
+    }
+    
     // Load available apps
     if (app.mode == 'edit') {
         app.loading_available_apps = true;

@@ -168,6 +168,7 @@ $navigation = array(
                                         <li><a class="dropdown-item" href="<?php echo $path; ?>user/admin">Admin users</a></li>
                                         <li><a class="dropdown-item" href="<?php echo $path; ?>system/list/admin">Admin systems</a></li>
                                         <li><a class="dropdown-item" href="<?php echo $path; ?>system/log">Change log</a></li>
+                                        <li><a class="dropdown-item" href="<?php echo $path; ?>system/photos/admin">System photos</a></li>
                                     <?php } ?>
                                     <li>
                                         <hr class="dropdown-divider">

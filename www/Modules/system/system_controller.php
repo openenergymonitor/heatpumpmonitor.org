@@ -5,7 +5,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 function system_controller() {
 
-    global $session, $route, $user, $system, $mysqli, $system_stats, $settings;
+    global $session, $route, $user, $system, $mysqli, $system_stats, $system_photos, $settings;
 
 
 
@@ -311,6 +311,64 @@ function system_controller() {
         if ($session['userid']) {
             return $system->available_apps($session['userid']);
         }
+    }
+
+    // Upload photo endpoint
+    if ($route->action=="upload-photo") {
+        $route->format = "json";
+        if ($session['userid']) {
+            return $system_photos->upload_photo($session['userid']);
+        }
+        return array("success" => false, "message" => "Authentication required");
+    }
+
+    // Admin photos page - list all uploaded photos
+    if ($route->action=="photos" && $route->subaction=="admin") {
+        if ($session['userid'] && $session['admin']) {
+            if ($route->format=="html") {
+                return view("Modules/system/system_photos_admin_view.php", array());
+            } else if ($route->format=="json") {
+                $page = get("page", 1);
+                $limit = get("limit", 50);
+                return $system_photos->get_all_photos_admin($session['userid'], $page, $limit);
+            }
+        }
+    }
+
+    // Admin delete photo endpoint
+    if ($route->action=="photos" && $route->subaction=="delete") {
+        if ($session['userid'] && $session['admin']) {
+            $route->format = "json";
+            $photo_id = get("photo_id", false);
+            if ($photo_id) {
+                return $system_photos->admin_delete_photo($session['userid'], $photo_id);
+            }
+            return array("success" => false, "message" => "Photo ID required");
+        }
+        return array("success" => false, "message" => "Authentication required");
+    }
+
+    // Get photos for a system (only if no subaction)
+    if ($route->action=="photos" && $route->subaction=="") {
+        $route->format = "json";
+        $system_id = get("id", false);
+        if ($system_id) {
+            return $system_photos->get_photos($session['userid'], $system_id);
+        }
+        return array("success" => false, "message" => "System ID required");
+    }
+
+    // Delete photo
+    if ($route->action=="delete-photo") {
+        $route->format = "json";
+        if ($session['userid']) {
+            $photo_id = get("photo_id", false);
+            if ($photo_id) {
+                return $system_photos->delete_photo($session['userid'], $photo_id);
+            }
+            return array("success" => false, "message" => "Photo ID required");
+        }
+        return array("success" => false, "message" => "Authentication required");
     }
 
 
