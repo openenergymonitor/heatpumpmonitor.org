@@ -43,6 +43,15 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     object-fit: contain;
 }
 
+/* Square thumbnail styling - 300x300 with rounded edges */
+.heat-pump-square-thumb {
+    width: 300px;
+    height: 300px;
+    object-fit: cover;
+    border-radius: 0.375rem !important; /* Round the image corners, not just border */
+    overflow: hidden; /* Ensure image content respects border-radius */
+}
+
 .clickable-image {
     cursor: pointer;
     transition: opacity 0.2s ease;
@@ -109,8 +118,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 <!-- Heat pump image or placeholder -->
                 <div class="heat-pump-image-section mt-3">
                     <div v-if="heatpump.img" class="heat-pump-image-container">
-                        <img :src="getImageUrl(heatpump.img)" 
-                             class="img-thumbnail clickable-image" 
+                        <!-- Use generated square thumbnail (150x150) via PhotoUtils -->
+                        <img :src="heatpumpThumbnailUrl" 
+                             class="img-thumbnail clickable-image heat-pump-square-thumb" 
                              :alt="heatpump.img"
                              @click="openImageLightbox"
                              title="Click to view full size">
@@ -714,6 +724,25 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             getImageUrl: function(filename) {
                 return this.path + 'theme/img/heatpumps/' + filename + '?_t=' + this.imageCacheBuster;
             },
+            buildHeatpumpPhotoObject: function() {
+                if (!this.heatpump || !this.heatpump.img) return null;
+                let thumbnails = [];
+                if (this.heatpump.img_thumbnails) {
+                    try {
+                        if (typeof this.heatpump.img_thumbnails === 'string') {
+                            thumbnails = JSON.parse(this.heatpump.img_thumbnails);
+                        } else if (Array.isArray(this.heatpump.img_thumbnails)) {
+                            thumbnails = this.heatpump.img_thumbnails;
+                        }
+                    } catch (e) {
+                        thumbnails = [];
+                    }
+                }
+                return {
+                    url: 'theme/img/heatpumps/' + this.heatpump.img,
+                    thumbnails: thumbnails
+                };
+            },
             
             openImageLightbox: function() {
                 if (!this.heatpump.img) return;
@@ -736,6 +765,12 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             },
             unapprovedMinTestsCount: function() {
                 return this.min_cap_tests.filter(test => test.review_status != 1).length;
+            },
+            heatpumpThumbnailUrl: function() {
+                const photo = this.buildHeatpumpPhotoObject();
+                if (!photo) return '';
+                const selected = PhotoUtils.selectThumbnail(photo, '300', this.path);
+                return selected + (selected.includes('?') ? '&' : '?') + '_t=' + this.imageCacheBuster;
             }
         },
         filters: {

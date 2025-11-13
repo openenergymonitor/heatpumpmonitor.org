@@ -11,7 +11,10 @@ $schema['heatpump_model'] = array(
     'min_flowrate' => array('type' => 'float', 'Null' => true, 'default' => null),
     'max_flowrate' => array('type' => 'float', 'Null' => true, 'default' => null),
     'max_current' => array('type' => 'float', 'Null' => true, 'default' => null),
-    'img' => array('type' => 'varchar(255)', 'Null' => true, 'default' => null)
+    'img' => array('type' => 'varchar(255)', 'Null' => true, 'default' => null),
+    'img_width' => array('type' => 'int(11)', 'Null' => true, 'default' => null),
+    'img_height' => array('type' => 'int(11)', 'Null' => true, 'default' => null),
+    'img_thumbnails' => array('type' => 'json', 'Null' => true, 'default' => null)
 );
 
 $schema['heatpump_max_cap_test'] = array(
