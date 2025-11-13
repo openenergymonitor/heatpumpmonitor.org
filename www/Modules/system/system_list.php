@@ -121,9 +121,14 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         max-height: 780px;
     }
 
+    /* Prevent flash of unstyled content before Vue initializes */
+    [v-cloak] {
+        display: none;
+    }
+
 </style>
 
-<div id="app" class="bg-light">
+<div id="app" class="bg-light" v-cloak>
     <div style=" background-color:#f0f0f0; padding-top:20px; padding-bottom:10px">
         <div class="container-fluid">
 
