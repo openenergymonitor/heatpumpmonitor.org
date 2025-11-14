@@ -9,67 +9,6 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 <link rel="stylesheet" type="text/css" href="<?php echo $path; ?>Modules/system/system_view.css?v=5">
 
-<style>
-.heat-pump-image-section {
-    text-align: center;
-}
-
-.heat-pump-placeholder {
-    border: 2px dashed #ccc;
-    border-radius: 8px;
-    padding: 30px 20px;
-    background-color: #f8f9fa;
-    min-height: 200px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    transition: all 0.2s ease;
-}
-
-.heat-pump-placeholder.clickable {
-    cursor: pointer;
-    border-color: #007bff;
-}
-
-.heat-pump-placeholder.clickable:hover {
-    background-color: #e3f2fd;
-    border-color: #0056b3;
-}
-
-.heat-pump-image-container img {
-    max-width: 100%;
-    max-height: 300px;
-    object-fit: contain;
-}
-
-/* Square thumbnail styling - 300x300 with rounded edges */
-.heat-pump-square-thumb {
-    width: 300px;
-    height: 300px;
-    object-fit: cover;
-    border-radius: 0.375rem !important; /* Round the image corners, not just border */
-    overflow: hidden; /* Ensure image content respects border-radius */
-}
-
-.clickable-image {
-    cursor: pointer;
-    transition: opacity 0.2s ease;
-}
-
-.clickable-image:hover {
-    opacity: 0.9;
-}
-
-.image-controls, .replace-image-section {
-    text-align: center;
-}
-
-.placeholder-content {
-    width: 100%;
-}
-</style>
-
 <div id="app" class="bg-light">
     <div style=" background-color:#f0f0f0; padding-top:20px; padding-bottom:10px">
         <div class="container"  style="max-width:1200px;">
@@ -116,11 +55,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             </div>
             <div class="col-4">
                 <!-- Heat pump image or placeholder -->
-                <div class="heat-pump-image-section mt-3">
-                    <div v-if="heatpump.img" class="heat-pump-image-container">
+                <div class="image-container mt-3">
+                    <div v-if="heatpump.img">
                         <!-- Use generated square thumbnail (150x150) via PhotoUtils -->
                         <img :src="heatpumpThumbnailUrl" 
-                             class="img-thumbnail clickable-image heat-pump-square-thumb" 
+                             class="img-thumbnail clickable-image square-thumb" 
                              :alt="heatpump.img"
                              @click="openImageLightbox"
                              title="Click to view full size">
@@ -130,7 +69,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             </button>
                         </div>
                     </div>
-                    <div v-else class="heat-pump-placeholder">
+                    <div v-else class="image-placeholder">
                         <div class="placeholder-content" @click="mode=='admin' && triggerImageUpload()" 
                              :class="{'clickable': mode=='admin'}" 
                              :title="mode=='admin' ? 'Click to upload heat pump image' : ''">
@@ -724,36 +663,37 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             getImageUrl: function(filename) {
                 return this.path + 'theme/img/heatpumps/' + filename + '?_t=' + this.imageCacheBuster;
             },
-            buildHeatpumpPhotoObject: function() {
-                if (!this.heatpump || !this.heatpump.img) return null;
-                let thumbnails = [];
-                if (this.heatpump.img_thumbnails) {
-                    try {
-                        if (typeof this.heatpump.img_thumbnails === 'string') {
-                            thumbnails = JSON.parse(this.heatpump.img_thumbnails);
-                        } else if (Array.isArray(this.heatpump.img_thumbnails)) {
-                            thumbnails = this.heatpump.img_thumbnails;
-                        }
-                    } catch (e) {
-                        thumbnails = [];
-                    }
-                }
-                return {
-                    url: 'theme/img/heatpumps/' + this.heatpump.img,
-                    thumbnails: thumbnails
-                };
-            },
             
             openImageLightbox: function() {
                 if (!this.heatpump.img) return;
                 
-                // Create a photo object compatible with the lightbox mixin
-                this.system_photos = [{
+                // Build photo object for lightbox using PhotoUtils
+                const photo = {
                     url: 'theme/img/heatpumps/' + this.heatpump.img,
+                    thumbnails: []
+                };
+                
+                // Parse thumbnails if available
+                if (this.heatpump.img_thumbnails) {
+                    try {
+                        if (typeof this.heatpump.img_thumbnails === 'string') {
+                            photo.thumbnails = JSON.parse(this.heatpump.img_thumbnails);
+                        } else if (Array.isArray(this.heatpump.img_thumbnails)) {
+                            photo.thumbnails = this.heatpump.img_thumbnails;
+                        }
+                    } catch (e) {
+                        photo.thumbnails = [];
+                    }
+                }
+                
+                // Set system_photos for lightbox mixin
+                this.system_photos = [{
+                    url: photo.url,
                     server_url: this.getImageUrl(this.heatpump.img),
                     name: this.heatpump.manufacturer_name + ' ' + this.heatpump.name,
                     original_filename: this.heatpump.img,
-                    photo_type: 'heatpump'
+                    photo_type: 'heatpump',
+                    thumbnails: photo.thumbnails
                 }];
                 
                 this.openLightbox(0);
@@ -767,8 +707,28 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 return this.min_cap_tests.filter(test => test.review_status != 1).length;
             },
             heatpumpThumbnailUrl: function() {
-                const photo = this.buildHeatpumpPhotoObject();
-                if (!photo) return '';
+                if (!this.heatpump.img) return '';
+                
+                // Build photo object with thumbnails
+                const photo = {
+                    url: 'theme/img/heatpumps/' + this.heatpump.img,
+                    thumbnails: []
+                };
+                
+                // Parse thumbnails if available
+                if (this.heatpump.img_thumbnails) {
+                    try {
+                        if (typeof this.heatpump.img_thumbnails === 'string') {
+                            photo.thumbnails = JSON.parse(this.heatpump.img_thumbnails);
+                        } else if (Array.isArray(this.heatpump.img_thumbnails)) {
+                            photo.thumbnails = this.heatpump.img_thumbnails;
+                        }
+                    } catch (e) {
+                        photo.thumbnails = [];
+                    }
+                }
+                
+                // Use PhotoUtils to select appropriate thumbnail
                 const selected = PhotoUtils.selectThumbnail(photo, '300', this.path);
                 return selected + (selected.includes('?') ? '&' : '?') + '_t=' + this.imageCacheBuster;
             }

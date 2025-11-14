@@ -600,3 +600,65 @@
         gap: 10px;
     }
 }
+
+/* Shared Image Display Styles (used by system photos and heatpump images) */
+.image-placeholder {
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    padding: 30px 20px;
+    background-color: #f8f9fa;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.image-placeholder.clickable {
+    cursor: pointer;
+    border-color: #007bff;
+}
+
+.image-placeholder.clickable:hover {
+    background-color: #e3f2fd;
+    border-color: #0056b3;
+}
+
+.image-container {
+    text-align: center;
+}
+
+.image-container img {
+    max-width: 100%;
+    max-height: 300px;
+    object-fit: contain;
+}
+
+/* Square thumbnail styling - 300x300 with rounded edges */
+.square-thumb {
+    width: 300px;
+    height: 300px;
+    object-fit: cover;
+    border-radius: 0.375rem !important;
+    overflow: hidden;
+}
+
+.clickable-image {
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+.clickable-image:hover {
+    opacity: 0.9;
+}
+
+.image-controls, .replace-image-section {
+    text-align: center;
+}
+
+.placeholder-content {
+    width: 100%;
+}
+

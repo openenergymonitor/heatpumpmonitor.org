@@ -3,18 +3,21 @@
 // no direct access
 defined('EMONCMS_EXEC') or die('Restricted access');
 
+require_once "Lib/image_upload_helper.php";
 require_once "Modules/system/thumbnail_generator.php";
 
 class SystemPhotos
 {
     private $mysqli;
     private $system;
+    private $image_upload_helper;
     private $thumbnail_generator;
 
     public function __construct($mysqli, $system = null)
     {
         $this->mysqli = $mysqli;
         $this->system = $system;
+        $this->image_upload_helper = new ImageUploadHelper();
         $this->thumbnail_generator = new ThumbnailGenerator();
     }
 
@@ -47,25 +50,10 @@ class SystemPhotos
         
         $photo = $_FILES['photo'];
         
-        // Check for upload errors
-        if ($photo['error'] !== UPLOAD_ERR_OK) {
-            return array("success" => false, "message" => "Upload failed with error: " . $photo['error']);
-        }
-        
-        // Validate file size (5MB max)
-        $max_size = 5 * 1024 * 1024; // 5MB in bytes
-        if ($photo['size'] > $max_size) {
-            return array("success" => false, "message" => "File size exceeds 5MB limit");
-        }
-        
-        // Validate file type
-        $allowed_types = array('image/jpeg', 'image/jpg', 'image/png', 'image/webp');
-        $finfo = finfo_open(FILEINFO_MIME_TYPE);
-        $mime_type = finfo_file($finfo, $photo['tmp_name']);
-        finfo_close($finfo);
-        
-        if (!in_array($mime_type, $allowed_types)) {
-            return array("success" => false, "message" => "Invalid file type. Only JPG, PNG, and WebP are allowed");
+        // Validate file using shared helper
+        $validation = $this->image_upload_helper->validateFile($photo);
+        if (!$validation['success']) {
+            return $validation;
         }
         
         // Check if system already has 4 photos
@@ -74,40 +62,22 @@ class SystemPhotos
             return array("success" => false, "message" => "Maximum of 4 photos allowed per system");
         }
         
-        // Create directory structure
-        $upload_dir = "theme/img/system/" . $system_id . "/";
-        if (!file_exists($upload_dir)) {
-            if (!mkdir($upload_dir, 0755, true)) {
-                return array("success" => false, "message" => "Failed to create upload directory");
-            }
-        }
-        
         // Generate random filename while preserving extension
         $extension = strtolower(pathinfo($photo['name'], PATHINFO_EXTENSION));
         $filename = uniqid('img_', true) . '.' . $extension;
-        $filepath = $upload_dir . $filename;
         
-        // Move uploaded file
-        if (!move_uploaded_file($photo['tmp_name'], $filepath)) {
-            return array("success" => false, "message" => "Failed to save uploaded file");
+        // Process upload using shared helper
+        $upload_dir = "theme/img/system/" . $system_id . "/";
+        $upload_result = $this->image_upload_helper->processUpload($photo, $upload_dir, $filename);
+        
+        if (!$upload_result['success']) {
+            return $upload_result;
         }
         
-        // Get image dimensions
-        $image_info = getimagesize($filepath);
-        $width = $image_info ? $image_info[0] : null;
-        $height = $image_info ? $image_info[1] : null;
-        
-        // Generate thumbnails (don't fail upload if this fails)
-        $thumbnail_result = $this->thumbnail_generator->generateThumbnails($filepath);
-        $thumbnail_paths = $thumbnail_result['thumbnails'] ?? [];
-        
-        // Encode thumbnails as JSON
-        $thumbnails_json = !empty($thumbnail_paths) ? json_encode($thumbnail_paths) : null;
-                
         // Save to database
         $stmt = $this->mysqli->prepare("INSERT INTO system_images (system_id, photo_type, image_path, original_filename, width, height, file_size, date_uploaded, thumbnails) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $date_uploaded = time();
-        $stmt->bind_param("isssiiiis", $system_id, $photo_type, $filepath, $photo['name'], $width, $height, $photo['size'], $date_uploaded, $thumbnails_json);
+        $stmt->bind_param("isssiiiis", $system_id, $photo_type, $upload_result['filepath'], $photo['name'], $upload_result['width'], $upload_result['height'], $photo['size'], $date_uploaded, $upload_result['thumbnails_json']);
         
         if ($stmt->execute()) {
             $image_id = $this->mysqli->insert_id;
@@ -117,34 +87,22 @@ class SystemPhotos
                 "success" => true, 
                 "message" => "Photo uploaded successfully",
                 "image_id" => $image_id,
-                "url" => $filepath,
-                "width" => $width,
-                "height" => $height,
-                "thumbnail_generation" => array(
-                    "success" => $thumbnail_result['success'],
-                    "count" => count($thumbnail_paths)
-                )
+                "url" => $upload_result['filepath'],
+                "width" => $upload_result['width'],
+                "height" => $upload_result['height'],
+                "thumbnail_generation" => $upload_result['thumbnail_generation']
             );
             
             // Add thumbnail URLs if they were generated
-            if (!empty($thumbnail_paths)) {
-                $response["thumbnails"] = $thumbnail_paths;
-            }
-            
-            // Add thumbnail generation errors to response for debugging
-            if (!empty($thumbnail_result['errors'])) {
-                $response["thumbnail_generation"]["errors"] = $thumbnail_result['errors'];
+            if (!empty($upload_result['thumbnails'])) {
+                $response["thumbnails"] = $upload_result['thumbnails'];
             }
             
             return $response;
         } else {
             // Clean up file if database insert fails
-            $unlink_success = unlink($filepath);
-            $error_message = "Failed to save photo information to database";
-            if (!$unlink_success) {
-                $error_message .= " (and failed to delete uploaded file)";
-            }
-            return array("success" => false, "message" => $error_message);
+            $this->image_upload_helper->deleteImage($upload_result['filepath'], $upload_result['thumbnails_json']);
+            return array("success" => false, "message" => "Failed to save photo information to database");
         }
     }
     
@@ -225,13 +183,6 @@ class SystemPhotos
             return array("success" => false, "message" => "Access denied");
         }
         
-        // Delete the main file from filesystem
-        if (file_exists($row['image_path'])) {
-            if (!unlink($row['image_path'])) {
-                return array("success" => false, "message" => "Failed to delete image file");
-            }
-        }
-
         // Begin transaction for atomic database deletion
         $this->mysqli->begin_transaction();
         $stmt = $this->mysqli->prepare("DELETE FROM system_images WHERE id = ?");
@@ -241,21 +192,10 @@ class SystemPhotos
             // Commit transaction before deleting files
             $this->mysqli->commit();
             
-            // Delete the main file from filesystem
-            $file_delete_success = true;
-            if (file_exists($row['image_path'])) {
-                if (!unlink($row['image_path'])) {
-                    $file_delete_success = false;
-                }
-            }
+            // Delete image files using shared helper
+            $delete_result = $this->image_upload_helper->deleteImage($row['image_path'], $row['thumbnails']);
             
-            // Delete thumbnail files
-            $thumb_delete_success = true;
-            if (!$this->thumbnail_generator->deleteThumbnails($row['image_path'])) {
-                $thumb_delete_success = false;
-            }
-            
-            if ($file_delete_success && $thumb_delete_success) {
+            if ($delete_result['success']) {
                 return array("success" => true, "message" => "Photo deleted successfully");
             } else {
                 // Filesystem cleanup failed after DB deletion; log error, but DB is correct
@@ -264,11 +204,6 @@ class SystemPhotos
         } else {
             // Rollback transaction if DB deletion failed
             $this->mysqli->rollback();
-        }
-        
-        if ($stmt->execute()) {
-            return array("success" => true, "message" => "Photo deleted successfully");
-        } else {
             return array("success" => false, "message" => "Failed to delete photo from database");
         }
     }
@@ -368,7 +303,7 @@ class SystemPhotos
         }
         
         // Get photo details
-        $stmt = $this->mysqli->prepare("SELECT * FROM system_images WHERE id = ?");
+        $stmt = $this->mysqli->prepare("SELECT image_path, thumbnails FROM system_images WHERE id = ?");
         $stmt->bind_param("i", $photo_id);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -377,21 +312,13 @@ class SystemPhotos
             return array("success" => false, "message" => "Photo not found");
         }
         
-        // Delete the file from filesystem
-        if (file_exists($row['image_path'])) {
-            if (!unlink($row['image_path'])) {
-                return array("success" => false, "message" => "Failed to delete image file");
-            }
-        }
-        
-        // Delete thumbnail files
-        $this->thumbnail_generator->deleteThumbnails($row['image_path']);
-        
         // Delete from database
         $stmt = $this->mysqli->prepare("DELETE FROM system_images WHERE id = ?");
         $stmt->bind_param("i", $photo_id);
         
         if ($stmt->execute()) {
+            // Delete image files using shared helper
+            $this->image_upload_helper->deleteImage($row['image_path'], $row['thumbnails']);
             return array("success" => true, "message" => "Photo deleted successfully");
         } else {
             return array("success" => false, "message" => "Failed to delete photo from database");
