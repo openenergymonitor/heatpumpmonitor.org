@@ -509,6 +509,16 @@ $schema['system_meta'] = array(
         'options' => array('Passivhaus', 'Fully insulated walls, floors and loft', 'Some insulation in walls and loft', 'Cavity wall, plus some loft insulation', 'Non-insulated cavity wall', 'Solid walls')
     ),
 
+    'passivhaus_certification' => array(
+        'type' => 'varchar(10)', 
+        'editable' => true, 
+        'optional' => true, 
+        'name' => 'Passivhaus Certification', 
+        'group' => 'Property',
+        'options' => array('Yes', 'No', 'Pending'),
+        'show' => false
+    ),
+
     /*
     'EPC_spaceheat_demand' => array(
         'type' => 'int(11)', 

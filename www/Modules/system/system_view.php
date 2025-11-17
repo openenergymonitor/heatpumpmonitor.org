@@ -984,6 +984,13 @@ global $settings, $session, $path;
                     this.schema_groups['Misc']['freeze'].show = true;
                 }
                 
+                // If Passivhaus insulation then show the Certification selection
+                if (app.system.insulation == 'Passivhaus') {
+                    this.schema_groups['Property']['passivhaus_certification'].show = true;
+                } else {
+                    this.schema_groups['Property']['passivhaus_certification'].show = false;
+                    app.system.passivhaus_certification = '';
+                }
 
                 // IF admin
                 if (app.admin) {
