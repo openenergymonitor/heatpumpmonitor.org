@@ -103,6 +103,14 @@ $schema['system_meta'] = array(
         'group' => 'Overview'
     ),
 
+    'installation_Cost' => array(
+        'type' => 'varchar(16)', 
+        'editable' => true, 
+        'optional' => true, 
+        'name' => 'Installation Cost', 
+        'group' => 'Overview'
+    ),
+
     'heatgeek' => array(
         'type' => 'tinyint(1)', 
         'editable' => true, 
