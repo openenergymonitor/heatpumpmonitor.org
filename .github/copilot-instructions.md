@@ -74,11 +74,161 @@ LOAD_DAILY_STATS='[44]'          # Load daily data for system 44 only
 
 ### Database Management
 
-#### Schema & Migration System
-- **Schema Definition**: Each module has `{name}_schema.php` with table definitions
-- **No Traditional Migrations**: Schema changes applied by editing schema files
-- **Schema Updates**: `update_database.php` applies all schema changes
-- **Database Setup**: Uses `www/Lib/dbschemasetup.php` for table creation/updates
+#### Database Schema System
+The project uses a custom declarative schema system instead of traditional migrations.
+
+##### Schema File Structure
+- **Location**: Each module contains `{module}_schema.php` 
+- **Format**: PHP arrays defining table structure and field properties
+- **Application**: `update_database.php` applies schema changes by comparing definitions to actual database
+- **Engine**: `www/Lib/dbschemasetup.php` handles table creation, updates, and field modifications
+
+##### Field Definition Properties
+Each database field is defined as an array with the following properties:
+
+###### Core Database Properties
+- **`type`** (required): MySQL column type
+  - Examples: `'int(11)'`, `'varchar(64)'`, `'text'`, `'float'`, `'tinyint(1)'`, `'JSON'`, `'date'`, `'datetime'`
+- **`Null`** (optional): Whether field accepts NULL values
+  - `true` (default): Allow NULL
+  - `false` or `'NO'`: NOT NULL constraint
+- **`Key`** (optional): Primary key designation
+  - `true` or `'PRI'`: Makes field primary key
+  - Automatically sets NOT NULL constraint
+- **`Extra`** (optional): Auto-increment flag
+  - `true` or `'auto_increment'`: Field auto-increments
+- **`Default`** (optional): Default value for field
+  - String values: `'default' => 'other'`
+  - Numeric values: `'default' => 0`
+- **`Index`** (optional): Create database index
+  - `true`: Creates index with name pattern `IX_{table}_{field}`
+
+###### UI Form Properties (system_meta specific)
+- **`editable`** (optional): Whether field appears in edit forms
+  - `true`: Show in edit forms
+  - `false`: Read-only or system field
+- **`optional`** (optional): Form validation requirement
+  - `true`: Field is optional in forms
+  - `false`: Required field validation
+- **`name`** (optional): Human-readable label for forms
+- **`helper`** (optional): Help text displayed in forms
+- **`group`** (optional): Groups related fields in forms
+  - Examples: `'Overview'`, `'Heat pump'`, `'Property'`, `'Metering'`
+- **`options`** (optional): Dropdown/select options
+  - Array of strings: `'options' => array('Option 1', 'Option 2')`
+- **`unit`** (optional): Unit suffix for display
+  - Examples: `'kW'`, `'°C'`, `'litres'`, `'%'`
+- **`show`** (optional): Visibility in public views
+  - `true` (default): Show in public system view
+  - `false`: Hide from public (admin only)
+- **`show_to_admin`** (optional): Admin-only visibility
+- **`basic`** (optional): Include in basic/simplified forms
+- **`disabled`** (optional): Disable form input (calculated fields)
+
+###### Statistics Display Properties (stats tables)
+- **`heading`** (optional): Custom column header (can include HTML like `<br>`)
+- **`dp`** (optional): Decimal places for number formatting
+  - Integer: Number of decimal places to display
+- **`unit`** (optional): Unit suffix for display in tables
+
+##### Schema Examples
+
+###### Simple Table Schema
+```php
+$schema['manufacturers'] = array(
+    'id' => array('type' => 'int(11)', 'Null' => false, 'Key' => 'PRI', 'Extra' => 'auto_increment'),
+    'name' => array('type' => 'varchar(128)'),
+    'website' => array('type' => 'varchar(128)')
+);
+```
+
+###### Form-Enabled Schema with UI Properties
+```php
+$schema['system_meta'] = array(
+    'location' => array(
+        'type' => 'varchar(64)', 
+        'editable' => true, 
+        'optional' => false, 
+        'name' => 'Location', 
+        'helper' => 'Roughly where the heat pump is installed, to nearest city or county',
+        'group' => 'Overview'
+    ),
+    'hp_type' => array(
+        'type' => 'varchar(64)', 
+        'editable' => true, 
+        'optional' => false, 
+        'name' => 'Heat pump type', 
+        'group' => 'Heat pump', 
+        'options' => array('Air Source', 'Ground Source', 'Water Source'),
+        'show' => false
+    )
+);
+```
+
+###### Statistics Table Schema with Display Properties
+```php
+$schema['system_stats_daily'] = array(
+    'combined_cop' => array(
+        'type' => 'float', 
+        'name' => 'COP', 
+        'heading' => 'COP', 
+        'group' => 'Stats: Combined', 
+        'dp' => 1, 
+        'unit' => ''
+    ),
+    'combined_elec_kwh' => array(
+        'type' => 'float', 
+        'name' => 'Electricity consumption', 
+        'group' => 'Stats: Combined', 
+        'dp' => 0, 
+        'unit' => 'kWh'
+    )
+);
+```
+
+##### Schema Management Commands
+
+###### Update Database Schema
+```bash
+# Apply all schema changes from all modules
+docker compose run --entrypoint "php update_database.php" load_dev_env_data
+
+# View pending changes without applying (dry run)
+# Edit update_database.php temporarily to set $apply = false
+```
+
+###### Schema System Features
+- **Automatic Table Creation**: Creates tables if they don't exist
+- **Field Addition**: Adds missing fields to existing tables
+- **Field Modification**: Updates field types, constraints, defaults
+- **Index Management**: Creates indexes for fields marked with `'Index' => true`
+- **Primary Key Handling**: Supports single and compound primary keys
+- **Safe Updates**: Preserves existing data during schema changes
+- **MySQL Engine**: Uses MYISAM engine by default
+
+##### Schema Naming Conventions & Patterns
+
+###### Table Naming
+- **Module Tables**: Use module name as prefix (e.g., `system_meta`, `system_images`, `system_stats_daily`)
+- **Lookup Tables**: Pluralized names (e.g., `users`, `manufacturers`, `installers`)
+- **Junction/Mapping**: Use descriptive names (e.g., `system_access`, `user_sessions`)
+- **Statistics Tables**: Include time period in name (e.g., `system_stats_daily`, `system_stats_monthly_v2`)
+
+###### Field Naming Patterns
+- **Primary Keys**: Always `id` with auto-increment
+- **Foreign Keys**: `{table}_id` format (e.g., `system_id`, `manufacturer_id`, `userid`)
+- **Boolean Flags**: Descriptive names (e.g., `published`, `editable`, `optional`, `uses_backup_heater`)
+- **Timestamps**: Use `created`, `last_updated`, `date_uploaded` (Unix timestamps as `int(11)`)
+- **URLs/Paths**: Use `_url` or `_path` suffix (e.g., `installer_url`, `image_path`)
+- **Measurements**: Include unit in name where helpful (e.g., `cylinder_volume`, `flow_temp`)
+
+###### Common Schema Patterns
+- **Audit Fields**: Include `userid`, `created`, `last_updated` for tracking changes
+- **Soft Deletes**: Use boolean `active` or `deleted` flag rather than hard deletes
+- **Versioning**: Use `_v2` suffix for schema version updates (e.g., `system_stats_monthly_v2`)
+- **Metadata Storage**: Use JSON fields for flexible data (e.g., `thumbnails`, `img_thumbnails`)
+- **Enumeration Values**: Store as varchar with `options` array in schema for validation
+- **Review/Approval**: Include `review_status` int and `review_comment` text for moderated content
 
 #### Direct Database Access
 ```bash
@@ -99,6 +249,71 @@ FROM system_stats_last30_v2 WHERE combined_cop IS NOT NULL LIMIT 10;
 
 # View user accounts
 SELECT id, username, email, admin, created FROM users;
+```
+
+#### Working with Database Schema
+
+##### Adding New Fields to Existing Tables
+1. **Edit Schema File**: Add field definition to appropriate `{module}_schema.php`
+2. **Update Database**: Run `docker compose run --entrypoint "php update_database.php" load_dev_env_data`
+3. **Verify Changes**: Check database structure and test functionality
+
+##### Schema Field Examples by Use Case
+
+###### Basic Data Fields
+```php
+'name' => array('type' => 'varchar(128)', 'Null' => false),
+'description' => array('type' => 'text', 'Null' => true),
+'value' => array('type' => 'float', 'Null' => true, 'default' => 0),
+'active' => array('type' => 'tinyint(1)', 'Null' => false, 'default' => 1),
+```
+
+###### Form Input Fields with UI Properties
+```php
+'heat_pump_model' => array(
+    'type' => 'varchar(64)', 
+    'editable' => true, 
+    'optional' => false, 
+    'name' => 'Heat Pump Model', 
+    'group' => 'Equipment',
+    'helper' => 'Enter the manufacturer model number',
+    'basic' => true
+),
+'installation_type' => array(
+    'type' => 'varchar(32)', 
+    'editable' => true, 
+    'optional' => true, 
+    'name' => 'Installation Type', 
+    'group' => 'Equipment',
+    'options' => array('Indoor', 'Outdoor', 'Hybrid')
+),
+```
+
+###### Statistics/Reporting Fields
+```php
+'monthly_cop' => array(
+    'type' => 'float', 
+    'name' => 'Monthly COP', 
+    'heading' => 'COP<br>(Monthly)', 
+    'group' => 'Performance', 
+    'dp' => 2, 
+    'unit' => ''
+),
+'energy_usage' => array(
+    'type' => 'float', 
+    'name' => 'Energy Usage', 
+    'group' => 'Consumption', 
+    'dp' => 0, 
+    'unit' => 'kWh'
+),
+```
+
+###### File/Media Fields
+```php
+'logo_path' => array('type' => 'varchar(255)', 'Null' => true),
+'thumbnails' => array('type' => 'JSON', 'Null' => true),
+'file_size' => array('type' => 'int(11)', 'Null' => true),
+'mime_type' => array('type' => 'varchar(100)', 'Null' => true),
 ```
 
 #### Management Scripts with Docker
@@ -391,10 +606,16 @@ Sample data comes from live heatpumpmonitor.org via `load_dev_env_data.php`:
 - **Global utilities**: In `www/Lib/` directory
 
 ### Database Patterns
-- **Integer IDs**: Auto-incrementing primary keys
-- **JSON fields**: Used for thumbnail metadata, complex data structures
+- **Integer IDs**: Auto-incrementing primary keys using `'Key' => 'PRI', 'Extra' => 'auto_increment'`
+- **JSON fields**: Used for thumbnail metadata, complex data structures (`'type' => 'JSON'`)
+- **Boolean fields**: Use `'type' => 'tinyint(1)'` for boolean values
 - **Prepared statements**: Always use for user input
 - **Access control**: Check permissions in models via `has_read_access()`/`has_write_access()`
+- **Nullable vs Required**: Use `'Null' => false` for required fields, `'Null' => true` (default) for optional
+- **Default Values**: Always specify defaults for non-nullable fields (`'default' => 0` for integers, `'default' => 'value'` for strings)
+- **Foreign Keys**: Typically use `{table}_id` naming pattern (e.g., `system_id`, `user_id`, `manufacturer_id`)
+- **Text vs Varchar**: Use `varchar(n)` for bounded text, `text` for unlimited content
+- **Date Handling**: Use `int(11)` for Unix timestamps or `date`/`datetime` for MySQL date types
 
 ### API Endpoints
 - **Format suffix**: `.json` for API responses (e.g., `/system/photos.json`)
