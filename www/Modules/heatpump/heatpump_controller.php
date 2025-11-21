@@ -148,6 +148,12 @@ function heatpump_controller() {
         if ($route->subaction == "load" && $session['userid']>0) {
             $route->format = "json";
 
+            // Is this a new test or an update to an existing test?
+            $test_id = false;
+            if (isset($_GET['test_id'])) {
+                $test_id = (int)$_GET['test_id'];
+            }
+
             if (!isset($_GET['id'])) {
                 return array("error" => "Missing model_id parameter");
             }
@@ -227,7 +233,7 @@ function heatpump_controller() {
             $review_status = 0; // Default review status
             $review_comment = ''; // Default empty review comment
 
-            $result = $heatpump_tests->add_cap_test($test_type,$userid, $model_id, $test_object, $review_status, $review_comment);
+            $result = $heatpump_tests->add_cap_test($test_type,$userid, $model_id, $test_object, $review_status, $review_comment, $test_id);
             if (!$result['success']) {
                 return array("error" => $result['error']);
             }

@@ -50,7 +50,12 @@ class HeatpumpTests
         }
         return $tests;
     }
-    public function add_cap_test($test_type, $userid, $model_id, $data, $review_status = 0, $review_comment = '') {
+    public function add_cap_test($test_type, $userid, $model_id, $data, $review_status = 0, $review_comment = '', $test_id = false) {
+
+        // Test id false or int
+        if ($test_id !== false) {
+            $test_id = (int)$test_id;
+        }
 
         // Validate test type
         if ($test_type !== 'max' && $test_type !== 'min') {
@@ -91,18 +96,35 @@ class HeatpumpTests
         $review_status = (int)$review_status;
         $created = date('Y-m-d H:i:s'); // Current timestamp
 
-        $stmt = $this->mysqli->prepare("INSERT INTO heatpump_{$test_type}_cap_test (model_id, system_id, test_url, start, end, date, data_length, flowT, outsideT, elec, heat, cop, flowrate, userid, review_status, review_comment, created) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("iisiisiddddddiiss", $model_id, $system_id, $test_url, $start, $end, $date, $data_length, $flowT, $outsideT, $elec, $heat, $cop, $flowrate, $userid, $review_status, $review_comment, $created);
-        if (!$stmt->execute()) {
-            return array("success" => false, "error" => "Failed to add {$test_type} capacity test: " . $stmt->error);
-        }
+        if ($test_id !== false) {
+            // Update existing test
+            $stmt = $this->mysqli->prepare("UPDATE heatpump_{$test_type}_cap_test SET model_id = ?, system_id = ?, test_url = ?, start = ?, end = ?, date = ?, data_length = ?, flowT = ?, outsideT = ?, elec = ?, heat = ?, cop = ?, flowrate = ?, review_status = ?, review_comment = ? WHERE id = ?");
+            $stmt->bind_param("iisiisiddddddisi", $model_id, $system_id, $test_url, $start, $end, $date, $data_length, $flowT, $outsideT, $elec, $heat, $cop, $flowrate, $review_status, $review_comment, $test_id);
+            if (!$stmt->execute()) {
+                return array("success" => false, "error" => "Failed to update {$test_type} capacity test: " . $stmt->error);
+            }
 
-        // Only send notification if user submitting is not admin
-        if (!$this->user->is_admin($userid)) {
-            $this->send_test_notification($test_type, $this->mysqli->insert_id);
+            // Only send notification if user submitting is not admin
+            if (!$this->user->is_admin($userid)) {
+                $this->send_test_notification($test_type, $test_id);
+            }
+            return array("success" => true, "id" => $test_id);
+
+        } else {
+            // Insert new test
+            $stmt = $this->mysqli->prepare("INSERT INTO heatpump_{$test_type}_cap_test (model_id, system_id, test_url, start, end, date, data_length, flowT, outsideT, elec, heat, cop, flowrate, userid, review_status, review_comment, created) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("iisiisiddddddiiss", $model_id, $system_id, $test_url, $start, $end, $date, $data_length, $flowT, $outsideT, $elec, $heat, $cop, $flowrate, $userid, $review_status, $review_comment, $created);
+            if (!$stmt->execute()) {
+                return array("success" => false, "error" => "Failed to add {$test_type} capacity test: " . $stmt->error);
+            }
+
+            // Only send notification if user submitting is not admin
+            if (!$this->user->is_admin($userid)) {
+                $this->send_test_notification($test_type, $this->mysqli->insert_id);
+            }
+            
+            return array("success" => true, "id" => $this->mysqli->insert_id);
         }
-        
-        return array("success" => true, "id" => $this->mysqli->insert_id);
     }
 
     public function delete_cap_test($test_type, $userid, $id) {

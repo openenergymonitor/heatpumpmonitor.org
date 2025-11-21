@@ -231,7 +231,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
                 <!-- Review Modal (Admin Only) -->
                 <div class="modal fade" id="reviewModal" tabindex="-1" aria-labelledby="reviewModalLabel" aria-hidden="true" v-if="mode=='admin'">
-                    <div class="modal-dialog">
+                    <div class="modal-dialog modal-lg">
                         <div class="modal-content">
                             <div class="modal-header" v-if="review_test">
                                 <h5 class="modal-title" id="reviewModalLabel">Review <span class="text-primary">{{ review_test.type }}</span> Test</h5>
@@ -245,6 +245,35 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                     <p><strong>Duration:</strong> {{ review_test.data_length / 3600 | toFixed(1) }} hrs</p>
                                     <p><strong>Heat Output:</strong> {{ review_test.heat | toFixed(0) }}W</p>
                                     <p><strong>COP:</strong> {{ review_test.cop }}</p>
+                                    
+                                    <!-- URL Edit Section -->
+                                    <div class="mb-3">
+                                        <label for="review_url" class="form-label">Test URL</label>
+                                        <div class="input-group">
+                                            <input type="text" 
+                                                   class="form-control" 
+                                                   id="review_url" 
+                                                   v-model="review_form.url" 
+                                                   placeholder="MyHeatpump app URL for this test">
+                                            <button class="btn btn-outline-secondary" 
+                                                    type="button" 
+                                                    @click="reload_test_data"
+                                                    :disabled="reloading_test_data || !review_form.url.trim()"
+                                                    title="Reload test data from URL">
+                                                <i class="fas fa-sync-alt" :class="{'fa-spin': reloading_test_data}"></i>
+                                                {{ reloading_test_data ? 'Loading...' : 'Reload' }}
+                                            </button>
+                                        </div>
+                                        <small class="text-muted">Edit the URL and click reload to update test data</small>
+                                    </div>
+                                    
+                                    <!-- Reload status messages -->
+                                    <div v-if="reload_success" class="alert alert-success alert-sm" role="alert">
+                                        <i class="fas fa-check-circle"></i> Test data reloaded successfully
+                                    </div>
+                                    <div v-if="reload_error" class="alert alert-danger alert-sm" role="alert">
+                                        <i class="fas fa-exclamation-triangle"></i> {{ reload_error }}
+                                    </div>
                                     
                                     <div class="mb-3">
                                         <label for="review_status" class="form-label">Status</label>
@@ -431,8 +460,12 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             review_test: null,
             review_form: {
                 status: 0,
-                comment: ''
-            }
+                comment: '',
+                url: ''
+            },
+            reloading_test_data: false,
+            reload_success: false,
+            reload_error: null
         },
         created: function() {
             this.load_heatpump();
@@ -529,6 +562,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 this.review_test = test;
                 this.review_form.status = test.review_status;
                 this.review_form.comment = test.review_comment || '';
+                this.review_form.url = 'https://heatpumpmonitor.org/dashboard?id='+test.system_id+'&mode=power&start='+test.start+'&end='+test.end+'&cool=1';
+                this.reload_success = false;
+                this.reload_error = null;
                 $('#reviewModal').modal('show');
             },
             submit_review: function() {
@@ -546,13 +582,58 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         $('#reviewModal').modal('hide');
                         this.load_cap_test_list(type);
                         this.review_test = null;
-                        this.review_form = { status: 0, comment: '' };
+                        this.review_form = { status: 0, comment: '', url: '' };
                     } else {
                         alert('Error: ' + response.message);
                     }
                 })
                 .fail(() => {
                     alert('Failed to update test status');
+                });
+            },
+            
+            reload_test_data: function() {
+                if (!this.review_form.url.trim() || !this.review_test) return;
+                
+                this.reloading_test_data = true;
+                this.reload_success = false;
+                this.reload_error = null;
+                
+                // Clear previous messages after a delay
+                setTimeout(() => {
+                    this.reload_success = false;
+                    this.reload_error = null;
+                }, 5000);
+                
+                const type = this.review_test.type;
+                
+                // Use the existing load endpoint with the test ID
+                $.post(this.path+'heatpump/' + type + '_cap_test/load?id='+this.heatpump.id+'&test_id='+this.review_test.id, {
+                    url: this.review_form.url  
+                })
+                .done(response => {
+                    this.reloading_test_data = false;
+                    if (response.error) {
+                        this.reload_error = response.error;
+                    } else {
+                        this.reload_success = true;
+                        // Refresh the test list to show updated data
+                        this.load_cap_test_list(type);
+                        // Update the modal with fresh data
+                        setTimeout(() => {
+                            // Find the updated test in the list and refresh modal data
+                            const tests = type === 'max' ? this.max_cap_tests : this.min_cap_tests;
+                            const updatedTest = tests.find(t => t.id === this.review_test.id);
+                            if (updatedTest) {
+                                Object.assign(this.review_test, updatedTest);
+                                this.review_test.type = type;
+                            }
+                        }, 100);
+                    }
+                })
+                .fail((xhr, status, error) => {
+                    this.reloading_test_data = false;
+                    this.reload_error = 'Failed to reload test data: ' + error;
                 });
             },
             
