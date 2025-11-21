@@ -439,12 +439,15 @@ class Heatpump
 
         $max_count = 0;
         $max_sum = 0;
+        $awaiting_review = 0;
         
         $result = $this->mysqli->query("SELECT review_status, heat FROM heatpump_max_cap_test WHERE model_id = $model_id");
         while ($row = $result->fetch_object()) {
             if ($row->review_status == 1) {
                 $max_count++;
                 $max_sum += $row->heat;
+            } else {
+                $awaiting_review++;
             }
         }
         $max_output = $max_count > 0 ? $max_sum / $max_count : 0;
@@ -457,6 +460,8 @@ class Heatpump
             if ($row->review_status == 1) {
                 $min_count++;
                 $min_sum += $row->heat;
+            } else {
+                $awaiting_review++;
             }
         }
         $min_output = $min_count > 0 ? $min_sum / $min_count : 0;
@@ -467,7 +472,8 @@ class Heatpump
             "max_count" => $max_count,
             "max_output" => $max_output,
             "min_count" => $min_count,
-            "min_output" => $min_output
+            "min_output" => $min_output,
+            "awaiting_review" => $awaiting_review
         );
     }
     

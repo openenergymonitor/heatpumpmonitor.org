@@ -109,67 +109,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
         <div class="row">
             <div class="col">
-
-                <h4>Minimum modulation test results</h4>
-                <table id="custom" class="table table-striped table-sm mt-3" v-if="min_cap_tests.length">
-                    <tr>
-                        <th>Test</th>
-                        <th>System</th>
-                        <th>Date</th>
-                        <th>Duration</th>
-                        <th>Flow temp</th>
-                        <th>Outside temp</th>
-                        <th>Flowrate</th>
-                        <th>Elec input</th>
-                        <th>COP</th>         
-                        <th>Heat output</th>
-                        <th>Status</th>
-                        <th></th>
-                    </tr>
-                    <tr v-for="(test,index) in min_cap_tests" :class="{'table-warning': test.review_status != 1}">
-                        <td>{{ index+1 }}</td>
-                        <td :title="test.system_hp_model+' '+test.system_refrigerant+' '+test.system_hp_output+'kW'"><a :href="path+'system/view?id='+test.system_id">{{ test.system_id }}</a></td>
-                        <td>{{ test.date }}</td>
-                        <td>{{ test.data_length / 60 | toFixed(0) }} mins</td>
-                        <td>{{ test.flowT | toFixed(1) }}&deg;C</td>
-                        <td>{{ test.outsideT | toFixed(1) }}&deg;C</td>
-                        <td>{{ test.flowrate | toFixed(1) }} L/min</td>
-                        <td><b>{{ test.elec | toFixed(0) }}W</b></td>
-                        <td>{{ test.cop | toFixed(1) }}</td>
-                        <td>{{ test.heat | toFixed(0) }}W</td>
-                        <td>
-                            <span v-if="test.review_status==0" class="badge bg-secondary" :title="test.review_comment || ''">Pending review</span>
-                            <span v-if="test.review_status==1" class="badge bg-success" :title="test.review_comment || ''">Approved</span>
-                            <span v-if="test.review_status==2" class="badge bg-danger" :title="test.review_comment || ''">Rejected</span>
-                            <span v-if="test.review_status==3" class="badge bg-warning" :title="test.review_comment || ''">Needs more data</span>
-                        </td>
-                        <td style="width:120px">
-                            <a :href="'https://heatpumpmonitor.org/dashboard?id='+test.system_id+'&mode=power&start='+test.start+'&end='+test.end" target="_blank">
-                                <button class="btn btn-secondary btn-sm" title="Dashboard"><i class="fa fa-chart-bar" style="color: #ffffff;"></i></button>
-                            </a>
-                            <button class="btn btn-warning btn-sm" title="Review" @click="open_review_modal('min',test)" v-if="mode=='admin'"><i class="fa fa-eye" style="color: #ffffff;"></i></button>
-                            <button class="btn btn-danger btn-sm" title="Delete" @click="delete_cap_test('min', test.id)" v-if="mode=='admin' || userid==test.userid"><i class="fa fa-trash" style="color: #ffffff;"></i></button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td colspan="9" class="text-end"><b>Average heat output<span v-if="unapprovedMinTestsCount > 0"> (approved tests)</span></b></td>
-                        <td><b>{{ average_min_cap_test | toFixed(0) }}W</b></td>
-                        <td></td>
-                        <td></td>
-                    </tr>
-                </table>
-                <div v-if="min_cap_tests.length==0" class="alert alert-secondary mt-3">No tests recorded</div>
-
-                <div class="row" v-if="userid>0">
-                    <div class="col">
-                        <div class="input-group mb-3">
-                            <input type="text" class="form-control" placeholder="Paste MyHeatpump app URL of min capacity test period here" v-model="new_min_cap_test_url">
-                            <button class="btn btn-primary" type="button" @click="load_cap_test_data('min')">Load and save</button>
-                        </div>
-                    </div>
-                </div>
-
-                <br>
+            
                 <h4>Maximum capacity test results</h4>
                 <table id="custom" class="table table-striped table-sm mt-3" v-if="max_cap_tests.length">
                     <tr>
@@ -228,7 +168,66 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         </div>
                     </div>
                 </div>
-                
+
+		<br>
+                <h4>Minimum modulation test results</h4>
+                <table id="custom" class="table table-striped table-sm mt-3" v-if="min_cap_tests.length">
+                    <tr>
+                        <th>Test</th>
+                        <th>System</th>
+                        <th>Date</th>
+                        <th>Duration</th>
+                        <th>Flow temp</th>
+                        <th>Outside temp</th>
+                        <th>Flowrate</th>
+                        <th>Elec input</th>
+                        <th>COP</th>         
+                        <th>Heat output</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                    <tr v-for="(test,index) in min_cap_tests" :class="{'table-warning': test.review_status != 1}">
+                        <td>{{ index+1 }}</td>
+                        <td :title="test.system_hp_model+' '+test.system_refrigerant+' '+test.system_hp_output+'kW'"><a :href="path+'system/view?id='+test.system_id">{{ test.system_id }}</a></td>
+                        <td>{{ test.date }}</td>
+                        <td>{{ test.data_length / 60 | toFixed(0) }} mins</td>
+                        <td>{{ test.flowT | toFixed(1) }}&deg;C</td>
+                        <td>{{ test.outsideT | toFixed(1) }}&deg;C</td>
+                        <td>{{ test.flowrate | toFixed(1) }} L/min</td>
+                        <td><b>{{ test.elec | toFixed(0) }}W</b></td>
+                        <td>{{ test.cop | toFixed(1) }}</td>
+                        <td>{{ test.heat | toFixed(0) }}W</td>
+                        <td>
+                            <span v-if="test.review_status==0" class="badge bg-secondary" :title="test.review_comment || ''">Pending review</span>
+                            <span v-if="test.review_status==1" class="badge bg-success" :title="test.review_comment || ''">Approved</span>
+                            <span v-if="test.review_status==2" class="badge bg-danger" :title="test.review_comment || ''">Rejected</span>
+                            <span v-if="test.review_status==3" class="badge bg-warning" :title="test.review_comment || ''">Needs more data</span>
+                        </td>
+                        <td style="width:120px">
+                            <a :href="'https://heatpumpmonitor.org/dashboard?id='+test.system_id+'&mode=power&start='+test.start+'&end='+test.end" target="_blank">
+                                <button class="btn btn-secondary btn-sm" title="Dashboard"><i class="fa fa-chart-bar" style="color: #ffffff;"></i></button>
+                            </a>
+                            <button class="btn btn-warning btn-sm" title="Review" @click="open_review_modal('min',test)" v-if="mode=='admin'"><i class="fa fa-eye" style="color: #ffffff;"></i></button>
+                            <button class="btn btn-danger btn-sm" title="Delete" @click="delete_cap_test('min', test.id)" v-if="mode=='admin' || userid==test.userid"><i class="fa fa-trash" style="color: #ffffff;"></i></button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="9" class="text-end"><b>Average heat output<span v-if="unapprovedMinTestsCount > 0"> (approved tests)</span></b></td>
+                        <td><b>{{ average_min_cap_test | toFixed(0) }}W</b></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                </table>
+                <div v-if="min_cap_tests.length==0" class="alert alert-secondary mt-3">No tests recorded</div>
+
+                <div class="row" v-if="userid>0">
+                    <div class="col">
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control" placeholder="Paste MyHeatpump app URL of min capacity test period here" v-model="new_min_cap_test_url">
+                            <button class="btn btn-primary" type="button" @click="load_cap_test_data('min')">Load and save</button>
+                        </div>
+                    </div>
+                </div>                
 
                 <!-- Review Modal (Admin Only) -->
                 <div class="modal fade" id="reviewModal" tabindex="-1" aria-labelledby="reviewModalLabel" aria-hidden="true" v-if="mode=='admin'">

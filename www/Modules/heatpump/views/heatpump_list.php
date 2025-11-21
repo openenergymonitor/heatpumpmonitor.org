@@ -199,6 +199,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <th @click="sort('max_output', 'desc')" style="cursor:pointer">Max
                             <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='max_output'"></i>
                         </th>
+                        <th @click="sort('awaiting_review', 'desc')" style="cursor:pointer" v-if="mode=='admin'" title="Awaiting review.."><i class="fas fa-clock" style="color: #856404;"></i>
+                            <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='awaiting_review'"></i>
+                        </th>
                         <th style="width:120px"></th>
                     </tr>
                     <tr v-for="unit in filteredHeatpumps">
@@ -252,6 +255,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <td>
                             <span v-if="unit.tests.max_output">
                                 {{ unit.tests.max_output*0.001 | toFixed(1) }} kW ({{unit.tests.max_count}})
+                            </span>
+                        </td>
+                        <td v-if="mode=='admin'">
+                            <span v-if="unit.tests.awaiting_review" class="badge bg-warning text-dark">
+                                {{unit.tests.awaiting_review}}
                             </span>
                         </td>
                         <td>
