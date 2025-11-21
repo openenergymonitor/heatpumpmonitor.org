@@ -1,7 +1,5 @@
 # Base docker compose, added to by docker-compose.override or docker-compose.prod. See Readme.md
 
-version: '2'
-
 services:
   # PHP & apache container using offical Docker PHP iamge
   web:
@@ -14,6 +12,7 @@ services:
     volumes:
       # Mount emoncms files from local FS for dev
       - ./www:/var/www/heatpumpmonitororg
+    working_dir: /var/www/heatpumpmonitororg
     env_file:
       # Use default enviroment variables file for dev
       - 'default.docker-env'
@@ -32,6 +31,7 @@ services:
       - ./load_dev_env_data.php:/var/load_dev_env_data.php:ro
       - ./load_installer_logos.php:/var/load_installer_logos.php:ro
       - ./generate_thumbnails.php:/var/generate_thumbnails.php:ro
+    working_dir: /var/www/heatpumpmonitororg
     env_file:
       # Use default enviroment variables file for dev
       - 'default.docker-env'
@@ -57,7 +57,7 @@ services:
       # Load the heatpump models
       - "LOAD_HEATPUMP_MODELS=1"
     # working_dir: /var/www/heatpumpmonitororg  # Set the working directory
-    entrypoint: "php /var/load_dev_env_data.php"
+    entrypoint: ["bash", "-c", "php /var/load_dev_env_data.php && php /var/generate_thumbnails.php "]
     depends_on:
       db:
         condition: service_healthy

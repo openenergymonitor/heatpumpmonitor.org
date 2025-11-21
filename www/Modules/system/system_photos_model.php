@@ -74,19 +74,26 @@ class SystemPhotos
             return $upload_result;
         }
         
-        // Save to database
-        $stmt = $this->mysqli->prepare("INSERT INTO system_images (system_id, photo_type, image_path, original_filename, width, height, file_size, date_uploaded, thumbnails) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        // Save to database using shared method
         $date_uploaded = time();
-        $stmt->bind_param("isssiiiis", $system_id, $photo_type, $upload_result['filepath'], $photo['name'], $upload_result['width'], $upload_result['height'], $photo['size'], $date_uploaded, $upload_result['thumbnails_json']);
+        $db_result = $this->insert_photo_record(
+            $system_id, 
+            $photo_type, 
+            $upload_result['filepath'], 
+            $photo['name'], 
+            $upload_result['width'], 
+            $upload_result['height'], 
+            $photo['size'], 
+            $date_uploaded, 
+            $upload_result['thumbnails_json']
+        );
         
-        if ($stmt->execute()) {
-            $image_id = $this->mysqli->insert_id;
-            
+        if ($db_result['success']) {
             // Prepare response with thumbnail information
             $response = array(
                 "success" => true, 
                 "message" => "Photo uploaded successfully",
-                "image_id" => $image_id,
+                "image_id" => $db_result['image_id'],
                 "url" => $upload_result['filepath'],
                 "width" => $upload_result['width'],
                 "height" => $upload_result['height'],
@@ -102,7 +109,7 @@ class SystemPhotos
         } else {
             // Clean up file if database insert fails
             $this->image_upload_helper->deleteImage($upload_result['filepath'], $upload_result['thumbnails_json']);
-            return array("success" => false, "message" => "Failed to save photo information to database");
+            return array("success" => false, "message" => $db_result['message']);
         }
     }
     
@@ -163,6 +170,57 @@ class SystemPhotos
         $result = $stmt->get_result();
         $row = $result->fetch_assoc();
         return (int)$row['count'];
+    }
+
+    /**
+     * Insert photo record into database
+     * Shared method used by both upload_photo() and save_external_photo()
+     * 
+     * @param int $system_id System ID
+     * @param string $photo_type Photo type (outdoor_unit, plant_room, other)
+     * @param string $image_path Path to image file
+     * @param string $original_filename Original filename
+     * @param int|null $width Image width in pixels
+     * @param int|null $height Image height in pixels
+     * @param int $file_size File size in bytes
+     * @param int $date_uploaded Upload timestamp
+     * @param string|null $thumbnails_json JSON-encoded thumbnail data
+     * @return array Result with success status, message, and image_id if successful
+     */
+    private function insert_photo_record($system_id, $photo_type, $image_path, $original_filename, 
+                                        $width, $height, $file_size, $date_uploaded, $thumbnails_json) {
+        $stmt = $this->mysqli->prepare(
+            "INSERT INTO system_images (system_id, photo_type, image_path, original_filename, width, height, file_size, date_uploaded, thumbnails) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        );
+        
+        $stmt->bind_param("isssiiiis", 
+            $system_id, 
+            $photo_type, 
+            $image_path, 
+            $original_filename, 
+            $width, 
+            $height, 
+            $file_size, 
+            $date_uploaded, 
+            $thumbnails_json
+        );
+        
+        if ($stmt->execute()) {
+            $image_id = $this->mysqli->insert_id;
+            $stmt->close();
+            return array(
+                "success" => true,
+                "image_id" => $image_id
+            );
+        } else {
+            $error = $stmt->error;
+            $stmt->close();
+            return array(
+                "success" => false,
+                "message" => "Database error: " . $error
+            );
+        }
     }
 
     public function delete_photo($userid, $photo_id) {
@@ -322,6 +380,70 @@ class SystemPhotos
             return array("success" => true, "message" => "Photo deleted successfully");
         } else {
             return array("success" => false, "message" => "Failed to delete photo from database");
+        }
+    }
+
+    /**
+     * Save photo metadata from an external source (e.g., production import)
+     * This is used when photos are downloaded from another instance
+     * 
+     * @param int $system_id System ID
+     * @param string $image_path Path to the image file (relative to web root)
+     * @param array $photo_data Photo metadata from external source
+     * @return array Result with success status and message
+     */
+    public function save_external_photo($system_id, $image_path, $photo_data) {
+        $system_id = (int) $system_id;
+        
+        // Check if photo already exists in database
+        $check_stmt = $this->mysqli->prepare("SELECT id FROM system_images WHERE system_id = ? AND image_path = ?");
+        $check_stmt->bind_param("is", $system_id, $image_path);
+        $check_stmt->execute();
+        $check_result = $check_stmt->get_result();
+        
+        if ($check_result->num_rows > 0) {
+            // Photo already exists in database
+            $check_stmt->close();
+            return array("success" => true, "message" => "Photo already exists", "existing" => true);
+        }
+        $check_stmt->close();
+        
+        // Get file size from disk if not provided
+        $file_path = $image_path;
+        if (!file_exists($file_path)) {
+            return array("success" => false, "message" => "Photo file not found on disk");
+        }
+        
+        // Extract photo metadata
+        $photo_type = isset($photo_data['photo_type']) ? $photo_data['photo_type'] : 'other';
+        $original_filename = isset($photo_data['original_filename']) ? $photo_data['original_filename'] : basename($image_path);
+        $width = isset($photo_data['width']) ? (int)$photo_data['width'] : null;
+        $height = isset($photo_data['height']) ? (int)$photo_data['height'] : null;
+        $file_size = isset($photo_data['file_size']) ? (int)$photo_data['file_size'] : filesize($file_path);
+        $date_uploaded = isset($photo_data['date_uploaded']) ? (int)$photo_data['date_uploaded'] : time();
+        $thumbnails_json = isset($photo_data['thumbnails']) ? json_encode($photo_data['thumbnails']) : null;
+        
+        // Insert photo record into database using shared method
+        $result = $this->insert_photo_record(
+            $system_id,
+            $photo_type,
+            $image_path,
+            $original_filename,
+            $width,
+            $height,
+            $file_size,
+            $date_uploaded,
+            $thumbnails_json
+        );
+        
+        if ($result['success']) {
+            return array(
+                "success" => true, 
+                "message" => "Photo metadata saved",
+                "image_id" => $result['image_id']
+            );
+        } else {
+            return $result;
         }
     }
 
