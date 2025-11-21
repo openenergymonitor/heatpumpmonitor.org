@@ -1304,6 +1304,13 @@ global $settings, $session, $path;
             app.monthly = response.data;
             // draw_chart();
 
+            // Scroll data coverage table to show newest data (rightmost) by default
+            app.$nextTick(() => {
+                const qualityBound = document.querySelector('.quality-bound');
+                if (qualityBound) {
+                    qualityBound.scrollLeft = qualityBound.scrollWidth;
+                }
+            });
         })
         .catch(function(error) {
             console.log(error);

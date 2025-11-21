@@ -1,15 +1,46 @@
 .quality-bound {
     background-color: #ddd;
-    padding:5px;
+    padding: 5px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+    position: relative;
 }
 .quality {
     width: 100%;
+    min-width: max-content; /* Allow table to expand beyond container */
+    border-collapse: separate;
+    border-spacing: 0;
 }
 .quality td {
     padding: 5px;
     text-align: center;
     border: 1px solid #fff;
     font-size: 14px;
+    white-space: nowrap; /* Prevent cell content from wrapping */
+}
+.quality th {
+    padding: 5px;
+    white-space: nowrap;
+}
+/* Freeze first column (row labels) */
+.quality td:first-child {
+    position: sticky;
+    left: 0;
+    background-color: #f0f0f0;
+    z-index: 2;
+    font-weight: 600;
+}
+/* First row headers */
+.quality tr:first-child td {
+    position: sticky;
+    top: 0;
+    background-color: #e0e0e0;
+    z-index: 1;
+}
+/* Top-left corner cell (empty cell) gets highest z-index */
+.quality tr:first-child td:first-child {
+    z-index: 3;
+    background-color: #f0f0f0;
 }
 
 /* Photo Upload Styles */
