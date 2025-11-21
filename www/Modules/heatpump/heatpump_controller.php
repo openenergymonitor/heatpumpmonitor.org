@@ -149,8 +149,9 @@ function heatpump_controller() {
             $route->format = "json";
 
             // Is this a new test or an update to an existing test?
+            // Must be admin to update existing test
             $test_id = false;
-            if (isset($_GET['test_id'])) {
+            if (isset($_GET['test_id']) && $session['admin']) {
                 $test_id = (int)$_GET['test_id'];
             }
 
