@@ -103,6 +103,14 @@ $schema['system_meta'] = array(
         'group' => 'Overview'
     ),
 
+    'installation_Cost' => array(
+        'type' => 'varchar(16)', 
+        'editable' => true, 
+        'optional' => true, 
+        'name' => 'Installation Cost', 
+        'group' => 'Overview'
+    ),
+
     'heatgeek' => array(
         'type' => 'tinyint(1)', 
         'editable' => true, 
@@ -507,6 +515,16 @@ $schema['system_meta'] = array(
         'name' => 'Insulation level', 
         'group' => 'Property',
         'options' => array('Passivhaus', 'Fully insulated walls, floors and loft', 'Some insulation in walls and loft', 'Cavity wall, plus some loft insulation', 'Non-insulated cavity wall', 'Solid walls')
+    ),
+
+    'passivhaus_certification' => array(
+        'type' => 'varchar(10)', 
+        'editable' => true, 
+        'optional' => true, 
+        'name' => 'Passivhaus Certification', 
+        'group' => 'Property',
+        'options' => array('Yes', 'No', 'Pending'),
+        'show' => false
     ),
 
     /*
