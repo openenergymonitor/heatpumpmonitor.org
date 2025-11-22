@@ -52,7 +52,7 @@ $schema['system_meta'] = array(
         'type' => 'varchar(64)', 
         'editable' => true, 
         'optional' => false, 
-        'name' => 'Location', 
+        'name' => 'Location (Town, County)',
         'helper' => 'Roughly where the heat pump is installed, to nearest city or county',
         'group' => 'Overview'
     ),
@@ -463,7 +463,7 @@ $schema['system_meta'] = array(
     'freeze' => array(
         'type' => 'varchar(64)', 
         'editable' => true, 
-        'optional' => false, 
+        'optional' => true, 
         'name' => 'Freeze protection', 
         'group' => 'Misc',
         'options' => array('Glycol/water mixture', 'Anti-freeze valves', 'Central heat pump water circulation','Not applicable')
