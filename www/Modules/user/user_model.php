@@ -143,16 +143,30 @@ class User
 
     public function login_using_dev_env($username, $password)
     {
-        if ($username === 'admin' && $password === 'admin') {
-            session_regenerate_id();
-            $_SESSION['userid'] = 1;
-            $_SESSION['username'] = 'admin';
-            $_SESSION['email'] = 'admin@localhost';
-            $_SESSION['admin'] = 1;
-            return array('success' => true, 'message' => _("Login successful"));
-        } else {
-            return array('success' => false, 'message' => _("Invalid username or password"));
+        // Check if user exists in database
+        $stmt = $this->mysqli->prepare("SELECT id, username, email, admin FROM users WHERE username = ?");
+        $stmt->bind_param("s", $username);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($row = $result->fetch_object()) {
+            // In dev environment, accept 'password' or 'admin' as valid passwords
+            if ($password === 'password' || $password === 'admin') {
+                session_regenerate_id();
+                $_SESSION['userid'] = $row->id;
+                $_SESSION['username'] = $row->username;
+                $_SESSION['email'] = $row->email;
+                $_SESSION['admin'] = $row->admin;
+                $this->update_last_login($row->id);
+                
+                // Sync accounts for users with sub-accounts
+                $this->sync_accounts($row->id);
+                
+                return array('success' => true, 'message' => _("Login successful"));
+            }
         }
+        
+        return array('success' => false, 'message' => _("Invalid username or password"));
     }
 
     public function update_last_login($userid) {
