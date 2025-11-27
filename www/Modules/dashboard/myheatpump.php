@@ -437,6 +437,10 @@ $v=2;
     </div>
 
   </div>
+
+  <div style="text-align:center; padding:20px 0">
+    <a href="<?php echo $path; ?>system/view?id=<?php echo $id; ?>" class="btn btn-primary">Back to System</a>
+  </div>
 </div>
 
 <section id="app-setup" class="hide pb-3" style="display:none">
