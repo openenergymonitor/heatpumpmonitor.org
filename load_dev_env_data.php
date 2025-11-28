@@ -511,14 +511,24 @@ if ($load_system_meta) {
             'userid' => 9001,
             'location' => 'Test Location 1',
             'hp_model' => 'Test Heat Pump A',
-            'hp_output' => 5
+            'hp_output' => 5,
+            'published' => 1
         ],
         [
             'id' => 99002,
             'userid' => 9002,
             'location' => 'Test Location 2',
             'hp_model' => 'Test Heat Pump B',
-            'hp_output' => 8
+            'hp_output' => 8,
+            'published' => 1
+        ],
+        [
+            'id' => 99003,
+            'userid' => 9002,
+            'location' => 'Test Location 2',
+            'hp_model' => 'Test Heat Pump C',
+            'hp_output' => 5,
+            'published' => 0
         ]
     ];
     
@@ -528,7 +538,7 @@ if ($load_system_meta) {
         $result = $mysqli->query("SELECT * FROM system_meta WHERE id='{$test_system['id']}'");
         if ($result->num_rows == 0) {
             // Create system
-            $mysqli->query("INSERT INTO system_meta (id, userid, location, hp_model, hp_output, published) VALUES ('{$test_system['id']}', '{$test_system['userid']}', '{$test_system['location']}', '{$test_system['hp_model']}', '{$test_system['hp_output']}', 1)");
+            $mysqli->query("INSERT INTO system_meta (id, userid, location, hp_model, hp_output, published) VALUES ('{$test_system['id']}', '{$test_system['userid']}', '{$test_system['location']}', '{$test_system['hp_model']}', '{$test_system['hp_output']}', {$test_system['published']})");
             $created_test_systems++;
             print "  Created test system {$test_system['id']} for user {$test_system['userid']}\n";
         }
