@@ -911,39 +911,24 @@ global $settings, $session, $path;
                     case 'Other':
                     case '':
                         this.schema_groups['Hot water']['cylinder_volume'].show = false;
-                        this.schema_groups['Hot water']['dhw_coil_hex_area'].show = false;
-                        this.schema_groups['Hot water']['dhw_target_temperature'].show = false;
-                        this.schema_groups['Hot water']['dhw_control_type'].show = false;
                         this.schema_groups['Hot water']['legionella_frequency'].show = false;
                         this.system.legionella_frequency = '';
                         break;
                     case "Cylinder with coil":
                         this.schema_groups['Hot water']['cylinder_volume'].show = true;
-                        this.schema_groups['Hot water']['dhw_coil_hex_area'].show = true;
-                        this.schema_groups['Hot water']['dhw_target_temperature'].show = true;
-                        this.schema_groups['Hot water']['dhw_control_type'].show = true;
                         this.schema_groups['Hot water']['legionella_frequency'].show = true;
                         break;
                     case "Cylinder with plate heat exchanger":
                         this.schema_groups['Hot water']['cylinder_volume'].show = true;
-                        this.schema_groups['Hot water']['dhw_coil_hex_area'].show = true;
-                        this.schema_groups['Hot water']['dhw_target_temperature'].show = true;
-                        this.schema_groups['Hot water']['dhw_control_type'].show = true;
                         this.schema_groups['Hot water']['legionella_frequency'].show = true;
                         break;
                     case "Thermal store (heat exchanger on output)":
                         this.schema_groups['Hot water']['cylinder_volume'].show = true;
-                        this.schema_groups['Hot water']['dhw_coil_hex_area'].show = true;
-                        this.schema_groups['Hot water']['dhw_target_temperature'].show = true;
-                        this.schema_groups['Hot water']['dhw_control_type'].show = true;
                         this.schema_groups['Hot water']['legionella_frequency'].show = false;
                         this.system.legionella_frequency = '';
                         break;
                     case "Phase change store": 
                         this.schema_groups['Hot water']['cylinder_volume'].show = false;
-                        this.schema_groups['Hot water']['dhw_coil_hex_area'].show = false;
-                        this.schema_groups['Hot water']['dhw_target_temperature'].show = true;
-                        this.schema_groups['Hot water']['dhw_control_type'].show = true;
                         this.schema_groups['Hot water']['legionella_frequency'].show = false;
                         this.system.legionella_frequency = '';
                         break;
