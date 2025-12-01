@@ -906,8 +906,11 @@ global $settings, $session, $path;
                 // Only show brine pumps for ground source and water source
                 this.schema_groups['Metering']['metering_inc_brine_pumps'].show = (app.system.hp_type == 'Ground Source' || app.system.hp_type == 'Water Source') ? true : false;
 
+		this.schema_groups['Hot water']['dhw_make_model'].show = true;
+
                 switch (app.system.dhw_method) {
                     case 'None':
+                        this.schema_groups['Hot water']['dhw_make_model'].show = false;
                     case 'Other':
                     case '':
                         this.schema_groups['Hot water']['cylinder_volume'].show = false;
