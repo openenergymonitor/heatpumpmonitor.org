@@ -282,33 +282,6 @@ $schema['system_meta'] = array(
         'unit' => '°C'
     ),
 
-    'wc_curve' => array(
-        'type' => 'float', 
-        'editable' => true, 
-        'optional' => true, 
-        'name' => 'Weather compensation curve', 
-        'group' => 'Space heating',
-        'helper' => '(if known e.g 0.6)'
-    ),
-
-
-    'space_heat_control_type' => array(
-        'type' => 'varchar(64)', 
-        'editable' => true, 
-        'optional' => true, 
-        'name' => 'Space heat control type', 
-        'group' => 'Space heating',
-        'options'=>array(
-            'Pure weather compensation, no room influence', 
-            'Weather compensation with a little room influence', 
-            'Weather compensation with significant room influence',
-            'Weather compensation with simple set point control',
-            'Room influence only (e.g Auto adapt)', 
-            'Manual flow temperature control',
-            'Custom controller'
-        )
-    ),
-
     'zone_number' => array(
         'type' => 'int(11)', 
         'editable' => true, 
@@ -374,7 +347,7 @@ $schema['system_meta'] = array(
         'type' => 'varchar(64)', 
         'editable' => true, 
         'optional' => false, 
-        'name' => 'Hot water method', 
+        'name' => 'Hot water storage', 
         'group' => 'Hot water', 
         'options'=>array(
             'None',
@@ -386,6 +359,14 @@ $schema['system_meta'] = array(
         )
     ),
 
+    'dhw_make_model' => array(
+        'type' => 'varchar(64)', 
+        'editable' => true, 
+        'optional' => true, 
+        'name' => 'Cylinder make & model', 
+        'group' => 'Hot water', 
+    ),
+    
     'cylinder_volume' => array(
         'type' => 'float', 
         'editable' => true, 
@@ -396,39 +377,6 @@ $schema['system_meta'] = array(
         'unit' => 'litres'
     ),
 
-    'dhw_coil_hex_area' => array(
-        'type' => 'float', 
-        'editable' => true, 
-        'optional' => true, 
-        'name' => 'Coil or heat exchanger area', 
-        'group' => 'Hot water', 
-        'unit' => 'm²'
-    ),
-
-    'dhw_target_temperature' => array(
-        'type' => 'float', 
-        'editable' => true, 
-        'optional' => true, 
-        'name' => 'DHW target temperature', 
-        'group' => 'Hot water',
-        'unit' => '°C'
-    ),
-
-    'dhw_control_type' => array(
-        'type' => 'varchar(64)', 
-        'editable' => true, 
-        'optional' => true, 
-        'name' => 'DHW control type', 
-        'group' => 'Hot water',
-        'options' => array(
-            'Daily scheduled heat up of tank', 
-            'Twice daily scheduled heat up of tank', 
-            'Automatic top up of tank if temperature drops by 3-6C', 
-            'Automatic top up of tank if temperature drops by 6-10C', 
-            'Manual control of tank temperature',
-            'Not applicable'
-        )
-    ),
 
     'legionella_frequency' => array(
         'type' => 'varchar(32)', 
@@ -437,15 +385,6 @@ $schema['system_meta'] = array(
         'name' => 'Legionella frequency',
         'group' => 'Hot water',
         'options' => array('Daily', 'Weekly', 'Fornightly', 'Monthly', 'Other', 'Flexible', 'Disabled', 'No cylinder')
-    ),
-
-    'legionella_target_temperature' => array(
-        'type' => 'float', 
-        'editable' => true, 
-        'optional' => true, 
-        'name' => 'Legionella target temperature', 
-        'group' => 'Hot water',
-        'unit' => '°C'
     ),
 
     'legionella_immersion' => array(
@@ -466,7 +405,7 @@ $schema['system_meta'] = array(
         'optional' => true, 
         'name' => 'Freeze protection', 
         'group' => 'Misc',
-        'options' => array('Glycol/water mixture', 'Anti-freeze valves', 'Central heat pump water circulation','Not applicable')
+        'options' => array('Glycol/water mixture', 'Anti-freeze valves', 'Central heat pump water circulation','Not applicable','None')
     ),
 
     /* --------------------------------- Property --------------------------------- */
@@ -475,10 +414,10 @@ $schema['system_meta'] = array(
         'type' => 'float', 
         'editable' => true, 
         'optional' => false, 
-        'name' => 'Heat loss at design temperature', 
+        'name' => 'Heat loss at design outside temperature (DOT)', 
         'group' => 'Property',
         'helper' => 'E.g as given in detailed installer assessment', 
-        'unit' => 'kW @ -3°C'
+        'unit' => 'kW @ -3°C DOT'
     ),
 
     'property' => array(
@@ -548,26 +487,6 @@ $schema['system_meta'] = array(
         'unit' => 'kWh/year'
     ),*/
 
-    'heat_demand' => array(
-        'type' => 'int(11)', 
-        'editable' => true, 
-        'optional' => true, 
-        'name' => 'Assessed space heat demand',
-        'group' => 'Property', 
-        'helper' => 'E.g as given in detailed installer assessment',
-        'unit' => 'kWh/year'
-    ),
-
-    'water_heat_demand' => array(
-        'type' => 'int(11)', 
-        'editable' => true, 
-        'optional' => true, 
-        'name' => 'Assessed water heat demand',
-        'group' => 'Property', 
-        'helper' => 'E.g as given in detailed installer assessment',
-        'unit' => 'kWh/year'
-    ),
-
     /*
     'kwh_m2' => array(
         'type' => 'float', 
@@ -617,43 +536,6 @@ $schema['system_meta'] = array(
         'group' => 'Tariff & Generation', 
         'unit' => 'p/kWh'
     ),*/
-
-    'solar_pv_generation' => array(
-        'type' => 'int(11)', 
-        'editable' => true, 
-        'optional' => true, 
-        'name' => 'Annual solar PV generation',
-        'helper' => 'If applicable', 
-        'group' => 'Generation', 
-        'unit' => 'kWh'
-    ),
-
-    'solar_pv_self_consumption' => array(
-        'type' => 'int(11)', 
-        'editable' => true, 
-        'optional' => true, 
-        'name' => 'Solar PV self consumption', 
-        'group' => 'Generation', 
-        'unit' => '%'
-    ),
-
-    'solar_pv_divert' => array(
-        'type' => 'tinyint(1)', 
-        'editable' => true, 
-        'optional' => true, 
-        'name' => 'Solar PV divert to hot water immersion', 
-        'group' => 'Generation'
-    ),
-
-    'battery_storage_capacity' => array(
-        'type' => 'int(11)', 
-        'editable' => true, 
-        'optional' => true, 
-        'name' => 'Battery storage capacity', 
-        'helper' => 'If applicable',
-        'group' => 'Generation', 
-        'unit' => 'kWh'
-    ),
 
     /* --------------------------------- Monitoring --------------------------------- */
 
@@ -762,16 +644,7 @@ $schema['system_meta'] = array(
         'name' => 'Includes indoor controller or other controls', 
         'group' => 'Metering',
         'basic' => true
-    ),
-    
-    'indoor_temperature' => array(
-        'type' => 'tinyint(1)',
-        'editable' => true, 
-        'optional' => true, 
-        'name' => 'Includes indoor temperature sensing', 
-        'group' => 'Metering',
-        'basic' => true
-    ),
+    ),    
 
     'notes' => array(
         'type' => 'text', 

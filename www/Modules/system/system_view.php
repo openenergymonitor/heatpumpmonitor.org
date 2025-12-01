@@ -949,7 +949,6 @@ global $settings, $session, $path;
                         break;
                 }
 
-                this.schema_groups['Hot water']['legionella_target_temperature'].show = (app.system.legionella_frequency != 'Disabled' && app.system.legionella_frequency !='') ? true : false;
                 this.schema_groups['Hot water']['legionella_immersion'].show = (app.system.legionella_frequency != 'Disabled' && app.system.legionella_frequency !='') ? true : false;
                 this.schema_groups['Metering']['metering_inc_immersion'].show = (app.system.legionella_immersion) ? true : false;
 
