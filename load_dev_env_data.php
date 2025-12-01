@@ -33,6 +33,9 @@ require "Modules/heatpump/heatpump_schema.php";
 require "Modules/installer/installer_schema.php";
 require "Modules/manufacturer/manufacturer_schema.php";
 
+require ("Modules/user/user_model.php");
+$user_class = new User($mysqli, false); // false for rememberme in CLI context
+
 require ("Modules/system/system_model.php");
 $system_class = new System($mysqli);
 
@@ -210,6 +213,61 @@ if ($load_users) {
         $index++;
     }
     print "- Created ".$created_users." users\n";
+}
+
+// -------------------------------------------------------------------------------------
+// 2b. Create admin user with sub-accounts (to replicate issue #112)
+// -------------------------------------------------------------------------------------
+if ($load_users) {
+    print "- Creating admin user with sub-accounts for testing issue #112\n";
+    
+    // Create an installer admin user (similar to Libtek - user 45903)
+    $installer_admin_id = 9000;
+    $installer_username = "installer_admin";
+    $installer_email = "installer@example.com";
+    $created = time();
+    $admin = 0; // Not a system admin, just an installer admin
+    
+    // Check if installer admin already exists
+    $result = $mysqli->query("SELECT * FROM users WHERE id='$installer_admin_id'");
+    if ($result->num_rows == 0) {
+        $stmt = $mysqli->prepare("INSERT INTO users (id, username, email, created, admin) VALUES (?,?,?,?,?)");
+        $stmt->bind_param("isssi", $installer_admin_id, $installer_username, $installer_email, $created, $admin);
+        $stmt->execute();
+        $stmt->close();
+        print "  Created installer admin user: $installer_username (id: $installer_admin_id)\n";
+    }
+    
+    // Create two sub-accounts for this installer admin
+    $sub_accounts = [
+        ['id' => 9001, 'username' => 'subaccount1', 'email' => 'sub1@example.com'],
+        ['id' => 9002, 'username' => 'subaccount2', 'email' => 'sub2@example.com']
+    ];
+    
+    $created_sub_accounts = 0;
+    foreach ($sub_accounts as $sub) {
+        // Check if sub-account already exists
+        $result = $mysqli->query("SELECT * FROM users WHERE id='{$sub['id']}'");
+        if ($result->num_rows == 0) {
+            $stmt = $mysqli->prepare("INSERT INTO users (id, username, email, created, admin) VALUES (?,?,?,?,?)");
+            $admin_val = 0;
+            $stmt->bind_param("isssi", $sub['id'], $sub['username'], $sub['email'], $created, $admin_val);
+            $stmt->execute();
+            $stmt->close();
+            $created_sub_accounts++;
+            print "  Created sub-account: {$sub['username']} (id: {$sub['id']})\n";
+        }
+        
+        // Link sub-account to installer admin in accounts table
+        $result = $mysqli->query("SELECT * FROM accounts WHERE adminuser='$installer_admin_id' AND linkeduser='{$sub['id']}'");
+        if ($result->num_rows == 0) {
+            $stmt = $mysqli->prepare("INSERT INTO accounts (adminuser, linkeduser) VALUES (?,?)");
+            $stmt->bind_param("ii", $installer_admin_id, $sub['id']);
+            $stmt->execute();
+            $stmt->close();
+            print "  Linked sub-account {$sub['username']} to installer admin\n";
+        }
+    }
 }
 
 // -------------------------------------------------------------------------------------
@@ -438,6 +496,58 @@ if ($load_system_meta) {
         print " ($failed_photos failed)";
     }
     print "\n";
+}
+
+// -------------------------------------------------------------------------------------
+// 3b. Create test systems for sub-accounts (to replicate issue #112)
+// -------------------------------------------------------------------------------------
+if ($load_system_meta) {
+    print "- Creating test systems for sub-accounts (issue #112 testing)\n";
+    
+    // Create systems for sub-account 1 and sub-account 2
+    $test_systems = [
+        [
+            'id' => 99001,
+            'userid' => 9001,
+            'location' => 'Test Location 1',
+            'hp_model' => 'Test Heat Pump A',
+            'hp_output' => 5,
+            'published' => 1
+        ],
+        [
+            'id' => 99002,
+            'userid' => 9002,
+            'location' => 'Test Location 2',
+            'hp_model' => 'Test Heat Pump B',
+            'hp_output' => 8,
+            'published' => 1
+        ],
+        [
+            'id' => 99003,
+            'userid' => 9002,
+            'location' => 'Test Location 2',
+            'hp_model' => 'Test Heat Pump C',
+            'hp_output' => 5,
+            'published' => 0
+        ]
+    ];
+    
+    $created_test_systems = 0;
+    foreach ($test_systems as $test_system) {
+        // Check if system already exists
+        $result = $mysqli->query("SELECT * FROM system_meta WHERE id='{$test_system['id']}'");
+        if ($result->num_rows == 0) {
+            // Create system
+            $mysqli->query("INSERT INTO system_meta (id, userid, location, hp_model, hp_output, published) VALUES ('{$test_system['id']}', '{$test_system['userid']}', '{$test_system['location']}', '{$test_system['hp_model']}', '{$test_system['hp_output']}', {$test_system['published']})");
+            $created_test_systems++;
+            print "  Created test system {$test_system['id']} for user {$test_system['userid']}\n";
+        }
+    }
+    
+    if ($created_test_systems > 0) {
+        print "  Created $created_test_systems test systems for sub-accounts\n";
+        print "  Note: Login as 'installer_admin' to test photo upload to sub-account systems\n";
+    }
 }
 
 // -------------------------------------------------------------------------------------
