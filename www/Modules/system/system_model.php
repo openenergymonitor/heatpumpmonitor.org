@@ -67,11 +67,13 @@ class System
      * @return object The processed row
      */
     private function process_system_row($row, $removePrivateFields = false) {
+        global $path;
+
         $row = $this->typecast($row);
         
         // Add heatpump_url if both manufacturer and model are matched
         if ($row->heatpump_model_id) {
-            $row->heatpump_url = 'heatpump/view?id=' . $row->heatpump_model_id;
+            $row->heatpump_url = $path . 'heatpump/view?id=' . $row->heatpump_model_id;
         }
         
         // Remove private fields for public lists
