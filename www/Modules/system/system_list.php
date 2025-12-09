@@ -1462,7 +1462,12 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 var val = system[key];
 
                 if (key=='hp_make_model') {
-                    return system['hp_manufacturer'] + ' ' + system['hp_model'];
+                    var makeModel = system['hp_manufacturer'] + ' ' + system['hp_model'];
+                    // If we have a heatpump_url, make it a link
+                    if (system['heatpump_url']) {
+                        return '<a href="' + system['heatpump_url'] + '">' + makeModel + '</a>';
+                    }
+                    return makeModel;
                 }
                 
                 if (key=='last_updated' || key=='data_start') {

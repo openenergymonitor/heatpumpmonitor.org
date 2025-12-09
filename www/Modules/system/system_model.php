@@ -25,17 +25,27 @@ class System
     // Returns a list of public systems
     public function list_public($userid=false) {
         $userid = (int) $userid;
-        $result = $this->mysqli->query("SELECT sm.*, COALESCE(pc.photo_count, 0) as photo_count 
+        $result = $this->mysqli->query("SELECT sm.*, COALESCE(pc.photo_count, 0) as photo_count,
+                                        m.id as manufacturer_id, hm.id as heatpump_model_id
                                         FROM system_meta sm 
                                         LEFT JOIN (
                                             SELECT system_id, COUNT(*) as photo_count 
                                             FROM system_images 
                                             GROUP BY system_id
                                         ) pc ON sm.id = pc.system_id 
+                                        LEFT JOIN manufacturers m ON sm.hp_manufacturer = m.name
+                                        LEFT JOIN heatpump_model hm ON m.id = hm.manufacturer_id 
+                                            AND sm.hp_model = hm.name
+                                            AND CAST(hm.capacity AS DECIMAL(10,2)) = sm.hp_output
+                                            AND (hm.refrigerant = sm.refrigerant OR sm.refrigerant IS NULL OR hm.refrigerant IS NULL)
                                         WHERE sm.share=1 AND sm.published=1"); // OR userid='$userid' (removed for now)
         $list = array();
         while ($row = $result->fetch_object()) {
             $row = $this->typecast($row);
+            // Add heatpump_url if both manufacturer and model are matched
+            if ($row->heatpump_model_id) {
+                $row->heatpump_url = 'heatpump/view?id=' . $row->heatpump_model_id;
+            }
             unset($row->url);
             unset($row->userid);
             unset($row->app_id);
@@ -54,7 +64,8 @@ class System
 
     // All systems
     public function list_admin() {
-        $result = $this->mysqli->query("SELECT sm.*, u.username, COALESCE(pc.photo_count, 0) as photo_count 
+        $result = $this->mysqli->query("SELECT sm.*, u.username, COALESCE(pc.photo_count, 0) as photo_count,
+                                        m.id as manufacturer_id, hm.id as heatpump_model_id
                                         FROM system_meta sm 
                                         JOIN users u ON sm.userid = u.id 
                                         LEFT JOIN (
@@ -62,10 +73,20 @@ class System
                                             FROM system_images 
                                             GROUP BY system_id
                                         ) pc ON sm.id = pc.system_id 
+                                        LEFT JOIN manufacturers m ON sm.hp_manufacturer = m.name
+                                        LEFT JOIN heatpump_model hm ON m.id = hm.manufacturer_id 
+                                            AND sm.hp_model = hm.name
+                                            AND CAST(hm.capacity AS DECIMAL(10,2)) = sm.hp_output
+                                            AND (hm.refrigerant = sm.refrigerant OR sm.refrigerant IS NULL OR hm.refrigerant IS NULL)
                                         ORDER BY sm.id");
         $list = array();
         while ($row = $result->fetch_object()) {
-            $list[] = $this->typecast($row);
+            $row = $this->typecast($row);
+            // Add heatpump_url if both manufacturer and model are matched
+            if ($row->heatpump_model_id) {
+                $row->heatpump_url = 'heatpump/view?id=' . $row->heatpump_model_id;
+            }
+            $list[] = $row;
         }
         return $list;
     }
@@ -74,7 +95,8 @@ class System
     public function list_user($userid=false) {
         $userid = (int) $userid;
 
-        $result = $this->mysqli->query("SELECT sm.*, u.username, COALESCE(pc.photo_count, 0) as photo_count 
+        $result = $this->mysqli->query("SELECT sm.*, u.username, COALESCE(pc.photo_count, 0) as photo_count,
+                                        m.id as manufacturer_id, hm.id as heatpump_model_id
                                         FROM system_meta sm 
                                         JOIN users u ON sm.userid = u.id 
                                         LEFT JOIN (
@@ -82,15 +104,26 @@ class System
                                             FROM system_images 
                                             GROUP BY system_id
                                         ) pc ON sm.id = pc.system_id 
+                                        LEFT JOIN manufacturers m ON sm.hp_manufacturer = m.name
+                                        LEFT JOIN heatpump_model hm ON m.id = hm.manufacturer_id 
+                                            AND sm.hp_model = hm.name
+                                            AND CAST(hm.capacity AS DECIMAL(10,2)) = sm.hp_output
+                                            AND (hm.refrigerant = sm.refrigerant OR sm.refrigerant IS NULL OR hm.refrigerant IS NULL)
                                         WHERE sm.userid='$userid' 
                                         ORDER BY sm.id");
         $list = array();
         while ($row = $result->fetch_object()) {
-            $list[] = $this->typecast($row);
+            $row = $this->typecast($row);
+            // Add heatpump_url if both manufacturer and model are matched
+            if ($row->heatpump_model_id) {
+                $row->heatpump_url = 'heatpump/view?id=' . $row->heatpump_model_id;
+            }
+            $list[] = $row;
         }
 
         // Add any systems from sub-accounts, join system_meta, users and accounts tables
-        $result = $this->mysqli->query("SELECT sm.*, u.username, COALESCE(pc.photo_count, 0) as photo_count 
+        $result = $this->mysqli->query("SELECT sm.*, u.username, COALESCE(pc.photo_count, 0) as photo_count,
+                                        m.id as manufacturer_id, hm.id as heatpump_model_id
                                         FROM system_meta sm 
                                         JOIN users u ON sm.userid = u.id 
                                         JOIN accounts a ON u.id = a.linkeduser 
@@ -99,10 +132,20 @@ class System
                                             FROM system_images 
                                             GROUP BY system_id
                                         ) pc ON sm.id = pc.system_id 
+                                        LEFT JOIN manufacturers m ON sm.hp_manufacturer = m.name
+                                        LEFT JOIN heatpump_model hm ON m.id = hm.manufacturer_id 
+                                            AND sm.hp_model = hm.name
+                                            AND CAST(hm.capacity AS DECIMAL(10,2)) = sm.hp_output
+                                            AND (hm.refrigerant = sm.refrigerant OR sm.refrigerant IS NULL OR hm.refrigerant IS NULL)
                                         WHERE a.adminuser='$userid' 
                                         ORDER BY sm.id");
         while ($row = $result->fetch_object()) {
-            $list[] = $this->typecast($row);
+            $row = $this->typecast($row);
+            // Add heatpump_url if both manufacturer and model are matched
+            if ($row->heatpump_model_id) {
+                $row->heatpump_url = 'heatpump/view?id=' . $row->heatpump_model_id;
+            }
+            $list[] = $row;
         }
 
         // Add systems from system_access table
