@@ -20,10 +20,7 @@ $v=2;
 <!--<script type="text/javascript" src="<?php echo $path; ?>Modules/dashboard/clipboard.js?v=<?php echo $v; ?>"></script>-->
 <link href="<?php echo $path; ?>Modules/dashboard/style.css?v=50>" rel="stylesheet">
 
-
-<?php echo file_get_contents($path."Modules/dashboard/svg_icons.svg"); ?>
-
-
+<?php echo file_get_contents(__DIR__."/svg_icons.svg"); ?>
 
 <div style="max-width:1150px; line-height:20px; margin: 0px auto">
 
