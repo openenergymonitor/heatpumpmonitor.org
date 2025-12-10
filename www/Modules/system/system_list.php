@@ -790,8 +790,77 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         d.setMonth(d.getMonth() - 1);
     }
 
-    // Boundary is now calculated on the server side and included in the API response
-    // The boundary, boundary_code, and boundary_helper fields are automatically added to each system
+    // Generate boundary HTML from API-provided boundary_code and boundary_metering
+    for (var i = 0; i < systems.length; i++) {
+        var boundary_code = systems[i].boundary_code;
+        var metering = systems[i].boundary_metering || {};
+        var type = systems[i].hp_type;
+        
+        // Build helper text from structured metering data
+        var helper_lines = [];
+        
+        // Compressor/fan status
+        if (type == "Ground Source" || type == "Water Source") {
+            helper_lines.push("Compressor metered");
+        } else if (type != "Air-to-Air") {
+            helper_lines.push("Compressor and fan metered");
+        }
+        
+        // Brine pump
+        if ((type == "Ground Source" || type == "Water Source")) {
+            if (metering.brine_pump_metered === true) {
+                helper_lines.push("Brine pump used and metered");
+            } else if (metering.brine_pump_metered === false) {
+                helper_lines.push("Brine pump used but not metered");
+            }
+        }
+        
+        // Primary pump
+        if (metering.primary_pump_metered === true) {
+            helper_lines.push("Primary pump metered");
+        } else if (metering.primary_pump_metered === false) {
+            helper_lines.push("Primary pump not metered");
+        }
+        
+        // Hydraulic separation / secondary pumps
+        if (metering.hydraulic_separation) {
+            if (metering.secondary_pumps_metered === true) {
+                helper_lines.push("Hydraulic separation used and secondary pumps/fans metered");
+            } else if (metering.secondary_pumps_metered === false) {
+                helper_lines.push("Hydraulic separation used but secondary pumps/fans not metered");
+            }
+        }
+        
+        // Immersion heater
+        if (metering.immersion_heater_used === true) {
+            if (metering.immersion_heater_metered === true) {
+                helper_lines.push("Immersion heater used and metered");
+            } else if (metering.immersion_heater_metered === false) {
+                helper_lines.push("Immersion heater used but not metered");
+            }
+        } else if (metering.immersion_heater_used === false) {
+            helper_lines.push("Immersion heater not installed or used");
+        }
+        
+        // Backup heater
+        if (metering.backup_heater_used === true) {
+            if (metering.backup_heater_metered === true) {
+                helper_lines.push("Backup heater used and metered");
+            } else if (metering.backup_heater_metered === false) {
+                helper_lines.push("Backup heater used but not metered");
+            }
+        } else if (metering.backup_heater_used === false) {
+            helper_lines.push("Backup heater not installed or used");
+        }
+        
+        var helper = helper_lines.join("\n");
+        var title = 'System boundary H' + boundary_code;
+        if (helper) {
+            title += "\n" + helper;
+        }
+        
+        systems[i].boundary = "<span class='H" + boundary_code + "' title='" + title + "'>H" + boundary_code + "</span>";
+    }
 
     // Calculate over-sizing factor
     for (var z in systems) {
