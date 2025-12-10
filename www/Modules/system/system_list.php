@@ -806,12 +806,12 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             helper = "- Compressor and fan metered\n";
         }
         
-        // Brine pump
-        if ((type == "Ground Source" || type == "Water Source")) {
-            if (metering.brine_pump_metered === true) {
-                helper += "- Brine pump used and metered\n";
-            } else if (metering.brine_pump_metered === false) {
-                helper += "- Brine pump used but not metered\n";
+        // Hydraulic separation / secondary pumps
+        if (metering.hydraulic_separation) {
+            if (metering.secondary_pumps_metered === true) {
+                helper += "- Hydraulic separation used and secondary pumps/fans metered\n";
+            } else if (metering.secondary_pumps_metered === false) {
+                helper += "- Hydraulic separation used but secondary pumps/fans not metered\n";
             }
         }
         
@@ -820,15 +820,6 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             helper += "- Primary pump metered\n";
         } else if (metering.primary_pump_metered === false) {
             helper += "- Primary pump not metered\n";
-        }
-        
-        // Hydraulic separation / secondary pumps
-        if (metering.hydraulic_separation) {
-            if (metering.secondary_pumps_metered === true) {
-                helper += "- Hydraulic separation used and secondary pumps/fans metered\n";
-            } else if (metering.secondary_pumps_metered === false) {
-                helper += "- Hydraulic separation used but secondary pumps/fans not metered\n";
-            }
         }
         
         // Immersion heater
@@ -851,6 +842,15 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             }
         } else if (metering.backup_heater_used === false) {
             helper += "- Backup heater not installed or used\n";
+        }
+        
+        // Brine pump
+        if ((type == "Ground Source" || type == "Water Source")) {
+            if (metering.brine_pump_metered === true) {
+                helper += "- Brine pump used and metered\n";
+            } else if (metering.brine_pump_metered === false) {
+                helper += "- Brine pump used but not metered\n";
+            }
         }
         
         // Air to air is always 2
