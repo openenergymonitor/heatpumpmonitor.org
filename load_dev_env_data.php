@@ -32,6 +32,7 @@ require "Modules/system/system_schema.php";
 require "Modules/heatpump/heatpump_schema.php";
 require "Modules/installer/installer_schema.php";
 require "Modules/manufacturer/manufacturer_schema.php";
+require "Modules/dashboard/myheatpump_schema.php";
 
 require ("Modules/system/system_model.php");
 $system_class = new System($mysqli);
