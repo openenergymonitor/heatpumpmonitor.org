@@ -476,6 +476,13 @@ class System
                 if ($schema_row["code"]=='d') $row->$key = 0.0;
             }
         }
+        
+        // Calculate and add monitoring boundary
+        $boundary_data = $this->calculate_boundary($row);
+        $row->boundary_code = $boundary_data['boundary_code'];
+        $row->boundary = $boundary_data['boundary'];
+        $row->boundary_helper = $boundary_data['boundary_helper'];
+        
         return $row;
     }
 
@@ -777,6 +784,115 @@ class System
         } else {
             return false;
         }
+    }
+
+    /**
+     * Calculate monitoring boundary (H1-H4) based on system configuration
+     * 
+     * Based on SEPEMO (Seasonal Performance factor and Monitoring) definitions:
+     * H1: Only includes the energy input to the heat pump compressor
+     * H2: Includes compressor and source fan(s) or brine pump(s)
+     * H3: Includes all energy inputs from H2 plus additional auxiliary energy (backup/immersion heaters)
+     * H4: Covers all energy inputs from H3, plus building circulation pump(s) or fans
+     * 
+     * @param object $system System metadata object
+     * @return array Array with 'boundary_code' (int 1-4), 'boundary' (HTML string), and 'boundary_helper' (string)
+     */
+    public function calculate_boundary($system) {
+        $type = isset($system->hp_type) ? $system->hp_type : '';
+        
+        // Brine pump
+        $metering_inc_brine = isset($system->metering_inc_brine_pumps) ? $system->metering_inc_brine_pumps : 0;
+        
+        // Backup heater
+        $uses_backup = isset($system->uses_backup_heater) ? $system->uses_backup_heater : 0;
+        $metering_inc_backup = isset($system->metering_inc_boost) ? $system->metering_inc_boost : 0;
+        
+        // Immersion
+        $uses_immersion = isset($system->legionella_immersion) ? $system->legionella_immersion : 0;
+        $metering_inc_immersion = isset($system->metering_inc_immersion) ? $system->metering_inc_immersion : 0;
+        
+        // Primary pumps
+        $metering_inc_primary_pump = isset($system->metering_inc_central_heating_pumps) ? $system->metering_inc_central_heating_pumps : 0;
+        
+        // Secondary pumps
+        $hydraulic_separation = isset($system->hydraulic_separation) ? $system->hydraulic_separation : 'None';
+        $metering_inc_secondary_pumps = isset($system->metering_inc_secondary_heating_pumps) ? $system->metering_inc_secondary_heating_pumps : 0;
+        
+        // Start at boundary 4
+        $helper = "";
+        
+        if ($type == "Ground Source" || $type == "Water Source") {
+            $helper = "- Compressor metered\n";
+        } else {
+            $helper = "- Compressor and fan metered\n";
+        }
+        
+        $boundary_code = 4;
+        
+        // If hydraulic separation is used and secondary pumps are not metered then boundary cannot be higher than 3
+        if ($hydraulic_separation != 'None' && $metering_inc_secondary_pumps == 0) {
+            $boundary_code = 3;
+            $helper .= "- Hydraulic separation used but secondary pumps/fans not metered\n";
+        }
+        
+        if ($hydraulic_separation != 'None' && $metering_inc_secondary_pumps == 1) {
+            $helper .= "- Hydraulic separation used and secondary pumps/fans metered\n";
+        }
+        
+        // If primary pumps are not metered then boundary cannot be higher than 3
+        if (!$metering_inc_primary_pump) {
+            $boundary_code = 3;
+            $helper .= "- Primary pump not metered\n";
+        } else {
+            $helper .= "- Primary pump metered\n";
+        }
+        
+        // If immersion heater is used and not metered then boundary cannot be higher than 2
+        if ($uses_immersion == 1 && $metering_inc_immersion == 0) {
+            $boundary_code = 2;
+            $helper .= "- Immersion heater used but not metered\n";
+        }
+        if ($uses_immersion == 1 && $metering_inc_immersion == 1) {
+            $helper .= "- Immersion heater used and metered\n";
+        }
+        if ($uses_immersion == 0) {
+            $helper .= "- Immersion heater not installed or used\n";
+        }
+        
+        // If backup heater is used and not metered then boundary cannot be higher than 2
+        if ($uses_backup == 1 && $metering_inc_backup == 0) {
+            $boundary_code = 2;
+            $helper .= "- Backup heater used but not metered\n";
+        }
+        if ($uses_backup == 1 && $metering_inc_backup == 1) {
+            $helper .= "- Backup heater used and metered\n";
+        }
+        if ($uses_backup == 0) {
+            $helper .= "- Backup heater not installed or used\n";
+        }
+        
+        // If brine pump is used and not metered then boundary cannot be higher than 1
+        if ($type == "Ground Source" || $type == "Water Source") {
+            if ($metering_inc_brine == 0) {
+                $boundary_code = 1;
+                $helper .= "- Brine pump used but not metered\n";
+            } else {
+                $helper .= "- Brine pump used and metered\n";
+            }
+        }
+        
+        // Air to air is always 2
+        if ($type == "Air-to-Air") {
+            $boundary_code = 2;
+            $helper = "";
+        }
+        
+        return array(
+            'boundary_code' => $boundary_code,
+            'boundary' => "<span class='H".$boundary_code."' title='System boundary H".$boundary_code."\n".$helper."'>H".$boundary_code."</span>",
+            'boundary_helper' => $helper
+        );
     }
 
 
