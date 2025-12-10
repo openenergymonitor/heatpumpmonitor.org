@@ -797,69 +797,70 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         var type = systems[i].hp_type;
         
         // Build helper text from structured metering data
-        var helper_lines = [];
+        var helper = "";
         
         // Compressor/fan status
         if (type == "Ground Source" || type == "Water Source") {
-            helper_lines.push("Compressor metered");
+            helper = "- Compressor metered\n";
         } else if (type != "Air-to-Air") {
-            helper_lines.push("Compressor and fan metered");
+            helper = "- Compressor and fan metered\n";
         }
         
         // Brine pump
         if ((type == "Ground Source" || type == "Water Source")) {
             if (metering.brine_pump_metered === true) {
-                helper_lines.push("Brine pump used and metered");
+                helper += "- Brine pump used and metered\n";
             } else if (metering.brine_pump_metered === false) {
-                helper_lines.push("Brine pump used but not metered");
+                helper += "- Brine pump used but not metered\n";
             }
         }
         
         // Primary pump
         if (metering.primary_pump_metered === true) {
-            helper_lines.push("Primary pump metered");
+            helper += "- Primary pump metered\n";
         } else if (metering.primary_pump_metered === false) {
-            helper_lines.push("Primary pump not metered");
+            helper += "- Primary pump not metered\n";
         }
         
         // Hydraulic separation / secondary pumps
         if (metering.hydraulic_separation) {
             if (metering.secondary_pumps_metered === true) {
-                helper_lines.push("Hydraulic separation used and secondary pumps/fans metered");
+                helper += "- Hydraulic separation used and secondary pumps/fans metered\n";
             } else if (metering.secondary_pumps_metered === false) {
-                helper_lines.push("Hydraulic separation used but secondary pumps/fans not metered");
+                helper += "- Hydraulic separation used but secondary pumps/fans not metered\n";
             }
         }
         
         // Immersion heater
         if (metering.immersion_heater_used === true) {
             if (metering.immersion_heater_metered === true) {
-                helper_lines.push("Immersion heater used and metered");
+                helper += "- Immersion heater used and metered\n";
             } else if (metering.immersion_heater_metered === false) {
-                helper_lines.push("Immersion heater used but not metered");
+                helper += "- Immersion heater used but not metered\n";
             }
         } else if (metering.immersion_heater_used === false) {
-            helper_lines.push("Immersion heater not installed or used");
+            helper += "- Immersion heater not installed or used\n";
         }
         
         // Backup heater
         if (metering.backup_heater_used === true) {
             if (metering.backup_heater_metered === true) {
-                helper_lines.push("Backup heater used and metered");
+                helper += "- Backup heater used and metered\n";
             } else if (metering.backup_heater_metered === false) {
-                helper_lines.push("Backup heater used but not metered");
+                helper += "- Backup heater used but not metered\n";
             }
         } else if (metering.backup_heater_used === false) {
-            helper_lines.push("Backup heater not installed or used");
+            helper += "- Backup heater not installed or used\n";
         }
         
-        var helper = helper_lines.join("\n");
-        var title = 'System boundary H' + boundary_code;
-        if (helper) {
-            title += "\n" + helper;
+        // Air to air is always 2
+        if (type == "Air-to-Air") {
+            helper = "";
         }
         
-        systems[i].boundary = "<span class='H" + boundary_code + "' title='" + title + "'>H" + boundary_code + "</span>";
+        systems[i].boundary = "<span class='H"+boundary_code+"' title='System boundary H"+boundary_code+"\n"+helper+"'>H"+boundary_code+"</span>";
+        
+        systems[i].boundary_code = boundary_code;
     }
 
     // Calculate over-sizing factor
