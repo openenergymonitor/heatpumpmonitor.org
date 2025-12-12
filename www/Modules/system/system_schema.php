@@ -49,7 +49,8 @@ $schema['system_meta'] = array(
     /* ------------------------------ Overview ----------------------------- */
 
     'location' => array(
-        'type' => 'varchar(64)', 
+        'type' => 'varchar(64)',
+        'filter_regex' => '/[^a-zA-Z0-9\s\.\,\-]/u',
         'editable' => true, 
         'optional' => false, 
         'name' => 'Location (Town, County)',
@@ -76,7 +77,8 @@ $schema['system_meta'] = array(
     ),
 
     'installer_name' => array(
-        'type' => 'varchar(64)', 
+        'type' => 'varchar(64)',
+        'filter_regex' => '/[^a-zA-Z0-9\s\.\,\-\+\(\)\&]/u',
         'editable' => true, 
         'optional' => true, 
         'name' => 'Installer', 
@@ -86,7 +88,8 @@ $schema['system_meta'] = array(
     ),
 
     'installer_url' => array(
-        'type' => 'varchar(255)', 
+        'type' => 'varchar(255)',
+        'filter_regex' => 'url',
         'editable' => true, 
         'optional' => true, 
         'name' => 'Installer URL', 
@@ -104,9 +107,9 @@ $schema['system_meta'] = array(
     ),
 
     'installation_Cost' => array(
-        'type' => 'varchar(16)', 
-        'editable' => true, 
-        'optional' => true, 
+        'type' => 'float',
+        'editable' => true,
+        'optional' => true,
         'name' => 'Installation Cost (excluding grant)', 
         'group' => 'Overview'
     ),
@@ -140,6 +143,7 @@ $schema['system_meta'] = array(
     
     'betateach' => array(
         'type' => 'varchar(256)',
+        'filter_regex' => 'url',
         'editable' => true, 
         'optional' => true, 
         'name' => 'BetaTalk', 
@@ -149,6 +153,7 @@ $schema['system_meta'] = array(
     
     'youtube' => array(
         'type' => 'varchar(256)',
+        'filter_regex' => 'url',
         'editable' => true, 
         'optional' => true, 
         'name' => 'YouTube', 
@@ -157,7 +162,8 @@ $schema['system_meta'] = array(
     ),
 
     'url' => array(
-        'type' => 'varchar(128)', 
+        'type' => 'varchar(128)',
+        'filter_regex' => 'url',
         'editable' => true, 
         'optional' => false, 
         'name' => 'MyHeatpump App URL',
@@ -179,7 +185,7 @@ $schema['system_meta'] = array(
     /* ------------------------------ Heat pump system ----------------------------- */
 
     'hp_type' => array(
-        'type' => 'varchar(64)', 
+        'type' => 'varchar(64)',
         'editable' => true, 
         'optional' => false, 
         'name' => 'Heat pump type', 
@@ -189,7 +195,8 @@ $schema['system_meta'] = array(
     ),
 
     'hp_manufacturer' => array(
-        'type' => 'varchar(64)', 
+        'type' => 'varchar(64)',
+        'filter_regex' => '/[^a-zA-Z0-9\s\.\,\-\+\(\)\&]/u',
         'editable' => true, 
         'optional' => false, 
         'name' => 'Heat pump manufacturer', 
@@ -198,7 +205,8 @@ $schema['system_meta'] = array(
     ),
 
     'hp_model' => array(
-        'type' => 'varchar(64)', 
+        'type' => 'varchar(64)',
+        'filter_regex' => '/[^a-zA-Z0-9\s\.\,\-\+\(\)\&]/u',
         'editable' => true, 
         'optional' => false, 
         'name' => 'Heat pump make & model',
@@ -360,7 +368,8 @@ $schema['system_meta'] = array(
     ),
 
     'dhw_make_model' => array(
-        'type' => 'varchar(64)', 
+        'type' => 'varchar(64)',
+        'filter_regex' => '/[^a-zA-Z0-9\s\.\,\-\+\(\)\&]/u',
         'editable' => true, 
         'optional' => true, 
         'name' => 'Cylinder make & model', 
@@ -647,8 +656,9 @@ $schema['system_meta'] = array(
     ),    
 
     'notes' => array(
-        'type' => 'text', 
-        'editable' => true, 
+        'type' => 'text',
+        'filter_regex' => '/[^a-zA-Z0-9\s\.\,\-\+\(\)\&]/u',
+        'editable' => true,
         'optional' => true, 
         'name' => 'Any other notes or comments', 
         'group' => 'Notes',
@@ -657,7 +667,8 @@ $schema['system_meta'] = array(
     
     'data_flag' => array('type' => 'tinyint(1)', 'editable' => true, 'optional' => true, 'name' => 'Data issue flag', 'group' => 'Metering'),
     'data_flag_note' => array(
-        'type' => 'varchar(128)', 
+        'type' => 'varchar(128)',
+        'filter_regex' => '/[^a-zA-Z0-9\s\.\,\-\+\(\)\&]/u',
         'editable' => true, 
         'optional' => true, 
         'name' => 'Data issue flag note',

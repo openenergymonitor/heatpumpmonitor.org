@@ -186,8 +186,64 @@ class System
                         }
                     }
                 }
+
+                // Sanitise data types
+                if (isset($form_data->$key) && $form_data->$key !== null && $form_data->$key !== '') {
+                    $type = $this->schema_meta[$key]['type'];
+                    
+                    // Handle numeric types
+                    if ($type === 'float') {
+                        if (!is_numeric($form_data->$key)) {
+                            $error_log[] = array("key"=>$key,"message"=>"must be a number");
+                        } else {
+                            $form_data->$key = (float) $form_data->$key;
+                        }
+                    } 
+                    else if (strpos($type, 'int') === 0) {
+                        // Handles int(11), tinyint(1), etc.
+                        if (!is_numeric($form_data->$key)) {
+                            $error_log[] = array("key"=>$key,"message"=>"must be an integer");
+                        } else {
+                            $form_data->$key = (int) $form_data->$key;
+                        }
+                    }
+                    else if ($type === 'bool' || $type === 'tinyint(1)') {
+                        // Convert to boolean/tinyint
+                        if ($form_data->$key===1 || $form_data->$key===true || $form_data->$key==='1' || $form_data->$key==='true') {
+                            $form_data->$key = 1;
+                        } else {
+                            $form_data->$key = 0;
+                        }
+                    }
+                    // Handle all text types
+                    else {
+                        // Validate text content
+
+                        // If the text/varchar has options then check that the value is in the options list
+                        if (isset($this->schema_meta[$key]['options'])) {
+                            if (!in_array($form_data->$key, $this->schema_meta[$key]['options'])) {
+                                $error_log[] = array("key"=>$key,"message"=>"invalid option");
+                            }
+                        } else {
+
+                            // No options so validate text
+                            $filter_regex = false;
+                            if (isset($this->schema_meta[$key]['filter_regex'])) {
+                                $filter_regex = $this->schema_meta[$key]['filter_regex'];
+                            }
+
+                            $validation_result = $this->validate_text($form_data->$key, $filter_regex);
+                            if ($validation_result['success']==false) {
+                                $error_log[] = array("key"=>$key,"message"=>$validation_result['message']);
+                            } else {
+                                $form_data->$key = $validation_result['text'];
+                            }
+                        }
+                    }
+                }
             }
         }
+        
         if (isset($form_data->share) && !$form_data->share) {
             $warning_log[] = array("message"=>"Share is un-ticked? Please tick share if you are happy to share your submission publicly");
         }
@@ -196,6 +252,57 @@ class System
             return array("success"=>false, "message"=>"Error saving", "error_log"=>$error_log);
         }
         return array("success"=>true, "warning_log"=>$warning_log);
+    }
+
+    public function validate_text($original_text, $filter_regex=false) {
+
+        if (is_numeric($original_text)) {
+            $original_text = (string) $original_text;
+        }
+
+        // Check for html tags 
+        $text = strip_tags($original_text);
+        if ($text !== $original_text) {
+            return array("success"=>false, "message"=>"HTML tags are not allowed");
+        }
+        
+        // Block common XSS patterns (always enforced)
+        $xss_patterns = array(
+            '/on\w+\s*=/i',           // onclick=, onerror=, onload=, etc.
+            '/javascript:/i',          // javascript: protocol
+            '/data:text\/html/i',      // data: protocol
+            '/<script/i',              // script tags (backup)
+            '/<iframe/i',              // iframe tags
+            '/expression\s*\(/i'       // CSS expression()
+        );
+        
+        foreach ($xss_patterns as $pattern) {
+            if (preg_match($pattern, $original_text)) {
+                return array("success"=>false, "message"=>"Potentially malicious content detected");
+            }
+        }
+        
+        // Apply character filtering
+        if ($filter_regex) {
+            // Special case: URL validation
+            if ($filter_regex === 'url') {
+                if (!filter_var($original_text, FILTER_VALIDATE_URL)) {
+                    return array("success"=>false, "message"=>"Invalid URL format");
+                }
+            } 
+            // Standard regex filtering
+            else {
+                $text = preg_replace($filter_regex, '', $original_text);
+                if ($text !== $original_text) {
+                    return array("success"=>false, "message"=>"Invalid characters detected");
+                }
+            }
+        }
+
+        // Trim whitespace
+        $text = trim($original_text);
+
+        return array("success"=>true, "text"=>$text);
     }
 
     public function save($userid,$systemid,$form_data,$validate=true) {
