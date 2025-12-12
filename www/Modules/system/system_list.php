@@ -988,6 +988,24 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             loadingPhotos: false
         },
         methods: {
+            // XSS protection helpers
+            escapeHtml: function(str) {
+                if (str === null || str === undefined) return '';
+                return String(str)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            },
+            sanitizeUrl: function(url) {
+                if (!url) return '';
+                var trimmed = String(url).trim().toLowerCase();
+                if (trimmed.startsWith('javascript:') || trimmed.startsWith('data:') || trimmed.startsWith('vbscript:')) {
+                    return '';
+                }
+                return this.escapeHtml(url);
+            },
             tariff_mode_changed: function() {
                 this.tariff_calc();
                 // sort by heat unit cost
@@ -1472,7 +1490,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 var val = system[key];
 
                 if (key=='hp_make_model') {
-                    return system['hp_manufacturer'] + ' ' + system['hp_model'];
+                    return this.escapeHtml(system['hp_manufacturer']) + ' ' + this.escapeHtml(system['hp_model']);
                 }
                 
                 if (key=='last_updated' || key=='data_start') {
@@ -1523,7 +1541,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             color = "#ff0000";
                         }
 
-                        flag = "<i class='fas fa-exclamation-circle' style='color: "+color+"; margin-left:10px; cursor:pointer' title='"+system['data_flag_note']+"'></i>";
+                        flag = "<i class='fas fa-exclamation-circle' style='color: "+color+"; margin-left:10px; cursor:pointer' title='"+this.escapeHtml(system['data_flag_note'])+"'></i>";
                     }
                     return flag;
                 }
@@ -1532,7 +1550,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     if (val!=null && val!='') {
                         var installer_logo = '';
                         if (system['installer_logo']) {
-                            installer_logo = "<a href='"+system['installer_url']+"'><img class='logo' src='"+path+"theme/img/installers/"+val+"'/></a>";
+                            var safeUrl = this.sanitizeUrl(system['installer_url']);
+                            var safeLogo = this.escapeHtml(val);
+                            installer_logo = safeUrl ? "<a href='"+safeUrl+"'><img class='logo' src='"+path+"theme/img/installers/"+safeLogo+"'/></a>" : "<img class='logo' src='"+path+"theme/img/installers/"+safeLogo+"'/>";
                         }
                         return installer_logo;
                     } else {
@@ -1542,7 +1562,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                    
                 if (key=='installer_name') {
                     if (val!=null && val!='') {
-                        return "<a class='installer_link' href='"+system['installer_url']+"'>"+val+"</a>";
+                        var safeUrl = this.sanitizeUrl(system['installer_url']);
+                        var safeName = this.escapeHtml(val);
+                        return safeUrl ? "<a class='installer_link' href='"+safeUrl+"'>"+safeName+"</a>" : safeName;
                     } else {
                         return '';
                     }
@@ -1571,10 +1593,16 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 if (key=='learnmore') {
                     var learnmore = "";
                     if (system['youtube']!=null && system['youtube']!="" && system['youtube']!='0') {
-                        learnmore += "<a href='"+system['youtube']+"'><img class='betateachlogo' src='"+path+"theme/img/youtube.png' title='Learn more about this system on YouTube'/></a>";
+                        var safeYoutube = this.sanitizeUrl(system['youtube']);
+                        if (safeYoutube) {
+                            learnmore += "<a href='"+safeYoutube+"'><img class='betateachlogo' src='"+path+"theme/img/youtube.png' title='Learn more about this system on YouTube'/></a>";
+                        }
                     }
                     if (system['betateach']!=null && system['betateach']!="" && system['betateach']!='0') {
-                        learnmore += "<a href='"+system['betateach']+"'><img class='betateachlogo' src='"+path+"theme/img/beta-teach.jpg' title='Learn more on the BetaTalk Podcast'/></a>";
+                        var safeBetateach = this.sanitizeUrl(system['betateach']);
+                        if (safeBetateach) {
+                            learnmore += "<a href='"+safeBetateach+"'><img class='betateachlogo' src='"+path+"theme/img/beta-teach.jpg' title='Learn more on the BetaTalk Podcast'/></a>";
+                        }
                     }
 
                     return learnmore;

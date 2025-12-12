@@ -40,7 +40,7 @@ $v=2;
             </div>
           </div>
 
-          <div class="block-title" id="app_name"><?php echo $system_data->hp_output."kW ".$system_data->hp_model." ".$system_data->refrigerant.", ".$system_data->location; ?></div>
+          <div class="block-title" id="app_name"><?php echo htmlspecialchars($system_data->hp_output, ENT_QUOTES, 'UTF-8')."kW ".htmlspecialchars($system_data->hp_model, ENT_QUOTES, 'UTF-8')." ".htmlspecialchars($system_data->refrigerant, ENT_QUOTES, 'UTF-8').", ".htmlspecialchars($system_data->location, ENT_QUOTES, 'UTF-8'); ?></div>
         </div>
 
         <div style="background-color:#fff; color:#333">

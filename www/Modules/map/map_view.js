@@ -22,6 +22,28 @@
     SystemFilter.minDays = 0; // Minimum days of data
 
     // ------------------------------
+    // XSS Protection Helpers
+    // ------------------------------
+    function escapeHtml(str) {
+        if (str === null || str === undefined) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function sanitizeUrl(url) {
+        if (!url) return '';
+        const trimmed = String(url).trim().toLowerCase();
+        if (trimmed.startsWith('javascript:') || trimmed.startsWith('data:') || trimmed.startsWith('vbscript:')) {
+            return '';
+        }
+        return escapeHtml(url);
+    }
+
+    // ------------------------------
     // Map Setup
     // ------------------------------
     const map = new ol.Map({
@@ -182,16 +204,32 @@
     function getMapTooltipHTML(system) {
 
         let logo_img = "";
-        if (system.installer_logo!== null && system.installer_logo !== '') {
-            logo_img = `<a href="${system.installer_url}"><img class="logo" src="${path}theme/img/installers/${system.installer_logo}" alt=""/></a>`;
+        const safeInstallerUrl = sanitizeUrl(system.installer_url);
+        const safeLogo = escapeHtml(system.installer_logo);
+        if (system.installer_logo !== null && system.installer_logo !== '') {
+            logo_img = safeInstallerUrl
+                ? `<a href="${safeInstallerUrl}"><img class="logo" src="${path}theme/img/installers/${safeLogo}" alt=""/></a>`
+                : `<img class="logo" src="${path}theme/img/installers/${safeLogo}" alt=""/>`;
         }
 
+        const safeLocation = escapeHtml(system.location);
+        const safeHpOutput = escapeHtml(system.hp_output);
+        const safeHpManufacturer = escapeHtml(system.hp_manufacturer);
+        const safeHpModel = escapeHtml(system.hp_model);
+        const safeInstallerName = escapeHtml(system.installer_name);
+        const safeCop = system.combined_cop ? system.combined_cop.toFixed(1) : '0.0';
+        const safeId = parseInt(system.id, 10) || 0;
+
+        const installerButton = safeInstallerUrl
+            ? `<button class="btn btn-outline-primary btn-sm" onclick="window.location.href='${safeInstallerUrl}'">View Installer</button>`
+            : '';
+
         return `
-            <div class="overlay-title">${system.location}</div>
-            <div class="overlay-line">${system.hp_output}kW, ${system.hp_manufacturer} ${system.hp_model} (SPF: ${system.combined_cop.toFixed(1)})</div>
-            <div class="overlay-line">${system.installer_name ? `${logo_img} ${system.installer_name}` : ''}</div>
-            <button class="btn btn-outline-primary btn-sm" onclick="window.location.href='${path}system/view?id=${system.id}'">View System</button>
-            <button class="btn btn-outline-primary btn-sm" onclick="window.location.href='${system.installer_url}'">View Installer</button>
+            <div class="overlay-title">${safeLocation}</div>
+            <div class="overlay-line">${safeHpOutput}kW, ${safeHpManufacturer} ${safeHpModel} (SPF: ${safeCop})</div>
+            <div class="overlay-line">${system.installer_name ? `${logo_img} ${safeInstallerName}` : ''}</div>
+            <button class="btn btn-outline-primary btn-sm" onclick="window.location.href='${path}system/view?id=${safeId}'">View System</button>
+            ${installerButton}
             <div class="location-note">Note: Locations are not precise</div>
 
             `;
