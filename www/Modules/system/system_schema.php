@@ -110,7 +110,7 @@ $schema['system_meta'] = array(
         'type' => 'float',
         'editable' => true,
         'optional' => true,
-        'name' => 'Installation Cost (excluding grant)', 
+        'name' => 'Installation Cost (excluding grant) £', 
         'group' => 'Overview'
     ),
 
