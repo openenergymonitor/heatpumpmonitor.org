@@ -881,6 +881,16 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         }
         
         systems[z]['oversizing_factor'] = oversizing_factor;
+        
+        // Add computed hp_make_model field for sorting
+        systems[z]['hp_make_model'] = (system['hp_manufacturer'] || '') + ' ' + (system['hp_model'] || '');
+        
+        // Add computed training field for sorting (count of training badges)
+        let training_count = 0;
+        if (system['heatgeek'] == 1) training_count++;
+        if (system['ultimaterenewables'] == 1) training_count++;
+        if (system['heatingacademy'] == 1) training_count++;
+        systems[z]['training'] = training_count;
     }
 
     // if not 365 days column heading is COP
