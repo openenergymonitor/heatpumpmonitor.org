@@ -3,9 +3,9 @@
 // Model schema
 $schema['heatpump_model'] = array(
     'id' => array('type' => 'int(11)', 'Null' => false, 'Key' => 'PRI', 'Extra' => 'auto_increment'),
-    'manufacturer_id' => array('type' => 'int(11)'),
-    'name' => array('type' => 'varchar(128)'),
-    'capacity' => array('type' => 'varchar(10)', 'Null' => true, 'default' => null),
+    'manufacturer_id' => array('type' => 'int(11)', 'Index' => true),
+    'name' => array('type' => 'varchar(128)', 'Index' => true),
+    'capacity' => array('type' => 'varchar(10)', 'Null' => true, 'default' => null, 'Index' => true),
     'refrigerant' => array('type' => 'varchar(32)', 'Null' => true, 'default' => null),
     'type' => array('type' => 'varchar(32)', 'Null' => true, 'default' => null),
     'min_flowrate' => array('type' => 'float', 'Null' => true, 'default' => null),

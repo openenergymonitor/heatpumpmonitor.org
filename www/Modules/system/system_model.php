@@ -73,7 +73,7 @@ class System
         
         // Add heatpump_url if both manufacturer and model are matched
         if ($row->heatpump_model_id) {
-            $row->heatpump_url = $path . 'heatpump/view?id=' . $row->heatpump_model_id;
+            $row->heatpump_url = $path . 'heatpump/view?id=' . (int)$row->heatpump_model_id;
         }
         
         // Remove private fields for public lists
