@@ -228,6 +228,7 @@ $v=2;
                     <option value="0" selected>Disabled</option>
                     <option value="3">3 points</option>
                     <option value="5">5 points</option>
+                    <option value="15">15 points</option>
                   </select>
                 </div>
               </div>
