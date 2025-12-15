@@ -70,7 +70,8 @@ self.addEventListener('fetch', (event) => {
     fetch(event.request)
       .then((response) => {
         // If valid response, clone and cache it
-        if (response && response.status === 200 && response.type === 'basic') {
+        // Allow both 'basic' (same-origin) and 'cors' (cross-origin) responses
+        if (response && response.status === 200 && (response.type === 'basic' || response.type === 'cors')) {
           const responseToCache = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, responseToCache);
