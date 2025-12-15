@@ -49,9 +49,15 @@ self.addEventListener('activate', (event) => {
 
 // Fetch event - network first, fall back to cache
 self.addEventListener('fetch', (event) => {
-  // Skip cross-origin requests
-  if (!event.request.url.startsWith(self.location.origin) && 
-      !event.request.url.startsWith('https://cdnjs.cloudflare.com')) {
+  // Parse URL to check origin properly
+  const url = new URL(event.request.url);
+  const allowedOrigins = [
+    self.location.origin,
+    'https://cdnjs.cloudflare.com'
+  ];
+  
+  // Skip cross-origin requests that are not from allowed origins
+  if (!allowedOrigins.includes(url.origin)) {
     return;
   }
 
