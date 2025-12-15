@@ -22,6 +22,7 @@ $navigation = array(
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1">
     <title>HeatpumpMonitor.org</title>
     <meta name="description" content="An open-source initiative to share and compare heat pump performance data. Join our community of heat pump owners sharing real-world performance data.">
+    <meta name="theme-color" content="#44b3e2">
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
@@ -37,8 +38,14 @@ $navigation = array(
     <meta property="twitter:description" content="An open-source initiative to share and compare heat pump performance data. Join our community of heat pump owners sharing real-world performance data.">
     <meta property="twitter:image" content="https://heatpumpmonitor.org/heatpumpmonitor.png">
     
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="<?php echo $path; ?>manifest.json">
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/x-icon" href="<?php echo $path; ?>theme/img/icons/favicon.ico">
+    <link rel="apple-touch-icon" href="<?php echo $path; ?>theme/img/icons/apple-touch-icon.png">
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
-    <link href="https://openenergymonitor.org/homepage/theme/favicon.ico" rel="shortcut icon">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css">
     <link rel="stylesheet" href="<?php echo $path; ?>theme/style.css?v=54" />
@@ -204,6 +211,21 @@ $navigation = array(
             avatar[0].src = "https://www.gravatar.com/avatar/" + CryptoJS.MD5("<?php echo $session['email']; ?>") + "?s=32&d=mm";
         </script>
     <?php } ?>
+    
+    <!-- PWA Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('<?php echo $path; ?>sw.js')
+                    .then(function(registration) {
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    })
+                    .catch(function(err) {
+                        console.log('ServiceWorker registration failed: ', err);
+                    });
+            });
+        }
+    </script>
 </body>
 
 </html>
