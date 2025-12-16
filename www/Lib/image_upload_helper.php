@@ -13,7 +13,7 @@ class ImageUploadHelper
 {
     private $thumbnail_generator;
     private $max_file_size = 5242880; // 5MB in bytes
-    private $allowed_mime_types = array('image/jpeg', 'image/jpg', 'image/png', 'image/webp');
+    private $allowed_mime_types = array('image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic', 'image/heif');
 
     public function __construct()
     {
@@ -44,7 +44,7 @@ class ImageUploadHelper
         finfo_close($finfo);
         
         if (!in_array($mime_type, $this->allowed_mime_types)) {
-            return array("success" => false, "message" => "Invalid file type. Only JPG, PNG, and WebP are allowed");
+            return array("success" => false, "message" => "Invalid file type. Only JPG, PNG, WebP, and HEIC are allowed");
         }
         
         return array("success" => true);
@@ -72,6 +72,12 @@ class ImageUploadHelper
         // Move uploaded file
         if (!move_uploaded_file($file['tmp_name'], $filepath)) {
             return array("success" => false, "message" => "Failed to save uploaded file");
+        }
+        
+        // Convert HEIC/HEIF to JPEG for browser compatibility
+        $converted = $this->convertHeicToJpeg($filepath);
+        if ($converted) {
+            $filepath = $converted['filepath'];
         }
         
         // Get image dimensions
@@ -161,5 +167,64 @@ class ImageUploadHelper
     public function getMaxFileSize()
     {
         return $this->max_file_size;
+    }
+
+    /**
+     * Convert HEIC/HEIF image to JPEG for browser compatibility
+     * 
+     * @param string $filepath Path to the uploaded HEIC file
+     * @return array|null Array with new filepath if converted, null if not HEIC or conversion failed
+     */
+    private function convertHeicToJpeg($filepath)
+    {
+        // Check if file is HEIC/HEIF
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime_type = finfo_file($finfo, $filepath);
+        finfo_close($finfo);
+        
+        if (!in_array($mime_type, array('image/heic', 'image/heif'))) {
+            return null; // Not a HEIC file, no conversion needed
+        }
+        
+        // Check if ImageMagick extension is available
+        if (!extension_loaded('imagick')) {
+            // Log warning but don't fail - the HEIC file will be stored as-is
+            error_log('ImageMagick extension not available for HEIC conversion');
+            return null;
+        }
+        
+        try {
+            // Create Imagick object and read the HEIC file
+            $imagick = new \Imagick($filepath);
+            
+            // Set JPEG quality (85 is a good balance between quality and file size)
+            $imagick->setImageCompressionQuality(85);
+            
+            // Set output format to JPEG
+            $imagick->setImageFormat('jpeg');
+            
+            // Generate new filename with .jpg extension
+            $pathinfo = pathinfo($filepath);
+            $new_filepath = $pathinfo['dirname'] . '/' . $pathinfo['filename'] . '.jpg';
+            
+            // Write the converted image
+            $imagick->writeImage($new_filepath);
+            
+            // Clean up
+            $imagick->clear();
+            $imagick->destroy();
+            
+            // Delete the original HEIC file
+            if (file_exists($filepath)) {
+                unlink($filepath);
+            }
+            
+            return array('filepath' => $new_filepath);
+            
+        } catch (\Exception $e) {
+            // Log error but don't fail the upload - the HEIC file will be stored as-is
+            error_log('HEIC conversion failed: ' . $e->getMessage());
+            return null;
+        }
     }
 }
