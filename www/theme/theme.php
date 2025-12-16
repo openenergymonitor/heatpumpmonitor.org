@@ -23,6 +23,13 @@ $navigation = array(
     <title>HeatpumpMonitor.org</title>
     <meta name="description" content="An open-source initiative to share and compare heat pump performance data. Join our community of heat pump owners sharing real-world performance data.">
     
+    <!-- Icons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <link rel="shortcut icon" href="/favicon.ico">
+
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://heatpumpmonitor.org/">
