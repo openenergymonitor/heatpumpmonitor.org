@@ -45,7 +45,6 @@ $navigation = array(
     <meta property="twitter:image" content="https://heatpumpmonitor.org/heatpumpmonitor.png">
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
-    <link href="https://openenergymonitor.org/homepage/theme/favicon.ico" rel="shortcut icon">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css">
     <link rel="stylesheet" href="<?php echo $path; ?>theme/style.css?v=54" />
