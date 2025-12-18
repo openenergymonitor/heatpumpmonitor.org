@@ -1472,7 +1472,19 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 var val = system[key];
 
                 if (key=='hp_make_model') {
-                    return system['hp_manufacturer'] + ' ' + system['hp_model'];
+                    // HTML-escape user-editable fields to prevent XSS
+                    var manufacturer = system['hp_manufacturer'] ? String(system['hp_manufacturer']).replace(/[&<>"']/g, function(m) {
+                        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];
+                    }) : '';
+                    var model = system['hp_model'] ? String(system['hp_model']).replace(/[&<>"']/g, function(m) {
+                        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];
+                    }) : '';
+                    var makeModel = manufacturer + ' ' + model;
+                    // If we have a heatpump_url, make it a link
+                    if (system['heatpump_url']) {
+                        return '<a href="' + system['heatpump_url'] + '">' + makeModel + '</a>';
+                    }
+                    return makeModel;
                 }
                 
                 if (key=='last_updated' || key=='data_start') {
