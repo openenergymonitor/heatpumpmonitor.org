@@ -714,6 +714,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     };
     
     columns['combined_cop'].heading = 'SPF';
+    columns['space_cop'].heading = 'CH';
 
     for (var key in columns) {
         if (columns[key].heading === undefined) {
@@ -739,7 +740,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     // Template views
     var template_views = {}
     template_views['topofthescops'] = {}
-    template_views['topofthescops']['wide'] = ['location', 'installer_logo', 'installer_name', 'training', 'hp_type', 'hp_make_model', 'hp_output', 'combined_data_length', 'data_flag', 'combined_cop', 'water_cop', 'boundary' , 'mid_metering', 'learnmore', 'photos'];
+    template_views['topofthescops']['wide'] = ['location', 'installer_logo', 'installer_name', 'training', 'hp_type', 'hp_make_model', 'hp_output', 'data_flag', 'combined_cop', 'space_cop', 'water_cop', 'boundary' , 'mid_metering', 'learnmore', 'photos'];
     template_views['topofthescops']['narrow'] = ['installer_logo', 'training', 'hp_make_model', 'hp_output', 'combined_cop', 'learnmore', 'photos'];
 
     template_views['heatpumpfabric'] = {}
@@ -2220,7 +2221,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 app.showContent = false;
                 if (first) app.show_field_selector = false;
             } else {
-                app.selected_columns = ['location', 'hp_type', 'hp_model', 'hp_output', 'combined_data_length', 'data_flag', 'combined_cop', 'boundary'];
+                app.selected_columns = ['location', 'hp_type', 'hp_model', 'hp_output', 'data_flag', 'combined_cop', 'space_cop', 'boundary'];
                 app.showContent = true;
             }
         }
