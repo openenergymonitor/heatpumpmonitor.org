@@ -68,6 +68,14 @@ $navigation = array(
     .navbar-brand {
         font-size: 22px;
         /* Replace with your desired font size */
+        display: flex;
+        align-items: center;
+    }
+
+    .navbar-brand-logo {
+        height: 36px;
+        width: 36px;
+        margin-right: 10px;
     }
 
     .navbar-nav .nav-link {
@@ -112,7 +120,10 @@ $navigation = array(
     <header>
         <nav class="navbar navbar-expand-lg navbar-dark bg-custom">
             <div class="container-fluid">
-                <a class="navbar-brand" href="<?php echo $path; ?>"><b>HeatpumpMonitor</b>.org</a>
+                <a class="navbar-brand" href="<?php echo $path; ?>">
+                    <img src="<?php echo $path; ?>theme/img/logo/apple-touch-icon.png" alt="HeatpumpMonitor Logo" class="navbar-brand-logo">
+                    <span><b>HeatpumpMonitor</b>.org</span>
+                </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
