@@ -43,8 +43,31 @@ class ImageUploadHelper
         $mime_type = finfo_file($finfo, $file['tmp_name']);
         finfo_close($finfo);
         
+        // Fallback: Check file extension if MIME detection fails for HEIC/HEIF
+        // finfo_file() often returns text/plain or application/octet-stream for HEIC files
         if (!in_array($mime_type, $this->allowed_mime_types)) {
-            return array("success" => false, "message" => "Invalid file type. Only JPG, PNG, WebP, and HEIC are allowed");
+            $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+            
+            // Map extensions to MIME types for fallback detection
+            $extension_map = array(
+                'heic' => 'image/heic',
+                'heif' => 'image/heif',
+                'jpg' => 'image/jpeg',
+                'jpeg' => 'image/jpeg',
+                'png' => 'image/png',
+                'webp' => 'image/webp'
+            );
+            
+            // If the detected MIME type is ambiguous (text/plain, application/octet-stream)
+            // and the extension suggests it's an image, use the extension-based MIME type
+            if (isset($extension_map[$extension]) && 
+                in_array($mime_type, array('text/plain', 'application/octet-stream'))) {
+                $mime_type = $extension_map[$extension];
+            }
+        }
+        
+        if (!in_array($mime_type, $this->allowed_mime_types)) {
+            return array("success" => false, "message" => "Invalid file type. Only JPG, PNG, WebP, and HEIC are allowed ($mime_type)");
         }
         
         return array("success" => true);
@@ -181,6 +204,17 @@ class ImageUploadHelper
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
         $mime_type = finfo_file($finfo, $filepath);
         finfo_close($finfo);
+        
+        // Fallback: Check file extension if MIME detection fails
+        if (!in_array($mime_type, array('image/heic', 'image/heif'))) {
+            $extension = strtolower(pathinfo($filepath, PATHINFO_EXTENSION));
+            
+            // If the detected MIME type is ambiguous and extension is HEIC/HEIF, use extension
+            if (in_array($extension, array('heic', 'heif')) && 
+                in_array($mime_type, array('text/plain', 'application/octet-stream'))) {
+                $mime_type = 'image/heic'; // Set to heic for conversion
+            }
+        }
         
         if (!in_array($mime_type, array('image/heic', 'image/heif'))) {
             return null; // Not a HEIC file, no conversion needed
