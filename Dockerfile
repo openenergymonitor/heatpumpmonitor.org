@@ -12,12 +12,26 @@ RUN apt-get update && apt-get install -y \
     && docker-php-ext-install exif
 
 # Install ImageMagick with HEIC/HEIF support for iPhone photo conversion
+# Install dependencies and build ImageMagick from source with HEIC support
 RUN apt-get update && apt-get install -y \
-    libmagickwand-dev \
     libheif-dev \
-    imagemagick \
+    libde265-dev \
+    libx265-dev \
+    libaom-dev \
+    pkg-config \
+    wget \
+    && wget https://imagemagick.org/archive/ImageMagick.tar.gz \
+    && tar xvzf ImageMagick.tar.gz \
+    && cd ImageMagick-* \
+    && ./configure --with-heic=yes \
+    && make -j \
+    && make install \
+    && ldconfig /usr/local/lib \
+    && cd .. \
+    && rm -rf ImageMagick* \
     && pecl install imagick \
-    && docker-php-ext-enable imagick
+    && docker-php-ext-enable imagick \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN a2enmod rewrite
 
