@@ -85,12 +85,12 @@
   color: grey;
 }
 
-.installer_link {
+.table a {
   color: #888 !important;
   text-decoration: none !important;
 }
 
-.installer_link:hover {
+.table a:hover {
   color: #44b3e2 !important;
   text-decoration: none !important;
 }
