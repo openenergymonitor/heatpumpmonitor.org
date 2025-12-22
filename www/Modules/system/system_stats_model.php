@@ -104,7 +104,7 @@ class SystemStats
     }
 
     // Make request to emoncms app (generic reusable function)
-    private function emoncms_app_request($systemid, $action, $params = array(), $format = 'json') 
+    public function emoncms_app_request($systemid, $action, $params = array(), $format = 'json') 
     {
         $systemid = (int) $systemid;
 

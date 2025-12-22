@@ -697,10 +697,18 @@ class System
         // Get this username
         $result = $this->mysqli->query("SELECT username, apikey_read, apikey_write FROM users WHERE id='$userid'");
         if (!$row = $result->fetch_object()) {
-            return array();
+            return array(
+                "success"=>false,
+                "message"=>"User does not exist"
+            );
         }
         
-        if (!$row->apikey_read) return array();
+        if (!$row->apikey_read) {
+            return array(
+                "success"=>false,
+                "message"=>"User does not have a read API key"
+            );
+        }
 
         // Master account
         $myheatpump_apps = $this->append_app_list(array(), $row->username, $row->apikey_read);

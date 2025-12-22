@@ -110,7 +110,7 @@ $schema['system_meta'] = array(
         'type' => 'float',
         'editable' => true,
         'optional' => true,
-        'name' => 'Installation Cost (excluding grant)', 
+        'name' => 'Installation Cost (before subtracting grant)', 
         'group' => 'Overview'
     ),
 
@@ -657,7 +657,7 @@ $schema['system_meta'] = array(
 
     'notes' => array(
         'type' => 'text',
-        'filter_regex' => '/[^a-zA-Z0-9\s\.\,\-\+\(\)\&]/u',
+        'filter_regex' => '/[^a-zA-Z0-9\s\.\,\-\+\(\)\&\£\%\:\/]/u',
         'editable' => true,
         'optional' => true, 
         'name' => 'Any other notes or comments', 

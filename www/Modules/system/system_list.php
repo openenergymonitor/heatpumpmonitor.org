@@ -1621,6 +1621,12 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     return (val/3600).toFixed(0) + ' hrs';
                 }
                 
+                if (key=='installation_Cost') {
+                    if (val==null) return '';
+                    if (val==0) return '';
+                    return "£"+val;
+                }
+                
                 if (stats_columns[key]!=undefined) {
                     if (isNaN(val) || val == null) {
                         return val;
