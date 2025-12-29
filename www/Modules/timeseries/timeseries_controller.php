@@ -114,14 +114,69 @@ function timeseries_controller() {
         
         $url = "$config->server/feed/data.json?ids=".implode(",",$feedids)."&start=$start&end=$end&interval=$interval&average=$average&dela=$delta&skipmissing=0&timeformat=$timeformat".$apikeystr;
 
-        $result = json_decode(file_get_contents($url));
-
+        // Attempt to fetch from emoncms server
         $remapped = array();
+        $result = @json_decode(@file_get_contents($url));
 
         if ($result) {
             foreach ($result as $data) {
-                $key = $feed_map[$data->feedid];
-                $remapped[$key] = $data->data;
+                if (isset($data->feedid) && isset($feed_map[$data->feedid])) {
+                    $key = $feed_map[$data->feedid];
+                    $remapped[$key] = $data->data;
+                }
+            }
+        }
+        
+        // If emoncms request failed or no data, try local myheatpump_daily_stats table
+        if (empty($remapped)) {
+            $start = (int) $start;
+            $end = (int) $end;
+            $result = $mysqli->query("SELECT * FROM myheatpump_daily_stats WHERE id='$system_id' AND timestamp>='$start' AND timestamp<='$end' ORDER BY timestamp ASC");
+            
+            if ($result && $result->num_rows > 0) {
+                // Map myheatpump fields to timeseries output format
+                $field_mapping = array(
+                    'heatpump_elec' => 'combined_elec_kwh',
+                    'heatpump_heat' => 'combined_heat_kwh',
+                    'heatpump_outsideT' => 'combined_outsideT',
+                    'heatpump_flowT' => 'combined_flowT',
+                    'heatpump_returnT' => 'combined_returnT'
+                );
+                
+                while ($row = $result->fetch_assoc()) {
+                    $timestamp = (int) $row['timestamp'];
+                    
+                    // Format timestamp based on timeformat parameter
+                    switch ($timeformat) {
+                        case 'unix':
+                            $time = $timestamp;
+                            break;
+                        case 'unixms':
+                            $time = $timestamp * 1000;
+                            break;
+                        case 'notime':
+                            $time = null;
+                            break;
+                        default:
+                            $time = $timestamp * 1000;
+                    }
+                    
+                    // Add data for each requested feed
+                    foreach ($feed_keys as $key) {
+                        if (isset($field_mapping[$key])) {
+                            $db_field = $field_mapping[$key];
+                            if (!isset($remapped[$key])) {
+                                $remapped[$key] = array();
+                            }
+                            
+                            if ($time !== null) {
+                                $remapped[$key][] = array($time, (float) $row[$db_field]);
+                            } else {
+                                $remapped[$key][] = array((float) $row[$db_field]);
+                            }
+                        }
+                    }
+                }
             }
         }
 
