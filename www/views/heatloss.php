@@ -395,6 +395,7 @@ if (isset($session['admin']) && $session['admin']) {
             'running_returnT_mean',
             'combined_elec_kwh',
             'combined_heat_kwh',
+            'combined_data_length'
         ];
 
         $.ajax({
@@ -466,7 +467,7 @@ if (isset($session['admin']) && $session['admin']) {
 
                 data['heat_vs_dt'] = [];
                 for (var i = 0; i < data[mode + '_heat_mean'].length; i++) {
-                    if (data[mode + '_roomT_mean'][i][1] > 0) {
+                    if (data[mode + '_roomT_mean'][i][1] > 0 && data[mode + '_data_length'][i][1] > 64800) {
                         var x = data[mode + '_roomT_mean'][i][1] - data[mode + '_outsideT_mean'][i][1];
                         if (x > 0) {
                             var y = data[mode + '_heat_mean'][i][1]*0.001;
