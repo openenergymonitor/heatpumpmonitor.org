@@ -1640,8 +1640,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             sinceClass: function(system,column) {
                 // return node.since > 0 ? 'partial ' : '';
                 // node.since is unix time in seconds
-                if (column=='combined_cop' || column=='since' || column=='combined_data_length' || column=='quality_elec') {
-                
+                if (column=='combined_cop' || column=='since' || column=='combined_data_length' || 
+                    column=='quality_elec' || column=='water_cop' || column=='prc_demand_hot_water' ||
+                    column=='space_cop' || column=='running_cop')
+                {
                     if (system.boundary_code!=4) {
                         return 'partial';
                     }
@@ -1655,7 +1657,6 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         return 'partial ';
                     }
                     if (this.stats_time_start=='last365' || this.stats_time_start=='all' || this.stats_time_start=='custom') {
-                        
                         return (days<=330) ? 'partial ' : '';
                     } else if (this.stats_time_start=='last90') {
                         return (days<=72) ? 'partial ' : '';
@@ -1665,7 +1666,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         return (days<=5) ? 'partial ' : '';
                     }
                 }
-                
+    
                 return '';
             },
 
