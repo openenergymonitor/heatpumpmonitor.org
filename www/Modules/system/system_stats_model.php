@@ -780,4 +780,60 @@ class SystemStats
         fclose($fh);
         exit;
     }
+
+    /**
+     * Calculate average winter statistics across all public systems
+     * Winter defined as November through February (months 11, 12, 1, 2)
+     * 
+     * @return array Statistics including:
+     *   - avg_winter_heat_output: Average winter heat output (kWh)
+     *   - avg_winter_elec_input: Average winter electrical input (kWh)
+     *   - avg_winter_indoor_temp: Average indoor temperature during winter
+     *   - avg_elec_coldest_day: Average electrical input on coldest day (kWh)
+     */
+    public function get_winter_summary() {
+        // Query winter months (Nov, Dec, Jan, Feb) from monthly stats
+        // MONTH() returns 1-12, so winter = 11, 12, 1, 2
+        $query = "
+            SELECT 
+                AVG(combined_heat_kwh) as avg_winter_heat_output,
+                AVG(combined_elec_kwh) as avg_winter_elec_input,
+                AVG(combined_roomT_mean) as avg_winter_indoor_temp
+            FROM system_stats_monthly_v2 sm
+            JOIN system_meta meta ON sm.id = meta.id
+            WHERE meta.share = 1 
+                AND meta.published = 1
+                AND (MONTH(FROM_UNIXTIME(sm.timestamp)) IN (11, 12, 1, 2))
+                AND combined_heat_kwh IS NOT NULL
+                AND combined_elec_kwh IS NOT NULL
+                AND combined_roomT_mean IS NOT NULL
+        ";
+        
+        $result = $this->mysqli->query($query);
+        $stats = $result->fetch_object();
+        
+        // Get average electrical input on coldest day
+        // This uses the measured data from system_meta which is populated by coldest_day.php script
+        $coldest_query = "
+            SELECT 
+                AVG(daily.combined_elec_kwh) as avg_elec_coldest_day
+            FROM system_meta meta
+            JOIN system_stats_daily daily ON meta.id = daily.id
+            WHERE meta.share = 1 
+                AND meta.published = 1
+                AND meta.measured_outside_temp_coldest_day IS NOT NULL
+                AND daily.weighted_outsideT = meta.measured_outside_temp_coldest_day
+                AND daily.combined_elec_kwh IS NOT NULL
+        ";
+        
+        $coldest_result = $this->mysqli->query($coldest_query);
+        $coldest_stats = $coldest_result->fetch_object();
+        
+        return array(
+            'avg_winter_heat_output' => $stats->avg_winter_heat_output ? round($stats->avg_winter_heat_output, 1) : 0,
+            'avg_winter_elec_input' => $stats->avg_winter_elec_input ? round($stats->avg_winter_elec_input, 1) : 0,
+            'avg_winter_indoor_temp' => $stats->avg_winter_indoor_temp ? round($stats->avg_winter_indoor_temp, 1) : 0,
+            'avg_elec_coldest_day' => $coldest_stats->avg_elec_coldest_day ? round($coldest_stats->avg_elec_coldest_day, 1) : 0
+        );
+    }
 }
