@@ -14,6 +14,7 @@ http://openenergymonitor.org
 // Designed to keep dependencies to a minimum and to implement only the basics.
 
 // Load mysql & redis database
+// $req_time_start = microtime(true);
 define('EMONCMS_EXEC', 1);
 require "Lib/load_database.php";
 require "core.php";
@@ -152,6 +153,17 @@ switch ($route->controller) {
         $route->format = "html";
         $output = view("views/api.php", array("userid"=>$session['userid']));
         break;
+
+    case "aggregation":
+        $route->format = "html";
+        $output = view("views/aggregation.php", array());
+        break;
+
+    case "remote-feed":
+        $route->format = "json";
+        require "remote_feed.php";
+        $output = get_data_remote();
+        break;
 }
 
 // The final step is to output the content
@@ -176,3 +188,17 @@ switch ($route->format) {
 }
 
 // That's it! We welcome contributions to the HeatpumpMonitor.org project
+
+/*
+// debug slow requests
+$elapsed =  microtime(true) - $req_time_start;
+if ($elapsed>0.1) {
+  $fh = fopen("/var/log/heatpumpmonitor/request_time.log","a");
+
+  $system_id = isset($_GET['id']) ? (int) $_GET['id'] : '';
+  $userid = isset($session['userid']) ? (int) $session['userid'] : '';
+
+  fwrite($fh,$_SERVER['REMOTE_ADDR']." u:".$userid." s:".$system_id." ".get('q')." ".$elapsed."\n");
+  fclose($fh);
+}
+*/

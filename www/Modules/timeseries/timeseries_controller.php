@@ -5,7 +5,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 function timeseries_controller() {
 
-    global $session, $route, $system, $mysqli, $system_stats, $settings;
+    global $session, $route, $system, $redis, $mysqli, $system_stats, $settings;
     
     if ($route->action == "available") {
         $route->format = "json";
@@ -27,7 +27,7 @@ function timeseries_controller() {
         return $config;
     }
         
-    if ($route->action == "values") {
+    if ($route->action == "values_slow") {
         $route->format = "json";
         $system_id = (int) get("id",true);
         $feed_keys = explode(",",get("feeds",true));
@@ -77,6 +77,36 @@ function timeseries_controller() {
         }
 
         return $remapped;
+    }
+
+
+    if ($route->action == "values") {
+        $route->format = "json";
+        $system_id = (int) get("id",true);
+        $feed_keys = explode(",",get("feeds",true));
+        
+        $available = array();
+        
+        $config = $system_stats->get_system_config_with_meta($session['userid'], $system_id);
+        if (is_array($config) && isset($config['success'])) {
+            return $config;
+        }
+        if (!$config->apikey) return false;
+
+        $requested_feeds = array();
+
+        foreach ($config->feeds as $key=>$f) {
+            if (in_array($key,$feed_keys)) {
+                $id = (int) $f->feedid;
+                $lastvalue = $redis->hmget("feed:$id",array('time','value'));
+                $requested_feeds[$key] = array(
+                    "time" => (int) $lastvalue['time'],
+                    "value" => (float) $lastvalue['value']
+                );
+            }
+        }
+
+        return $requested_feeds;
     }
     
     if ($route->action == "data") {
