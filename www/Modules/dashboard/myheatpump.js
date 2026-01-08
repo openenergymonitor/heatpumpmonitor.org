@@ -256,6 +256,10 @@ function show() {
             $("#show_flow_rate").click();
             show_flow_rate = true;
         }
+        if (urlParams.dhw) {
+            $("#show_dhw_temp").click();
+            show_dhw_temp = true;
+        }
         if (urlParams.carnot) {
             $("#carnot_enable")[0].click();
             $("#heatpump_factor").val(urlParams.carnot);
@@ -515,6 +519,9 @@ function set_url_view_params(mode, start, end) {
 
     if (show_flow_rate) url.searchParams.set('flow', 1);
     else url.searchParams.delete('flow');
+
+    if (show_dhw_temp) url.searchParams.set('dhw', 1);
+    else url.searchParams.delete('dhw');
 
     if (show_defrost_and_loss) url.searchParams.set('cool', 1);
     else url.searchParams.delete('cool');

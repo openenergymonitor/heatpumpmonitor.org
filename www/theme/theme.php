@@ -22,7 +22,15 @@ $navigation = array(
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1">
     <title>HeatpumpMonitor.org</title>
     <meta name="description" content="An open-source initiative to share and compare heat pump performance data. Join our community of heat pump owners sharing real-world performance data.">
+    <meta name="theme-color" content="#44b3e2">
     
+    <!-- Icons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="<?php echo $path; ?>theme/img/logo/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="<?php echo $path; ?>theme/img/logo/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="<?php echo $path; ?>theme/img/logo/apple-touch-icon.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <link rel="shortcut icon" href="<?php echo $path; ?>theme/img/logo/favicon.ico">
+
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://heatpumpmonitor.org/">
@@ -37,8 +45,14 @@ $navigation = array(
     <meta property="twitter:description" content="An open-source initiative to share and compare heat pump performance data. Join our community of heat pump owners sharing real-world performance data.">
     <meta property="twitter:image" content="https://heatpumpmonitor.org/heatpumpmonitor.png">
     
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="<?php echo $path; ?>manifest.json">
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/x-icon" href="<?php echo $path; ?>theme/img/logo/favicon.ico">
+    <link rel="apple-touch-icon" href="<?php echo $path; ?>theme/img/logo/apple-touch-icon.png">
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
-    <link href="https://openenergymonitor.org/homepage/theme/favicon.ico" rel="shortcut icon">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css">
     <link rel="stylesheet" href="<?php echo $path; ?>theme/style.css?v=54" />
@@ -54,6 +68,14 @@ $navigation = array(
     .navbar-brand {
         font-size: 22px;
         /* Replace with your desired font size */
+        display: flex;
+        align-items: center;
+    }
+
+    .navbar-brand-logo {
+        height: 36px;
+        width: 36px;
+        margin-right: 10px;
     }
 
     .navbar-nav .nav-link {
@@ -98,7 +120,10 @@ $navigation = array(
     <header>
         <nav class="navbar navbar-expand-lg navbar-dark bg-custom">
             <div class="container-fluid">
-                <a class="navbar-brand" href="<?php echo $path; ?>"><b>HeatpumpMonitor</b>.org</a>
+                <a class="navbar-brand" href="<?php echo $path; ?>">
+                    <img src="<?php echo $path; ?>theme/img/logo/apple-touch-icon.png" alt="HeatpumpMonitor Logo" class="navbar-brand-logo">
+                    <span><b>HeatpumpMonitor</b>.org</span>
+                </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
@@ -204,6 +229,21 @@ $navigation = array(
             avatar[0].src = "https://www.gravatar.com/avatar/" + CryptoJS.MD5("<?php echo $session['email']; ?>") + "?s=32&d=mm";
         </script>
     <?php } ?>
+    
+    <!-- PWA Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('<?php echo $path; ?>sw.js')
+                    .then(function(registration) {
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    })
+                    .catch(function(err) {
+                        console.log('ServiceWorker registration failed: ', err);
+                    });
+            });
+        }
+    </script>
 </body>
 
 </html>

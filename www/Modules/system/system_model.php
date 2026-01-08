@@ -22,25 +22,85 @@ class System
         $this->schema_meta = $this->populate_codes($this->schema_meta);
     }
 
-    // Returns a list of public systems
-    public function list_public($userid=false) {
-        $userid = (int) $userid;
-        $result = $this->mysqli->query("SELECT sm.*, COALESCE(pc.photo_count, 0) as photo_count 
-                                        FROM system_meta sm 
-                                        LEFT JOIN (
-                                            SELECT system_id, COUNT(*) as photo_count 
-                                            FROM system_images 
-                                            GROUP BY system_id
-                                        ) pc ON sm.id = pc.system_id 
-                                        WHERE sm.share=1 AND sm.published=1"); // OR userid='$userid' (removed for now)
-        $list = array();
-        while ($row = $result->fetch_object()) {
-            $row = $this->typecast($row);
+    /**
+     * Build a SQL query with common JOINs for photo count, manufacturer, and heat pump model
+     * 
+     * @param string $select Additional SELECT fields (default: "sm.*")
+     * @param string $additionalJoins Additional JOIN clauses (e.g., "JOIN users u ON sm.userid = u.id")
+     * @param string $where WHERE clause (without WHERE keyword)
+     * @param string $orderBy ORDER BY clause (without ORDER BY keyword, default: "sm.id")
+     * @return string The complete SQL query
+     */
+    private function build_system_list_query($select = "sm.*", $additionalJoins = "", $where = "", $orderBy = "sm.id") {
+        $query = "SELECT $select, COALESCE(pc.photo_count, 0) as photo_count,
+                    m.id as manufacturer_id, hm.id as heatpump_model_id
+                  FROM system_meta sm 
+                  $additionalJoins
+                  LEFT JOIN (
+                      SELECT system_id, COUNT(*) as photo_count 
+                      FROM system_images 
+                      GROUP BY system_id
+                  ) pc ON sm.id = pc.system_id 
+                  LEFT JOIN manufacturers m ON sm.hp_manufacturer = m.name
+                  LEFT JOIN heatpump_model hm ON m.id = hm.manufacturer_id 
+                      AND sm.hp_model = hm.name
+                      AND CAST(hm.capacity AS DECIMAL(10,2)) = sm.hp_output
+                      AND (hm.refrigerant = sm.refrigerant OR sm.refrigerant IS NULL OR hm.refrigerant IS NULL)";
+        
+        if ($where) {
+            $query .= " WHERE $where";
+        }
+        
+        if ($orderBy) {
+            $query .= " ORDER BY $orderBy";
+        }
+        
+        return $query;
+    }
+
+    /**
+     * Process result rows from system list queries
+     * Adds heatpump_url if a matching heat pump model is found
+     * 
+     * @param object $row The database row to process
+     * @param bool $removePrivateFields Whether to remove private fields (url, userid, etc.)
+     * @return object The processed row
+     */
+    private function process_system_row($row, $removePrivateFields = false) {
+        global $path;
+
+        $row = $this->typecast($row);
+        
+        // Add heatpump_url if both manufacturer and model are matched
+        if ($row->heatpump_model_id) {
+            $row->heatpump_url = $path . 'heatpump/view?id=' . (int)$row->heatpump_model_id;
+        }
+        
+        // Remove private fields for public lists
+        if ($removePrivateFields) {
             unset($row->url);
             unset($row->userid);
             unset($row->app_id);
             unset($row->readkey);
-            $list[] = $row;
+        }
+        
+        return $row;
+    }
+
+    // Returns a list of public systems
+    public function list_public($userid=false) {
+        $userid = (int) $userid;
+        $query = $this->build_system_list_query(
+            "sm.*",
+            "",
+            "sm.share=1 AND sm.published=1",
+            ""
+        );
+        
+        $result = $this->mysqli->query($query);
+        $list = array();
+        while ($row = $result->fetch_object()) {
+            $list[] = $this->process_system_row($row, true);
         }
         return $list;
     }
@@ -54,18 +114,17 @@ class System
 
     // All systems
     public function list_admin() {
-        $result = $this->mysqli->query("SELECT sm.*, u.username, COALESCE(pc.photo_count, 0) as photo_count 
-                                        FROM system_meta sm 
-                                        JOIN users u ON sm.userid = u.id 
-                                        LEFT JOIN (
-                                            SELECT system_id, COUNT(*) as photo_count 
-                                            FROM system_images 
-                                            GROUP BY system_id
-                                        ) pc ON sm.id = pc.system_id 
-                                        ORDER BY sm.id");
+        $query = $this->build_system_list_query(
+            "sm.*, u.username",
+            "JOIN users u ON sm.userid = u.id",
+            "",
+            "sm.id"
+        );
+        
+        $result = $this->mysqli->query($query);
         $list = array();
         while ($row = $result->fetch_object()) {
-            $list[] = $this->typecast($row);
+            $list[] = $this->process_system_row($row, false);
         }
         return $list;
     }
@@ -74,35 +133,31 @@ class System
     public function list_user($userid=false) {
         $userid = (int) $userid;
 
-        $result = $this->mysqli->query("SELECT sm.*, u.username, COALESCE(pc.photo_count, 0) as photo_count 
-                                        FROM system_meta sm 
-                                        JOIN users u ON sm.userid = u.id 
-                                        LEFT JOIN (
-                                            SELECT system_id, COUNT(*) as photo_count 
-                                            FROM system_images 
-                                            GROUP BY system_id
-                                        ) pc ON sm.id = pc.system_id 
-                                        WHERE sm.userid='$userid' 
-                                        ORDER BY sm.id");
+        // Get user's own systems
+        $query = $this->build_system_list_query(
+            "sm.*, u.username",
+            "JOIN users u ON sm.userid = u.id",
+            "sm.userid='$userid'",
+            "sm.id"
+        );
+        
+        $result = $this->mysqli->query($query);
         $list = array();
         while ($row = $result->fetch_object()) {
-            $list[] = $this->typecast($row);
+            $list[] = $this->process_system_row($row, false);
         }
 
-        // Add any systems from sub-accounts, join system_meta, users and accounts tables
-        $result = $this->mysqli->query("SELECT sm.*, u.username, COALESCE(pc.photo_count, 0) as photo_count 
-                                        FROM system_meta sm 
-                                        JOIN users u ON sm.userid = u.id 
-                                        JOIN accounts a ON u.id = a.linkeduser 
-                                        LEFT JOIN (
-                                            SELECT system_id, COUNT(*) as photo_count 
-                                            FROM system_images 
-                                            GROUP BY system_id
-                                        ) pc ON sm.id = pc.system_id 
-                                        WHERE a.adminuser='$userid' 
-                                        ORDER BY sm.id");
+        // Add any systems from sub-accounts
+        $query = $this->build_system_list_query(
+            "sm.*, u.username",
+            "JOIN users u ON sm.userid = u.id JOIN accounts a ON u.id = a.linkeduser",
+            "a.adminuser='$userid'",
+            "sm.id"
+        );
+        
+        $result = $this->mysqli->query($query);
         while ($row = $result->fetch_object()) {
-            $list[] = $this->typecast($row);
+            $list[] = $this->process_system_row($row, false);
         }
 
         // Add systems from system_access table
@@ -583,6 +638,12 @@ class System
                 if ($schema_row["code"]=='d') $row->$key = 0.0;
             }
         }
+        
+        // Calculate and add monitoring boundary
+        $boundary_data = $this->calculate_boundary($row);
+        $row->boundary_code = $boundary_data['boundary_code'];
+        $row->boundary_metering = $boundary_data['boundary_metering'];
+        
         return $row;
     }
 
@@ -892,6 +953,103 @@ class System
         } else {
             return false;
         }
+    }
+
+    /**
+     * Calculate monitoring boundary (H1-H4) based on system configuration
+     * 
+     * Based on SEPEMO (Seasonal Performance factor and Monitoring) definitions:
+     * H1: Only includes the energy input to the heat pump compressor
+     * H2: Includes compressor and source fan(s) or brine pump(s)
+     * H3: Includes all energy inputs from H2 plus additional auxiliary energy (backup/immersion heaters)
+     * H4: Covers all energy inputs from H3, plus building circulation pump(s) or fans
+     * 
+     * @param object $system System metadata object
+     * @return array Array with 'boundary_code' (int 1-4) and 'boundary_metering' (object with boolean flags)
+     */
+    public function calculate_boundary($system) {
+        $type = isset($system->hp_type) ? $system->hp_type : '';
+        
+        // Brine pump
+        $metering_inc_brine = isset($system->metering_inc_brine_pumps) ? $system->metering_inc_brine_pumps : 0;
+        
+        // Backup heater
+        $uses_backup = isset($system->uses_backup_heater) ? $system->uses_backup_heater : 0;
+        $metering_inc_backup = isset($system->metering_inc_boost) ? $system->metering_inc_boost : 0;
+        
+        // Immersion
+        $uses_immersion = isset($system->legionella_immersion) ? $system->legionella_immersion : 0;
+        $metering_inc_immersion = isset($system->metering_inc_immersion) ? $system->metering_inc_immersion : 0;
+        
+        // Primary pumps
+        $metering_inc_primary_pump = isset($system->metering_inc_central_heating_pumps) ? $system->metering_inc_central_heating_pumps : 0;
+        
+        // Secondary pumps
+        $hydraulic_separation = isset($system->hydraulic_separation) ? $system->hydraulic_separation : 'None';
+        $metering_inc_secondary_pumps = isset($system->metering_inc_secondary_heating_pumps) ? $system->metering_inc_secondary_heating_pumps : 0;
+        
+        // Start at boundary 4
+        $boundary_code = 4;
+        
+        // Calculate metering flags
+        $is_ground_or_water = ($type == "Ground Source" || $type == "Water Source");
+        $is_air_to_air = ($type == "Air-to-Air");
+        
+        $brine_pump_metered = $is_ground_or_water ? ($metering_inc_brine == 1) : null;
+        $primary_pump_metered = $metering_inc_primary_pump == 1;
+        $has_hydraulic_separation = $hydraulic_separation != 'None';
+        $secondary_pumps_metered = $has_hydraulic_separation ? ($metering_inc_secondary_pumps == 1) : null;
+        $immersion_heater_used = $uses_immersion == 1;
+        $immersion_heater_metered = $immersion_heater_used ? ($metering_inc_immersion == 1) : null;
+        $backup_heater_used = $uses_backup == 1;
+        $backup_heater_metered = $backup_heater_used ? ($metering_inc_backup == 1) : null;
+        
+        // If hydraulic separation is used and secondary pumps are not metered then boundary cannot be higher than 3
+        if ($has_hydraulic_separation && $secondary_pumps_metered === false) {
+            $boundary_code = 3;
+        }
+        
+        // If primary pumps are not metered then boundary cannot be higher than 3
+        if (!$primary_pump_metered) {
+            $boundary_code = 3;
+        }
+        
+        // If immersion heater is used and not metered then boundary cannot be higher than 2
+        if ($immersion_heater_used && $immersion_heater_metered === false) {
+            $boundary_code = 2;
+        }
+        
+        // If backup heater is used and not metered then boundary cannot be higher than 2
+        if ($backup_heater_used && $backup_heater_metered === false) {
+            $boundary_code = 2;
+        }
+        
+        // If brine pump is used and not metered then boundary cannot be higher than 1
+        if ($is_ground_or_water && $brine_pump_metered === false) {
+            $boundary_code = 1;
+        }
+        
+        // Air to air is always 2
+        if ($is_air_to_air) {
+            $boundary_code = 2;
+        }
+        
+        // Return structured boundary information
+        return array(
+            'boundary_code' => $boundary_code,
+            'boundary_metering' => array(
+                'compressor' => true,
+                'source_fan_or_brine' => $is_ground_or_water ? $brine_pump_metered : !$is_air_to_air,
+                'brine_pump_metered' => $brine_pump_metered,
+                'primary_pump_metered' => $primary_pump_metered,
+                'secondary_pumps_metered' => $secondary_pumps_metered,
+                'immersion_heater_used' => $immersion_heater_used,
+                'immersion_heater_metered' => $immersion_heater_metered,
+                'backup_heater_used' => $backup_heater_used,
+                'backup_heater_metered' => $backup_heater_metered,
+                'hydraulic_separation' => $has_hydraulic_separation ? $hydraulic_separation : null
+            )
+        );
     }
 
 

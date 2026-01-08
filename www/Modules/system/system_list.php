@@ -714,6 +714,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     };
     
     columns['combined_cop'].heading = 'SPF';
+    columns['space_cop'].heading = 'CH';
 
     for (var key in columns) {
         if (columns[key].heading === undefined) {
@@ -739,7 +740,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     // Template views
     var template_views = {}
     template_views['topofthescops'] = {}
-    template_views['topofthescops']['wide'] = ['location', 'installer_logo', 'installer_name', 'training', 'hp_type', 'hp_make_model', 'hp_output', 'combined_data_length', 'data_flag', 'combined_cop', 'water_cop', 'boundary' , 'mid_metering', 'learnmore', 'photos'];
+    template_views['topofthescops']['wide'] = ['location', 'installer_logo', 'installer_name', 'training', 'hp_type', 'hp_make_model', 'hp_output', 'data_flag', 'combined_cop', 'space_cop', 'water_cop', 'boundary' , 'mid_metering', 'learnmore', 'photos'];
     template_views['topofthescops']['narrow'] = ['installer_logo', 'training', 'hp_make_model', 'hp_output', 'combined_cop', 'learnmore', 'photos'];
 
     template_views['heatpumpfabric'] = {}
@@ -790,104 +791,74 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         d.setMonth(d.getMonth() - 1);
     }
 
-    // Set boundary
+    // Generate boundary HTML from API-provided boundary_code and boundary_metering
     for (var i = 0; i < systems.length; i++) {
-    
+        var boundary_code = systems[i].boundary_code;
+        var metering = systems[i].boundary_metering || {};
         var type = systems[i].hp_type;
-
-        // Brine pump
-        var metering_inc_brine = systems[i].metering_inc_brine_pumps;
-
-        // Backup heater
-        var uses_backup = systems[i].uses_backup_heater;
-        var metering_inc_backup = systems[i].metering_inc_boost;
-
-        // Immersion
-        var legionella = systems[i].legionella_frequency;
-        var uses_immersion = systems[i].legionella_immersion;
-        var metering_inc_immersion = systems[i].metering_inc_immersion;
-
-        // Primary pumps
-        var metering_inc_primary_pump = systems[i].metering_inc_central_heating_pumps;
-
-        // Secondary pumps
-        var hydraulic_separation = systems[i].hydraulic_separation;
-        var metering_inc_secondary_pumps = systems[i].metering_inc_secondary_heating_pumps;
-
-        // Controls
-        var controls = systems[i].metering_inc_controls;
-
-        // ---- Boundary logic ----
         
-        // Start at 4
+        // Build helper text from structured metering data
         var helper = "";
-
-        if ((type == "Ground Source" || type == "Water Source")) {
+        
+        // Compressor/fan status
+        if (type == "Ground Source" || type == "Water Source") {
             helper = "- Compressor metered\n";
-        } else {
+        } else if (type != "Air-to-Air") {
             helper = "- Compressor and fan metered\n";
         }
-
-        var boundary_code = 4;
-
-        // If hydraulic seperation is used and secondary pumps are not metered then boundary can not be higher than 3
-        if (hydraulic_separation != 'None' && metering_inc_secondary_pumps==0) {
-            boundary_code = 3;
-            helper += "- Hydraulic separation used but secondary pumps/fans not metered\n";
-        }
-
-        if (hydraulic_separation != 'None' && metering_inc_secondary_pumps==1) {
-            helper += "- Hydraulic separation used and secondary pumps/fans metered\n";
-        }
-
-        // If primary pumps are not metered then boundary can not be higher than 3
-        if (!metering_inc_primary_pump) {
-            boundary_code = 3;
-            helper += "- Primary pump not metered\n";
-        } else {
-            helper += "- Primary pump metered\n";
-        }
-
-        // If immersion heater is used and not metered then boundary can not be higher than 2
-        if (uses_immersion == 1 && metering_inc_immersion == 0) {
-            boundary_code = 2;
-            helper += "- Immersion heater used but not metered\n";
-        }
-        if (uses_immersion == 1 && metering_inc_immersion == 1) {
-            helper += "- Immersion heater used and metered\n";
-        }
-        if (uses_immersion == 0) {
-            helper += "- Immersion heater not installed or used\n";
-        }
-
-        // If backup heater is used and not metered then boundary can not be higher than 2
-        if (uses_backup == 1 && metering_inc_backup == 0) {
-            boundary_code = 2;
-            helper += "- Backup heater used but not metered\n";
-        }
-        if (uses_backup == 1 && metering_inc_backup == 1) {
-            helper += "- Backup heater used and metered\n";
-        }
-        if (uses_backup == 0) {
-            helper += "- Backup heater not installed or used\n";
-        }
-
-        // If brine pump is used and not metered then boundary can not be higher than 1
-        if ((type == "Ground Source" || type == "Water Source")) {
-            if (metering_inc_brine == 0) {
-                boundary_code = 1;
-                helper += "- Brine pump used but not metered\n";
-            } else {
-                helper += "- Brine pump used and metered\n";
+        
+        // Hydraulic separation / secondary pumps
+        if (metering.hydraulic_separation) {
+            if (metering.secondary_pumps_metered === true) {
+                helper += "- Hydraulic separation used and secondary pumps/fans metered\n";
+            } else if (metering.secondary_pumps_metered === false) {
+                helper += "- Hydraulic separation used but secondary pumps/fans not metered\n";
             }
         }
-
+        
+        // Primary pump
+        if (metering.primary_pump_metered === true) {
+            helper += "- Primary pump metered\n";
+        } else if (metering.primary_pump_metered === false) {
+            helper += "- Primary pump not metered\n";
+        }
+        
+        // Immersion heater
+        if (metering.immersion_heater_used === true) {
+            if (metering.immersion_heater_metered === true) {
+                helper += "- Immersion heater used and metered\n";
+            } else if (metering.immersion_heater_metered === false) {
+                helper += "- Immersion heater used but not metered\n";
+            }
+        } else if (metering.immersion_heater_used === false) {
+            helper += "- Immersion heater not installed or used\n";
+        }
+        
+        // Backup heater
+        if (metering.backup_heater_used === true) {
+            if (metering.backup_heater_metered === true) {
+                helper += "- Backup heater used and metered\n";
+            } else if (metering.backup_heater_metered === false) {
+                helper += "- Backup heater used but not metered\n";
+            }
+        } else if (metering.backup_heater_used === false) {
+            helper += "- Backup heater not installed or used\n";
+        }
+        
+        // Brine pump
+        if ((type == "Ground Source" || type == "Water Source")) {
+            if (metering.brine_pump_metered === true) {
+                helper += "- Brine pump used and metered\n";
+            } else if (metering.brine_pump_metered === false) {
+                helper += "- Brine pump used but not metered\n";
+            }
+        }
+        
         // Air to air is always 2
         if (type == "Air-to-Air") {
-            boundary_code = 2;
             helper = "";
         }
-
+        
         systems[i].boundary = "<span class='H"+boundary_code+"' title='System boundary H"+boundary_code+"\n"+helper+"'>H"+boundary_code+"</span>";
         
         systems[i].boundary_code = boundary_code;
@@ -1472,7 +1443,19 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 var val = system[key];
 
                 if (key=='hp_make_model') {
-                    return system['hp_manufacturer'] + ' ' + system['hp_model'];
+                    // HTML-escape user-editable fields to prevent XSS
+                    var manufacturer = system['hp_manufacturer'] ? String(system['hp_manufacturer']).replace(/[&<>"']/g, function(m) {
+                        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];
+                    }) : '';
+                    var model = system['hp_model'] ? String(system['hp_model']).replace(/[&<>"']/g, function(m) {
+                        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];
+                    }) : '';
+                    var makeModel = manufacturer + ' ' + model;
+                    // If we have a heatpump_url, make it a link
+                    if (system['heatpump_url']) {
+                        return '<a href="' + system['heatpump_url'] + '">' + makeModel + '</a>';
+                    }
+                    return makeModel;
                 }
                 
                 if (key=='last_updated' || key=='data_start') {
@@ -1663,8 +1646,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             sinceClass: function(system,column) {
                 // return node.since > 0 ? 'partial ' : '';
                 // node.since is unix time in seconds
-                if (column=='combined_cop' || column=='since' || column=='combined_data_length' || column=='quality_elec') {
-                
+                if (column=='combined_cop' || column=='since' || column=='combined_data_length' || 
+                    column=='quality_elec' || column=='water_cop' || column=='prc_demand_hot_water' ||
+                    column=='space_cop' || column=='running_cop')
+                {
                     if (system.boundary_code!=4) {
                         return 'partial';
                     }
@@ -1678,7 +1663,6 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         return 'partial ';
                     }
                     if (this.stats_time_start=='last365' || this.stats_time_start=='all' || this.stats_time_start=='custom') {
-                        
                         return (days<=330) ? 'partial ' : '';
                     } else if (this.stats_time_start=='last90') {
                         return (days<=72) ? 'partial ' : '';
@@ -1688,7 +1672,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         return (days<=5) ? 'partial ' : '';
                     }
                 }
-                
+    
                 return '';
             },
 
@@ -2244,7 +2228,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 app.showContent = false;
                 if (first) app.show_field_selector = false;
             } else {
-                app.selected_columns = ['location', 'hp_type', 'hp_model', 'hp_output', 'combined_data_length', 'data_flag', 'combined_cop', 'boundary'];
+                app.selected_columns = ['location', 'hp_type', 'hp_model', 'hp_output', 'data_flag', 'combined_cop', 'space_cop', 'boundary'];
                 app.showContent = true;
             }
         }

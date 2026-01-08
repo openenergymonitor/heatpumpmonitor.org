@@ -1,5 +1,11 @@
 DirectoryIndex index.php
 
+# Set correct MIME types for PWA files
+<IfModule mod_mime.c>
+  AddType application/manifest+json .json
+  AddType application/javascript .js
+</IfModule>
+
 <IfModule mod_rewrite.c>
   RewriteEngine on
   
