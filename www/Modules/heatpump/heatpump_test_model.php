@@ -93,6 +93,14 @@ class HeatpumpTests
         $cop = (float)$data['cop'];
         $flowrate = (float) $data['flowrate'];
 
+        // Enforce outdoor temperature limits
+        if ($test_type === 'min' && $outsideT < 10) {
+            return array("success" => false, "error" => "Minimum modulation test requires outdoor temperature of at least 10°C (current: {$outsideT}°C)");
+        }
+        if ($test_type === 'max' && $outsideT > 2) {
+            return array("success" => false, "error" => "Maximum modulation test requires outdoor temperature of at most 2°C (current: {$outsideT}°C)");
+        }
+
         $review_status = (int)$review_status;
         $created = date('Y-m-d H:i:s'); // Current timestamp
 
