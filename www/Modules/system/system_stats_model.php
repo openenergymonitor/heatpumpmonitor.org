@@ -114,6 +114,23 @@ class SystemStats
             return array("success"=>false, "message"=>"System does not exist");
         }
 
+        // 1b. Check for cached/mock dev response first (for local development)
+        if ($action == 'getconfigmeta') {
+            $cache_dir = dirname(__DIR__) . '/../cache/app_config';
+            $cache_file = "$cache_dir/$systemid.json";
+            if (file_exists($cache_file)) {
+                $cached_data = file_get_contents($cache_file);
+                $data = json_decode($cached_data);
+                if ($data !== null) {
+                    return array(
+                        "success" => true,
+                        "data" => $data,
+                        "readkey" => $row->readkey
+                    );
+                }
+            }
+        }
+
         // 2. Construct request URL
         $request_url = $this->host."/app/$action.json?id=$row->app_id&apikey=$row->readkey";
 
