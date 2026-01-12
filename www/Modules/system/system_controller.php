@@ -19,7 +19,8 @@ function system_controller() {
                 'admin'=>$session['admin'], 
                 'schema'=>$system->schema_meta,
                 'email'=>"",
-                'system_stats_monthly'=>$system_stats->schema['system_stats_monthly_v2']
+                'system_stats_monthly'=>$system_stats->schema['system_stats_monthly_v2'],
+                'winter_summary_for_system'=>null
             ));
         }
     }
@@ -43,7 +44,8 @@ function system_controller() {
                 'admin'=>$session['admin'], 
                 'schema'=>$system->schema_meta,
                 'email'=>$email,
-                'system_stats_monthly'=>$system_stats->schema['system_stats_monthly_v2']
+                'system_stats_monthly'=>$system_stats->schema['system_stats_monthly_v2'],
+                'winter_summary_for_system'=>$system_stats->get_winter_summary_for_system($systemid)
             ));
         }
     }
@@ -66,7 +68,8 @@ function system_controller() {
             'admin'=>$session['admin'], 
             'schema'=>$system->schema_meta,
             'email'=>$email,
-            'system_stats_monthly'=>$system_stats->schema['system_stats_monthly_v2']
+            'system_stats_monthly'=>$system_stats->schema['system_stats_monthly_v2'],
+            'winter_summary_for_system'=>$system_stats->get_winter_summary_for_system($systemid)
         ));
     }
     
@@ -91,7 +94,8 @@ function system_controller() {
                     "mode"=>"public",
                     "systems"=>$system->list_public(),
                     "columns"=>$system->get_columns(),
-                    "stats_columns"=>$system_stats->schema['system_stats_monthly_v2']
+                    "stats_columns"=>$system_stats->schema['system_stats_monthly_v2'],
+                    "winter_summary"=>$system_stats->get_winter_summary()
                 ));
 
             // User list view
@@ -101,7 +105,8 @@ function system_controller() {
                         "mode" => "user",
                         "systems"=>$system->list_user($session['userid']),
                         "columns"=>$system->get_columns(),
-                        "stats_columns"=>$system_stats->schema['system_stats_monthly_v2']
+                        "stats_columns"=>$system_stats->schema['system_stats_monthly_v2'],
+                        "winter_summary"=>$system_stats->get_winter_summary()
                     ));
                 }
 
@@ -112,7 +117,8 @@ function system_controller() {
                         "mode" => "admin",
                         "systems"=>$system->list_admin(),
                         "columns"=>$system->get_columns(),
-                        "stats_columns"=>$system_stats->schema['system_stats_monthly_v2']
+                        "stats_columns"=>$system_stats->schema['system_stats_monthly_v2'],
+                        "winter_summary"=>$system_stats->get_winter_summary()
                     ));
                 }
             }

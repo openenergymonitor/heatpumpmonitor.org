@@ -463,7 +463,18 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     </tr>
                 </table>
                 
-                <div class="card" v-if="!loading">
+                <div class="card mt-3" v-if="!loading && mode=='public'">
+                  <h5 class="card-header">Winter Statistics Summary (All Systems)</h5>
+                  <div class="card-body">
+                    <p class="card-text">Average winter heat output: <b>{{ winter_summary.avg_winter_heat_output }} kWh/month</b></p>
+                    <p class="card-text">Average winter electrical input: <b>{{ winter_summary.avg_winter_elec_input }} kWh/month</b></p>
+                    <p class="card-text">Average winter indoor temperature: <b>{{ winter_summary.avg_winter_indoor_temp }}°C</b></p>
+                    <p class="card-text">Average electrical input on coldest day: <b>{{ winter_summary.avg_elec_coldest_day }} kWh/day</b></p>
+                    <p class="text-muted" style="font-size: 0.9em; margin-top: 10px;">Winter months defined as November through February</p>
+                  </div>
+                </div>
+                
+                <div class="card mt-3" v-if="!loading">
                   <h5 class="card-header">Totals</h5>
                   <div class="card-body">
                     <p class="card-text">Number of systems in selection: <b>{{ totals.listed_system_count }}</b></p>
@@ -609,6 +620,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     var columns = <?php echo json_encode($columns); ?>;
     var stats_columns = <?php echo json_encode($stats_columns); ?>;
     var systems = <?php echo json_encode($systems); ?>;
+    var winter_summary = <?php echo json_encode($winter_summary); ?>;
 
     columns['hp_type'].name = "Source";
     columns['hp_manufacturer'].name = "Manufacturer";
@@ -956,7 +968,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             lightboxOpen: false,
             currentPhotoIndex: 0,
             system_photos: [],
-            loadingPhotos: false
+            loadingPhotos: false,
+            
+            // Winter summary statistics
+            winter_summary: winter_summary
         },
         methods: {
             tariff_mode_changed: function() {

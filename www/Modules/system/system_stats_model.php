@@ -780,4 +780,230 @@ class SystemStats
         fclose($fh);
         exit;
     }
+
+    /**
+     * Private helper to build WHERE clause conditions for winter stats queries
+     * 
+     * @param array $conditions Additional conditions to add (e.g., ['meta.id = ?' => $system_id])
+     * @return string WHERE clause SQL
+     */
+    private function build_winter_stats_where($conditions = array()) {
+        $where = array();
+        
+        // Base conditions for public systems (unless system_id is specified)
+        if (!isset($conditions['system_id']) && !isset($conditions['heat_pump'])) {
+            $where[] = "meta.share = 1";
+            $where[] = "meta.published = 1";
+        }
+        
+        // Add custom conditions
+        foreach ($conditions as $condition) {
+            $where[] = $condition;
+        }
+        
+        // Winter months filter
+        $where[] = "(MONTH(FROM_UNIXTIME(sm.timestamp)) IN (11, 12, 1, 2))";
+        
+        // Data quality filters
+        $where[] = "sm.combined_heat_kwh IS NOT NULL";
+        $where[] = "sm.combined_elec_kwh IS NOT NULL";
+        $where[] = "sm.combined_roomT_mean IS NOT NULL";
+        
+        return "WHERE " . implode(" AND ", $where);
+    }
+    
+    /**
+     * Private helper to build WHERE clause conditions for coldest day queries
+     * 
+     * @param array $conditions Additional conditions to add
+     * @return string WHERE clause SQL
+     */
+    private function build_coldest_day_where($conditions = array()) {
+        $where = array();
+        
+        // Base conditions for public systems (unless system_id is specified)
+        if (!isset($conditions['system_id']) && !isset($conditions['heat_pump'])) {
+            $where[] = "meta.share = 1";
+            $where[] = "meta.published = 1";
+        }
+        
+        // Add custom conditions
+        foreach ($conditions as $condition) {
+            $where[] = $condition;
+        }
+        
+        // Coldest day matching conditions
+        $where[] = "meta.measured_outside_temp_coldest_day IS NOT NULL";
+        $where[] = "meta.measured_outside_temp_coldest_day != 0";
+        $where[] = "daily.weighted_outsideT = meta.measured_outside_temp_coldest_day";
+        $where[] = "daily.combined_elec_kwh IS NOT NULL";
+        $where[] = "daily.combined_elec_kwh > 0";
+        
+        return "WHERE " . implode(" AND ", $where);
+    }
+    
+    /**
+     * Private helper to format winter statistics results
+     * 
+     * @param object $stats Monthly winter stats result
+     * @param object $coldest_stats Coldest day stats result
+     * @param bool $allow_zero Whether to return 0 instead of null for missing data
+     * @return array Formatted statistics array
+     */
+    private function format_winter_stats($stats, $coldest_stats, $allow_zero = false) {
+        $default = $allow_zero ? 0 : null;
+        
+        return array(
+            'avg_winter_heat_output' => $stats->avg_winter_heat_output ? round($stats->avg_winter_heat_output, 1) : $default,
+            'avg_winter_elec_input' => $stats->avg_winter_elec_input ? round($stats->avg_winter_elec_input, 1) : $default,
+            'avg_winter_indoor_temp' => $stats->avg_winter_indoor_temp ? round($stats->avg_winter_indoor_temp, 1) : $default,
+            'avg_elec_coldest_day' => $coldest_stats->avg_elec_coldest_day ? round($coldest_stats->avg_elec_coldest_day, 1) : $default
+        );
+    }
+
+    /**
+     * Execute the winter stats monthly query
+     *
+     * @param string $where WHERE clause built by build_winter_stats_where()
+     * @return object Stats result object with expected properties (defaults to nulls when missing)
+     */
+    private function fetch_winter_stats($where) {
+        $query = "
+            SELECT 
+                AVG(sm.combined_heat_kwh) as avg_winter_heat_output,
+                AVG(sm.combined_elec_kwh) as avg_winter_elec_input,
+                AVG(sm.combined_roomT_mean) as avg_winter_indoor_temp
+            FROM system_stats_monthly_v2 sm
+            JOIN system_meta meta ON sm.id = meta.id
+            $where
+        ";
+
+        $result = $this->mysqli->query($query);
+        if ($result && ($row = $result->fetch_object())) {
+            return $row;
+        }
+
+        return (object) array(
+            'avg_winter_heat_output' => null,
+            'avg_winter_elec_input' => null,
+            'avg_winter_indoor_temp' => null
+        );
+    }
+
+    /**
+     * Execute the coldest day query
+     *
+     * @param string $where WHERE clause built by build_coldest_day_where()
+     * @return object Coldest day stats result (defaults to null when missing)
+     */
+    private function fetch_coldest_day_stats($where) {
+        $query = "
+            SELECT 
+                AVG(daily.combined_elec_kwh) as avg_elec_coldest_day
+            FROM system_meta meta
+            JOIN system_stats_daily daily ON meta.id = daily.id
+            $where
+        ";
+
+        $result = $this->mysqli->query($query);
+        if ($result && ($row = $result->fetch_object())) {
+            return $row;
+        }
+
+        return (object) array(
+            'avg_elec_coldest_day' => null
+        );
+    }
+
+    /**
+     * Calculate average winter statistics across all public systems
+     * Winter defined as November through February (months 11, 12, 1, 2)
+     * 
+     * @return array Statistics including:
+     *   - avg_winter_heat_output: Average winter heat output (kWh)
+     *   - avg_winter_elec_input: Average winter electrical input (kWh)
+     *   - avg_winter_indoor_temp: Average indoor temperature during winter
+     *   - avg_elec_coldest_day: Average electrical input on coldest day (kWh)
+     */
+    public function get_winter_summary() {
+        $where = $this->build_winter_stats_where();
+        $stats = $this->fetch_winter_stats($where);
+
+        // Get average electrical input on coldest day
+        // NOTE: This requires system_stats_daily data which may not be available in dev environments
+        // where LOAD_DAILY_STATS is disabled. Will return null if no matching daily data exists.
+        $coldest_where = $this->build_coldest_day_where();
+        $coldest_stats = $this->fetch_coldest_day_stats($coldest_where);
+
+        return $this->format_winter_stats($stats, $coldest_stats, true);
+    }
+
+    /**
+     * Get winter summary statistics for a specific system
+     * Returns winter performance metrics for a single system
+     * 
+     * @param int $system_id The system ID to get winter stats for
+     * @return array Array containing:
+     *   - avg_winter_heat_output: Average winter heat output (kWh)
+     *   - avg_winter_elec_input: Average winter electrical input (kWh)
+     *   - avg_winter_indoor_temp: Average indoor temperature during winter
+     *   - avg_elec_coldest_day: Average electrical input on coldest day (kWh)
+     */
+    public function get_winter_summary_for_system($system_id) {
+        $system_id = (int) $system_id;
+        $where = $this->build_winter_stats_where(array('system_id' => true, 'sm.id = ' . $system_id));
+        $stats = $this->fetch_winter_stats($where);
+
+        // Get electrical input on coldest day for this specific system
+        // NOTE: This requires system_stats_daily data which may not be available in dev environments
+        $coldest_where = $this->build_coldest_day_where(array('system_id' => true, 'meta.id = ' . $system_id));
+        $coldest_stats = $this->fetch_coldest_day_stats($coldest_where);
+
+        return $this->format_winter_stats($stats, $coldest_stats, false);
+    }
+
+    /**
+     * Get winter summary statistics for a specific heat pump model
+     * Returns winter performance metrics aggregated across all systems using the specified heat pump
+     * 
+     * @param string $manufacturer Manufacturer name
+     * @param string $model Heat pump model name
+     * @param string $refrigerant Refrigerant type
+     * @param float $capacity Heat pump capacity in kW
+     * @return array Array containing:
+     *   - avg_winter_heat_output: Average winter heat output (kWh)
+     *   - avg_winter_elec_input: Average winter electrical input (kWh)
+     *   - avg_winter_indoor_temp: Average indoor temperature during winter
+     *   - avg_elec_coldest_day: Average electrical input on coldest day (kWh)
+     */
+    public function get_winter_stats_for_heatpump($manufacturer, $model, $refrigerant, $capacity) {
+        $manufacturer = trim($manufacturer);
+        $model = trim($model);
+        $capacity = trim($capacity);
+        $refrigerant = trim($refrigerant);
+
+        $manufacturer_pattern = '%' . $this->mysqli->real_escape_string($manufacturer) . '%';
+        $model_pattern = '%' . $this->mysqli->real_escape_string($model) . '%';
+        $refrigerant_pattern = '%' . $this->mysqli->real_escape_string($refrigerant) . '%';
+        $capacity_escaped = $this->mysqli->real_escape_string($capacity);
+
+        $hp_conditions = array(
+            'heat_pump' => true,
+            "meta.hp_manufacturer LIKE '$manufacturer_pattern'",
+            "meta.hp_model LIKE '$model_pattern'",
+            "meta.hp_output = '$capacity_escaped'",
+            "meta.refrigerant LIKE '$refrigerant_pattern'",
+            "meta.share = 1",
+            "meta.published = 1"
+        );
+        $where = $this->build_winter_stats_where($hp_conditions);
+        $stats = $this->fetch_winter_stats($where);
+
+        // Get average electrical input on coldest day for systems with this heat pump
+        // NOTE: This requires system_stats_daily data which may not be available in dev environments
+        $coldest_where = $this->build_coldest_day_where($hp_conditions);
+        $coldest_stats = $this->fetch_coldest_day_stats($coldest_where);
+
+        return $this->format_winter_stats($stats, $coldest_stats, false);
+    }
 }

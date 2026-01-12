@@ -19,10 +19,30 @@ function heatpump_controller() {
     if ($route->action == "view") {
         $id = (int) get("id", true);
         $mode = $session['admin'] ? "admin" : "view";
+        
+        // Load heatpump model to get its details for winter stats
+        require "Modules/manufacturer/manufacturer_model.php";
+        $manufacturer_model = new Manufacturer($mysqli);
+        require "Modules/heatpump/heatpump_model.php";
+        $heatpump_model = new Heatpump($mysqli, $manufacturer_model);
+        $heatpump = $heatpump_model->get($id, false);
+        
+        // Get winter stats for this heat pump model
+        $winter_stats = null;
+        if ($heatpump && !isset($heatpump['success'])) {
+            $winter_stats = $system_stats->get_winter_stats_for_heatpump(
+                $heatpump['manufacturer_name'],
+                $heatpump['name'],
+                $heatpump['refrigerant'],
+                $heatpump['capacity']
+            );
+        }
+        
         return view("Modules/heatpump/views/heatpump_view.php", array(
             "id" => $id,
             "mode" => $mode,
-            "userid" => $session['userid'] ?? 0
+            "userid" => $session['userid'] ?? 0,
+            "winter_stats" => $winter_stats
         ));
     }
 
