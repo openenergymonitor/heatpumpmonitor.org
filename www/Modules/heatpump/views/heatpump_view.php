@@ -107,6 +107,39 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             </div>
         </div>
 
+        <!-- Winter Statistics -->
+        <div class="row mt-3" v-if="winter_stats && (winter_stats.avg_winter_heat_output || winter_stats.avg_winter_elec_input)">
+            <div class="col-12">
+                <div class="card">
+                    <h5 class="card-header">Winter Statistics (All Systems)</h5>
+                    <div class="card-body">
+                        <p class="text-muted small mb-3">Average values for winter months (November, December, January, February) across all published systems using this heat pump model</p>
+                        <div class="row" style="text-align:center">
+                            <div class="col" v-if="winter_stats.avg_winter_heat_output">
+                                <h5>Heat Output</h5>
+                                <h4>{{ winter_stats.avg_winter_heat_output | toFixed(1) }} kWh/month</h4>
+                            </div>
+                            
+                            <div class="col" v-if="winter_stats.avg_winter_elec_input">
+                                <h5>Electric Input</h5>
+                                <h4>{{ winter_stats.avg_winter_elec_input | toFixed(1) }} kWh/month</h4>
+                            </div>
+                            
+                            <div class="col" v-if="winter_stats.avg_winter_indoor_temp">
+                                <h5>Indoor Temp</h5>
+                                <h4>{{ winter_stats.avg_winter_indoor_temp | toFixed(1) }}°C</h4>            
+                            </div>
+
+                            <div class="col" v-if="winter_stats.avg_elec_coldest_day">
+                                <h5 title="On coldest day">Coldest Day</h5>
+                                <h4>{{ winter_stats.avg_elec_coldest_day | toFixed(1) }} kWh/day</h4>
+                            </div>
+                        </div>      
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="row">
             <div class="col">
             
@@ -429,6 +462,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 <script>
 
+    var winter_stats = <?php echo json_encode($winter_stats); ?>;
+
     var app = new Vue({
         el: '#app',
         mixins: [PhotoLightboxMixin],
@@ -441,6 +476,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             path: "<?php echo $path; ?>",
             heatpump: {},
             original_heatpump: {}, // Backup for cancel functionality
+            winter_stats: winter_stats || {},
             // Image upload
             uploadingImage: false,
             uploadProgress: 0,

@@ -814,6 +814,8 @@ class SystemStats
         
         // Get average electrical input on coldest day
         // This uses the measured data from system_meta which is populated by coldest_day.php script
+        // NOTE: This requires system_stats_daily data which may not be available in dev environments
+        // where LOAD_DAILY_STATS is disabled. Will return null if no matching daily data exists.
         $coldest_query = "
             SELECT 
                 AVG(daily.combined_elec_kwh) as avg_elec_coldest_day
@@ -822,8 +824,10 @@ class SystemStats
             WHERE meta.share = 1 
                 AND meta.published = 1
                 AND meta.measured_outside_temp_coldest_day IS NOT NULL
+                AND meta.measured_outside_temp_coldest_day != 0
                 AND daily.weighted_outsideT = meta.measured_outside_temp_coldest_day
                 AND daily.combined_elec_kwh IS NOT NULL
+                AND daily.combined_elec_kwh > 0
         ";
         
         $coldest_result = $this->mysqli->query($coldest_query);
@@ -871,6 +875,8 @@ class SystemStats
         $stats = $result->fetch_object();
         
         // Get average electrical input on coldest day for this specific system
+        // NOTE: This requires system_stats_daily data which may not be available in dev environments
+        // where LOAD_DAILY_STATS is disabled. Will return null if no matching daily data exists.
         $coldest_stmt = $this->mysqli->prepare("
             SELECT 
                 daily.combined_elec_kwh as avg_elec_coldest_day
@@ -878,14 +884,101 @@ class SystemStats
             JOIN system_stats_daily daily ON meta.id = daily.id
             WHERE meta.id = ?
                 AND meta.measured_outside_temp_coldest_day IS NOT NULL
+                AND meta.measured_outside_temp_coldest_day != 0
                 AND daily.weighted_outsideT = meta.measured_outside_temp_coldest_day
                 AND daily.combined_elec_kwh IS NOT NULL
+                AND daily.combined_elec_kwh > 0
         ");
         
         $coldest_stmt->bind_param("i", $system_id);
         $coldest_stmt->execute();
         $coldest_result = $coldest_stmt->get_result();
         $coldest_stats = $coldest_result->fetch_object();
+        
+        return array(
+            'avg_winter_heat_output' => $stats->avg_winter_heat_output ? round($stats->avg_winter_heat_output, 1) : null,
+            'avg_winter_elec_input' => $stats->avg_winter_elec_input ? round($stats->avg_winter_elec_input, 1) : null,
+            'avg_winter_indoor_temp' => $stats->avg_winter_indoor_temp ? round($stats->avg_winter_indoor_temp, 1) : null,
+            'avg_elec_coldest_day' => $coldest_stats->avg_elec_coldest_day ? round($coldest_stats->avg_elec_coldest_day, 1) : null
+        );
+    }
+
+    /**
+     * Get winter summary statistics for a specific heat pump model
+     * Returns winter performance metrics aggregated across all systems using the specified heat pump
+     * 
+     * @param string $manufacturer Manufacturer name
+     * @param string $model Heat pump model name
+     * @param string $refrigerant Refrigerant type
+     * @param float $capacity Heat pump capacity in kW
+     * @return array Array containing:
+     *   - avg_winter_heat_output: Average winter heat output (kWh)
+     *   - avg_winter_elec_input: Average winter electrical input (kWh)
+     *   - avg_winter_indoor_temp: Average indoor temperature during winter
+     *   - avg_elec_coldest_day: Average electrical input on coldest day (kWh)
+     */
+    public function get_winter_stats_for_heatpump($manufacturer, $model, $refrigerant, $capacity) {
+        $manufacturer = trim($manufacturer);
+        $model = trim($model);
+        $capacity = trim($capacity);
+        $refrigerant = trim($refrigerant);
+
+        // Query winter months (Nov, Dec, Jan, Feb) from monthly stats for systems with this heat pump
+        // MONTH() returns 1-12, so winter = 11, 12, 1, 2
+        $stmt = $this->mysqli->prepare("
+            SELECT 
+                AVG(sm.combined_heat_kwh) as avg_winter_heat_output,
+                AVG(sm.combined_elec_kwh) as avg_winter_elec_input,
+                AVG(sm.combined_roomT_mean) as avg_winter_indoor_temp
+            FROM system_stats_monthly_v2 sm
+            JOIN system_meta meta ON sm.id = meta.id
+            WHERE meta.hp_manufacturer LIKE ?
+                AND meta.hp_model LIKE ?
+                AND meta.hp_output = ?
+                AND meta.refrigerant LIKE ?
+                AND meta.share = 1 
+                AND meta.published = 1
+                AND (MONTH(FROM_UNIXTIME(sm.timestamp)) IN (11, 12, 1, 2))
+                AND sm.combined_heat_kwh IS NOT NULL
+                AND sm.combined_elec_kwh IS NOT NULL
+                AND sm.combined_roomT_mean IS NOT NULL
+        ");
+        
+        $manufacturer_pattern = '%' . $manufacturer . '%';
+        $model_pattern = '%' . $model . '%';
+        $refrigerant_pattern = '%' . $refrigerant . '%';
+        $stmt->bind_param("ssss", $manufacturer_pattern, $model_pattern, $capacity, $refrigerant_pattern);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $stats = $result->fetch_object();
+        $stmt->close();
+        
+        // Get average electrical input on coldest day for systems with this heat pump
+        // NOTE: This requires system_stats_daily data which may not be available in dev environments
+        // where LOAD_DAILY_STATS is disabled. Will return null if no matching daily data exists.
+        $coldest_stmt = $this->mysqli->prepare("
+            SELECT 
+                AVG(daily.combined_elec_kwh) as avg_elec_coldest_day
+            FROM system_meta meta
+            JOIN system_stats_daily daily ON meta.id = daily.id
+            WHERE meta.hp_manufacturer LIKE ?
+                AND meta.hp_model LIKE ?
+                AND meta.hp_output = ?
+                AND meta.refrigerant LIKE ?
+                AND meta.share = 1 
+                AND meta.published = 1
+                AND meta.measured_outside_temp_coldest_day IS NOT NULL
+                AND meta.measured_outside_temp_coldest_day != 0
+                AND daily.weighted_outsideT = meta.measured_outside_temp_coldest_day
+                AND daily.combined_elec_kwh IS NOT NULL
+                AND daily.combined_elec_kwh > 0
+        ");
+        
+        $coldest_stmt->bind_param("ssss", $manufacturer_pattern, $model_pattern, $capacity, $refrigerant_pattern);
+        $coldest_stmt->execute();
+        $coldest_result = $coldest_stmt->get_result();
+        $coldest_stats = $coldest_result->fetch_object();
+        $coldest_stmt->close();
         
         return array(
             'avg_winter_heat_output' => $stats->avg_winter_heat_output ? round($stats->avg_winter_heat_output, 1) : null,
