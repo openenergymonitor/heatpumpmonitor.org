@@ -73,6 +73,34 @@ global $settings, $session, $path;
             </div>
         </div>
 
+        <div class="card mt-3" v-if="winter_summary.avg_winter_heat_output || winter_summary.avg_winter_elec_input">
+            <h5 class="card-header">Winter Statistics</h5>
+            <div class="card-body">
+                <p class="text-muted small mb-3">Average values for winter months (November, December, January, February)</p>
+                <div class="row" style="text-align:center">
+                    <div class="col" v-if="winter_summary.avg_winter_heat_output">
+                        <h5>Heat Output</h5>
+                        <h4>{{ winter_summary.avg_winter_heat_output | toFixed(1) }} kWh/month</h4>
+                    </div>
+                    
+                    <div class="col" v-if="winter_summary.avg_winter_elec_input">
+                        <h5>Electric Input</h5>
+                        <h4>{{ winter_summary.avg_winter_elec_input | toFixed(1) }} kWh/month</h4>
+                    </div>
+                    
+                    <div class="col" v-if="winter_summary.avg_winter_indoor_temp">
+                        <h5>Indoor Temp</h5>
+                        <h4>{{ winter_summary.avg_winter_indoor_temp | toFixed(1) }}°C</h4>            
+                    </div>
+
+                    <div class="col" v-if="winter_summary.avg_elec_coldest_day">
+                        <h5 title="On coldest day">Coldest Day</h5>
+                        <h4>{{ winter_summary.avg_elec_coldest_day | toFixed(1) }} kWh/day</h4>
+                    </div>
+                </div>      
+            </div>
+        </div>
+
         <div class="card mt-3">
             <h5 class="card-header">Data Coverage</h5>
             <div class="card-body">
@@ -599,6 +627,7 @@ global $settings, $session, $path;
     var reload_interval = null;
 
     var system = <?php echo json_encode($system_data); ?>;
+    var winter_summary = <?php echo json_encode($winter_summary_for_system); ?>;
 
     var form_type = 'basic';
     if (system.id) {
@@ -623,6 +652,7 @@ global $settings, $session, $path;
             system: system,
             monthly: [],
             all: [],
+            winter_summary: winter_summary || {},
             schema_groups: schema_groups,
             filtered_schema_groups: {},
 
