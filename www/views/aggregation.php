@@ -309,7 +309,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     sum_heatpump_elec += heatpump_elec_data[z][1];
                     sum_heatpump_heat += heatpump_heat_data[z][1];
 
-                    wind_generation_data[z][1] = wind_generation * 0.0525 * app.wind_proportion * 0.01 * scale * app.number_of_households;
+                    wind_generation_data[z][1] = wind_generation * 0.0525 * app.wind_proportion * 0.01 * scale * app.number_of_households * (app.household_heat_demand_kwh / heatpumpmonitor_heat_output);
 
                     sum_wind += wind_generation_data[z][1];
 
