@@ -122,15 +122,15 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     // start time 30 days ago
     view.start = view.end - 365*24*3600*1000;
 
-    var series = [
-        { label: "Wind generation", data: false, color: 'green', lines: { show: true, fill: 0.2 }},
-        { label: "Heat output", data: false, color: 0, lines: { show: true, fill: 0.5 }},
-        { label: "Electric demand", data: false, color: 1, lines: { show: true, fill: 0.5 }},
+    var series = {
+        "wind": { label: "Wind generation", data: false, color: 'green', lines: { show: true, fill: 0.2 }},
+        "heat": { label: "Heat output", data: false, color: 0, lines: { show: true, fill: 0.5 }},
+        "elec": { label: "Electric demand", data: false, color: 1, lines: { show: true, fill: 0.5 }},
         // Outside temperature on axis 2
-        { label: "Outside temperature", data: false, yaxis: 2, color: 'blue', lines: { show: true, fill: 0.0 }},
+        "outsideT": { label: "Outside temperature", data: false, yaxis: 2, color: 'blue', lines: { show: true, fill: 0.0 }},
         // COP data on axis 3
-        { label: "Heat pump COP", data: false, yaxis: 3, color: 'orange', lines: { show: true, fill: 0.0 }}
-    ];
+        "cop": { label: "Heat pump COP", data: false, yaxis: 3, color: 'orange', lines: { show: true, fill: 0.0 }}
+    };
 
     var scale_unit = "kW";
     var scale = 1;
@@ -203,7 +203,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
     function load() {
 
-        view.calc_interval(1200,1800);
+        view.calc_interval(1200,60);
 
         $.ajax({
             // text plain dataType:
@@ -330,11 +330,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 console.log("Average heatpump heat output: " + (sum_heatpump_heat/heatpump_heat_data.length).toFixed(3) + " " + scale_unit);
                 console.log("Average wind generation: " + (sum_wind/wind_generation_data.length).toFixed(3) + " " + scale_unit);
 
-                series[1].data = heatpump_heat_data;
-                series[2].data = heatpump_elec_data;
-                series[0].data = wind_generation_data;
-                series[3].data = outside_temp_data;
-                series[4].data = cop_data;
+                series["heat"].data = heatpump_heat_data;
+                series["elec"].data = heatpump_elec_data;
+                series["wind"].data = wind_generation_data;
+                series["outsideT"].data = outside_temp_data;
+                series["cop"].data = cop_data;
                 draw();
             }
         });
@@ -344,7 +344,6 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
         // Flot options
         var options = {
-            series: {},
             xaxis: {
                 // axisLabel: xaxis_label,
                 // max: app.design_DT
@@ -394,27 +393,32 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             }
         };
 
+        var plot_series = [];
+
         // Hide wind generation if not selected
-        if (!app.show_wind) {
-            series[0].data = false;
+        if (app.show_wind) {
+            plot_series.push(series["wind"]);
         }
 
         // Hide heat output if not selected
-        if (!app.show_heat) {
-            series[1].data = false;
+        if (app.show_heat) {
+            plot_series.push(series["heat"]);
         }
 
+        // Show electric demand always
+        plot_series.push(series["elec"]);
+
         // Hide outside temperature if not selected
-        if (!app.show_outside_temp) {
-            series[3].data = false;
+        if (app.show_outside_temp) {
+            plot_series.push(series["outsideT"]);
         }
 
         // Hide COP if not selected
-        if (!app.show_cop) {
-            series[4].data = false;
+        if (app.show_cop) {
+            plot_series.push(series["cop"]);
         }
 
-        var chart = $.plot("#placeholder", series, options);
+        var chart = $.plot("#placeholder", plot_series, options);
     }
 
     // Flot selection
@@ -435,18 +439,26 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 var x = item.datapoint[0];
                 var y = item.datapoint[1];
 
-                // Set units based on series label
-                let unit = "";
-                if (item.series.label == "Outside temperature") {
-                    unit = "°C";
-                } else if (item.series.label == "COP") {
-                    unit = "";
-                } else {
-                    unit = scale_unit;
-                }
+                let seriesIndex = item.seriesIndex;
 
                 var date = new Date(x);
-                var str = item.series.label + ": " + y.toFixed(2) + " " + scale_unit + "<br>" + date.toLocaleString();
+                var str = "";
+                str += series["elec"].label + ": " + series["elec"].data[item.dataIndex][1].toFixed(1) + " " + scale_unit + "<br>";
+
+                if (app.show_heat) {
+                    str += series["heat"].label + ": " + series["heat"].data[item.dataIndex][1].toFixed(1) + " " + scale_unit + "<br>";
+                }
+                if (app.show_wind) {
+                    str += series["wind"].label + ": " + series["wind"].data[item.dataIndex][1].toFixed(1) + " " + scale_unit + "<br>";
+                }
+                if (app.show_outside_temp) {
+                    str += series["outsideT"].label + ": " + series["outsideT"].data[item.dataIndex][1].toFixed(1) + " °C" + "<br>";
+                }
+                if (app.show_cop) {
+                    str += series["cop"].label + ": " + series["cop"].data[item.dataIndex][1].toFixed(1) + "<br>";
+                }
+                str += date.toLocaleString();
+
                 tooltip(item.pageX, item.pageY, str, "#fff", "#000");
             }
         } else {
