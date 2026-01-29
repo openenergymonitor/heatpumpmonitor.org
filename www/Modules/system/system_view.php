@@ -533,6 +533,7 @@ global $settings, $session, $path;
             <div class="row">
                 <div class="col">
                     <p><b>Agree to share this information publicly</b></p>
+                    <p class="text-muted small">Leave unchecked to keep your system private for personal use only. You can change this setting at any time.</p>
                 </div>
                 <div class="col">
                     <div class="form-check">

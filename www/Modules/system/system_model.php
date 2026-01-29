@@ -236,7 +236,9 @@ class System
                     // Check if key is empty, report required
                     // if not optional or admin
                     } else if ($form_data->$key===null || $form_data->$key==='') {
-                        if (!$this->schema_meta[$key]['optional'] && $this->is_admin($userid)==false) {
+                        // Only enforce required fields if the system is set to be shared
+                        $is_sharing = isset($form_data->share) && $form_data->share;
+                        if (!$this->schema_meta[$key]['optional'] && $this->is_admin($userid)==false && $is_sharing) {
                             $error_log[] = array("key"=>$key,"message"=>"required");
                         }
                     }
@@ -386,7 +388,23 @@ class System
 
         $new_system = false;
         if ($systemid==false) {
-            $systemid = $this->create($userid);
+
+            // Determine owner of system based on app_id first
+            $available_apps = $this->available_apps($userid);
+
+            // Foreach available_apps check if form_data->app_id and form_data->readkey match
+            $system_owner = $userid;
+            foreach ($available_apps as $app) {
+                if (isset($form_data->app_id) && isset($form_data->readkey)) {
+                    if ($app['id']==$form_data->app_id && $app['readkey']==$form_data->readkey) {
+                        // Get the userid for this app
+                        $system_owner = $app['userid'];
+                        break;
+                    }
+                }
+            }
+
+            $systemid = $this->create($system_owner);
             $new_system = $systemid;
         }
 
@@ -772,7 +790,7 @@ class System
         }
 
         // Master account
-        $myheatpump_apps = $this->append_app_list(array(), $row->username, $row->apikey_read);
+        $myheatpump_apps = $this->append_app_list(array(), $userid, $row->username, $row->apikey_read);
 
         // Get sub accounts from local accounts table
         $result = $this->mysqli->query("SELECT u.id, u.username, u.apikey_read FROM accounts a JOIN users u ON a.linkeduser = u.id WHERE a.adminuser = '$userid'");
@@ -786,13 +804,13 @@ class System
         }
         
         foreach ($accounts as $account) {
-            $myheatpump_apps = $this->append_app_list($myheatpump_apps, $account['username'], $account['apikey_read']);
+            $myheatpump_apps = $this->append_app_list($myheatpump_apps, $account['userid'], $account['username'], $account['apikey_read']);
         }
 
         return $myheatpump_apps;
     }
 
-    private function append_app_list($myheatpump_apps, $username, $readkey) {
+    private function append_app_list($myheatpump_apps, $userid, $username, $readkey) {
         $result = file_get_contents($this->host."/app/list.json?apikey=".$readkey);
         if (!$result) return $myheatpump_apps;
 
@@ -801,6 +819,7 @@ class System
 
         foreach ($apps as $app) {
             if ($app->app=="myheatpump") {
+                $app->userid = $userid;
                 $app->username = $username;
                 // Generate url
                 $url = $this->host."/app/view?name=".$app->name."&readkey=".$readkey;
@@ -816,6 +835,7 @@ class System
 
                 $myheatpump_apps[] = array(
                     "id" => (int) $app->id,
+                    "userid" => $app->userid,
                     "username" => $app->username,
                     "name" => $app->name,
                     "readkey" => $readkey,

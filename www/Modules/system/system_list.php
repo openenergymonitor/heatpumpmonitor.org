@@ -1103,6 +1103,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         .then(response => {
                             if (response.data.success) {
                                 this.systems.splice(index, 1);
+                                this.filter_systems(); // Refresh the filtered systems list
                             } else {
                                 alert("Error deleting system: " + response.data.message);
                             }
