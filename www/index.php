@@ -50,7 +50,6 @@ $route = new Route(get('q'), server('DOCUMENT_ROOT'), server('REQUEST_METHOD'));
 // Session
 $session = $user->emon_session_start();
 
-
 // Default route
 if ($route->controller=="") {
     // If public mode is enabled, show public systems
