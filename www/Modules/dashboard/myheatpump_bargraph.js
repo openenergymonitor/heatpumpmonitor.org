@@ -66,7 +66,7 @@ function bargraph_load(start, end) {
         // format is csv
         $.ajax({
             url: path + "system/stats/daily",
-            data: { id: config.id, start: start*0.001, end: end*0.001, apikey: apikey },
+            data: { id: config.id, start: start*0.001, end: end*0.001, readkey: apikey },
             async: false,
             success: function (data) {
                 var rows = data.split("\n");

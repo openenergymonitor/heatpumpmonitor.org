@@ -446,7 +446,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             </a>
 
                             <!--Dashboard-->
-                            <a :href="'<?php echo $path;?>dashboard?id='+system.id" target="_blank" v-if="showContent">
+                            <a :href="'<?php echo $path;?>dashboard?id='+system.id+((!system.share || !system.published) && system.readkey ? '&readkey='+system.readkey : '')" target="_blank" v-if="showContent">
                                 <button class="btn btn-secondary btn-sm" title="Dashboard"><i class="fa fa-chart-bar" style="color: #ffffff;"></i></button>
                             </a>
 

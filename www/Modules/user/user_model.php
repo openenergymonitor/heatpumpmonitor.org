@@ -402,4 +402,25 @@ class User
             'accounts' => $accounts
         );
     }
+
+    // Get userid from apikey read
+    public function get_userid_from_apikey_read($apikey_read) {
+
+        // Sanitize apikey 32 char hex
+        if (!preg_match('/^[a-f0-9]{32}$/', $apikey_read)) {
+            return false;
+        }
+
+        $stmt = $this->mysqli->prepare("SELECT id FROM users WHERE apikey_read = ?");
+        $stmt->bind_param("s", $apikey_read);
+        $stmt->execute();
+        $stmt->bind_result($id);
+        if ($stmt->fetch()) {
+            $stmt->close();
+            return (int) $id;
+        } else {
+            $stmt->close();
+            return false;
+        }
+    }
 }

@@ -255,3 +255,12 @@ function generate_secure_key($length)
         return bin2hex(openssl_random_pseudo_bytes($length));
     }
 }
+
+
+// ---------------------------------------------------------------------------------------------------------
+// Read only mode response
+// ---------------------------------------------------------------------------------------------------------
+function read_only_mode_response()
+{
+    return array("success" => false, "message" => "Heatpumpmonitor is currently in read-only mode for maintenance. Please try again later.");
+}
