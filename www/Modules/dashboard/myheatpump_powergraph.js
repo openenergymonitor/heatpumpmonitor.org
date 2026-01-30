@@ -76,7 +76,8 @@ function powergraph_load() {
             delta: 0,
             skipmissing: skipmissing,
             limitinterval: limitinterval,
-            timeformat: "notime"
+            timeformat: "notime",
+            readkey: apikey
         },
         async: true,
         dataType: "json",

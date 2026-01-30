@@ -256,7 +256,6 @@ function generate_secure_key($length)
     }
 }
 
-
 function tr($text)
 {
     return isset($GLOBALS['translations'][$text]) && $GLOBALS['translations'][$text] !== ''
@@ -271,4 +270,12 @@ function ctx_tr($context, $text)
         return $GLOBALS['context_translations'][$context][$text];
     }
     return $text;
+}
+
+// ---------------------------------------------------------------------------------------------------------
+// Read only mode response
+// ---------------------------------------------------------------------------------------------------------
+function read_only_mode_response()
+{
+    return array("success" => false, "message" => "Heatpumpmonitor is currently in read-only mode for maintenance. Please try again later.");
 }

@@ -2,6 +2,17 @@
 defined('EMONCMS_EXEC') or die('Restricted access');
 global $path, $session, $v;
 $v=2;
+
+$app_title = "My Heatpump";
+if ($private_mode) {
+    $app_title = "My Heatpump (Private)";
+}
+
+if ($system_data->hp_output>0 && $system_data->hp_model!="" && $system_data->refrigerant!="" && $system_data->location!="") {
+    $app_title = $system_data->hp_output."kW ".$system_data->hp_model." ".$system_data->refrigerant.", ".$system_data->location;
+}
+
+
 ?>
 <link href="<?php echo $path; ?>Modules/dashboard/config.css?v=<?php echo $v; ?>" rel="stylesheet">
 <link href="<?php echo $path; ?>Modules/dashboard/light.css?v=<?php echo $v; ?>" rel="stylesheet">
@@ -37,7 +48,7 @@ $v=2;
             </div>
           </div>
 
-          <div class="block-title" id="app_name"><?php echo $system_data->hp_output."kW ".$system_data->hp_model." ".$system_data->refrigerant.", ".$system_data->location; ?></div>
+          <div class="block-title" id="app_name"><?php echo $app_title; ?></div>
         </div>
 
         <div style="background-color:#fff; color:#333">
@@ -436,9 +447,11 @@ $v=2;
 
   </div>
 
+  <?php if ($private_mode === false) { ?>
   <div style="text-align:center; padding:20px 0">
     <a href="<?php echo $path; ?>system/view?id=<?php echo $id; ?>" class="btn btn-primary">Back to System</a>
   </div>
+  <?php } ?>
 </div>
 
 <section id="app-setup" class="hide pb-3" style="display:none">
@@ -469,7 +482,7 @@ $v=2;
 <div class="ajax-loader"></div>
 
 <script>
-  var apikey = "";
+  var apikey = "<?php echo $apikey; ?>";
   var session_write = 0;
 
   var config = {};

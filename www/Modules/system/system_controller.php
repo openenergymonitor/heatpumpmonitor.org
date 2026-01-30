@@ -154,6 +154,11 @@ function system_controller() {
             }
         }
 
+        // Read key access option
+        if (isset($_GET['readkey']) && !$session['userid']) {
+            $session['userid'] = $user->get_userid_from_apikey_read($_GET['readkey']);   
+        }
+
         // check userid has access to system
         if ($system_id!==false && !$system->has_read_access($session['userid'], $system_id)) {
             return array("success"=>false, "message"=>"Invalid access");
@@ -226,6 +231,9 @@ function system_controller() {
 
     if ($route->action=="save") {
         $route->format = "json";
+
+        if ($settings['read_only_mode']) return read_only_mode_response();
+
         if ($session['userid']) {
             $input = json_decode(file_get_contents('php://input'));
             return $system->save($session['userid'],$input->id,$input->data);
@@ -250,6 +258,9 @@ function system_controller() {
 
     if ($route->action=="delete") {
         $route->format = "json";
+
+        if ($settings['read_only_mode']) return read_only_mode_response();
+
         if ($session['userid']) {
             $systemid = (int) get("id",true);
             return $system->delete($session['userid'],$systemid);
@@ -259,6 +270,8 @@ function system_controller() {
     if ($route->action=="loadstats") {
         $route->format = "json";
         // return array("success"=>false, "message"=>"Reloading stats temporarily disabled");
+
+        if ($settings['read_only_mode']) return read_only_mode_response();
 
         if ($session['userid']) {
             $systemid = (int) get("id",false);

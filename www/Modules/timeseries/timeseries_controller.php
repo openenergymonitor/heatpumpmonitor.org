@@ -5,13 +5,22 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 function timeseries_controller() {
 
-    global $session, $route, $system, $redis, $mysqli, $system_stats, $settings;
+    global $session, $route, $system, $redis, $mysqli, $system_stats, $settings, $user;
 
     chdir("/var/www/emoncms");
     require_once "Lib/enum.php";
     require_once "Modules/feed/feed_model.php";
     $feed_model = new Feed($mysqli, $redis, $settings["feed"]);
     
+    // Read key access option
+    if (isset($_GET['readkey']) && !$session['userid']) {
+        $readkey = $_GET['readkey'];
+        $session['userid'] = $user->get_userid_from_apikey_read($readkey);   
+    } else {
+        $readkey = "";
+    }
+
+
     if ($route->action == "available") {
         $route->format = "json";
         $system_id = (int) get("id",true);
