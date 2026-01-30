@@ -555,8 +555,14 @@ global $settings, $session, $path;
             </div>
             <?php } ?>
 
-            <button type="button" class="btn btn-primary" @click="save">Save</button>
-            <button type="button" class="btn btn-light" @click="cancel" style="margin-left:10px">Cancel</button>
+            <button type="button" class="btn btn-primary" @click="save" :disabled="saving">
+                <span v-if="saving">
+                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                    Saving...
+                </span>
+                <span v-else>Save</span>
+            </button>
+            <button type="button" class="btn btn-light" @click="cancel" style="margin-left:10px" :disabled="saving">Cancel</button>
             <br><br>
 
             <div class="alert alert-danger" role="alert" v-if="show_error" v-html="message"></div>
@@ -631,6 +637,7 @@ global $settings, $session, $path;
             show_success: false,
             message: '',
             admin: <?php echo $admin ? 'true' : 'false'; ?>,
+            saving: false,
 
             chart_yaxis: 'combined_cop',
             system_stats_monthly_by_group: system_stats_monthly_by_group,
@@ -722,12 +729,21 @@ global $settings, $session, $path;
                 }
             },
             save: function() {
+                // Prevent multiple simultaneous saves
+                if (this.saving) return;
+                
+                this.saving = true;
+                this.show_error = false;
+                this.show_success = false;
+                
                 // Send data to server using axios, check response for success
                 axios.post('save', {
                         id: this.$data.system.id,
                         data: this.$data.system
                     })
                     .then(function(response) {
+                        app.saving = false;
+                        
                         if (response.data.success) {
                             app.show_success = true;
                             app.show_error = false;
@@ -773,6 +789,13 @@ global $settings, $session, $path;
                                 app.message += '</ul>';
                             }
                         }
+                    })
+                    .catch(function(error) {
+                        app.saving = false;
+                        app.show_error = true;
+                        app.show_success = false;
+                        app.message = 'An error occurred while saving. Please try again.';
+                        console.error('Save error:', error);
                     });
             },
             cancel: function() {
