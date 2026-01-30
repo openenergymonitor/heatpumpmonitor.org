@@ -139,110 +139,13 @@ function load_daily_stats_system($meta, $reload) {
         logger("- data period: ".$result['data']->days." days");
     }
 
-    $end = false;
-
-    $data_start = $result['data']->start;
-    $data_end = $result['data']->end;
-    $start = $data_start;
-
     if ($reload !== false) {
-        $mysqli->query("DELETE FROM system_stats_daily WHERE `id`='$systemid'");
         $mysqli->query("DELETE FROM system_stats_all_v2 WHERE `id`='$systemid'");
         $mysqli->query("DELETE FROM system_stats_last365_v2 WHERE `id`='$systemid'");
         $mysqli->query("DELETE FROM system_stats_last90_v2 WHERE `id`='$systemid'");
         $mysqli->query("DELETE FROM system_stats_last30_v2 WHERE `id`='$systemid'");
         $mysqli->query("DELETE FROM system_stats_last7_v2 WHERE `id`='$systemid'");
         $mysqli->query("DELETE FROM system_stats_monthly_v2 WHERE `id`='$systemid'");
-    }
-
-    for ($x=0; $x<200; $x++) {
-
-        $last_start = $start;
-        
-        // get most recent entry in db
-        $result = $mysqli->query("SELECT MAX(timestamp) AS timestamp FROM system_stats_daily WHERE `id`='$systemid'");
-        if ($row = $result->fetch_assoc()) {
-            if ($row['timestamp']>$data_start) {
-                $start = $row['timestamp'];
-            }
-        }
-
-        // datatime get midnight
-        $date = new DateTime();
-        $date->setTimezone(new DateTimeZone("Europe/London"));
-        $date->setTimestamp($start);
-        $date->modify("midnight");
-        
-        $start = $date->getTimestamp();
-        $start_str = $date->format("Y-m-d");
-        $date->modify("+364 days");
-
-        $last_end = $end;
-        $end = $date->getTimestamp();
-        if ($end>$data_end) {
-            $end = $data_end;
-        }
-        $date->setTimestamp($end);
-        $end_str = $date->format("Y-m-d");
-
-        logger("- start: ".$start_str." end: ".$end_str);
-        if ($start_str==$end_str) {
-            echo "- start_str == end_str\n";
-            break;
-        }
-
-        if ($end<=$start) {
-            echo "- end <= start\n";
-            break;
-        }
-
-        if ($x>1) {
-            if ($start==$last_start) {
-                echo "- start == last_start\n";
-                break;
-            }    
-            if ($end==$last_end) {
-                echo "- end == last_end\n";
-                break;
-            }
-        }
-
-        $result = $system_stats->load_from_emoncms($systemid, $start, $end, 'getdailydata');
-
-        if ($result['success']) {
-            // split csv into array, first line is header
-            $csv = explode("\n", $result['data']);
-            $fields = str_getcsv($csv[0]);
-            if ($fields[1]!="timestamp") {
-                echo $result;
-                break;
-            }
-
-            $days = 0;
-            // for each line, split into array
-            for ($i=1; $i<count($csv); $i++) {
-                if ($csv[$i]) {
-                    $values = str_getcsv($csv[$i]);
-
-                    $row = array();
-                    for ($j=0; $j<count($fields); $j++) {
-                        $row[$fields[$j]] = $values[$j];
-                        // if '' then set to null
-                        if ($row[$fields[$j]]=="") $row[$fields[$j]] = null;
-                    }
-
-                    $system_stats->save_day($systemid, $row);
-                    $days++;
-                }
-            }
-            logger("- days: $days");
-        }
-        // sleep(1);
-        
-
-        if ($end==$data_end) {
-            break;
-        }
     }
 }
 
@@ -337,9 +240,11 @@ function process_monthly_stats($systemlist, $single_system, $reload) {
         
         $userid = (int) $row->userid;
         if ($user_data = $user->get($userid)) {
+
+            $appid = $system_stats->get_app_id($systemid);
             
             // Get earliest day of data for this system
-            $result = $mysqli->query("SELECT MIN(timestamp) AS start FROM system_stats_daily WHERE id = $systemid");
+            $result = $mysqli->query("SELECT MIN(timestamp) AS start FROM myheatpump_daily_stats WHERE id = $appid");
             $row = $result->fetch_object();
             $data_start = $row->start;
             if ($data_start == null) {
@@ -347,7 +252,7 @@ function process_monthly_stats($systemlist, $single_system, $reload) {
             }
 
             // Get last day of data for this system
-            $result = $mysqli->query("SELECT MAX(timestamp) AS end FROM system_stats_daily WHERE id = $systemid");
+            $result = $mysqli->query("SELECT MAX(timestamp) AS end FROM myheatpump_daily_stats WHERE id = $appid");
             $row = $result->fetch_object();
             $data_end = $row->end;
             if ($data_end == null) {

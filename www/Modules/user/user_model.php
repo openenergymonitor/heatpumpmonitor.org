@@ -135,38 +135,7 @@ class User
         // Remember me
         $this->rememberme->remember_me($userid);
 
-        // Sync accounts
-        $this->sync_accounts($userid);
-
         return array('success' => true, 'message' => _("Login successful"));
-    }
-
-    public function login_using_dev_env($username, $password)
-    {
-        // Check if user exists in database
-        $stmt = $this->mysqli->prepare("SELECT id, username, email, admin FROM users WHERE username = ?");
-        $stmt->bind_param("s", $username);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        
-        if ($row = $result->fetch_object()) {
-            // In dev environment, accept 'password' or 'admin' as valid passwords
-            if ($password === 'password' || $password === 'admin') {
-                session_regenerate_id();
-                $_SESSION['userid'] = $row->id;
-                $_SESSION['username'] = $row->username;
-                $_SESSION['email'] = $row->email;
-                $_SESSION['admin'] = $row->admin;
-                $this->update_last_login($row->id);
-                
-                // Sync accounts for users with sub-accounts
-                $this->sync_accounts($row->id);
-                
-                return array('success' => true, 'message' => _("Login successful"));
-            }
-        }
-        
-        return array('success' => false, 'message' => _("Invalid username or password"));
     }
 
     public function update_last_login($userid) {
@@ -312,89 +281,6 @@ class User
                 'userid' => (int) $row->id,
                 'username' => $row->username
             );
-        }
-
-        return array(
-            'success' => true,
-            'accounts' => $accounts
-        );
-    }
-
-    // Account syncronisation
-    public function sync_accounts($adminuserid) {
-        $adminuserid = (int) $adminuserid;
-
-        // Get this username
-        $result = $this->mysqli->query("SELECT apikey_write FROM users WHERE id='$adminuserid'");
-        if (!$row = $result->fetch_object()) {
-            return array(
-                'success' => false,
-                'message' => "User not found"
-            );
-        }
-        
-	    if (!$row->apikey_write || $row->apikey_write == '') {
-            return array(
-                'success' => false,
-                'message' => "No apikey found"
-            );
-        }
-
-        // Get sub accounts
-        $result = file_get_contents($this->host."/account/list.json?apikey=$row->apikey_write");
-        $accounts_all_data = json_decode($result);
-        if (!$accounts_all_data) {
-            return array(
-                'success' => false,
-                'message' => "Error fetching account list"
-            );
-        }
-
-        $accounts = array();
-        foreach ($accounts_all_data as $account) {
-
-            // Check if local user exists
-            if (!$this->userid_exists($account->id)) {
-                // Create new user fetch userid
-                $stmt = $this->mysqli->prepare("INSERT INTO users (id, username, email, apikey_read, apikey_write, admin) VALUES (?, ?, ?, ?, '', 0)");
-                $stmt->bind_param("isss", $account->id, $account->username, $account->email, $account->apikey_read);
-                $stmt->execute();
-                $stmt->close();
-            }
-
-            // Check if account link exists
-            $result = $this->mysqli->query("SELECT * FROM accounts WHERE adminuser='$adminuserid' AND linkeduser='$account->id'");
-            if ($result->num_rows == 0) {
-                // Create account link
-                $stmt = $this->mysqli->prepare("INSERT INTO accounts (adminuser, linkeduser) VALUES (?, ?)");
-                $stmt->bind_param("ii", $adminuserid, $account->id);
-                $stmt->execute();
-                $stmt->close();
-            }
-
-            $accounts[] = array(
-                'userid' => (int) $account->id,
-                'username' => $account->username
-            );
-        }
-
-        // Remove any locally linked accounts that are no longer in emoncms account list
-        $result = $this->mysqli->query("SELECT linkeduser FROM accounts WHERE adminuser='$adminuserid'");
-        while ($row = $result->fetch_object()) {
-            $found = false;
-            foreach ($accounts_all_data as $account) {
-                if ($row->linkeduser == $account->id) {
-                    $found = true;
-                    break;
-                }
-            }
-            if (!$found) {
-                // Remove account link
-                $stmt = $this->mysqli->prepare("DELETE FROM accounts WHERE adminuser=? AND linkeduser=?");
-                $stmt->bind_param("ii", $adminuserid, $row->linkeduser);
-                $stmt->execute();
-                $stmt->close();
-            }
         }
 
         return array(

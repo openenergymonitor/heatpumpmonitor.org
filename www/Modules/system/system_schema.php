@@ -39,7 +39,7 @@ $schema['system_meta'] = array(
         'group' => 'Overview'
     ),
     'userid' => array('type' => 'int(11)', 'editable' => false),
-    'published' => array('type' => 'tinyint(1)', 'editable' => false, 'optional' => false, 'name' => 'Published', 'group' => 'Overview'),
+    'published' => array('type' => 'tinyint(1)', 'editable' => false, 'optional' => true, 'name' => 'Published', 'group' => 'Overview'),
     'last_updated' => array('type' => 'int(11)', 'editable' => false, 'name' => 'Last updated', 'group' => 'Overview'),
 
     // New method of linking an emoncms instance myheatpump app
@@ -176,7 +176,7 @@ $schema['system_meta'] = array(
     'share' => array(
         'type' => 'tinyint(1)', 
         'editable' => true, 
-        'optional' => false, 
+        'optional' => true, 
         'name' => 'Share', 
         'group' => 'Overview',
         'show' => false
@@ -273,7 +273,7 @@ $schema['system_meta'] = array(
     'flow_temp' => array(
         'type' => 'float', 
         'editable' => true, 
-        'optional' => false, 
+        'optional' => true, 
         'name' => 'Design flow temperature', 
         'group' => 'Space heating',
         'helper' => "Design flow temperature (e.g 45°C at -3°C)",
@@ -283,7 +283,7 @@ $schema['system_meta'] = array(
     'design_temp' => array(
         'type' => 'float', 
         'editable' => true, 
-        'optional' => false, 
+        'optional' => true, 
         'name' => 'Outside design temperature', 
         'group' => 'Space heating',
         'helper' => "E.g -3°C",
@@ -334,7 +334,7 @@ $schema['system_meta'] = array(
     'hydraulic_separation' => array(
         'type' => 'varchar(64)', 
         'editable' => true, 
-        'optional' => false, 
+        'optional' => true, 
         'name' => 'Hydraulic seperation', 
         'group' => 'Space heating', 
         'options'=> array('None','Low loss header','Buffer','Plate heat exchanger',"Don't know")
@@ -354,7 +354,7 @@ $schema['system_meta'] = array(
     'dhw_method' => array(
         'type' => 'varchar(64)', 
         'editable' => true, 
-        'optional' => false, 
+        'optional' => true, 
         'name' => 'Hot water storage', 
         'group' => 'Hot water', 
         'options'=>array(
@@ -422,7 +422,7 @@ $schema['system_meta'] = array(
     'heat_loss' => array(
         'type' => 'float', 
         'editable' => true, 
-        'optional' => false, 
+        'optional' => true, 
         'name' => 'Heat loss at design outside temperature (DOT)', 
         'group' => 'Property',
         'helper' => 'E.g as given in detailed installer assessment', 
@@ -432,7 +432,7 @@ $schema['system_meta'] = array(
     'property' => array(
         'type' => 'varchar(64)', 
         'editable' => true, 
-        'optional' => false, 
+        'optional' => true, 
         'name' => 'Property type',
         'group' => 'Property',
         'options' => array('Detached', 'Semi-detached', 'End-terrace', 'Mid-terrace', 'Flat / appartment', 'Bungalow', 'Office building')
@@ -441,7 +441,7 @@ $schema['system_meta'] = array(
     'floor_area' => array(
         'type' => 'float', 
         'editable' => true, 
-        'optional' => false, 
+        'optional' => true, 
         'name' => 'Floor area', 
         'group' => 'Property', 
         'unit' => 'm²'
@@ -450,7 +450,7 @@ $schema['system_meta'] = array(
     'age' => array(
         'type' => 'varchar(64)',
         'editable' => true, 
-        'optional' => false, 
+        'optional' => true, 
         'name' => 'Age', 
         'group' => 'Property',
         'options' => array('2012 or newer', '1983 to 2011', '1940 to 1982', '1900 to 1939', 'Pre-1900')
@@ -459,7 +459,7 @@ $schema['system_meta'] = array(
     'insulation' => array(
         'type' => 'varchar(64)',
         'editable' => true, 
-        'optional' => false, 
+        'optional' => true, 
         'name' => 'Insulation level', 
         'group' => 'Property',
         'options' => array('Passivhaus', 'Fully insulated walls, floors and loft', 'Some insulation in walls and loft', 'Cavity wall, plus some loft insulation', 'Non-insulated cavity wall', 'Solid walls')
@@ -563,7 +563,7 @@ $schema['system_meta'] = array(
     'electric_meter' => array(
         'type' => 'varchar(128)', 
         'editable' => true, 
-        'optional' => false, 
+        'optional' => true, 
         'name' => 'Electric meter', 
         'group' => 'Metering',
         'options' => array(
@@ -582,7 +582,7 @@ $schema['system_meta'] = array(
     'heat_meter' => array(
         'type' => 'varchar(128)', 
         'editable' => true, 
-        'optional' => false, 
+        'optional' => true, 
         'name' => 'Heat meter', 
         'group' => 'Metering',
         'options' => array(
@@ -905,9 +905,7 @@ $schema['system_stats_daily'] = array(
     'unit_rate_agile' => array('type' => 'float', 'name'=>'Unit rate agile', 'group'=>'Unit rates', 'dp'=>1, 'unit'=>'p/kWh'),
     'unit_rate_cosy' => array('type' => 'float', 'name'=>'Unit rate cosy', 'group'=>'Unit rates', 'dp'=>1, 'unit'=>'p/kWh'),
     'unit_rate_go' => array('type' => 'float', 'name'=>'Unit rate GO', 'group'=>'Unit rates', 'dp'=>1, 'unit'=>'p/kWh'),
-    'unit_rate_eon_next_pumped_v2' => array('type' => 'float', 'name'=>'Unit rate EON Next Pumped V2', 'group'=>'Unit rates', 'dp'=>1, 'unit'=>'p/kWh'),
-
-
+    // 'unit_rate_eon_next_pumped_v2' => array('type' => 'float', 'name'=>'Unit rate EON Next Pumped V2', 'group'=>'Unit rates', 'dp'=>1, 'unit'=>'p/kWh')
 );
 
 // Copy the same structure for aggregated stats

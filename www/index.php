@@ -20,12 +20,17 @@ require "Lib/load_database.php";
 require "core.php";
 require "route.php";
 
+require "Lib/EmonLogger.php";
+$log = new EmonLogger(__FILE__);
+
 // User model is required for session management
 // RememberMe model is required for remember me functionality
-require("Modules/user/rememberme_model.php");
-$rememberme = new RememberMe($mysqli);
+// require("/var/www/emoncms/Modules/user/rememberme_model.php");
+// $rememberme = new RememberMe($mysqli);
+chdir("/var/www/emoncms");
 require("Modules/user/user_model.php");
-$user = new User($mysqli,$rememberme);
+$user = new User($mysqli,$redis);
+chdir("/var/www/heatpumpmonitor");
 
 // System model is used for loading system meta data
 require ("Modules/system/system_model.php");
@@ -44,6 +49,7 @@ $route = new Route(get('q'), server('DOCUMENT_ROOT'), server('REQUEST_METHOD'));
 
 // Session
 $session = $user->emon_session_start();
+
 
 // Default route
 if ($route->controller=="") {

@@ -255,3 +255,20 @@ function generate_secure_key($length)
         return bin2hex(openssl_random_pseudo_bytes($length));
     }
 }
+
+
+function tr($text)
+{
+    return isset($GLOBALS['translations'][$text]) && $GLOBALS['translations'][$text] !== ''
+        ? $GLOBALS['translations'][$text]
+        : $text;
+}
+
+function ctx_tr($context, $text)
+{
+    if ($context && isset($GLOBALS['context_translations'][$context]) && isset($GLOBALS['context_translations'][$context][$text])) {
+        // If context is set and translation exists in context, return it
+        return $GLOBALS['context_translations'][$context][$text];
+    }
+    return $text;
+}

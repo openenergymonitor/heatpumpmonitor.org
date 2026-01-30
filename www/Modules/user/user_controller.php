@@ -14,11 +14,7 @@ function user_controller() {
                 header('Location: '.$path);
             }
         } else if ($route->format=="json") {
-            if ($settings['dev_env_login_enabled']) {
-                return $user->login_using_dev_env(post("username", true),post("password", true));
-            } else {
-                return $user->login_using_emoncms(post("username", true),post("password", true));
-            }
+            return $user->login(post("username", true), post("password", true), true,'');
         }
     }
 

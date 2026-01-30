@@ -6,6 +6,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 function timeseries_controller() {
 
     global $session, $route, $system, $redis, $mysqli, $system_stats, $settings;
+
+    chdir("/var/www/emoncms");
+    require_once "Lib/enum.php";
+    require_once "Modules/feed/feed_model.php";
+    $feed_model = new Feed($mysqli, $redis, $settings["feed"]);
     
     if ($route->action == "available") {
         $route->format = "json";
@@ -26,59 +31,6 @@ function timeseries_controller() {
      
         return $config;
     }
-        
-    if ($route->action == "values_slow") {
-        $route->format = "json";
-        $system_id = (int) get("id",true);
-        $feed_keys = explode(",",get("feeds",true));
-        
-        $available = array();
-        
-        $config = $system_stats->get_system_config_with_meta($session['userid'], $system_id);
-        if (is_array($config) && isset($config['success'])) {
-            return $config;
-        }
-        if (!$config->apikey) return false;
-
-        $feedids = array();
-        $feed_map = array(); // Maps feedid to array of feed keys
-        foreach ($config->feeds as $key=>$f) {
-            if (in_array($key,$feed_keys)) {
-                $feedids[] = $f->feedid;
-                // Store multiple keys that map to the same feedid
-                if (!isset($feed_map[$f->feedid])) {
-                    $feed_map[$f->feedid] = array();
-                }
-                $feed_map[$f->feedid][] = $key;
-            }
-        }
-        
-        // Remove duplicate feedids
-        $feedids = array_unique($feedids);
-        
-        $url = "$config->server/feed/list.json?apikey=".$config->apikey;
-
-        $result = json_decode(file_get_contents($url));
-        
-        $remapped = array();
-
-        if ($result) {
-            foreach ($result as $data) {
-                if (isset($feed_map[$data->id])) {
-                    // Create entries for all feed keys that map to this feedid
-                    foreach ($feed_map[$data->id] as $key) {
-                        $remapped[$key] = array(
-                            "time"=> (int) $data->time,
-                            "value"=> (float) $data->value
-                        );
-                    }
-                }
-            }
-        }
-
-        return $remapped;
-    }
-
 
     if ($route->action == "values") {
         $route->format = "json";
@@ -130,32 +82,22 @@ function timeseries_controller() {
             return $config;
         }
 
-        $feedids = array();
-        $feed_map = array();
+        $result = array();
+
         foreach ($config->feeds as $key=>$f) {
             if (in_array($key,$feed_keys)) {
-                $feedids[] = $f->feedid;
-                $feed_map[$f->feedid] = $key;
+
+                // Fixed parameters
+                $skipmissing = 0;
+                $limitinterval = 0;
+                $csv = false;
+                $timezone = "UTC";
+                $dp = -1;
+
+                $result[$key] = $feed_model->get_data($f->feedid,$start,$end,$interval,$average,$timezone,$timeformat,$csv,$skipmissing,$limitinterval,$delta,$dp);
             }
         }
-
-        $apikeystr = "";
-        if ($config->apikey) $apikeystr = "&apikey=".$config->apikey;
-        
-        $url = "$config->server/feed/data.json?ids=".implode(",",$feedids)."&start=$start&end=$end&interval=$interval&average=$average&dela=$delta&skipmissing=0&timeformat=$timeformat".$apikeystr;
-
-        $result = json_decode(file_get_contents($url));
-
-        $remapped = array();
-
-        if ($result) {
-            foreach ($result as $data) {
-                $key = $feed_map[$data->feedid];
-                $remapped[$key] = $data->data;
-            }
-        }
-
-        return $remapped;
+        return $result;
     }
 
     return false;

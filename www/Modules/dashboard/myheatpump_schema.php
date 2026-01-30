@@ -1,5 +1,6 @@
 <?php
 
+/*
 $schema['myheatpump_daily_stats'] = array(
     
     // App ID (On heatpumpmonitor.org this is the system ID)
@@ -120,3 +121,4 @@ $schema['myheatpump_daily_stats'] = array(
 
 
 );
+*/

@@ -1,4 +1,5 @@
 <?php
+/*
 
 $schema['users'] = array(
     // user id should link to emoncms user id
@@ -28,3 +29,4 @@ $schema['accounts'] = array(
     'adminuser' => array('type' => 'int(11)'),
     'linkeduser' => array('type' => 'int(11)')
 );
+*/

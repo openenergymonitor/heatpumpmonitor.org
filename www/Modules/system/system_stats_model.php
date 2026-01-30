@@ -161,22 +161,6 @@ class SystemStats
     
     // --------------------------------------------------------------------------------------------
 
-    // Save day
-    public function save_day($systemid, $row) 
-    {
-        $systemid = (int) $systemid;
-        $timestamp = (int) $row['timestamp'];
-        $row['id'] = $systemid;
-
-        // Delete existing stats
-        $this->mysqli->query("DELETE FROM system_stats_daily WHERE `id`='$systemid' AND `timestamp`='$timestamp'");
-
-        // Insert new
-        $this->save_stats_table('system_stats_daily',$row);
-
-        return array("success" => true, "message" => "Saved");
-    }
-
     public function save_stats_table($table_name,$stats) {
         // Generate query from schema
         $fields = array();
@@ -396,19 +380,22 @@ class SystemStats
     public function process_from_daily($systemid, $start = false, $end = false) {
 
         $systemid = (int) $systemid;
+        if (!$appid = $this->get_app_id($systemid)) {
+            return false;
+        }
         
         if ($start===false && $end===false) {
-            $where = "WHERE id = $systemid";
+            $where = "WHERE id = $appid";
         } else {
             $start = (int) $start;
             $end = (int) $end;
-            $where = "WHERE timestamp >= $start AND timestamp < $end AND id = $systemid";
+            $where = "WHERE timestamp >= $start AND timestamp < $end AND id = $appid";
         }
         
         $rows = array();
 
         // Get daily data from system_stats_daily table for this system and time period
-        $result = $this->mysqli->query("SELECT * FROM system_stats_daily $where");
+        $result = $this->mysqli->query("SELECT * FROM myheatpump_daily_stats $where");
         while ($row = $result->fetch_object()) {
             $rows[] = $row;
         }
@@ -492,7 +479,7 @@ class SystemStats
             $totals['combined']['cooling_kwh'] += $row->combined_cooling_kwh;
             $totals['from_energy_feeds']['elec_kwh'] += $row->from_energy_feeds_elec_kwh;
             $totals['from_energy_feeds']['heat_kwh'] += $row->from_energy_feeds_heat_kwh;
-
+            
             $agile_cost = $row->unit_rate_agile * 0.01 * $totals['from_energy_feeds']['elec_kwh'];
             $totals['agile_cost'] += $agile_cost;
 
@@ -502,8 +489,8 @@ class SystemStats
             $go_cost = $row->unit_rate_go * 0.01 * $totals['from_energy_feeds']['elec_kwh'];
             $totals['go_cost'] += $go_cost;
 
-            $eon_next_pumped_v2_cost = $row->unit_rate_eon_next_pumped_v2 * 0.01 * $totals['from_energy_feeds']['elec_kwh'];
-            $totals['eon_next_pumped_v2_cost'] += $eon_next_pumped_v2_cost;
+            // $eon_next_pumped_v2_cost = $row->unit_rate_eon_next_pumped_v2 * 0.01 * $totals['from_energy_feeds']['elec_kwh'];
+            // $totals['eon_next_pumped_v2_cost'] += $eon_next_pumped_v2_cost;
 
             $totals['error_air'] += $row->error_air;
             $totals['error_air_kwh'] += $row->error_air_kwh;
@@ -683,6 +670,11 @@ class SystemStats
         $start = (int) $start;
         $end = (int) $end;
 
+        // Get app id
+        if (!$app_id = $this->get_app_id($systemid)) {
+            die("Invalid system id");
+        }
+
         // Print header based on system_stats_daily schema
         $all_fields = array();
         foreach ($this->schema['system_stats_daily'] as $field => $field_schema) {
@@ -709,25 +701,16 @@ class SystemStats
         $date->setTimezone(new DateTimeZone('Europe/London'));
 
         if ($start == false || $end == false) {
-            $where = "WHERE id=$systemid";
+            $where = "WHERE id=$app_id";
         } else {
-            $where = "WHERE id=$systemid AND timestamp>=$start AND timestamp<$end";
+            $where = "WHERE id=$app_id AND timestamp>=$start AND timestamp<$end";
         }
         // Get data
-        $result = $this->mysqli->query("SELECT $field_select FROM system_stats_daily $where ORDER BY timestamp ASC");
+        $result = $this->mysqli->query("SELECT $field_select FROM myheatpump_daily_stats $where ORDER BY timestamp ASC");
         while ($row = $result->fetch_object()) {
             $data = array();
             foreach ($valid_fields as $field) {
-            
-                $value = $row->$field;
-                
-                if ($field == "timestamp") {
-                    // convert DateTime
-                    // $date->setTimestamp($value);
-                    // $value = $date->format('Y-m-d H:i:s');
-                }
-            
-                $data[] = $value;
+                $data[] = $row->$field;
             }
             $out .= implode(",",$data)."\n";
         }
@@ -738,11 +721,14 @@ class SystemStats
     public function export_daily($systemid) 
     {
         $systemid = (int) $systemid;
+        if (!$appid = $this->get_app_id($systemid)) {
+            die("Invalid system id");
+        }
                     
         $filename = "daily.csv";
         $where = '';
         if ($systemid>0) {
-            $where = "WHERE id=$systemid";
+            $where = "WHERE id=$appid";
             $filename = "daily-$systemid.csv";
         }
 
@@ -768,7 +754,7 @@ class SystemStats
         fputcsv($fh, $header);
 
         // Get data
-        $result = $this->mysqli->query("SELECT * FROM system_stats_daily $where");
+        $result = $this->mysqli->query("SELECT * FROM myheatpump_daily_stats $where");
         while ($row = $result->fetch_object()) {
             $data = array();
             foreach ($this->schema['system_stats_daily'] as $field => $field_schema) {
@@ -779,5 +765,14 @@ class SystemStats
         
         fclose($fh);
         exit;
+    }
+
+    public function get_app_id($systemid) {
+        $systemid = (int) $systemid;
+        $result = $this->mysqli->query("SELECT app_id FROM system_meta WHERE id='$systemid'");
+        if ($row = $result->fetch_object()) {
+            return $row->app_id;
+        }
+        return false;
     }
 }
