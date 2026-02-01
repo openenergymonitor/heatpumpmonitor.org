@@ -836,37 +836,39 @@ class System
     }
 
     private function append_app_list($myheatpump_apps, $userid, $username, $readkey) {
-        $result = file_get_contents($this->host."/app/list.json?apikey=".$readkey);
-        if (!$result) return $myheatpump_apps;
 
-        $apps = json_decode($result);
-        if (!$apps) return $myheatpump_apps;
+        $userid = (int) $userid;
 
-        foreach ($apps as $app) {
-            if ($app->app=="myheatpump") {
-                $app->userid = $userid;
-                $app->username = $username;
+        $emoncms_mysqli = connect_emoncms_database();
+
+        $result = $emoncms_mysqli->query("SELECT * FROM app WHERE userid='$userid'");
+        while ($app_row = $result->fetch_object()) {
+            if (!isset($app_row->app)) {
+                continue;
+            }
+
+            if ($app_row->app=="myheatpump") {
+
                 // Generate url
-                $url = $this->host."/app/view?name=".$app->name."&readkey=".$readkey;
-                $app->url = $url;
+                $url = $this->host."/app/view?name=".$app_row->name."&readkey=".$readkey;
 
                 // Check if app is already added, skip if it is
                 $result = $this->mysqli->query("SELECT id FROM system_meta WHERE url='$url'");
                 if ($result->num_rows>0) {
-                    $app->in_use = 1;
+                    $app_row->in_use = 1;
                 } else {
-                    $app->in_use = 0;
+                    $app_row->in_use = 0;
                 }
 
                 $myheatpump_apps[] = array(
-                    "id" => (int) $app->id,
-                    "userid" => $app->userid,
-                    "username" => $app->username,
-                    "name" => $app->name,
+                    "id" => (int) $app_row->id,
+                    "userid" => $userid,
+                    "username" => $username,
+                    "name" => $app_row->name,
                     "readkey" => $readkey,
-                    "url" => $app->url,
-                    "public" => (int) $app->public,
-                    "in_use" => $app->in_use
+                    "url" => $url,
+                    "public" => (int) $app_row->public,
+                    "in_use" => $app_row->in_use
                 );
             }
         }
