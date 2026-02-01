@@ -451,8 +451,12 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <th v-for="column in selected_columns" @click="sort(column, 'desc')" style="cursor:pointer" :title="columns[column].helper"><span v-html="columns[column].heading"></span>
                             <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn==column"></i>
                         </th>
-                        <th v-if="mode!='public' && public_mode_enabled">Share</th>
-                        <th v-if="mode!='public' && public_mode_enabled">Published</th>
+                        <th v-if="mode!='public' && public_mode_enabled" @click="sort('share', 'desc')" style="cursor:pointer">Share
+                            <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='share'"></i>
+                        </th>
+                        <th v-if="mode!='public' && public_mode_enabled" @click="sort('published', 'desc')" style="cursor:pointer">Published
+                            <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='published'"></i>
+                        </th>
                         <th v-if="mode=='public'" :style="(showContent)?'width:80px':'width:20px'">View</th>
                         <th v-if="mode!='public'" :style="(showContent)?'width:120px':'width:20px'"></th>
 
