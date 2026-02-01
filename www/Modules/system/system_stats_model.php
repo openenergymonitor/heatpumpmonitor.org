@@ -6,6 +6,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 class SystemStats
 {
     private $mysqli;
+    private $emoncms_mysqli;
     private $system;
     private $redis;
     private $host;
@@ -15,6 +16,8 @@ class SystemStats
     public function __construct($mysqli,$system)
     {
         $this->mysqli = $mysqli;
+        $this->emoncms_mysqli = connect_emoncms_database();
+
         $this->system = $system;
 
         global $settings;
@@ -161,22 +164,6 @@ class SystemStats
     
     // --------------------------------------------------------------------------------------------
 
-    // Save day
-    public function save_day($systemid, $row) 
-    {
-        $systemid = (int) $systemid;
-        $timestamp = (int) $row['timestamp'];
-        $row['id'] = $systemid;
-
-        // Delete existing stats
-        $this->mysqli->query("DELETE FROM system_stats_daily WHERE `id`='$systemid' AND `timestamp`='$timestamp'");
-
-        // Insert new
-        $this->save_stats_table('system_stats_daily',$row);
-
-        return array("success" => true, "message" => "Saved");
-    }
-
     public function save_stats_table($table_name,$stats) {
         // Generate query from schema
         $fields = array();
@@ -228,34 +215,6 @@ class SystemStats
     public function get_all($session_userid, $system_id = false, $mode = "public") {
         return $this->get('system_stats_all_v2',false,false,$system_id,$session_userid,$mode);
     }
-
-    /*
-    public function get_custom($session_userid, $system_id = false, $mode = "public", $start = false, $end = false) {
-        if (!$start) return false;
-        if (!$end) return false;
-        if ($mode != "public") return false;
-
-        $date = new DateTime();
-        $date->setTimezone(new DateTimeZone('Europe/London'));
-        $date->setTime(0, 0, 0);
-        // start
-        $date->modify($start);
-        $start = $date->getTimestamp();
-        // end
-        $date->modify($end);
-        $date->modify('+1 month');
-        $end = $date->getTimestamp();
-
-        $stats = array();
-        $result = $this->mysqli->query("SELECT id FROM system_meta WHERE share=1 AND published=1"); // OR userid='$userid' (removed for now)
-        while ($row = $result->fetch_object()) {
-            $system_stats_result = $this->process_from_daily($row->id, $start, $end);
-            if ($system_stats_result !== false) {
-                $stats[] = $system_stats_result;
-            }
-        }
-        return $stats;
-    }*/
 
     // Get system stats
     public function get($table_name, $start=false, $end=false, $system_id = false, $session_userid = false, $mode = "public")
@@ -396,19 +355,23 @@ class SystemStats
     public function process_from_daily($systemid, $start = false, $end = false) {
 
         $systemid = (int) $systemid;
+
+        if (!$appid = $this->get_app_id($systemid)) {
+            return false;
+        }
         
         if ($start===false && $end===false) {
-            $where = "WHERE id = $systemid";
+            $where = "WHERE id = $appid";
         } else {
             $start = (int) $start;
             $end = (int) $end;
-            $where = "WHERE timestamp >= $start AND timestamp < $end AND id = $systemid";
+            $where = "WHERE timestamp >= $start AND timestamp < $end AND id = $appid";
         }
         
         $rows = array();
 
         // Get daily data from system_stats_daily table for this system and time period
-        $result = $this->mysqli->query("SELECT * FROM system_stats_daily $where");
+        $result = $this->emoncms_mysqli->query("SELECT * FROM myheatpump_daily_stats $where");
         while ($row = $result->fetch_object()) {
             $rows[] = $row;
         }
@@ -502,8 +465,8 @@ class SystemStats
             $go_cost = $row->unit_rate_go * 0.01 * $totals['from_energy_feeds']['elec_kwh'];
             $totals['go_cost'] += $go_cost;
 
-            $eon_next_pumped_v2_cost = $row->unit_rate_eon_next_pumped_v2 * 0.01 * $totals['from_energy_feeds']['elec_kwh'];
-            $totals['eon_next_pumped_v2_cost'] += $eon_next_pumped_v2_cost;
+            //$eon_next_pumped_v2_cost = $row->unit_rate_eon_next_pumped_v2 * 0.01 * $totals['from_energy_feeds']['elec_kwh'];
+            //$totals['eon_next_pumped_v2_cost'] += $eon_next_pumped_v2_cost;
 
             $totals['error_air'] += $row->error_air;
             $totals['error_air_kwh'] += $row->error_air_kwh;
@@ -683,6 +646,11 @@ class SystemStats
         $start = (int) $start;
         $end = (int) $end;
 
+        // Get app id
+        if (!$app_id = $this->get_app_id($systemid)) {
+            return false;
+        }
+
         // Print header based on system_stats_daily schema
         $all_fields = array();
         foreach ($this->schema['system_stats_daily'] as $field => $field_schema) {
@@ -709,12 +677,12 @@ class SystemStats
         $date->setTimezone(new DateTimeZone('Europe/London'));
 
         if ($start == false || $end == false) {
-            $where = "WHERE id=$systemid";
+            $where = "WHERE id=$app_id";
         } else {
-            $where = "WHERE id=$systemid AND timestamp>=$start AND timestamp<$end";
+            $where = "WHERE id=$app_id AND timestamp>=$start AND timestamp<$end";
         }
         // Get data
-        $result = $this->mysqli->query("SELECT $field_select FROM system_stats_daily $where ORDER BY timestamp ASC");
+        $result = $this->emoncms_mysqli->query("SELECT $field_select FROM myheatpump_daily_stats $where ORDER BY timestamp ASC");
         while ($row = $result->fetch_object()) {
             $data = array();
             foreach ($valid_fields as $field) {
@@ -738,11 +706,15 @@ class SystemStats
     public function export_daily($systemid) 
     {
         $systemid = (int) $systemid;
+
+        if (!$appid = $this->get_app_id($systemid)) {
+            die("Invalid system id");
+        }
                     
         $filename = "daily.csv";
         $where = '';
-        if ($systemid>0) {
-            $where = "WHERE id=$systemid";
+        if ($appid>0) {
+            $where = "WHERE id=$appid";
             $filename = "daily-$systemid.csv";
         }
 
@@ -768,7 +740,7 @@ class SystemStats
         fputcsv($fh, $header);
 
         // Get data
-        $result = $this->mysqli->query("SELECT * FROM system_stats_daily $where");
+        $result = $this->mysqli->query("SELECT * FROM myheatpump_daily_stats $where");
         while ($row = $result->fetch_object()) {
             $data = array();
             foreach ($this->schema['system_stats_daily'] as $field => $field_schema) {
@@ -780,4 +752,14 @@ class SystemStats
         fclose($fh);
         exit;
     }
+
+    public function get_app_id($systemid) {
+        $systemid = (int) $systemid;
+        $result = $this->mysqli->query("SELECT app_id FROM system_meta WHERE id='$systemid'");
+        if ($row = $result->fetch_object()) {
+            return $row->app_id;
+        }
+        return false;
+    }
+
 }

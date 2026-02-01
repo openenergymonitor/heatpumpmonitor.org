@@ -280,8 +280,15 @@ function system_controller() {
             if ($system->has_write_access($session['userid'],$systemid)==false) {
                 return array("success"=>false, "message"=>"Invalid access");
             }
+
+            $mode = ""; // default to recent
+            if (isset($_GET['mode']) && $_GET['mode']=="all") {
+                $mode = "all";
+            }
+
+            $path = "/opt/openenergymonitor/hpmon_dev";
             
-            $fp = fopen("/opt/openenergymonitor/heatpumpmonitor/hpmon.lock", "w");
+            $fp = fopen("$path/hpmon.lock", "w");
             if (!flock($fp, LOCK_EX | LOCK_NB)) {
                 return array("success"=>false, "message"=>"Already running");
             }
@@ -290,7 +297,7 @@ function system_controller() {
             // Use escapeshellarg and explicit casting to avoid command injection
             $systemid_arg = escapeshellarg((int)$systemid);
             $logfile = '/var/log/heatpumpmonitor/reload' . (int)$systemid . '.log';
-            $cmd = "php /opt/openenergymonitor/heatpumpmonitor/load_and_process_cli.php {$systemid_arg} all > " . escapeshellarg($logfile) . " 2>&1 &";
+            $cmd = "php $path/load_and_process_cli.php {$systemid_arg} $mode > " . escapeshellarg($logfile) . " 2>&1 &";
             shell_exec($cmd);
             return array("success"=>false, "message"=>"Loading data and processing in background, check back in 5 minutes.");
         }

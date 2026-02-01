@@ -127,7 +127,8 @@ global $settings, $session, $path;
             <h5 class="card-header">Reload system data</h5>
             <div class="card-body">
                 <p>Manually reload system data from Emoncms dashboard</p>
-                <button type="button" class="btn btn-primary" @click="loadstats" :disabled="disable_loadstats">Reload</button>
+                <button type="button" class="btn btn-primary" @click="loadstats('recent')" :disabled="disable_loadstats">Load recent</button>
+                <button type="button" class="btn btn-warning" @click="loadstats('all')" :disabled="disable_loadstats">Reload all</button>
 
                 <pre id="reload_log" style="display:none; background-color:#300a24; color:#fff; padding:10px; margin-top:20px; border-radius: 5px;"></pre>
             </div>
@@ -801,18 +802,20 @@ global $settings, $session, $path;
             cancel: function() {
                 window.location.href = path + 'system/list/public';
             },
-            loadstats: function() {
+            loadstats: function(load_mode, show_alert=true) {
                 app.disable_loadstats = true;
-                axios.get(path + 'system/loadstats?id=' + app.system.id)
+                axios.get(path + 'system/loadstats?id=' + app.system.id + '&mode=' + load_mode)
                     .then(function(response) {
-                        alert(response.data.message);
+                        if (show_alert) {
+                            alert(response.data.message);
+                        }
                         app.disable_loadstats = false;
 
                         // start periodic check for reload log
                         app.reloadlog();
                         reload_interval = setInterval(function() {
                             app.reloadlog();
-                        }, 5000);
+                        }, 1000);
                     });
             },
             reloadlog: function() {
@@ -825,6 +828,10 @@ global $settings, $session, $path;
                             // check for string 'processed monthly systems' in log to stop
                             if (response.data.indexOf('processed monthly systems') > -1) {
                                 clearInterval(reload_interval);
+
+                                // stats/all
+                                load_monthly_and_all_stats();
+
                             }
                         }
                     });
@@ -847,9 +854,6 @@ global $settings, $session, $path;
                     this.init_autocomplete();
                 });
 
-            },
-            load_data: function() {
-                alert(system.url);
             },
 
             init_autocomplete: function() {
@@ -1310,30 +1314,42 @@ global $settings, $session, $path;
     app.filter_schema_groups();
     app.load_manufacturers();
 
-    axios.get(path + 'system/stats/monthly?id=' + app.system.id)
-        .then(function(response) {
-            app.monthly = response.data;
-            // draw_chart();
+    let first_loadstats = true;
+    load_monthly_and_all_stats();
 
-            // Scroll data coverage table to show newest data (rightmost) by default
-            app.$nextTick(() => {
-                const qualityBound = document.querySelector('.quality-bound');
-                if (qualityBound) {
-                    qualityBound.scrollLeft = qualityBound.scrollWidth;
-                }
+    function load_monthly_and_all_stats() {
+        axios.get(path + 'system/stats/monthly?id=' + app.system.id)
+            .then(function(response) {
+                app.monthly = response.data;
+                // draw_chart();
+
+                // Scroll data coverage table to show newest data (rightmost) by default
+                app.$nextTick(() => {
+                    const qualityBound = document.querySelector('.quality-bound');
+                    if (qualityBound) {
+                        qualityBound.scrollLeft = qualityBound.scrollWidth;
+                    }
+                });
+            })
+            .catch(function(error) {
+                console.log(error);
             });
-        })
-        .catch(function(error) {
-            console.log(error);
-        });
 
-    axios.get(path + 'system/stats/all?id=' + app.system.id)
-        .then(function(response) {
-            app.all = response.data[app.system.id];
-        })
-        .catch(function(error) {
-            console.log(error);
-        });
+        axios.get(path + 'system/stats/all?id=' + app.system.id)
+            .then(function(response) {
+
+                // if empty array, loadstats recent
+                if (response.data.length == 0 && first_loadstats) {
+                    first_loadstats = false;
+                    app.loadstats('recent', false);
+                }
+
+                app.all = response.data[app.system.id];
+            })
+            .catch(function(error) {
+                console.log(error);
+            });
+    }
 
     // Load existing photos for this system
     if (app.system.id) {

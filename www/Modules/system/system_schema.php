@@ -905,7 +905,7 @@ $schema['system_stats_daily'] = array(
     'unit_rate_agile' => array('type' => 'float', 'name'=>'Unit rate agile', 'group'=>'Unit rates', 'dp'=>1, 'unit'=>'p/kWh'),
     'unit_rate_cosy' => array('type' => 'float', 'name'=>'Unit rate cosy', 'group'=>'Unit rates', 'dp'=>1, 'unit'=>'p/kWh'),
     'unit_rate_go' => array('type' => 'float', 'name'=>'Unit rate GO', 'group'=>'Unit rates', 'dp'=>1, 'unit'=>'p/kWh'),
-    'unit_rate_eon_next_pumped_v2' => array('type' => 'float', 'name'=>'Unit rate EON Next Pumped V2', 'group'=>'Unit rates', 'dp'=>1, 'unit'=>'p/kWh'),
+    // 'unit_rate_eon_next_pumped_v2' => array('type' => 'float', 'name'=>'Unit rate EON Next Pumped V2', 'group'=>'Unit rates', 'dp'=>1, 'unit'=>'p/kWh'),
 
 
 );
