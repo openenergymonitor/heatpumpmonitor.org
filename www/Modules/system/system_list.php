@@ -1648,6 +1648,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     }
                 }
                 if (key=='hp_output') {
+                    if (val==null || val==0) return '';
                     return val + ' kW';
                 }
                 if (key=='floor_area') {

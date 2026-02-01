@@ -196,6 +196,7 @@ class System
 
     public function create($userid) {
         $userid = (int) $userid;
+
         $this->mysqli->query("INSERT INTO system_meta (userid) VALUES ('$userid')");
         $systemid = $this->mysqli->insert_id;
 
@@ -203,7 +204,10 @@ class System
     }
 
     // Returns blank form data following the schema
-    public function new() {
+    public function new($userid=false) {
+
+        $userid = (int) $userid;
+
         $form_data = new stdClass();
         foreach ($this->schema_meta as $key=>$schema_row) {
             // if editable
@@ -219,6 +223,30 @@ class System
             }
         }
         $form_data->id = false;
+
+
+        // Pre-fill installer details from user's latest system
+        $user_system_list = $this->list_user($userid);
+        if (count($user_system_list)) {
+            // Get latest system
+            $latest_system = end($user_system_list);
+
+            $fields_to_copy = array(
+                "installer_name",
+                "installer_url",
+                "installer_logo",
+                "heatgeek",
+                "heatingacademy"
+            );
+
+            foreach ($fields_to_copy as $field) {
+                if (isset($latest_system->$field)) {
+                    $form_data->$field = $latest_system->$field;
+                }
+            }
+
+        }
+
         return $form_data;
     }
 

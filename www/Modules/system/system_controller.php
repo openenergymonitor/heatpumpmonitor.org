@@ -12,7 +12,7 @@ function system_controller() {
     if ($route->action=="new") {
         $route->format = "html";
         if ($session['userid']) {
-            $system_data = $system->new();
+            $system_data = $system->new($session['userid']);
             return view("Modules/system/system_view.php", array(
                 "mode"=>"edit", 
                 "system_data"=>$system_data, 

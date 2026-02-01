@@ -394,13 +394,13 @@ global $settings, $session, $path;
                     <div class="col">
                         <div class="form-check">
                             <input class="form-check-input" type="radio" v-model="form_type" value="basic" @change="filter_schema_groups">
-                            <label>Keep it simple (basic and required fields)</label>
+                            <label>Basic and required fields</label>
                         </div>
                     </div>
                     <div class="col">
                         <div class="form-check">
                             <input class="form-check-input" type="radio" v-model="form_type" value="full" @change="filter_schema_groups">
-                            <label>I've got time (full form)</label>
+                            <label>Full form</label>
                         </div>
                     </div>
                 </div>
