@@ -126,6 +126,34 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         display: none;
     }
 
+    .data-status-circle {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        cursor: pointer;
+    }
+
+    .data-status-very-fresh {
+        background-color: #28a745;
+    }
+
+    .data-status-fresh {
+        background-color: #e0d616ff;
+    }
+
+    .data-status-stale {
+        background-color: #fd7e14;
+    }
+
+    .data-status-very-stale {
+        background-color: #dc3545;
+    }
+
+    .data-status-unknown {
+        background-color: #6c757d;
+    }
+
 </style>
 
 <div id="app" class="bg-light" v-cloak>
@@ -637,6 +665,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         group: 'Heat pump',
         helper: 'Oversizing factor'
     };
+
+    columns['heatpump_max_age'] = { name: "Live Data", heading: "Live", group: "Data Status", helper: "Data freshness status" };
     
     // remove stats_columns id & timestmap
     delete stats_columns.id;
@@ -1443,6 +1473,46 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             column_format: function (system,key) {
                 var val = system[key];
 
+                if (key=='heatpump_max_age') {
+                    var elec_ago = system['heatpump_elec_ago'];
+                    var heat_ago = system['heatpump_heat_ago'];
+                    var max_age = system['heatpump_max_age'];
+ 
+                    if (max_age == 876000) {
+                        return "<span class='data-status-circle data-status-unknown' title='Data status unknown'></span>";
+                    }
+                    
+                    // Determine worst status (both must be fresh for green)
+                    var status_class = '';
+                    var status_text = '';
+                    var status_detail = '';
+
+                    if (max_age < 1) {
+                        status_class = 'data-status-very-fresh';
+                        status_text = 'Live data (last update < 1h ago)';
+                        status_detail = 'Electric: ' + (elec_ago ? Math.round(elec_ago*3600) + ' seconds ago' : 'N/A') + 
+                                        '\nHeat: ' + (heat_ago ? Math.round(heat_ago*3600) + ' seconds ago' : 'N/A');
+                    } else if (max_age < 24) {
+                        status_class = 'data-status-fresh';
+                        status_text = 'Live data (last update < 24h ago)';
+                        status_detail = 'Electric: ' + (elec_ago ? Math.round(elec_ago) + ' hours ago' : 'N/A') + 
+                                        '\nHeat: ' + (heat_ago ? Math.round(heat_ago) + ' hours ago' : 'N/A');
+                    } else if (max_age < 168) {
+                        status_class = 'data-status-stale';
+                        status_text = 'Stale data (last update ' + Math.round(max_age) + 'h ago)';
+                        status_detail = 'Electric: ' + (elec_ago ? Math.round(elec_ago/24) + ' days ago' : 'N/A') + 
+                                        '\nHeat: ' + (heat_ago ? Math.round(heat_ago/24) + ' days ago' : 'N/A');
+                    } else {
+                        status_class = 'data-status-very-stale';
+                        status_text = 'Very stale data (last update ' + Math.round(max_age/24) + ' days ago)';
+                        status_detail = 'Electric: ' + (elec_ago ? Math.round(elec_ago/24) + ' days ago' : 'N/A') + 
+                                        '\nHeat: ' + (heat_ago ? Math.round(heat_ago/24) + ' days ago' : 'N/A');
+                    }
+                    
+                    
+                    return "<span class='data-status-circle " + status_class + "' title='" + status_text + "\n" + status_detail + "'></span>";
+                }
+
                 if (key=='hp_make_model') {
                     // HTML-escape user-editable fields to prevent XSS
                     var manufacturer = system['hp_manufacturer'] ? String(system['hp_manufacturer']).replace(/[&<>"']/g, function(m) {
@@ -1522,8 +1592,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     } else {
                         return '';
                     }
-                }
-                   
+                }                   
                 if (key=='installer_name') {
                     if (val!=null && val!='') {
                         return "<a class='installer_link' href='"+system['installer_url']+"'>"+val+"</a>";
@@ -2211,7 +2280,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     function resize(first = false) {
         var width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
 
-        if (app.mode != 'admin') {
+        if (app.mode == 'public') {
             if (width<800) {
                 app.selected_columns = template_views[app.selected_template]['narrow'];
                 app.showContent = false;
@@ -2223,13 +2292,26 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 app.showContent = true;
                 app.columns['training'].heading = "Training";
             }
+        } else if (app.mode == 'user') {
+            if (width<800) {
+                app.selected_columns = template_views[app.selected_template]['narrow'];
+                app.showContent = false;
+                if (first) app.show_field_selector = false;
+                app.columns['training'].heading = "";
+                
+            } else {
+                app.selected_columns = template_views[app.selected_template]['wide'];
+                app.selected_columns.push('heatpump_max_age');
+                app.showContent = true;
+                app.columns['training'].heading = "Training";
+            }
         } else {
             if (width<800) {
                 app.selected_columns = ['hp_model', 'hp_output', 'combined_cop'];
                 app.showContent = false;
                 if (first) app.show_field_selector = false;
             } else {
-                app.selected_columns = ['location', 'hp_type', 'hp_model', 'hp_output', 'data_flag', 'combined_cop', 'space_cop', 'boundary'];
+                app.selected_columns = ['location', 'hp_type', 'hp_model', 'hp_output', 'data_flag', 'combined_cop', 'space_cop', 'boundary', 'heatpump_max_age'];
                 app.showContent = true;
             }
         }

@@ -8,6 +8,7 @@ class System
     private $mysqli;
     private $host;
     public $schema_meta;
+    private $emoncms_mysqli = false;
 
     public function __construct($mysqli)
     {
@@ -75,6 +76,23 @@ class System
         if ($row->heatpump_model_id) {
             $row->heatpump_url = $path . 'heatpump/view?id=' . (int)$row->heatpump_model_id;
         }
+
+        // Get last updated times
+        $row->heatpump_elec_feedid = false;
+        $row->heatpump_heat_feedid = false;
+        $row->heatpump_elec_ago = 876000;
+        $row->heatpump_heat_ago = 876000;
+        $row->heatpump_max_age = 876000;
+
+        if (!$removePrivateFields) {
+            if ($last_updated = $this->get_last_updated($row->app_id)) {
+                $row->heatpump_elec_feedid = $last_updated['elec_feedid'];
+                $row->heatpump_heat_feedid = $last_updated['heat_feedid'];
+                $row->heatpump_elec_ago = $last_updated['elec_ago'];
+                $row->heatpump_heat_ago = $last_updated['heat_ago'];
+                $row->heatpump_max_age = $last_updated['max_age'];
+            }
+        }
         
         // Remove private fields for public lists
         if ($removePrivateFields) {
@@ -114,6 +132,10 @@ class System
 
     // All systems
     public function list_admin() {
+
+        // Connect to emoncms database for app info (function in www/core.php)
+        $this->emoncms_mysqli = connect_emoncms_database();
+
         $query = $this->build_system_list_query(
             "sm.*, u.username",
             "JOIN users u ON sm.userid = u.id",
@@ -132,6 +154,9 @@ class System
     // User systems
     public function list_user($userid=false) {
         $userid = (int) $userid;
+
+        // Connect to emoncms database for app info
+        $this->emoncms_mysqli = connect_emoncms_database();
 
         // Get user's own systems
         $query = $this->build_system_list_query(
@@ -1072,5 +1097,60 @@ class System
         );
     }
 
+    // Get last updated time for heatpump_elec and heatpump_heat
+    public function get_last_updated($app_id) {
+        $app_id = (int) $app_id;
+        global $redis;
 
+        if ($app_id==0) {
+            return false;
+        }
+
+        // Get app row
+        $result = $this->emoncms_mysqli->query("SELECT * FROM app WHERE id='$app_id' LIMIT 1");
+        if (!$app_row = $result->fetch_object()) {
+            return false;
+        }
+
+        // Get app config
+        $config = json_decode($app_row->config);
+
+        $now = time();
+        $heatpump_elec_feedid = false;
+        $heatpump_heat_feedid = false;
+
+        // Oldest time is 100 years ago
+
+        $elec_ago = 876000;
+        $heat_ago = 876000;
+        $max_age = 876000;
+        if (isset($config->heatpump_elec)) {
+            $heatpump_elec_feedid = (int) $config->heatpump_elec;
+            $elec_last_updated = $redis->hget("feed:$heatpump_elec_feedid",'time');
+            if ($elec_last_updated>0) {
+                $elec_ago = ($now - $elec_last_updated)/3600;
+                $max_age = $elec_ago;
+            }
+        }
+
+        if (isset($config->heatpump_heat)) {
+            $heatpump_heat_feedid = (int) $config->heatpump_heat;
+            $heat_last_updated = $redis->hget("feed:$heatpump_heat_feedid",'time');
+            if ($heat_last_updated>0) {
+                $heat_ago = ($now - $heat_last_updated)/3600;
+                if ($max_age===876000 || $heat_ago>$max_age) {
+                    $max_age = $heat_ago;
+                }
+            }
+        }
+
+
+        return array(
+            "elec_feedid" => $heatpump_elec_feedid,
+            "heat_feedid" => $heatpump_heat_feedid,
+            "elec_ago" => $elec_ago,
+            "heat_ago" => $heat_ago,
+            "max_age" => $max_age
+        );
+    }
 }
