@@ -9,6 +9,7 @@ if(is_dir("/var/www/heatpumpmonitororg")) {
 }
 
 define('EMONCMS_EXEC', 1);
+require "core.php";
 require "Lib/load_database.php";
 
 require ("Modules/system/system_model.php");
@@ -18,6 +19,7 @@ require "Modules/installer/installer_model.php";
 $installer_model = new Installer($mysqli);
 
 $fails = array();
+$logo_cache = array(); // Cache for installer_url -> logo filename mapping
 
 $installers_img_dir = "theme/img/installers";
 if (!file_exists($installers_img_dir)) {
@@ -37,16 +39,26 @@ foreach ($data as $row) {
     $installer_logo = '';
 
     if ($row->installer_url!='') {
-        // Fetch the installer logo
-        $image = $installer_model->fetch_installer_logo($row->installer_url);
-        if ($image === false) {
-            $fails[] = $row->installer_url;
-            continue; // Skip to the next iteration if fetching fails
+        // Check if we already have this logo cached
+        if (isset($logo_cache[$row->installer_url])) {
+            $installer_logo = $logo_cache[$row->installer_url];
+            print "cached: ".$installer_logo." for ".$row->installer_url."\n";
+        } else {
+            // Fetch the installer logo
+            $image = $installer_model->fetch_installer_logo($row->installer_url);
+            if ($image === false) {
+                $fails[] = $row->installer_url;
+                continue; // Skip to the next iteration if fetching fails
+            }
+            // Write the image data to the file
+            file_put_contents("$installers_img_dir/".$image['filename'], $image['data']);
+            $installer_logo = $image['filename'];
+            
+            // Cache the result
+            $logo_cache[$row->installer_url] = $installer_logo;
+            
+            print "success: ".$installer_logo."\n";
         }
-        // Write the image data to the file
-        file_put_contents("$installers_img_dir/".$image['filename'], $image['data']);
-        $installer_logo = $image['filename'];
-        print "success: ".$installer_logo."\n";
     }
 
     // Update the database with the installer logo
