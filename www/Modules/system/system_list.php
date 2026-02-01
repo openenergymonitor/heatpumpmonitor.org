@@ -2300,7 +2300,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 app.columns['training'].heading = "";
                 
             } else {
-                app.selected_columns = template_views[app.selected_template]['wide'];
+                app.selected_columns = [...template_views[app.selected_template]['wide']];
                 app.selected_columns.push('heatpump_max_age');
                 app.showContent = true;
                 app.columns['training'].heading = "Training";
