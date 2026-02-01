@@ -2070,10 +2070,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 var filtered_nodes_days = this.systems.filter(this.filterNodes).filter(this.filterDays);
 
                 if (app.mode == 'admin' && app.admin_restricted_list) {
-                    // Only show systems that are private, awaiting approval or have error flag
+                    // Only show systems that are awaiting approval or have error flag
                     filtered_nodes_days = filtered_nodes_days.filter(function(row) {
-                        if (row.share == 0) return true;
-                        if (row.published == 0) return true;
+                        // if (row.share == 0) return true;
+                        if (row.share == 1 && row.published == 0) return true;
                         if  (row.data_flag) return true;
                         return false;
                     });
