@@ -444,25 +444,28 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
                 <table v-else id="custom" class="table table-striped table-sm mt-3">
                     <tr>
-                        <th v-if="mode=='admin'" @click="sort('id', 'asc')" style="cursor:pointer">ID</th>
+                        <th v-if="mode!='public'" @click="sort('id', 'asc')" style="cursor:pointer">ID</th>
                         <th v-if="mode=='admin' || mode=='user'" @click="sort('name', 'asc')" style="cursor:pointer">User
                             <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='name'"></i>
                         </th>
                         <th v-for="column in selected_columns" @click="sort(column, 'desc')" style="cursor:pointer" :title="columns[column].helper"><span v-html="columns[column].heading"></span>
                             <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn==column"></i>
                         </th>
-                        <th v-if="mode!='public' && public_mode_enabled">Status</th>
+                        <th v-if="mode!='public' && public_mode_enabled">Share</th>
+                        <th v-if="mode!='public' && public_mode_enabled">Published</th>
                         <th v-if="mode=='public'" :style="(showContent)?'width:80px':'width:20px'">View</th>
                         <th v-if="mode!='public'" :style="(showContent)?'width:120px':'width:20px'"></th>
 
                     </tr>
                     <tr v-for="(system,index) in fSystems" v-if="mode!='public' || (mode=='public' && system.combined_data_length!=0)">
-                        <td v-if="mode=='admin'">{{ system.id }}</td>
+                        <td v-if="mode!='public'">{{ system.id }}</td>
                         <td v-if="mode=='admin' || mode=='user'"><span style="color:#888">{{ system.username }}</span></td>
                         <td v-for="column in selected_columns" v-html="column_format(system,column)" v-bind:class="sinceClass(system,column)" style=""></td>
                         <td v-if="mode!='public' && public_mode_enabled">
                             <span v-if="system.share" class="badge bg-success">Shared</span>
                             <span v-if="!system.share" class="badge bg-danger">Private</span>
+                        </td>
+                        <td v-if="mode!='public' && public_mode_enabled">
                             <span v-if="system.published" class="badge bg-success">Published</span>
                             <span v-if="system.share && !system.published && !system.data_flag" class="badge bg-warning">Waiting for review</span>
                             <span v-if="system.share && !system.published && system.data_flag" class="badge bg-secondary">Not published</span>
@@ -1494,17 +1497,17 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                         '\nHeat: ' + (heat_ago ? Math.round(heat_ago*3600) + ' seconds ago' : 'N/A');
                     } else if (max_age < 24) {
                         status_class = 'data-status-fresh';
-                        status_text = 'Live data (last update < 24h ago)';
+                        status_text = 'Last update < 24h ago';
                         status_detail = 'Electric: ' + (elec_ago ? Math.round(elec_ago) + ' hours ago' : 'N/A') + 
                                         '\nHeat: ' + (heat_ago ? Math.round(heat_ago) + ' hours ago' : 'N/A');
                     } else if (max_age < 168) {
                         status_class = 'data-status-stale';
-                        status_text = 'Stale data (last update ' + Math.round(max_age) + 'h ago)';
+                        status_text = 'Last update ' + Math.round(max_age) + 'h ago';
                         status_detail = 'Electric: ' + (elec_ago ? Math.round(elec_ago/24) + ' days ago' : 'N/A') + 
                                         '\nHeat: ' + (heat_ago ? Math.round(heat_ago/24) + ' days ago' : 'N/A');
                     } else {
                         status_class = 'data-status-very-stale';
-                        status_text = 'Very stale data (last update ' + Math.round(max_age/24) + ' days ago)';
+                        status_text = 'Last update ' + Math.round(max_age/24) + ' days ago';
                         status_detail = 'Electric: ' + (elec_ago ? Math.round(elec_ago/24) + ' days ago' : 'N/A') + 
                                         '\nHeat: ' + (heat_ago ? Math.round(heat_ago/24) + ' days ago' : 'N/A');
                     }

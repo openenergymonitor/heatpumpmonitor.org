@@ -181,6 +181,7 @@ if (isset($session['admin']) && $session['admin']) {
     var series = [];
     var systemid_map = {};
     var max_heat = 0;
+    var user_mode = false;
 
     var app = new Vue({
         el: '#app',
@@ -316,36 +317,48 @@ if (isset($session['admin']) && $session['admin']) {
         }
     });
 
-    let system_list_url = path + "system/list/public.json";
-    if (admin) {
-        system_list_url = path + "system/list/admin.json";
-    }
+
+
+    load_system_list();
 
     // Load list of systems
-    $.ajax({
-        type: "GET",
-        url: system_list_url,
-        success: function(result) {
+    function load_system_list() {
 
-            // sort by location
-            result.sort(function(a, b) {
-                // sort by location string
-                if (a.location < b.location) return -1;
-                if (a.location > b.location) return 1;
-                return 0;
-            });
+        let system_list_url = path + "system/list/public.json";
 
-            // System list by id
-            app.system_list = result;
-
-            for (var z in result) {
-                systemid_map[result[z].id] = z;
-            }
-
-            load();
-            resize();
+        if (user_mode) {
+            system_list_url = path + "system/list/user.json";
         }
-    });
+
+        if (admin) {
+            system_list_url = path + "system/list/admin.json";
+        }
+
+        $.ajax({
+            type: "GET",
+            url: system_list_url,
+            success: function(result) {
+
+                // sort by location
+                result.sort(function(a, b) {
+                    // sort by location string
+                    if (a.location < b.location) return -1;
+                    if (a.location > b.location) return 1;
+                    return 0;
+                });
+
+                // System list by id
+                app.system_list = result;
+
+                for (var z in result) {
+                    systemid_map[result[z].id] = z;
+                }
+
+                load();
+                resize();
+            }
+        });
+    }
 
     function load() {
 
@@ -362,6 +375,12 @@ if (isset($session['admin']) && $session['admin']) {
         });
 
         var z = systemid_map[app.systemid];
+        if (z === undefined) {
+            // switch to user mode
+            user_mode = true;
+            load_system_list();
+            return;
+        }
 
         hp_output = app.system_list[z].hp_output;
         heat_loss = app.system_list[z].heat_loss;
