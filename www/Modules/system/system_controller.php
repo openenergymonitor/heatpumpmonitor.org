@@ -286,7 +286,10 @@ function system_controller() {
                 $mode = "all";
             }
 
-            $path = "/opt/openenergymonitor/hpmon_dev";
+            $path = "/opt/openenergymonitor/heatpumpmonitor";
+            if (isset($settings['path'])) {
+                $path = $settings['path'];
+            }
             
             $fp = fopen("$path/hpmon.lock", "w");
             if (!flock($fp, LOCK_EX | LOCK_NB)) {
