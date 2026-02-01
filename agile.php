@@ -5,7 +5,7 @@ chdir("$dir/www");
 $admin_userid = 2;
 
 define('EMONCMS_EXEC', 1);
-
+require "core.php";
 require "Lib/load_database.php";
 
 require("Modules/user/user_model.php");
