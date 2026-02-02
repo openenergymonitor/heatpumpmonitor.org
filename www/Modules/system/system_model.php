@@ -133,20 +133,66 @@ class System
         return $row->count;
     }
 
+
+    // Add this helper method to fetch usernames efficiently
+    private function fetch_usernames($userids) {
+        if (empty($userids)) {
+            return array();
+        }
+        
+        // Convert to array of integers and remove duplicates
+        $userids = array_map('intval', array_unique($userids));
+        $ids_string = implode(',', $userids);
+        
+        $usernames = array();
+        $result = $this->emoncms_mysqli->query("SELECT id, username FROM users WHERE id IN ($ids_string)");
+        while ($row = $result->fetch_object()) {
+            $usernames[(int)$row->id] = $row->username;
+        }
+        
+        return $usernames;
+    }
+
     // All systems
     public function list_admin() {
 
+        /*
+        // May be useful later if we combine databases
         $query = $this->build_system_list_query(
             "sm.*, u.username",
             "JOIN users u ON sm.userid = u.id",
+            "",
+            "sm.id"
+        );*/
+
+        $query = $this->build_system_list_query(
+            "sm.*",
+            "",
             "",
             "sm.id"
         );
         
         $result = $this->mysqli->query($query);
         $list = array();
+        $userids = array();
+        
+        // First pass: collect user IDs
         while ($row = $result->fetch_object()) {
-            $list[] = $this->process_system_row($row, false);
+            $list[] = $row;
+            $userids[] = $row->userid;
+        }
+        
+        // Fetch all usernames in one query
+        $usernames = $this->fetch_usernames($userids);
+        
+        // Second pass: process rows and attach usernames
+        foreach ($list as $index => $row) {
+            $list[$index] = $this->process_system_row($row, false);
+            if (isset($usernames[$row->userid])) {
+                $list[$index]->username = $usernames[$row->userid];
+            } else {
+                $list[$index]->username = "DELETED: $row->userid"; // Fallback to user ID if username not found
+            }
         }
         return $list;
     }
@@ -159,17 +205,45 @@ class System
         $account_ids_list = implode(",", $account_ids);
 
         // Get all systems for user and their linked accounts in a single query
+
+        /*
+        // May be useful later if we combine databases
         $query = $this->build_system_list_query(
             "sm.*, u.username",
             "JOIN users u ON sm.userid = u.id",
             "sm.userid IN ($account_ids_list)",
             "sm.id"
+        );*/
+
+        $query = $this->build_system_list_query(
+            "sm.*",
+            "",
+            "sm.userid IN ($account_ids_list)",
+            "sm.id"
         );
         
         $result = $this->mysqli->query($query);
+
         $list = array();
+        $userids = array();
+        
+        // First pass: collect user IDs
         while ($row = $result->fetch_object()) {
-            $list[] = $this->process_system_row($row, false);
+            $list[] = $row;
+            $userids[] = $row->userid;
+        }
+        
+        // Fetch all usernames in one query
+        $usernames = $this->fetch_usernames($userids);
+        
+        // Second pass: process rows and attach usernames
+        foreach ($list as $index => $row) {
+            $list[$index] = $this->process_system_row($row, false);
+            if (isset($usernames[$row->userid])) {
+                $list[$index]->username = $usernames[$row->userid];
+            } else {
+                $list[$index]->username = "DELETED: $row->userid"; // Fallback to user ID if username not found
+            }
         }
 
         return $list;
