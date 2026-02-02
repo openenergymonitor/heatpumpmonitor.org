@@ -121,6 +121,9 @@ function system_controller() {
             if ($route->subaction=="public") {
                 return $system->list_public();
 
+            } else if ($route->subaction=="public2") {
+                return $system->list_public2();
+
             // User list view
             } else if ($route->subaction=="user") {
                 if ($session['userid']) {
@@ -131,6 +134,13 @@ function system_controller() {
             } else if ($route->subaction=="admin") {
                 if ($session['userid'] && $session['admin']) {
                     return $system->list_admin();
+                }
+            }
+
+            // User v2 list view with stats
+            else if ($route->subaction=="user2") {
+                if ($session['userid']) {
+                    return $system->list_user_v2($session['userid']);
                 }
             }
         }

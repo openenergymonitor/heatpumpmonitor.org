@@ -123,6 +123,32 @@ class System
         return $list;
     }
 
+    // v2 of public with selected fields only
+    public function list_public2() {
+        $fields = array("id","userid","readkey","app_id","location","installer_name","installer_url","installer_logo","heatgeek","ultimaterenewables","heatingacademy","betateach","youtube","url","hp_type","hp_output","hp_manufacturer","hp_model","refrigerant","mid_metering","share","published","electric_meter","heat_meter","metering_inc_boost","metering_inc_immersion","metering_inc_central_heating_pumps","metering_inc_secondary_heating_pumps","metering_inc_brine_pumps","metering_inc_controls","data_flag");
+
+        // Build select fields with stats
+        // apply prefix sm. to each field
+        foreach ($fields as $field) {
+            $fields_with_stats[] = "sm.$field";
+        }
+        $select_fields = implode(",", $fields_with_stats);
+        
+        $query = $this->build_system_list_query(
+            "$select_fields",
+            "",
+            "sm.share=1 AND sm.published=1",
+            ""
+        );
+        
+        $result = $this->mysqli->query($query);
+        $list = array();
+        while ($row = $result->fetch_object()) {
+            $list[] = $this->process_system_row($row, true);
+        }
+        return $list;
+    }
+
     // Return number of public systems
     public function count_public() {
         $result = $this->mysqli->query("SELECT COUNT(*) as count FROM system_meta WHERE share=1 AND published=1");
@@ -190,6 +216,53 @@ class System
         // while ($row = $result->fetch_object()) {
         //     $list[] = $this->typecast($row);
         // }
+
+        return $list;
+    }
+
+
+    public function list_user_v2($userid=false) {
+        $userid = (int) $userid;
+
+        // Connect to emoncms database for app info
+        $this->emoncms_mysqli = connect_emoncms_database();
+
+        $fields = array("app_id","location");
+
+        // Build select fields with stats
+        // apply prefix sm. to each field
+        foreach ($fields as $field) {
+            $fields_with_stats[] = "sm.$field";
+        }
+        $select_fields = implode(",", $fields_with_stats);
+        
+
+        // Get user's own systems
+        $query = $this->build_system_list_query(
+            "$select_fields, u.username",
+            "JOIN users u ON sm.userid = u.id",
+            "sm.userid='$userid'",
+            "sm.id"
+        );
+        
+        $result = $this->mysqli->query($query);
+        $list = array();
+        while ($row = $result->fetch_object()) {
+            $list[] = $this->process_system_row($row, false);
+        }
+
+        // Add any systems from sub-accounts
+        $query = $this->build_system_list_query(
+            "$select_fields, u.username",
+            "JOIN users u ON sm.userid = u.id JOIN accounts a ON u.id = a.linkeduser",
+            "a.adminuser='$userid'",
+            "sm.id"
+        );
+        
+        $result = $this->mysqli->query($query);
+        while ($row = $result->fetch_object()) {
+            $list[] = $this->process_system_row($row, false);
+        }
 
         return $list;
     }
@@ -701,12 +774,14 @@ class System
 
     public function typecast($row) {
         foreach ($this->schema_meta as $key=>$schema_row) {
-            if (isset($row->$key)) {
-                if ($schema_row["code"]=='i') $row->$key = (int) $row->$key;
-                if ($schema_row["code"]=='d') $row->$key = (float) $row->$key;
-            } else {
-                if ($schema_row["code"]=='i') $row->$key = 0;
-                if ($schema_row["code"]=='d') $row->$key = 0.0;
+            if (property_exists($row, $key)) {
+                if (isset($row->$key)) {
+                    if ($schema_row["code"]=='i') $row->$key = (int) $row->$key;
+                    if ($schema_row["code"]=='d') $row->$key = (float) $row->$key;
+                } else {
+                    if ($schema_row["code"]=='i') $row->$key = 0;
+                    if ($schema_row["code"]=='d') $row->$key = 0.0;
+                }
             }
         }
         
