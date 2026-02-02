@@ -221,16 +221,9 @@ class SystemStats
     // Get system stats
     public function get($table_name, $start=false, $end=false, $system_id = false, $session_userid = false, $mode = "public")
     {
-        // Generate cache key for public mode
-        if ($mode === "public" && $start === false && $end === false && $system_id === false) {
-            // Try to get from cache first
-            if ($this->redis && ($cached_result = $this->redis->get($table_name."_public_cache"))) {
-                // return json_decode($cached_result, true);
-            }
-        }
-
-
-        $where = '';
+        $where_parts = array();
+        
+        // Build timestamp filter with correct table alias
         if ($start!==false && $end!==false) {
             $date = new DateTime();
             $date->setTimezone(new DateTimeZone('Europe/London'));
@@ -243,37 +236,36 @@ class SystemStats
             $date->modify('+1 month');
             $end = $date->getTimestamp();
 
-            $where = "WHERE timestamp>=$start AND timestamp<$end";
+            $where_parts[] = "s.timestamp>=$start AND s.timestamp<$end";
         }
 
+        // Build system/access filter
         if ($system_id!==false) {
             $system_id = (int) $system_id;
-            if ($where=='') {
-                $where = "WHERE sm.id=$system_id";
-            } else {
-                $where .= " AND sm.id=$system_id";
-            }
+            $where_parts[] = "sm.id=$system_id";
         }
-
         else if ($mode == "public") {
-            if ($where=='') {
-                $where = "WHERE sm.published=1 AND sm.share=1";
-            } else {
-                $where .= " AND sm.published=1 AND sm.share=1";
-            }
+            $where_parts[] = "sm.published=1 AND sm.share=1";
         }
-
         else if ($mode == "user" && $session_userid!==false) {
             $session_userid = (int) $session_userid;
-            if ($where=='') {
-                $where = "WHERE sm.userid=$session_userid";
-            } else {
-                $where .= " AND sm.userid=$session_userid";
-            }
+            $account_ids = $this->get_user_accounts($session_userid);
+            $account_ids_list = implode(",", $account_ids);
+            $where_parts[] = "sm.userid IN ($account_ids_list)";
+        }
+        
+        $where = '';
+        if (count($where_parts) > 0) {
+            $where = "WHERE " . implode(" AND ", $where_parts);
         }
         
         $system_rows = array();
         $result = $this->mysqli->query("SELECT s.* FROM $table_name s JOIN system_meta sm ON s.id = sm.id $where");
+        
+        if (!$result) {
+            error_log("Query failed: " . $this->mysqli->error);
+            return array();
+        }
 
         while ($row = $result->fetch_object()) {
             $systemid = $row->id;
@@ -283,51 +275,9 @@ class SystemStats
             $system_rows[$systemid][] = $row;
         }
 
-        // and sub-account systems
-        if ($mode == "user" && $session_userid!==false) {
-            $session_userid = (int) $session_userid;
-            
-            // Build additional where clause for sub-accounts
-            $sub_where = '';
-            if ($start!==false && $end!==false) {
-                $sub_where = "WHERE s.timestamp>=$start AND s.timestamp<$end";
-            }
-            
-            // Add any systems from sub-accounts
-            $sub_query = "SELECT s.* FROM $table_name s 
-                         JOIN system_meta sm ON s.id = sm.id 
-                         JOIN users u ON sm.userid = u.id 
-                         JOIN accounts a ON u.id = a.linkeduser 
-                         WHERE a.adminuser='$session_userid'";
-            
-            if ($sub_where != '') {
-                $sub_query .= " AND " . str_replace("WHERE ", "", $sub_where);
-            }
-            
-            $result = $this->mysqli->query($sub_query);
-            while ($row = $result->fetch_object()) {
-                $systemid = $row->id;
-                if (!isset($system_rows[$systemid])) {
-                    $system_rows[$systemid] = array();
-                }
-                $system_rows[$systemid][] = $row;
-            }
-        }
-
-
         $stats = array();        
         foreach ($system_rows as $systemid => $rows) {
             $stats[$systemid] = $this->process($rows,$systemid,$start);
-            
-            if ($stats[$systemid]['combined_cop']!==null) {
-                //$stats[$systemid]['combined_cop'] = number_format($stats[$systemid]['combined_cop'],1,'.','')*1;
-            }
-        }
-
-        // Cache the result if mode is public
-        if ($this->redis && $mode === "public" && $start === false && $end === false && $system_id === false && $stats !== false) {
-            //$this->redis->set($table_name."_public_cache", json_encode($stats));
-            //$this->redis->expire($table_name."_public_cache", 3600); // 1 hour = 3600 seconds
         }
 
         return $stats;
@@ -764,4 +714,18 @@ class SystemStats
         return false;
     }
 
+    // Get list of linked users for an admin user
+    public function get_user_accounts($admin_userid)
+    {
+        $admin_userid = (int) $admin_userid;
+        $accounts = array($admin_userid);
+
+        // Get linked users
+        $result = $this->emoncms_mysqli->query("SELECT linkeduser FROM billing_linked WHERE adminuser='$admin_userid'");
+        while ($row = $result->fetch_object()) {
+            $accounts[] = (int) $row->linkeduser;
+        }
+
+        return $accounts;
+    }
 }

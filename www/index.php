@@ -1,4 +1,5 @@
 <?php
+// die;
 /*
 All HeatpumpMonitor.org code is released under the GNU Affero General Public License.
 See COPYRIGHT.txt and LICENSE.txt.
