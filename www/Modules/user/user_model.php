@@ -247,7 +247,7 @@ class User
         // Use prepared statement with LIKE clause for safe searching
         $search_param = "%$searchstr%";
         $stmt = $this->emoncms_mysqli->prepare(
-            "SELECT id, username, email FROM users 
+            "SELECT id, username, email, lastactive FROM users 
              WHERE username LIKE ? OR email LIKE ? OR id = ? 
              ORDER BY $orderby $order LIMIT ?"
         );
@@ -266,6 +266,20 @@ class User
         $users = array();
         while ($row = $result->fetch_object()) {
             $row->id = (int) $row->id;
+
+            $accounts = $this->get_user_accounts($row->id);
+            $row->subaccounts = count($accounts) - 1;
+
+            // Fetch count of systems
+            $row->systems = 0;
+
+            foreach ($accounts as $account_id) {
+                $system_result = $this->mysqli->query("SELECT COUNT(*) AS system_count FROM system_meta WHERE userid='{$account_id}'");
+                if ($system_row = $system_result->fetch_object()) {
+                    $row->systems += (int) $system_row->system_count;
+                }
+            }
+
             $users[] = $row;
         }
         
@@ -354,4 +368,20 @@ class User
             return false;
         }
     }
+
+    // Get list of linked users for an admin user
+    public function get_user_accounts($admin_userid)
+    {
+        $admin_userid = (int) $admin_userid;
+        $accounts = array($admin_userid);
+
+        // Get linked users
+        $result = $this->emoncms_mysqli->query("SELECT linkeduser FROM billing_linked WHERE adminuser='$admin_userid'");
+        while ($row = $result->fetch_object()) {
+            $accounts[] = (int) $row->linkeduser;
+        }
+
+        return $accounts;
+    }
+
 }

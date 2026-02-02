@@ -23,8 +23,14 @@ function user_controller() {
     }
 
     if ($route->action=="admin" && $session['admin']) {
-        $users = $user->admin_user_list("Libtek");
-        return view("Modules/user/admin_view.php", array("users"=>$users));  
+        if ($route->subaction=="") {
+            return view("Modules/user/admin_view.php", array());
+        }
+        else if ($route->subaction=="list") {
+            $route->format = "json";
+            $search = get('search');
+            return $user->admin_user_list($search);
+        }
     }
 
     if ($route->action=="switch" && $session['admin']) {
