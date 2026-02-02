@@ -937,7 +937,7 @@ class System
         }
 
         // 4. The user is an admin of the account that owns the system
-        $result = $this->mysqli->query("SELECT COUNT(*) as count FROM billing_linked WHERE linkeduser='{$row->userid}' AND adminuser='$userid'");
+        $result = $this->emoncms_mysqli->query("SELECT COUNT(*) as count FROM billing_linked WHERE linkeduser='{$row->userid}' AND adminuser='$userid'");
         if ($row = $result->fetch_object()) {
             if ($row->count>0) {
                 return true;
@@ -953,7 +953,9 @@ class System
         if (!$row = $result->fetch_object()) {
             return false;
         }
-        if ($row->admin===1) {
+
+        $admin = (int) $row->admin;
+        if ($admin===1) {
             return true;
         } else {
             return false;

@@ -7,8 +7,6 @@ function system_controller() {
 
     global $session, $route, $user, $system, $mysqli, $system_stats, $system_photos, $settings;
 
-
-
     if ($route->action=="new") {
         $route->format = "html";
         if ($session['userid']) {
@@ -29,22 +27,23 @@ function system_controller() {
         if ($session['userid']) {
             $systemid = get("id",false);
             $system_data = $system->get($session['userid'],$systemid);
-
-            if ($session['admin']) {
-                $u = $user->get($system_data->userid);
-                $email = $u->email;
-            } else {
-                $email = "";
+            if (is_object($system_data)) {
+                if ($session['admin']) {
+                    $u = $user->get($system_data->userid);
+                    $email = $u->email;
+                } else {
+                    $email = "";
+                }
+                
+                return view("Modules/system/system_view.php", array(
+                    "mode"=>"edit", 
+                    "system_data"=>$system_data, 
+                    'admin'=>$session['admin'], 
+                    'schema'=>$system->schema_meta,
+                    'email'=>$email,
+                    'system_stats_monthly'=>$system_stats->schema['system_stats_monthly_v2']
+                ));
             }
-            
-            return view("Modules/system/system_view.php", array(
-                "mode"=>"edit", 
-                "system_data"=>$system_data, 
-                'admin'=>$session['admin'], 
-                'schema'=>$system->schema_meta,
-                'email'=>$email,
-                'system_stats_monthly'=>$system_stats->schema['system_stats_monthly_v2']
-            ));
         }
     }
 
