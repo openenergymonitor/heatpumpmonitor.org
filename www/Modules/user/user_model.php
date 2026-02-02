@@ -226,44 +226,51 @@ class User
         }
     }
 
-    public function admin_user_list() {
+    public function admin_user_list($searchstr = '') {
 
-        return false;
+        // If search term is empty return empty array
+        if ($searchstr == '') {
+            return array();
+        }
 
-        $result = $this->emoncms_mysqli->query("SELECT id,username,email,created,last_login,`admin` FROM users");
+        // Sanitize search string
+        $searchstr = trim($searchstr);
+        $searchstr = preg_replace('/[^\p{N}\p{L}_\s\-@.]/u','',$searchstr);
+        if (strlen($searchstr) < 2) {
+            return array();
+        }
+
+        $orderby = 'id';
+        $order = 'ASC';
+        $limit = 100;
+
+        // Use prepared statement with LIKE clause for safe searching
+        $search_param = "%$searchstr%";
+        $stmt = $this->emoncms_mysqli->prepare(
+            "SELECT id, username, email FROM users 
+             WHERE username LIKE ? OR email LIKE ? OR id = ? 
+             ORDER BY $orderby $order LIMIT ?"
+        );
+        
+        if (!$stmt) {
+            return array();
+        }
+
+        // Try to convert search string to int for ID search, or use 0 if not numeric
+        $search_id = is_numeric($searchstr) ? (int)$searchstr : 0;
+        
+        $stmt->bind_param("ssii", $search_param, $search_param, $search_id, $limit);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
         $users = array();
         while ($row = $result->fetch_object()) {
-
             $row->id = (int) $row->id;
-
-            // Count number of systems in system_meta
-            $result2 = $this->emoncms_mysqli->query("SELECT id FROM system_meta WHERE userid='$row->id'");
-            $row->systems = $result2->num_rows;
-
-            // Count number of systems in sub accounts
-            $result2 = $this->emoncms_mysqli->query("SELECT COUNT(*) as subsystems FROM system_meta JOIN users ON system_meta.userid = users.id JOIN billing_linked ON users.id = billing_linked.linkeduser WHERE billing_linked.adminuser='$row->id'");
-            $subsystem_row = $result2->fetch_object();
-            $row->subsystems = (int) $subsystem_row->subsystems;
-            $row->systems += $row->subsystems;
-
-            // Count number of sub accounts in accounts table
-            $result2 = $this->emoncms_mysqli->query("SELECT linkeduser FROM billing_linked WHERE adminuser='$row->id'");
-            $row->subaccounts = $result2->num_rows;
-
-            // if user is a linked user get admin user id and username
-            $result2 = $this->emoncms_mysqli->query("SELECT adminuser FROM billing_linked WHERE linkeduser='$row->id'");
-            if ($row2 = $result2->fetch_object()) {
-                $result3 = $this->emoncms_mysqli->query("SELECT username FROM users WHERE id='$row2->adminuser'");
-                if ($row3 = $result3->fetch_object()) {
-                    $row->adminuser = $row2->adminuser;
-                    $row->adminusername = $row3->username;
-                }
-            }
-
-
-            $row->admin = $row->admin ? 'Yes' : '';
             $users[] = $row;
         }
+        
+        $stmt->close();
+
         return $users;
     }
 

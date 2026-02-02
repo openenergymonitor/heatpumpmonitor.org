@@ -417,9 +417,6 @@ class System
         // Check that the readkey matches the userid
         // If they are valid and the userid has not been created on heatpumpmonitor.org we also create the user
 
-
-
-
         $new_system = false;
         if ($systemid==false) {
 
@@ -834,7 +831,7 @@ class System
 
                     $myheatpump_apps[] = array(
                         "id" => (int) $app_row->id,
-                        "userid" => $userid,
+                        "userid" => $account_id,
                         "username" => $username,
                         "name" => $app_row->name,
                         "readkey" => $readkey,

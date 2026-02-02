@@ -23,7 +23,7 @@ function user_controller() {
     }
 
     if ($route->action=="admin" && $session['admin']) {
-        $users = $user->admin_user_list();
+        $users = $user->admin_user_list("Libtek");
         return view("Modules/user/admin_view.php", array("users"=>$users));  
     }
 
