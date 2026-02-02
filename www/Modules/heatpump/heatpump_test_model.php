@@ -259,16 +259,8 @@ class HeatpumpTests
         $test->model = $model['name'];
         $test->manufacturer = $model['manufacturer_name'];
 
-        // Get admin users email addresses
-        $admin_result = $this->mysqli->query("SELECT email FROM users WHERE admin=1");
-        if ($admin_result === false) {
-            return; // Query failed
-        }
-        
-        $emails = array();
-        while ($row = $admin_result->fetch_object()) {
-            $emails[] = array("email"=>$row->email);
-        }
+        global $settings;
+        $emails = $settings['admin_emails'];
 
         // Create email content
         $model_name = $test->manufacturer . " " . $test->model;

@@ -182,12 +182,6 @@ class System
             $list[] = $this->process_system_row($row, false);
         }
 
-        // Add systems from system_access table
-        // $result = $this->mysqli->query("SELECT system_meta.*,users.username FROM system_meta JOIN users ON system_meta.userid = users.id JOIN system_access ON system_meta.id = system_access.systemid WHERE system_access.userid='$userid' AND system_access.access>0 ORDER BY system_meta.id");
-        // while ($row = $result->fetch_object()) {
-        //     $list[] = $this->typecast($row);
-        // }
-
         return $list;
     }
 
@@ -590,9 +584,6 @@ class System
         // Delete the system
         $this->mysqli->query("DELETE FROM system_meta WHERE id='$systemid'");
 
-        // Delete any access control entries
-        // $this->mysqli->query("DELETE FROM system_access WHERE systemid='$systemid'");
-
         return array("success"=>true, "message"=>"Deleted");
     }
 
@@ -605,13 +596,13 @@ class System
         return $row->userid;
     }
 
-    public function get_user_name($userid) {
+    public function get_username($userid) {
         $userid = (int) $userid;
-        $result = $this->mysqli->query("SELECT name,username FROM users WHERE id='$userid'");
+        $result = $this->emoncms_mysqli->query("SELECT username FROM users WHERE id='$userid'");
         if (!$row = $result->fetch_object()) {
             return false;
         }
-        return $row;
+        return $row->username;
     }
 
     public function send_change_notification($userid,$systemid,$change_log, $new_system=false) {
@@ -628,13 +619,6 @@ class System
             return;
         }
 
-        // Get admin users email addresses
-        $result = $this->mysqli->query("SELECT email FROM users WHERE admin=1");
-        $emails = array();
-        while ($row = $result->fetch_object()) {
-            $emails[] = array("email"=>$row->email);
-        }
-
         // Is system published
         $result = $this->mysqli->query("SELECT published FROM system_meta WHERE id='$systemid'");
         $row = $result->fetch_object();
@@ -646,21 +630,19 @@ class System
 
         // Get system owner username and name
         $system_userid = $this->get_system_userid($systemid);
-        $result = $this->get_user_name($system_userid);
-        $system_username = $result->username;
-        $system_name = $result->name;
+        $system_username = $this->get_username($system_userid);
 
         $by = "";
         if ($userid!=$system_userid) {
-            $result = $this->get_user_name($userid);
-            $by = "by $result->name";
+            $by_username = $this->get_username($userid);
+            $by = "by $by_username";
         }
 
         if ($new_system) {
-            $subject = "New system $systemid user $system_name ($system_username) has been created $by $published_str";
-            $text = "New system $systemid user $system_name ($system_username) has been created $by";
+            $subject = "New system $systemid user $system_username has been created $by $published_str";
+            $text = "New system $systemid user $system_username has been created $by";
 
-            $html = "<h3>New system $systemid user $system_name ($system_username) has been created $by</h3>";
+            $html = "<h3>New system $systemid user $system_username has been created $by</h3>";
             $html .= "<p>$change_count fields set</p>";
 
             $html .= "<ul>";
@@ -671,10 +653,10 @@ class System
             $html .= "</ul>";
 
         } else {
-            $subject = "System $systemid user $system_name ($system_username) has been updated $by $published_str";
+            $subject = "System $systemid user $system_username has been updated $by $published_str";
             $text = "System $systemid has been updated, $change_count fields updated";
 
-            $html = "<h3>System $systemid user $system_name ($system_username) has been updated $by</h3>";
+            $html = "<h3>System $systemid user $system_username has been updated $by</h3>";
             $html .= "<p>$change_count fields updated</p>";
 
             $html .= "<ul>";
@@ -686,10 +668,11 @@ class System
         }
 
         // Move this to background task
+        
         require_once "Lib/email.php";
         $email_class = new Email();
         $email_class->send(array(
-            "to" => $emails,
+            "to" => $settings['admin_emails'],
             "subject" => $subject,
             "text" => $text,
             "html" => $html
@@ -783,6 +766,10 @@ class System
 
     // Get system changes log
     public function get_changes($systemid = false) {
+
+        // Disabled for now
+        return array();
+
         // If systemid is set then get changes for that system
         $where = "";
         if ($systemid) {
@@ -791,11 +778,11 @@ class System
         }
 
         // Get list of usernames
-        $result = $this->mysqli->query("SELECT id,username,admin FROM users");
-        $users = array();
-        while ($row = $result->fetch_object()) {
-            $users[$row->id] = $row;
-        }
+        // $result = $this->emoncms_mysqli->query("SELECT id,username,admin FROM users");
+        // $users = array();
+        // while ($row = $result->fetch_object()) {
+        //     $users[$row->id] = $row;
+        // }
 
         // Get changes
         $result = $this->mysqli->query("SELECT * FROM system_meta_changes $where ORDER BY timestamp DESC LIMIT 1000");
@@ -811,8 +798,8 @@ class System
             $row->datetime = $date->format('jS M Y H:i');
 
             // add username
-            $row->username = $users[$row->userid]->username;
-            $row->admin = $users[$row->userid]->admin;
+            $row->username = ""; // $users[$row->userid]->username;
+            $row->admin = ""; // $users[$row->userid]->admin;
 
             $list[] = $row;
         }
@@ -824,7 +811,7 @@ class System
         $userid = (int) $userid;
 
         // Get this username
-        $result = $this->mysqli->query("SELECT username, apikey_read, apikey_write FROM users WHERE id='$userid'");
+        $result = $this->emoncms_mysqli->query("SELECT username, apikey_read, apikey_write FROM users WHERE id='$userid'");
         if (!$row = $result->fetch_object()) {
             return array(
                 "success"=>false,
@@ -843,7 +830,7 @@ class System
         $myheatpump_apps = $this->append_app_list(array(), $userid, $row->username, $row->apikey_read);
 
         // Get sub accounts from local accounts table
-        $result = $this->mysqli->query("SELECT u.id, u.username, u.apikey_read FROM accounts a JOIN users u ON a.linkeduser = u.id WHERE a.adminuser = '$userid'");
+        $result = $this->emoncms_mysqli->query("SELECT u.id, u.username, u.apikey_read FROM billing_linked a JOIN users u ON a.linkeduser = u.id WHERE a.adminuser = '$userid'");
         $accounts = array();
         while ($row = $result->fetch_object()) {
             $accounts[] = array(
@@ -946,20 +933,12 @@ class System
         }
 
         // 3. The user is an admin of the account that owns the system
-        $result = $this->mysqli->query("SELECT COUNT(*) as count FROM accounts WHERE linkeduser='{$row->userid}' AND adminuser='$userid'");
+        $result = $this->mysqli->query("SELECT COUNT(*) as count FROM billing_linked WHERE linkeduser='{$row->userid}' AND adminuser='$userid'");
         if ($row = $result->fetch_object()) {
             if ($row->count>0) {
                 return true;
             }
         }
-
-        // 3. User has been granted write access via the system_access table
-        // $result = $this->mysqli->query("SELECT access FROM system_access WHERE systemid='$systemid' AND userid='$userid'");
-        // if ($row = $result->fetch_object()) {
-        //     if ($row->access==2) {
-        //         return true;
-        //     }
-        // }
 
         return false;
     }
@@ -994,31 +973,23 @@ class System
         }
 
         // 4. The user is an admin of the account that owns the system
-        $result = $this->mysqli->query("SELECT COUNT(*) as count FROM accounts WHERE linkeduser='{$row->userid}' AND adminuser='$userid'");
+        $result = $this->mysqli->query("SELECT COUNT(*) as count FROM billing_linked WHERE linkeduser='{$row->userid}' AND adminuser='$userid'");
         if ($row = $result->fetch_object()) {
             if ($row->count>0) {
                 return true;
             }
         }
 
-        // 4. User has been granted access via the system_access table
-        // $result = $this->mysqli->query("SELECT access FROM system_access WHERE systemid='$systemid' AND userid='$userid'");
-        // if ($row = $result->fetch_object()) {
-        //     if ($row->access>0) {
-        //         return true;
-        //     }
-        // }
-
         return false;
     }
 
     public function is_admin($userid) {
         $userid = (int) $userid;
-        $result = $this->mysqli->query("SELECT admin FROM users WHERE id='$userid'");
+        $result = $this->emoncms_mysqli->query("SELECT admin FROM users WHERE id='$userid'");
         if (!$row = $result->fetch_object()) {
             return false;
         }
-        if ($row->admin==1) {
+        if ($row->admin===1) {
             return true;
         } else {
             return false;
