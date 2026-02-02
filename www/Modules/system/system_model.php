@@ -451,6 +451,8 @@ class System
         if ($filter_regex) {
             // Special case: URL validation
             if ($filter_regex === 'url') {
+                // replace with empty spaces with +
+                $original_text = str_replace(' ', '+', $original_text);
                 if (!filter_var($original_text, FILTER_VALIDATE_URL)) {
                     return array("success"=>false, "message"=>"Invalid URL format");
                 }
