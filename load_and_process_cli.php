@@ -9,7 +9,6 @@ if (! flock($fp, LOCK_EX | LOCK_NB)) { echo "Already running\n"; die; }
 define('EMONCMS_EXEC', 1);
 require "core.php";
 require "Lib/load_database.php";
-$emoncms_mysqli = connect_emoncms_database();
 
 require("Modules/user/user_model.php");
 $user = new User($mysqli, false);

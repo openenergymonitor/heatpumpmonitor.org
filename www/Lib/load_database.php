@@ -49,7 +49,27 @@ if ($mysqli->connect_error) {
 // Set charset to utf8
 $mysqli->set_charset("utf8");
 
+// ----------------------------------------------------------------------------------
+// Emoncms mysql database connection
+// ----------------------------------------------------------------------------------
+$emoncms_mysqli = new mysqli(
+    $settings['emoncms_credentials']['server'],
+    $settings['emoncms_credentials']['username'],
+    $settings['emoncms_credentials']['password'],
+    $settings['emoncms_credentials']['database'],
+    $settings['emoncms_credentials']['port']
+);
+
+if ($emoncms_mysqli->connect_error) {
+    die("Can't connect to emoncms database, please check mysql credentials in settings.php");
+}
+
+// Set charset to utf8
+$emoncms_mysqli->set_charset("utf8");
+
+// ----------------------------------------------------------------------------------
 // Check if redis class exists
+// ----------------------------------------------------------------------------------
 if (class_exists('Redis')) {
     $redis = new Redis();
     $connected = $redis->connect('localhost');    

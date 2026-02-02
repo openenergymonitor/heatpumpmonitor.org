@@ -6,13 +6,16 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 class System
 {
     private $mysqli;
+    private $emoncms_mysqli;
     private $host;
     public $schema_meta;
-    private $emoncms_mysqli = false;
 
     public function __construct($mysqli)
     {
         $this->mysqli = $mysqli;
+
+        global $emoncms_mysqli;
+        $this->emoncms_mysqli = $emoncms_mysqli;
 
         global $settings;
         $this->host = $settings['emoncms_host'];
@@ -133,9 +136,6 @@ class System
     // All systems
     public function list_admin() {
 
-        // Connect to emoncms database for app info (function in www/core.php)
-        $this->emoncms_mysqli = connect_emoncms_database();
-
         $query = $this->build_system_list_query(
             "sm.*, u.username",
             "JOIN users u ON sm.userid = u.id",
@@ -154,9 +154,6 @@ class System
     // User systems
     public function list_user($userid=false) {
         $userid = (int) $userid;
-
-        // Connect to emoncms database for app info
-        $this->emoncms_mysqli = connect_emoncms_database();
 
         // Get user's own systems
         $query = $this->build_system_list_query(
@@ -867,9 +864,7 @@ class System
 
         $userid = (int) $userid;
 
-        $emoncms_mysqli = connect_emoncms_database();
-
-        $result = $emoncms_mysqli->query("SELECT * FROM app WHERE userid='$userid'");
+        $result = $this->emoncms_mysqli->query("SELECT * FROM app WHERE userid='$userid'");
         while ($app_row = $result->fetch_object()) {
             if (!isset($app_row->app)) {
                 continue;

@@ -264,21 +264,3 @@ function read_only_mode_response()
 {
     return array("success" => false, "message" => "Heatpumpmonitor is currently in read-only mode for maintenance. Please try again later.");
 }
-
-
-// ---------------------------------------------------------------------------------------------------------
-// Connect to emoncms database
-// ---------------------------------------------------------------------------------------------------------
-function connect_emoncms_database()
-{
-    global $settings;
-    $emoncms_mysqli = new mysqli(
-        $settings['emoncms_credentials']['server'],
-        $settings['emoncms_credentials']['username'],
-        $settings['emoncms_credentials']['password'],
-        $settings['emoncms_credentials']['database'],
-        $settings['emoncms_credentials']['port']
-    );
-    if ($emoncms_mysqli->connect_errno) return false;
-    return $emoncms_mysqli;
-}

@@ -16,7 +16,9 @@ class SystemStats
     public function __construct($mysqli,$system)
     {
         $this->mysqli = $mysqli;
-        $this->emoncms_mysqli = connect_emoncms_database();
+        
+        global $emoncms_mysqli;
+        $this->emoncms_mysqli = $emoncms_mysqli;
 
         $this->system = $system;
 
