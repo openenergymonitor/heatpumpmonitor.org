@@ -155,29 +155,19 @@ class System
     public function list_user($userid=false) {
         $userid = (int) $userid;
 
-        // Get user's own systems
+        $account_ids = $this->get_user_accounts($userid);
+        $account_ids_list = implode(",", $account_ids);
+
+        // Get all systems for user and their linked accounts in a single query
         $query = $this->build_system_list_query(
             "sm.*, u.username",
             "JOIN users u ON sm.userid = u.id",
-            "sm.userid='$userid'",
+            "sm.userid IN ($account_ids_list)",
             "sm.id"
         );
         
         $result = $this->mysqli->query($query);
         $list = array();
-        while ($row = $result->fetch_object()) {
-            $list[] = $this->process_system_row($row, false);
-        }
-
-        // Add any systems from sub-accounts
-        $query = $this->build_system_list_query(
-            "sm.*, u.username",
-            "JOIN users u ON sm.userid = u.id JOIN accounts a ON u.id = a.linkeduser",
-            "a.adminuser='$userid'",
-            "sm.id"
-        );
-        
-        $result = $this->mysqli->query($query);
         while ($row = $result->fetch_object()) {
             $list[] = $this->process_system_row($row, false);
         }
@@ -810,78 +800,52 @@ class System
     public function available_apps($userid) {
         $userid = (int) $userid;
 
-        // Get this username
-        $result = $this->emoncms_mysqli->query("SELECT username, apikey_read, apikey_write FROM users WHERE id='$userid'");
-        if (!$row = $result->fetch_object()) {
-            return array(
-                "success"=>false,
-                "message"=>"User does not exist"
-            );
-        }
+        $account_ids = $this->get_user_accounts($userid);
         
-        if (!$row->apikey_read) {
-            return array(
-                "success"=>false,
-                "message"=>"User does not have a read API key"
-            );
-        }
+        $myheatpump_apps = array();
 
-        // Master account
-        $myheatpump_apps = $this->append_app_list(array(), $userid, $row->username, $row->apikey_read);
+        foreach ($account_ids as $account_id) {
+            $account_id = (int) $account_id;
 
-        // Get sub accounts from local accounts table
-        $result = $this->emoncms_mysqli->query("SELECT u.id, u.username, u.apikey_read FROM billing_linked a JOIN users u ON a.linkeduser = u.id WHERE a.adminuser = '$userid'");
-        $accounts = array();
-        while ($row = $result->fetch_object()) {
-            $accounts[] = array(
-                'userid' => (int) $row->id,
-                'username' => $row->username,
-                'apikey_read' => $row->apikey_read
-            );
-        }
-        
-        foreach ($accounts as $account) {
-            $myheatpump_apps = $this->append_app_list($myheatpump_apps, $account['userid'], $account['username'], $account['apikey_read']);
-        }
-
-        return $myheatpump_apps;
-    }
-
-    private function append_app_list($myheatpump_apps, $userid, $username, $readkey) {
-
-        $userid = (int) $userid;
-
-        $result = $this->emoncms_mysqli->query("SELECT * FROM app WHERE userid='$userid'");
-        while ($app_row = $result->fetch_object()) {
-            if (!isset($app_row->app)) {
-                continue;
+            // Fetch username and readkey for this account
+            $user_result = $this->emoncms_mysqli->query("SELECT username, apikey_read FROM users WHERE id='$account_id'");
+            if (!$user_row = $user_result->fetch_object()) {
+                continue; // Skip if user not found
             }
+            $username = $user_row->username;
+            $readkey = $user_row->apikey_read;
 
-            if ($app_row->app=="myheatpump") {
 
-                // Generate url
-                $url = $this->host."/app/view?name=".$app_row->name."&readkey=".$readkey;
-
-                // Check if app is already added, skip if it is
-                $result = $this->mysqli->query("SELECT id FROM system_meta WHERE url='$url'");
-                if ($result->num_rows>0) {
-                    $app_row->in_use = 1;
-                } else {
-                    $app_row->in_use = 0;
+            $result = $this->emoncms_mysqli->query("SELECT * FROM app WHERE userid='$account_id'");
+            while ($app_row = $result->fetch_object()) {
+                if (!isset($app_row->app)) {
+                    continue;
                 }
 
-                $myheatpump_apps[] = array(
-                    "id" => (int) $app_row->id,
-                    "userid" => $userid,
-                    "username" => $username,
-                    "name" => $app_row->name,
-                    "readkey" => $readkey,
-                    "url" => $url,
-                    "public" => (int) $app_row->public,
-                    "in_use" => $app_row->in_use
-                );
+                if ($app_row->app=="myheatpump") {
+
+                    // Check if app is already added, skip if it is
+                    $result = $this->mysqli->query("SELECT id FROM system_meta WHERE app_id='{$app_row->id}' LIMIT 1");
+                    if ($result->num_rows>0) {
+                        $app_row->in_use = 1;
+                    } else {
+                        $app_row->in_use = 0;
+                    }
+
+                    $myheatpump_apps[] = array(
+                        "id" => (int) $app_row->id,
+                        "userid" => $userid,
+                        "username" => $username,
+                        "name" => $app_row->name,
+                        "readkey" => $readkey,
+                        "url" => $this->host."/app/view?name=".$app_row->name."&readkey=".$readkey,
+                        "public" => (int) $app_row->public,
+                        "in_use" => $app_row->in_use
+                    );
+                }
             }
         }
+
         return $myheatpump_apps;
     }
 
@@ -1148,5 +1112,20 @@ class System
             "heat_ago" => $heat_ago,
             "max_age" => $max_age
         );
+    }
+
+    // Get list of linked users for an admin user
+    public function get_user_accounts($admin_userid)
+    {
+        $admin_userid = (int) $admin_userid;
+        $accounts = array($admin_userid);
+
+        // Get linked users
+        $result = $this->emoncms_mysqli->query("SELECT linkeduser FROM billing_linked WHERE adminuser='$admin_userid'");
+        while ($row = $result->fetch_object()) {
+            $accounts[] = (int) $row->linkeduser;
+        }
+
+        return $accounts;
     }
 }
