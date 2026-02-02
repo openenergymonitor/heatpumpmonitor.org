@@ -60,9 +60,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <th scope="col" @click="sort_list('username')">Username</th>
                         <th scope="col" @click="sort_list('email')">Email</th>
                         <th scope="col" @click="sort_list('lastactive')">Last Login</th>
-                        <th scope="col" @click="sort_list('systems')">Systems</th>
-                        <th scope="col" @click="sort_list('subaccounts')">Sub Accounts</th>
-                        <th scope="col" @click="sort_list('adminusername')">Admin User</th>
+                        <th scope="col" class="text-center" @click="sort_list('systems')">Systems</th>
+                        <th scope="col" class="text-center" @click="sort_list('subaccounts')">Sub Accounts</th>
                         <th scope="col" class="text-center">Actions</th>
                     </tr>
                 </thead>
@@ -74,7 +73,6 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <td style="font-size:14px">{{ user.lastactive | formatTime }}</td>
                         <td class="text-center">{{ user.systems || 0 }}</td>
                         <td class="text-center">{{ user.subaccounts || 0 }}</td>
-                        <td>{{ user.adminusername }}</td>
                         <td class="text-center">
                             <button class="btn btn-primary btn-sm" v-on:click="switch_user(user.id)">
                                 Switch
@@ -119,8 +117,6 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     return;
                 }
                 
-                this.searchPerformed = true;
-                
                 axios.get('<?php echo $path; ?>user/admin/list.json', {
                     params: {
                         search: self.search
@@ -128,6 +124,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 })
                 .then(function(response) {
                     self.users = response.data;
+                    self.searchPerformed = true;
                 })
                 .catch(function(error) {
                     console.error('Error fetching users:', error);
