@@ -67,6 +67,7 @@ $load_system_meta = 0;
 $load_running_stats = 0;
 $load_monthly_stats = 0;
 $load_daily_stats = 0;
+$load_dashboard_daily = 0;
 $load_manufacturers = 0;
 $load_heatpump_models = 0;
 
@@ -153,6 +154,19 @@ if (isset($_ENV["LOAD_HEATPUMP_MODELS"])) {
     if (confirm("Would you like to load heatpump models?")) $load_heatpump_models = 1;
 }
 if ($reload_all) $load_heatpump_models = 1;
+
+// Check if we should replicate dashboard daily data (myheatpump daily)
+if (isset($_ENV["LOAD_DASHBOARD_DAILY"])) {
+    // If the variable is a JSON array of system ids, load those systems only else load all systems
+    if (substr($_ENV["LOAD_DASHBOARD_DAILY"],0,1)=="[") {
+        $load_dashboard_daily = json_decode($_ENV["LOAD_DASHBOARD_DAILY"],true);
+    } else {
+        $load_dashboard_daily = (int) $_ENV["LOAD_DASHBOARD_DAILY"];
+    }
+} else {
+    if (confirm("Would you like to replicate dashboard daily data (myheatpump)?")) $load_dashboard_daily = 1;
+}
+if ($reload_all) $load_dashboard_daily = 1;
 
 
 // -------------------------------------------------------------------------------------
@@ -497,6 +511,55 @@ if ($load_system_meta) {
         print " ($failed_photos failed)";
     }
     print "\n";
+    
+    // Populate app_id and readkey for all systems so timeseries endpoints work
+    print "- Populating app_id and readkey for timeseries support\n";
+    $result = $mysqli->query("SELECT id FROM system_meta WHERE app_id IS NULL OR app_id=''");
+    $systems_without_app = 0;
+    while ($row = $result->fetch_object()) {
+        $system_id = (int) $row->id;
+        // Use system_id as both app_id and readkey for dev environment
+        // This allows the timeseries endpoints to work locally
+        $app_id = $system_id;
+        $readkey = "test_readkey_$system_id";
+        $mysqli->query("UPDATE system_meta SET app_id='$app_id', readkey='$readkey' WHERE id='$system_id'");
+        $systems_without_app++;
+    }
+    if ($systems_without_app > 0) {
+        print "  Added app configuration to $systems_without_app systems\n";
+    }
+    
+    // Create mock emoncms app config responses for local development
+    print "- Creating mock app config cache files\n";
+    $cache_dir = "cache/app_config";
+    if (!file_exists($cache_dir)) {
+        if (mkdir($cache_dir, 0755, true)) {
+            print "  Created cache directory: $cache_dir\n";
+        }
+    }
+    
+    $result = $mysqli->query("SELECT id FROM system_meta");
+    $configs_created = 0;
+    while ($row = $result->fetch_object()) {
+        $system_id = (int) $row->id;
+        
+        // Create mock getconfigmeta response
+        $config = new stdClass();
+        $config->feeds = new stdClass();
+        $config->feeds->heatpump_elec = (object)['feedid' => 1];
+        $config->feeds->heatpump_heat = (object)['feedid' => 2];
+        $config->feeds->heatpump_outsideT = (object)['feedid' => 3];
+        $config->feeds->heatpump_flowT = (object)['feedid' => 4];
+        $config->feeds->heatpump_returnT = (object)['feedid' => 5];
+        
+        $cache_file = "$cache_dir/$system_id.json";
+        if (file_put_contents($cache_file, json_encode($config))) {
+            $configs_created++;
+        }
+    }
+    if ($configs_created > 0) {
+        print "  Created $configs_created app config cache files\n";
+    }
 }
 
 // -------------------------------------------------------------------------------------
@@ -665,6 +728,141 @@ if ($load_daily_stats) {
             }
         }
         print " $days days\n";
+    }
+}
+
+// -------------------------------------------------------------------------------------
+// 6. Replicate dashboard daily data (myheatpump_daily_stats)
+// -------------------------------------------------------------------------------------
+if ($load_dashboard_daily) {
+    // Helper: populate bind codes from myheatpump schema types
+    $populate_codes = function($my_schema) {
+        foreach ($my_schema as $key => $field) {
+            $type = isset($field['type']) ? $field['type'] : '';
+            if (strpos($type,'varchar')!==false) $my_schema[$key]['code'] = 's';
+            else if (strpos($type,'text')!==false) $my_schema[$key]['code'] = 's';
+            else if (strpos($type,'int')!==false) $my_schema[$key]['code'] = 'i';
+            else if (strpos($type,'float')!==false) $my_schema[$key]['code'] = 'd';
+            else if (strpos($type,'bool')!==false) $my_schema[$key]['code'] = 'b';
+            else $my_schema[$key]['code'] = 's';
+        }
+        return $my_schema;
+    };
+
+    // Prepare local schema with bind codes
+    $my_schema = $populate_codes($schema['myheatpump_daily_stats']);
+
+    // Helper: insert row into myheatpump_daily_stats based on available fields
+    $insert_myheatpump_row = function($mysqli, $my_schema, $row) {
+        $fields = array();
+        $qmarks = array();
+        $codes = array();
+        $values = array();
+        foreach ($my_schema as $field => $field_schema) {
+            if (array_key_exists($field, $row)) {
+                $fields[] = $field;
+                $qmarks[] = '?';
+                $codes[] = $field_schema['code'];
+                $values[] = $row[$field];
+            }
+        }
+        if (empty($fields)) return false;
+        $stmt = $mysqli->prepare("INSERT INTO myheatpump_daily_stats (".implode(',',$fields).") VALUES (".implode(',',$qmarks).")");
+        $stmt->bind_param(implode('', $codes), ...$values);
+        $stmt->execute();
+        $stmt->close();
+        return true;
+    };
+
+    // Determine which systems to process
+    if (is_int($load_dashboard_daily)) {
+        // Integer => load all systems
+        $system_ids = array();
+        foreach ($systems as $system) {
+            $system_ids[] = $system->id;
+        }
+    } else {
+        // Else load only the specified systems
+        $system_ids = $load_dashboard_daily;
+    }
+
+    foreach ($system_ids as $system_id) {
+        $system_id = (int) $system_id;
+        print "- Replicating dashboard daily (myheatpump) for system: $system_id ";
+
+        // Clear existing myheatpump daily data for the system
+        $mysqli->query("DELETE FROM myheatpump_daily_stats WHERE id='$system_id'");
+
+        $row_count = 0;
+        
+        // Try to fetch from production app first (if app_id exists)
+        $result = $mysqli->query("SELECT app_id FROM system_meta WHERE id='$system_id'");
+        if ($result && $result->num_rows > 0) {
+            $meta = $result->fetch_object();
+            
+            if ($meta && $meta->app_id) {
+                // Try production app endpoint
+                $range_url = "$heatpumpmonitor_host/app/getdailydatarange.json?id=$system_id";
+                $range_json = @file_get_contents($range_url);
+                if ($range_json !== false) {
+                    $range = json_decode($range_json);
+                    if ($range !== null && isset($range->start) && isset($range->end)) {
+                        $start = (int) $range->start;
+                        $end = (int) $range->end;
+
+                        // Fetch CSV daily data from production app
+                        $data_url = "$heatpumpmonitor_host/app/getdailydata?id=$system_id&start=$start&end=$end";
+                        $csvData = @file_get_contents($data_url);
+                        if ($csvData !== false && strlen($csvData) > 0) {
+                            // Write CSV to a temporary file for parsing
+                            $tempFilePath = tempnam(sys_get_temp_dir(), 'csv');
+                            file_put_contents($tempFilePath, $csvData);
+
+                            if (($handle = fopen($tempFilePath, 'r')) !== FALSE) {
+                                // Header row
+                                $header = fgetcsv($handle, 2000, ",", escape: "\\");
+                                // Read remaining rows
+                                while (($data = fgetcsv($handle, 2000, ",", escape: "\\")) !== FALSE) {
+                                    if (!$data) continue;
+                                    $row = array();
+                                    foreach ($header as $i => $field) {
+                                        // Build row map; ensure id is set to system_id
+                                        if ($field === 'id') {
+                                            $row[$field] = $system_id;
+                                        } else {
+                                            $row[$field] = isset($data[$i]) ? $data[$i] : null;
+                                        }
+                                    }
+                                    // Ensure timestamp is integer
+                                    if (isset($row['timestamp'])) $row['timestamp'] = (int) $row['timestamp'];
+                                    // Insert
+                                    $insert_myheatpump_row($mysqli, $my_schema, $row);
+                                    $row_count++;
+                                    if ($row_count % 100 == 0) { print "."; }
+                                }
+                                fclose($handle);
+                            }
+                            @unlink($tempFilePath);
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Fallback: populate from system_stats_daily if no app data or if empty
+        if ($row_count == 0) {
+            // Fetch from system_stats_daily (already loaded from production daily export)
+            $result = $mysqli->query("SELECT * FROM system_stats_daily WHERE id='$system_id' ORDER BY timestamp ASC");
+            if ($result && $result->num_rows > 0) {
+                while ($data = $result->fetch_assoc()) {
+                    $insert_myheatpump_row($mysqli, $my_schema, $data);
+                    $row_count++;
+                    if ($row_count % 100 == 0) { print "."; }
+                }
+            }
+        }
+        
+        print " $row_count days\n";
     }
 }
 
