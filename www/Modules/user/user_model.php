@@ -97,7 +97,7 @@ class User
         }
     }
     
-    public function login($username, $password)
+    public function login($username, $password, $rememberme = false)
     {
         if (!$username || !$password) return array('success'=>false, 'message'=>tr("Username or password empty"));
 
@@ -171,8 +171,10 @@ class User
             $_SESSION['gravatar'] = $userData->gravatar;
             $_SESSION['email'] = $userData->email;
 
-            $this->rememberme->remember_me($userid);
-
+            if ($rememberme) {
+                $this->rememberme->remember_me($userid);
+            }
+            
             return array('success' => true, 'message' => _("Login successful"));
         }
     }
@@ -194,6 +196,53 @@ class User
         }
         session_unset();
         session_destroy();
+    }
+
+    public function passwordreset($username,$emailto)
+    {
+        // if null or empty
+        if (!$username || !$emailto) return array('success'=>false, 'message'=>"Username or email empty");
+        
+        $username_out = preg_replace('/[^\p{N}\p{L}_\s\-]/u','',$username);
+        if (!filter_var($emailto, FILTER_VALIDATE_EMAIL)) return array('success'=>false, 'message'=>"Email address format error");
+
+        $stmt = $this->emoncms_mysqli->prepare("SELECT id FROM users WHERE username=? AND email=?");
+        $stmt->bind_param("ss",$username_out,$emailto);
+        $stmt->execute();
+        $stmt->bind_result($userid);
+        $stmt->fetch();
+        $stmt->close();
+        
+        if ($userid!==false && $userid>0)
+        {
+            // Generate new random password
+            // 8 characters long with letter, numbers and mixed case
+            $newpass = substr(str_shuffle('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, 8);
+
+            // Hash and salt
+            $hash = hash('sha256', $newpass);
+            $salt = generate_secure_key(16);
+            $password = hash('sha256', $salt . $hash);
+
+            require_once "Lib/email.php";
+            $email_class = new Email();
+            $email_class->send(array(
+                "to" => array(array("email" => $emailto)),
+                "subject" => "HeatpumpMonitor.org password reset",
+                "text" => "A password reset was requested for your HeatpumpMonitor account.\n\nYou can now login with password: $newpass",
+                "html" => "<p>A password reset was requested for your HeatpumpMonitor account.</p><p>Your can now login with password: <b>$newpass</b> </p>"
+            ));
+
+            // Save password and salt
+            $stmt = $this->emoncms_mysqli->prepare("UPDATE users SET password = ?, salt = ? WHERE id = ?");
+            $stmt->bind_param("ssi", $password, $salt, $userid);
+            $stmt->execute();
+            $stmt->close();
+
+            return array('success'=>true, 'message'=>"Password recovery email sent!");
+        } else {
+            return array('success'=>false, 'message'=>"Invalid username or email");
+        }
     }
 
     public function get_id($username)
@@ -218,7 +267,7 @@ class User
     public function get($userid)
     {
         $userid = (int) $userid;
-        $result = $this->emoncms_mysqli->query("SELECT id,username,email FROM users WHERE id='$userid'");
+        $result = $this->emoncms_mysqli->query("SELECT id,username,email,timezone FROM users WHERE id='$userid'");
         if ($result->num_rows == 0) {
             return false;
         } else {

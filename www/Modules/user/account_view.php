@@ -16,17 +16,29 @@ global $settings;
     <div class="container" style="max-width:800px">
         <br>
 
+        <label><b>User ID</b></label>
+        <div class="input-group mb-3">
+            <input type="text" class="form-control" v-model="account.id" disabled>
+        </div>
+
         <label><b>Username</b></label>
         <div class="input-group mb-3">
-            <input type="text" class="form-control" v-model="account.username" @change="onchange_username" :disabled="account.emoncmsorg_link">
+            <input type="text" class="form-control" v-model="account.username" @change="onchange_username" disabled>
             <button class="btn btn-warning" v-if="username_changed">Save</button>
         </div>
 
         <label><b>Email</b></label>
         <div class="input-group mb-3">
-            <input type="text" class="form-control" v-model="account.email" @change="onchange_email" :disabled="account.emoncmsorg_link">
+            <input type="text" class="form-control" v-model="account.email" @change="onchange_email" disabled>
             <button class="btn btn-warning" v-if="email_changed">Verify</button>
         </div>
+
+        <label><b>Timezone</b></label>
+        <div class="input-group mb-3">
+            <input type="text" class="form-control" v-model="account.timezone" disabled>
+        </div>
+
+
         <hr>
         <!--
         <button class="btn btn-primary" v-if="!account.emoncmsorg_link">Change password</button>

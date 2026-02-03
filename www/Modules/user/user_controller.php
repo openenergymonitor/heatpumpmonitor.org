@@ -6,6 +6,14 @@ function user_controller() {
 
     global $mysqli, $session, $route, $user, $path, $settings;
 
+    if ($route->action == 'passwordreset' && !$session['userid']) {
+        $route->format = "json";
+        return  $user->passwordreset(
+            post('username'),
+            post('email')
+        );
+    }
+
     if ($route->action=="login") {
         if ($route->format=="html") {
             if (!$session['userid']) {
@@ -14,7 +22,11 @@ function user_controller() {
                 header('Location: '.$path);
             }
         } else if ($route->format=="json") {
-            return $user->login(post("username", true),post("password", true));
+            return $user->login(
+                post("username",true),
+                post("password", true),
+                post("rememberme", false)
+            );
         }
     }
 
