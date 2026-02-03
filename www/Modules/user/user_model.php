@@ -99,7 +99,7 @@ class User
     
     public function login($username, $password, $rememberme = false)
     {
-        if (!$username || !$password) return array('success'=>false, 'message'=>tr("Username or password empty"));
+        if (!$username || !$password) return array('success'=>false, 'message'=>"Username or password empty");
 
         // filter out all except for alphanumeric white space and dash
         // if (!ctype_alnum($username))
@@ -242,6 +242,39 @@ class User
             return array('success'=>true, 'message'=>"Password recovery email sent!");
         } else {
             return array('success'=>false, 'message'=>"Invalid username or email");
+        }
+    }
+    public function change_password($userid, $old, $new)
+    {
+        $userid = (int) $userid;
+
+        if (strlen($old) < 4 || strlen($old) > 250) return array('success'=>false, 'message'=>"Password length error");
+        if (strlen($new) < 4 || strlen($new) > 250) return array('success'=>false, 'message'=>"Password length error");
+
+        // 1) check that old password is correct
+        $result = $this->emoncms_mysqli->query("SELECT password, salt FROM users WHERE id = '$userid'");
+        $row = $result->fetch_object();
+        $hash = hash('sha256', $row->salt . hash('sha256', $old));
+
+        if ($hash == $row->password)
+        {
+            // 2) Save new password
+            $hash = hash('sha256', $new);
+            $salt = generate_secure_key(16);
+            $password = hash('sha256', $salt . $hash);
+
+            $stmt = $this->emoncms_mysqli->prepare("UPDATE users SET password = ?, salt = ? WHERE id = ?");
+            $stmt->bind_param("ssi", $password, $salt, $userid);
+            $stmt->execute();
+            $stmt->close();
+            
+            return array('success'=>true, 'message'=>"Password updated successfully");
+        }
+        else
+        {
+            // $ip_address = get_client_ip_env();
+            // $this->log->error("change_password: old password incorect ip:$ip_address");
+            return array('success'=>false, 'message'=>"Old password incorect");
         }
     }
 

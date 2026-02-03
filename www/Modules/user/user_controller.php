@@ -6,14 +6,6 @@ function user_controller() {
 
     global $mysqli, $session, $route, $user, $path, $settings;
 
-    if ($route->action == 'passwordreset' && !$session['userid']) {
-        $route->format = "json";
-        return  $user->passwordreset(
-            post('username'),
-            post('email')
-        );
-    }
-
     if ($route->action=="login") {
         if ($route->format=="html") {
             if (!$session['userid']) {
@@ -58,10 +50,36 @@ function user_controller() {
         exit();
     }
 
+    // JSON API
+    $route->format = "json";
+
+    // Sub accounts requires active session
     if ($route->action=="subaccounts" && $session['userid']) {
-        $route->format = "json";
         return $user->get_sub_accounts($session['userid']);
     }
+
+    // Change user password requires active session
+    if ($route->action=="changepassword" && $session['userid']) {
+        $new_password = post('new');
+        if (empty($new_password)) {
+            return array("success"=>false, "message"=>"New password cannot be empty.");
+        }
+        return $user->change_password(
+            $session['userid'],
+            post('old'),
+            $new_password
+        );
+    }
+
+    // Password reset requires no session
+    if ($route->action == 'passwordreset' && !$session['userid']) {
+        return  $user->passwordreset(
+            post('username'),
+            post('email')
+        );
+    }
+
     
+    $route->format = "html";
     return false;
 }
