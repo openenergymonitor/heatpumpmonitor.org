@@ -128,8 +128,21 @@ class RememberMe
 
         // check the validator
         if (password_verify($validator, $user->hash_validator)) {
+            // Rotate the token after successful use
+            $this->remember_me($user->userid);
             return $user->userid;
         }
         return false;
     }
+
+    // 3. Add cleanup method and call it periodically
+    public function cleanup_expired_tokens() {
+        $now = time();
+        $stmt = $this->mysqli->prepare("DELETE FROM user_sessions WHERE expires < ?");
+        $stmt->bind_param("i", $now);
+        $result = $stmt->execute();
+        $stmt->close();
+        return $result;
+    }
+
 }
