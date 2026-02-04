@@ -74,7 +74,7 @@ global $settings;
                                     <i v-if="sortColumn === 'lastactive'" :class="sortDirection === 'asc' ? 'bi bi-arrow-up' : 'bi bi-arrow-down'" class="ms-1"></i>
                                 </th>
                                 <th class="px-4 cursor-pointer user-select-none" @click="sortBy('access')">
-                                    <i class="bi bi-shield-lock me-2"></i>Access
+                                    <i class="bi bi-shield-lock me-2"></i>Emoncms.org Access
                                     <i v-if="sortColumn === 'access'" :class="sortDirection === 'asc' ? 'bi bi-arrow-up' : 'bi bi-arrow-down'" class="ms-1"></i>
                                 </th>
                                 <th class="px-4">Actions</th>
@@ -171,7 +171,7 @@ global $settings;
                     <!-- Access Level -->
                     <div class="mb-3">
                         <label class="form-label d-flex justify-content-between align-items-center">
-                            <span><i class="bi bi-shield-lock me-2"></i>Access Level</span>
+                            <span><i class="bi bi-shield-lock me-2"></i>Emoncms.org access Level</span>
                             <span v-if="isFieldModified('access')" class="badge bg-warning">Modified</span>
                         </label>
                         <select class="form-select" :class="{ 'border-warning border-2': isFieldModified('access') }" v-model.number="editForm.access">

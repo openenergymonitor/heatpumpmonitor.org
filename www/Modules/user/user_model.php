@@ -125,7 +125,7 @@ class User
         else
         {
             // Default write access
-            if (!isset($userData->access)) $userData->access = 2;
+            // if (!isset($userData->access)) $userData->access = 2;
             
             if ($userData->term>0) {
                 $d = new DateTime();
@@ -140,6 +140,12 @@ class User
             if ($userData->archived==1) {
                 // $this->log->error("Login: Account archived message:$username");             
                 return array('success'=>false, 'message'=>"This account has been archived.<br>Please contact us if you wish to restore the account:<br>support@openenergymonitor.zendesk.com");
+            }
+
+            // Read only access is not currently supported
+            // only allow login if access level is == 2
+            if (!isset($userData->access) || $userData->access<2) {
+                return array('success'=>false, 'message'=>"Login disabled for this account");
             }
             
             // If no access via login
