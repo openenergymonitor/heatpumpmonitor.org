@@ -377,6 +377,7 @@ class User
             $row->systems = 0;
 
             foreach ($accounts as $account_id) {
+                $account_id = (int) $account_id;
                 $system_result = $this->mysqli->query("SELECT COUNT(*) AS system_count FROM system_meta WHERE userid='{$account_id}'");
                 if ($system_row = $system_result->fetch_object()) {
                     $row->systems += (int) $system_row->system_count;
