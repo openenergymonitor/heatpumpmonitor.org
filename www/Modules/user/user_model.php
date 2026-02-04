@@ -410,26 +410,6 @@ class User
         }
     }
 
-    // Get list of sub accounts
-    public function get_sub_accounts($userid) {
-        $userid = (int) $userid;
-
-        // Get sub accounts from local accounts table
-        $result = $this->emoncms_mysqli->query("SELECT u.id, u.username FROM billing_linked a JOIN users u ON a.linkeduser = u.id WHERE a.adminuser = '$userid'");
-        $accounts = array();
-        while ($row = $result->fetch_object()) {
-            $accounts[] = array(
-                'userid' => (int) $row->id,
-                'username' => $row->username
-            );
-        }
-
-        return array(
-            'success' => true,
-            'accounts' => $accounts
-        );
-    }
-
     // Get userid from apikey read
     public function get_userid_from_apikey_read($apikey_read) {
 
@@ -464,6 +444,28 @@ class User
         }
 
         return $accounts;
+    }
+
+    // Get list of sub accounts with usernames, access levels etc
+    public function get_sub_accounts($userid) {
+        $userid = (int) $userid;
+
+        // Get sub accounts from local accounts table
+        $result = $this->emoncms_mysqli->query("SELECT u.id, u.username, u.email, u.access FROM billing_linked a JOIN users u ON a.linkeduser = u.id WHERE a.adminuser = '$userid' ORDER BY u.id ASC");
+        $accounts = array();
+        while ($row = $result->fetch_object()) {
+            $accounts[] = array(
+                'userid' => (int) $row->id,
+                'username' => $row->username,
+                'email' => $row->email,
+                'access' => (int) $row->access
+            );
+        }
+
+        return array(
+            'success' => true,
+            'accounts' => $accounts
+        );
     }
 
 }

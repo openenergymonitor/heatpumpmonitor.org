@@ -156,14 +156,38 @@ global $settings;
                     <table class="table table-hover mb-0">
                         <thead class="table-light">
                             <tr>
+                                <!-- User id -->
+                                <th class="px-4"><i class="bi bi-hash me-2"></i>User ID</th>
+                                <!-- Username Column -->
                                 <th class="px-4"><i class="bi bi-person me-2"></i>Username</th>
+                                <!-- Email Column -->
+                                <th class="px-4"><i class="bi bi-envelope me-2"></i>Email</th>
+                                <!-- access column -->
+                                <th class="px-4"><i class="bi bi-shield-lock me-2"></i>Access</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr v-for="sub_account in sub_accounts" :key="sub_account.username">
+
+                                <td class="px-4 py-3">
+                                    <i class="bi bi-hash text-muted me-2"></i>
+                                    {{ sub_account.userid }}
+                                </td>
+
                                 <td class="px-4 py-3">
                                     <i class="bi bi-person-circle text-muted me-2"></i>
                                     {{ sub_account.username }}
+                                </td>
+
+                                <td class="px-4 py-3">
+                                    <i class="bi bi-envelope text-muted me-2"></i>
+                                    {{ sub_account.email }}
+                                </td>
+
+                                <td class="px-4 py-3">
+                                    <span v-if="sub_account.access==0" class="badge bg-secondary text-light">Disabled</span>
+                                    <span v-if="sub_account.access==1" class="badge bg-warning text-light">Read only</span>
+                                    <span v-else-if="sub_account.access==2" class="badge bg-success text-light">Write access</span>
                                 </td>
                             </tr>
                         </tbody>
