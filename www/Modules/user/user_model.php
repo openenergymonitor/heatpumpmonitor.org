@@ -107,7 +107,7 @@ class User
         if ($username_out!=$username) return array('success'=>false, 'message'=>"Username must only contain a-z 0-9 dash and underscore");
 
         if (!$userid = $this->get_id($username)) {
-            return array('success'=>false, 'message'=>"Username does not exist");
+            return array('success'=>false, 'message'=>"Invalid username or password");
         }
 
         $result = $this->emoncms_mysqli->query("SELECT * FROM users WHERE id = '$userid'");
@@ -120,7 +120,7 @@ class User
         $hash = hash('sha256', $userData->salt . hash('sha256', $password));
 
         if ($hash != $userData->password) {
-            return array('success'=>false, 'message'=>"Incorrect password");
+            return array('success'=>false, 'message'=>"Invalid username or password");
         }
         else
         {
