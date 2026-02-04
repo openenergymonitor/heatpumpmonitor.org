@@ -48,17 +48,38 @@ global $settings;
                     <table class="table table-hover mb-0">
                         <thead class="table-light">
                             <tr>
-                                <th class="px-4"><i class="bi bi-hash me-2"></i>User ID</th>
-                                <th class="px-4"><i class="bi bi-person me-2"></i>Username</th>
-                                <th class="px-4"><i class="bi bi-envelope me-2"></i>Email</th>
-                                <th class="px-4"><i class="bi bi-geo-alt me-2"></i>Location</th>
-                                <th class="px-4"><i class="bi bi-lightning-charge me-2"></i>System</th>
-                                <th class="px-4"><i class="bi bi-clock-history me-2"></i>Last Active</th>
-                                <th class="px-4"><i class="bi bi-shield-lock me-2"></i>Access</th>
+                                <th class="px-4 cursor-pointer user-select-none" @click="sortBy('id')">
+                                    <i class="bi bi-hash me-2"></i>User ID
+                                    <i v-if="sortColumn === 'id'" :class="sortDirection === 'asc' ? 'bi bi-arrow-up' : 'bi bi-arrow-down'" class="ms-1"></i>
+                                </th>
+                                <th class="px-4 cursor-pointer user-select-none" @click="sortBy('username')">
+                                    <i class="bi bi-person me-2"></i>Username
+                                    <i v-if="sortColumn === 'username'" :class="sortDirection === 'asc' ? 'bi bi-arrow-up' : 'bi bi-arrow-down'" class="ms-1"></i>
+                                </th>
+                                <th class="px-4 cursor-pointer user-select-none" @click="sortBy('email')">
+                                    <i class="bi bi-envelope me-2"></i>Email
+                                    <i v-if="sortColumn === 'email'" :class="sortDirection === 'asc' ? 'bi bi-arrow-up' : 'bi bi-arrow-down'" class="ms-1"></i>
+                                </th>
+                                <th class="px-4 cursor-pointer user-select-none" @click="sortBy('system_location')">
+                                    <i class="bi bi-geo-alt me-2"></i>Location
+                                    <i v-if="sortColumn === 'system_location'" :class="sortDirection === 'asc' ? 'bi bi-arrow-up' : 'bi bi-arrow-down'" class="ms-1"></i>
+                                </th>
+                                <th class="px-4 cursor-pointer user-select-none" @click="sortBy('hp_model')">
+                                    <i class="bi bi-lightning-charge me-2"></i>System
+                                    <i v-if="sortColumn === 'hp_model'" :class="sortDirection === 'asc' ? 'bi bi-arrow-up' : 'bi bi-arrow-down'" class="ms-1"></i>
+                                </th>
+                                <th class="px-4 cursor-pointer user-select-none" @click="sortBy('lastactive')">
+                                    <i class="bi bi-clock-history me-2"></i>Last Active
+                                    <i v-if="sortColumn === 'lastactive'" :class="sortDirection === 'asc' ? 'bi bi-arrow-up' : 'bi bi-arrow-down'" class="ms-1"></i>
+                                </th>
+                                <th class="px-4 cursor-pointer user-select-none" @click="sortBy('access')">
+                                    <i class="bi bi-shield-lock me-2"></i>Access
+                                    <i v-if="sortColumn === 'access'" :class="sortDirection === 'asc' ? 'bi bi-arrow-up' : 'bi bi-arrow-down'" class="ms-1"></i>
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="sub_account in sub_accounts" :key="sub_account.username">
+                            <tr v-for="sub_account in sortedAccounts" :key="sub_account.username">
                                 <td class="px-4 py-3">
                                     <i class="bi bi-hash text-muted me-2"></i>
                                     {{ sub_account.id }}
@@ -114,9 +135,49 @@ global $settings;
         el: '#app',
         data: {
             sub_accounts: [],
-            loading: true
+            loading: true,
+            sortColumn: 'id',
+            sortDirection: 'asc'
+        },
+        computed: {
+            sortedAccounts() {
+                const accounts = [...this.sub_accounts];
+                
+                accounts.sort((a, b) => {
+                    let aVal = a[this.sortColumn];
+                    let bVal = b[this.sortColumn];
+                    
+                    // Handle null/undefined values - put them at the end
+                    if (aVal == null || aVal === '') aVal = this.sortDirection === 'asc' ? '\uffff' : '';
+                    if (bVal == null || bVal === '') bVal = this.sortDirection === 'asc' ? '\uffff' : '';
+                    
+                    // Numeric comparison for id, lastactive, access
+                    if (this.sortColumn === 'id' || this.sortColumn === 'lastactive' || this.sortColumn === 'access') {
+                        aVal = Number(aVal) || 0;
+                        bVal = Number(bVal) || 0;
+                    } else {
+                        // String comparison (case-insensitive)
+                        aVal = String(aVal).toLowerCase();
+                        bVal = String(bVal).toLowerCase();
+                    }
+                    
+                    if (aVal < bVal) return this.sortDirection === 'asc' ? -1 : 1;
+                    if (aVal > bVal) return this.sortDirection === 'asc' ? 1 : -1;
+                    return 0;
+                });
+                
+                return accounts;
+            }
         },
         methods: {
+            sortBy(column) {
+                if (this.sortColumn === column) {
+                    this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+                } else {
+                    this.sortColumn = column;
+                    this.sortDirection = 'asc';
+                }
+            },
             get_sub_accounts: function() {
                 axios.get("<?php echo $path ?>user/subaccounts.json")
                 .then(response => {
@@ -162,3 +223,12 @@ global $settings;
         }
     });
 </script>
+
+<style>
+.cursor-pointer {
+    cursor: pointer;
+}
+.cursor-pointer:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+</style>
