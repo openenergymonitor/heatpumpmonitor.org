@@ -85,6 +85,12 @@ function user_controller() {
             return $user->get_sub_accounts_with_system_details($session['userid']);
         }
 
+        // Update sub account details requires active session
+        if ($route->action=="update-subaccount") {
+            $data = json_decode(file_get_contents('php://input'), true);
+            return $user->update_sub_account($session['userid'], $data);
+        }
+
         // Change user password requires active session
         if ($route->action=="changepassword") {
             $new_password = post('new');

@@ -497,4 +497,133 @@ class User
         );
     }
 
+    // Update sub account details
+    public function update_sub_account($admin_userid, $data) {
+        $admin_userid = (int) $admin_userid;
+
+        // Validate data
+        if (!isset($data['sub_account_userid'])) {
+            return array('success' => false, 'message' => 'Sub account userid missing');
+        }
+
+        $sub_account_userid = (int) $data['sub_account_userid'];
+
+        // First check if the user exists
+        if (!$this->userid_exists($sub_account_userid)) {
+            return array('success' => false, 'message' => 'Sub account userid does not exist');
+        }
+
+        // Check that sub account belongs to admin user
+        $result = $this->emoncms_mysqli->query("SELECT COUNT(*) as count FROM billing_linked WHERE adminuser='$admin_userid' AND linkeduser='$sub_account_userid'");
+        $row = $result->fetch_object();
+        if ($row->count == 0) {
+            return array('success' => false, 'message' => 'Sub account does not belong to admin user');
+        }
+
+        // Start by changing username if modified, return errors if any
+        if (isset($data['username'])) {
+            $result = $this->change_username($sub_account_userid, $data['username']);
+            if (!$result['success']) return $result;
+        }
+        
+        // Change email if modified, return errors if any
+        if (isset($data['email'])) {
+            $result = $this->change_email($sub_account_userid, $data['email']);
+            if (!$result['success']) return $result;
+        }
+
+        // Change access level if modified, return errors if any
+        if (isset($data['access'])) {
+            $result = $this->change_access_level($sub_account_userid, $data['access']);
+            if (!$result['success']) return $result;
+        }
+
+        // If password provided, change password
+        if (isset($data['password']) && !empty($data['password'])) {
+            $result = $this->change_password_no_check($sub_account_userid, $data['password']);
+            if (!$result['success']) return $result;
+        }
+
+        return array('success' => true, 'message' => 'Sub account updated successfully');
+    }
+
+    // Change user account username
+    public function change_username($userid, $username)
+    {
+        // if (isset($_SESSION['cookielogin']) && $_SESSION['cookielogin']==true) {
+        // return array('success'=>false, 'message'=>tr("As you are using a cookie based remember me login, please logout and log back in to change email"));
+        // }
+
+        $userid = (int) $userid;
+        if (strlen($username) < 3 || strlen($username) > 30) return array('success'=>false, 'message'=>"Username length error");
+        if (!ctype_alnum($username)) return array('success'=>false, 'message'=>"Username must only contain a-z and 0-9 characters");
+
+        $userid_from_username = $this->get_id($username);
+
+        if (!$userid_from_username) {
+            $stmt = $this->emoncms_mysqli->prepare("UPDATE users SET username = ? WHERE id = ?");
+            $stmt->bind_param("si", $username, $userid);
+            $stmt->execute();
+            $stmt->close();
+            return array('success'=>true, 'message'=>"Username updated");
+        } else {
+            return array('success'=>false, 'message'=>"Username already exists");
+        }
+    }
+
+    // Change user account email
+    public function change_email($userid, $email)
+    {
+        // if (isset($_SESSION['cookielogin']) && $_SESSION['cookielogin']==true) {
+        // return array('success'=>false, 'message'=>tr("As you are using a cookie based remember me login, please logout and log back in to change email"));
+        // }
+
+        $userid = (int) $userid;
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return array('success'=>false, 'message'=>"Email address format error");
+        }
+
+        $stmt = $this->emoncms_mysqli->prepare("UPDATE users SET email = ? WHERE id = ?");
+        $stmt->bind_param("si", $email, $userid);
+        $stmt->execute();
+        $stmt->close();
+
+        return array('success'=>true, 'message'=>"Email updated");
+    }
+
+    // Change user account access level
+    public function change_access_level($userid, $access_level)
+    {
+        $userid = (int) $userid;
+        $access_level = (int) $access_level;
+        if ($access_level < 0 || $access_level > 2) {
+            return array('success'=>false, 'message'=>"Access level value error");
+        }
+
+        $stmt = $this->emoncms_mysqli->prepare("UPDATE users SET access = ? WHERE id = ?");
+        $stmt->bind_param("ii", $access_level, $userid);
+        $stmt->execute();
+        $stmt->close();
+        return array('success'=>true, 'message'=>"Access level updated");
+    }
+
+    // Change password (without old password check!)
+    public function change_password_no_check($userid, $new) {
+        $userid = (int) $userid;
+
+        if (strlen($new) < 4 || strlen($new) > 250) return array('success'=>false, 'message'=>"Password length error");
+
+        // Save new password
+        $hash = hash('sha256', $new);
+        $salt = generate_secure_key(16);
+        $password = hash('sha256', $salt . $hash);
+
+        $stmt = $this->emoncms_mysqli->prepare("UPDATE users SET password = ?, salt = ? WHERE id = ?");
+        $stmt->bind_param("ssi", $password, $salt, $userid);
+        $stmt->execute();
+        $stmt->close();
+        
+        return array('success'=>true, 'message'=>"Password updated successfully");
+    }
+
 }

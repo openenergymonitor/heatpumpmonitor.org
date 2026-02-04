@@ -367,7 +367,7 @@ global $settings;
                 
                 // Prepare data - always include userid, only include changed fields
                 const data = {
-                    userid: this.editingAccount.id
+                    sub_account_userid: this.editingAccount.id
                 };
                 
                 // Only include fields that have actually been modified
