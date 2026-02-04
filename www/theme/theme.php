@@ -53,6 +53,7 @@ $navigation = array(
     <link rel="apple-touch-icon" href="<?php echo $path; ?>theme/img/logo/apple-touch-icon.png">
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css">
     <link rel="stylesheet" href="<?php echo $path; ?>theme/style.css?v=54" />
@@ -95,6 +96,12 @@ $navigation = array(
     .footer {
 
         padding: 20px;
+        text-align: center;
+    }
+
+    .dropdown-item i {
+        margin-right: 0.5rem;
+        width: 1.25rem;
         text-align: center;
     }
 
@@ -185,21 +192,21 @@ $navigation = array(
                                     <img width="32" height="32" class="rounded-circle avatar-image">
                                 </a>
                                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="avatarDropdown">
-                                    <li><a class="dropdown-item" href="<?php echo $path; ?>user/view">My account</a></li>
-                                    <li><a class="dropdown-item" href="<?php echo $path; ?>system/list/user">My systems</a></li>
+                                    <li><a class="dropdown-item" href="<?php echo $path; ?>user/view"><i class="bi bi-person-circle"></i> My account</a></li>
+                                    <li><a class="dropdown-item" href="<?php echo $path; ?>system/list/user"><i class="bi bi-list-ul"></i> My systems</a></li>
                                     <?php if ($session['admin']) { ?>
                                         <li>
                                             <hr class="dropdown-divider">
                                         </li>
-                                        <li><a class="dropdown-item" href="<?php echo $path; ?>user/admin">Admin users</a></li>
-                                        <li><a class="dropdown-item" href="<?php echo $path; ?>system/list/admin">Admin systems</a></li>
-                                        <li><a class="dropdown-item" href="<?php echo $path; ?>system/log">Change log</a></li>
-                                        <li><a class="dropdown-item" href="<?php echo $path; ?>system/photos/admin">System photos</a></li>
+                                        <li><a class="dropdown-item" href="<?php echo $path; ?>user/admin"><i class="bi bi-people"></i> Admin users</a></li>
+                                        <li><a class="dropdown-item" href="<?php echo $path; ?>system/list/admin"><i class="bi bi-gear"></i> Admin systems</a></li>
+                                        <li><a class="dropdown-item" href="<?php echo $path; ?>system/log"><i class="bi bi-clock-history"></i> Change log</a></li>
+                                        <li><a class="dropdown-item" href="<?php echo $path; ?>system/photos/admin"><i class="bi bi-images"></i> System photos</a></li>
                                     <?php } ?>
                                     <li>
                                         <hr class="dropdown-divider">
                                     </li>
-                                    <li><a class="dropdown-item" href="<?php echo $path; ?>user/logout">Logout</a></li>
+                                    <li><a class="dropdown-item" href="<?php echo $path; ?>user/logout"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
                                 </ul>
                             </li>
                         </ul>
