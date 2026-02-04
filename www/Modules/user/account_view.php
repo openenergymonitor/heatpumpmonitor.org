@@ -163,7 +163,7 @@ global $settings;
                                 <!-- Email Column -->
                                 <th class="px-4"><i class="bi bi-envelope me-2"></i>Email</th>
                                 <!-- access column -->
-                                <th class="px-4"><i class="bi bi-shield-lock me-2"></i>Access</th>
+                                <th class="px-4"><i class="bi bi-shield-lock me-2"></i>User Access</th>
                             </tr>
                         </thead>
                         <tbody>
