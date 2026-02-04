@@ -466,7 +466,7 @@ class User
         $userid = (int) $userid;
 
         // Get sub accounts from local accounts table
-        $result = $this->emoncms_mysqli->query("SELECT u.id, u.username, u.email, u.access FROM billing_linked a JOIN users u ON a.linkeduser = u.id WHERE a.adminuser = '$userid' ORDER BY u.id ASC");
+        $result = $this->emoncms_mysqli->query("SELECT u.id, u.username, u.email, u.access, u.lastactive FROM billing_linked a JOIN users u ON a.linkeduser = u.id WHERE a.adminuser = '$userid' ORDER BY u.id ASC");
         $accounts = array();
         while ($row = $result->fetch_object()) {
 

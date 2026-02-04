@@ -53,6 +53,7 @@ global $settings;
                                 <th class="px-4"><i class="bi bi-envelope me-2"></i>Email</th>
                                 <th class="px-4"><i class="bi bi-geo-alt me-2"></i>Location</th>
                                 <th class="px-4"><i class="bi bi-lightning-charge me-2"></i>System</th>
+                                <th class="px-4"><i class="bi bi-clock-history me-2"></i>Last Active</th>
                                 <th class="px-4"><i class="bi bi-shield-lock me-2"></i>Access</th>
                             </tr>
                         </thead>
@@ -79,6 +80,12 @@ global $settings;
                                 <td class="px-4 py-3">
                                     <span v-if="sub_account.hp_model">{{ sub_account.hp_output }} kW {{ sub_account.hp_manufacturer }} {{ sub_account.hp_model }} </span>
                                     <span v-else class="text-muted fst-italic">-</span>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <span v-if="sub_account.lastactive">
+                                        {{ formatDate(sub_account.lastactive) }}
+                                    </span>
+                                    <span v-else class="text-muted fst-italic">Never</span>
                                 </td>
                                 <td class="px-4 py-3">
                                     <span v-if="sub_account.access==0" class="badge bg-secondary">Disabled</span>
@@ -125,7 +132,30 @@ global $settings;
                 .finally(() => {
                     this.loading = false;
                 });
-            }  
+            },
+            formatDate: function(timestamp) {
+                const now = Math.floor(Date.now() / 1000);
+                const diff = now - timestamp;
+                
+                if (diff < 60) {
+                    return diff === 1 ? '1 second ago' : `${diff} seconds ago`;
+                } else if (diff < 3600) {
+                    const minutes = Math.floor(diff / 60);
+                    return minutes === 1 ? '1 minute ago' : `${minutes} minutes ago`;
+                } else if (diff < 86400) {
+                    const hours = Math.floor(diff / 3600);
+                    return hours === 1 ? '1 hour ago' : `${hours} hours ago`;
+                } else if (diff < 2592000) {
+                    const days = Math.floor(diff / 86400);
+                    return days === 1 ? '1 day ago' : `${days} days ago`;
+                } else if (diff < 31536000) {
+                    const months = Math.floor(diff / 2592000);
+                    return months === 1 ? '1 month ago' : `${months} months ago`;
+                } else {
+                    const years = Math.floor(diff / 31536000);
+                    return years === 1 ? '1 year ago' : `${years} years ago`;
+                }
+            }
         },
         mounted() {
             this.get_sub_accounts();

@@ -228,7 +228,7 @@ global $settings;
                 formData.append('old', this.pass.old);
                 formData.append('new', this.pass.new1);
 
-                axios.post("<?php echo $path ?>user/changepassword", formData)
+                axios.post("<?php echo $path ?>user/changepassword.json", formData)
                 .then(response => {
                     this.password_change_success = response.data.success;
                     this.password_change_message = response.data.message;

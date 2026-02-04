@@ -363,15 +363,6 @@ $emoncms_host = parse_url($settings['emoncms_host'], PHP_URL_HOST);
             }
         },
         mounted() {
-            // Handle any initial result from PHP
-            var result = <?php echo json_encode($result); ?>;
-            if (result.success !== undefined) {
-                if (result.success) {
-                    this.success = result.message;
-                } else {
-                    this.error = result.message;
-                }
-            }
         }
     });
 </script>
