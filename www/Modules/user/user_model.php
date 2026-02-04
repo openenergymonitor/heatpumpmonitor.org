@@ -462,19 +462,33 @@ class User
     }
 
     // Get list of sub accounts with usernames, access levels etc
-    public function get_sub_accounts($userid) {
+    public function get_sub_accounts_with_system_details($userid) {
         $userid = (int) $userid;
 
         // Get sub accounts from local accounts table
         $result = $this->emoncms_mysqli->query("SELECT u.id, u.username, u.email, u.access FROM billing_linked a JOIN users u ON a.linkeduser = u.id WHERE a.adminuser = '$userid' ORDER BY u.id ASC");
         $accounts = array();
         while ($row = $result->fetch_object()) {
-            $accounts[] = array(
-                'userid' => (int) $row->id,
-                'username' => $row->username,
-                'email' => $row->email,
-                'access' => (int) $row->access
-            );
+
+            $row->id = (int) $row->id;
+            $row->access = (int) $row->access;
+
+            // Load system details from system_meta for each sub account - if the user has one system
+            // system location, hp_manufacturer, hp_model, hp_output
+            $system_result = $this->mysqli->query("SELECT location, hp_manufacturer, hp_model, hp_output FROM system_meta WHERE userid='{$row->id}' LIMIT 1");
+            if ($system_row = $system_result->fetch_object()) {
+                $row->system_location = $system_row->location;
+                $row->hp_manufacturer = $system_row->hp_manufacturer;
+                $row->hp_model = $system_row->hp_model;
+                $row->hp_output = $system_row->hp_output;
+            } else {
+                $row->system_location = '';
+                $row->hp_manufacturer = '';
+                $row->hp_model = '';
+                $row->hp_output = '';
+            }
+
+            $accounts[] = $row;
         }
 
         return array(

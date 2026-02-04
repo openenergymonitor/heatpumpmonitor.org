@@ -58,7 +58,7 @@ function user_controller() {
         if ($route->format=="html") {
             return view("Modules/user/Views/subaccount/subaccount_view.php", array());
         } else {
-            return $user->get_sub_accounts($session['userid']);
+            return $user->get_sub_accounts_with_system_details($session['userid']);
         }
     }
 

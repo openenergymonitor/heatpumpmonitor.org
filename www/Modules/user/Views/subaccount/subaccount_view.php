@@ -10,7 +10,7 @@ global $settings;
 
 <div id="app" class="bg-light min-vh-100">
     <div class="border-bottom shadow-sm" style="background-color: #f0f0f0;">
-        <div class="container py-4" style="max-width:1200px;">
+        <div class="container-fluid py-4">
             <div class="d-flex align-items-center">
                 <a href="<?php echo $path; ?>user/account" class="btn btn-light me-3">
                     <i class="bi bi-arrow-left"></i>
@@ -23,32 +23,44 @@ global $settings;
         </div>
     </div>
     
-    <div class="container py-4" style="max-width:1200px">
+    <div class="container-fluid py-4">
         
         <!-- Sub Accounts Card -->
         <div class="card shadow-sm mb-4">
             <div class="card-header bg-white py-3">
                 <h5 class="mb-0">
                     <i class="bi bi-people me-2"></i>Sub Accounts
-                    <span class="badge bg-primary rounded-pill ms-2">{{ sub_accounts.length }}</span>
+                    <span class="badge bg-primary rounded-pill ms-2" v-if="!loading">{{ sub_accounts.length }}</span>
                 </h5>
             </div>
-            <div class="card-body p-0" v-if="sub_accounts.length > 0">
+            
+            <!-- Loading State -->
+            <div class="card-body text-center py-5" v-if="loading">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="text-muted mb-0">Loading sub accounts...</p>
+            </div>
+            
+            <!-- Accounts Table -->
+            <div class="card-body p-0" v-else-if="sub_accounts.length > 0">
                 <div class="table-responsive">
                     <table class="table table-hover mb-0">
                         <thead class="table-light">
                             <tr>
-                                <th class="px-4"><i class="bi bi-hash me-2"></i>ID</th>
+                                <th class="px-4"><i class="bi bi-hash me-2"></i>User ID</th>
                                 <th class="px-4"><i class="bi bi-person me-2"></i>Username</th>
                                 <th class="px-4"><i class="bi bi-envelope me-2"></i>Email</th>
-                                <th class="px-4"><i class="bi bi-shield-lock me-2"></i>User Access</th>
+                                <th class="px-4"><i class="bi bi-geo-alt me-2"></i>Location</th>
+                                <th class="px-4"><i class="bi bi-lightning-charge me-2"></i>System</th>
+                                <th class="px-4"><i class="bi bi-shield-lock me-2"></i>Access</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr v-for="sub_account in sub_accounts" :key="sub_account.username">
                                 <td class="px-4 py-3">
                                     <i class="bi bi-hash text-muted me-2"></i>
-                                    {{ sub_account.userid }}
+                                    {{ sub_account.id }}
                                 </td>
                                 <td class="px-4 py-3">
                                     <i class="bi bi-person-circle text-muted me-2"></i>
@@ -59,15 +71,27 @@ global $settings;
                                     {{ sub_account.email }}
                                 </td>
                                 <td class="px-4 py-3">
-                                    <span v-if="sub_account.access==0" class="badge bg-secondary text-light">Disabled</span>
-                                    <span v-else-if="sub_account.access==1" class="badge bg-warning text-light">Read only</span>
-                                    <span v-else-if="sub_account.access==2" class="badge bg-success text-light">Write access</span>
+                                    <span v-if="sub_account.system_location" class="text-muted">
+                                        <i class="bi bi-geo-alt me-1"></i>{{ sub_account.system_location }}
+                                    </span>
+                                    <span v-else class="text-muted fst-italic">-</span>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <span v-if="sub_account.hp_model">{{ sub_account.hp_output }} kW {{ sub_account.hp_manufacturer }} {{ sub_account.hp_model }} </span>
+                                    <span v-else class="text-muted fst-italic">-</span>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <span v-if="sub_account.access==0" class="badge bg-secondary">Disabled</span>
+                                    <span v-else-if="sub_account.access==1" class="badge bg-warning">Read only</span>
+                                    <span v-else-if="sub_account.access==2" class="badge bg-success">Write access</span>
                                 </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
             </div>
+            
+            <!-- Empty State -->
             <div class="card-body text-center py-5" v-else>
                 <i class="bi bi-people fs-1 text-muted mb-3 d-block"></i>
                 <h5 class="text-muted">No Sub Accounts</h5>
@@ -82,7 +106,8 @@ global $settings;
     var app = new Vue({
         el: '#app',
         data: {
-            sub_accounts: []
+            sub_accounts: [],
+            loading: true
         },
         methods: {
             get_sub_accounts: function() {
@@ -96,6 +121,9 @@ global $settings;
                 })
                 .catch(error => {
                     console.log(error);
+                })
+                .finally(() => {
+                    this.loading = false;
                 });
             }  
         },
