@@ -304,7 +304,22 @@ class User
         if ($result->num_rows == 0) {
             return false;
         } else {
-            return $result->fetch_object();
+            $row = $result->fetch_object();
+            $row->sub_account_count = $this->count_sub_accounts($userid);
+
+            return $row;
+        }
+    }
+
+    // count sub accounts for admin user
+    public function count_sub_accounts($admin_userid)
+    {
+        $admin_userid = (int) $admin_userid;
+        $result = $this->emoncms_mysqli->query("SELECT COUNT(*) AS sub_account_count FROM billing_linked WHERE adminuser='$admin_userid'");
+        if ($linked_row = $result->fetch_object()) {
+            return (int) $linked_row->sub_account_count;
+        } else {
+            return 0;
         }
     }
 

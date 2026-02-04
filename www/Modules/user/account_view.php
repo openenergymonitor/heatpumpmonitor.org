@@ -144,54 +144,22 @@ global $settings;
         </div>
 
         <!-- Sub Accounts Card -->
-        <div class="card shadow-sm mb-4" v-if="sub_accounts.length>0">
+        <div class="card shadow-sm mb-4" v-if="account.sub_account_count > 0">
             <div class="card-header bg-white py-3">
                 <h5 class="mb-0">
                     <i class="bi bi-people me-2"></i>Sub Accounts
-                    <span class="badge bg-primary rounded-pill ms-2">{{ sub_accounts.length }}</span>
+                    <span class="badge bg-primary rounded-pill ms-2">{{ account.sub_account_count }}</span>
                 </h5>
             </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <!-- User id -->
-                                <th class="px-4"><i class="bi bi-hash me-2"></i>User ID</th>
-                                <!-- Username Column -->
-                                <th class="px-4"><i class="bi bi-person me-2"></i>Username</th>
-                                <!-- Email Column -->
-                                <th class="px-4"><i class="bi bi-envelope me-2"></i>Email</th>
-                                <!-- access column -->
-                                <th class="px-4"><i class="bi bi-shield-lock me-2"></i>User Access</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="sub_account in sub_accounts" :key="sub_account.username">
-
-                                <td class="px-4 py-3">
-                                    <i class="bi bi-hash text-muted me-2"></i>
-                                    {{ sub_account.userid }}
-                                </td>
-
-                                <td class="px-4 py-3">
-                                    <i class="bi bi-person-circle text-muted me-2"></i>
-                                    {{ sub_account.username }}
-                                </td>
-
-                                <td class="px-4 py-3">
-                                    <i class="bi bi-envelope text-muted me-2"></i>
-                                    {{ sub_account.email }}
-                                </td>
-
-                                <td class="px-4 py-3">
-                                    <span v-if="sub_account.access==0" class="badge bg-secondary text-light">Disabled</span>
-                                    <span v-if="sub_account.access==1" class="badge bg-warning text-light">Read only</span>
-                                    <span v-else-if="sub_account.access==2" class="badge bg-success text-light">Write access</span>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1">Manage Sub Accounts</h6>
+                        <p class="text-muted mb-0">View and manage access for your sub accounts</p>
+                    </div>
+                    <a href="<?php echo $path; ?>user/subaccounts" class="btn btn-primary">
+                        <i class="bi bi-arrow-right-circle me-1"></i>Manage Sub Accounts
+                    </a>
                 </div>
             </div>
         </div>
@@ -210,7 +178,7 @@ global $settings;
             account: {...account},
             email_changed: false,
             username_changed: false,
-            sub_accounts: [],
+            sub_accounts_count: 0,
             show_change_password: false,
             pass: {
                 old: '',
@@ -279,22 +247,7 @@ global $settings;
                     this.password_change_message = "An error occurred.";
                     console.log(error);
                 });
-            },
-            get_sub_accounts: function() {
-                axios.get("<?php echo $path ?>user/subaccounts")
-                .then(response => {
-                    if (response.data.success) {
-                        this.sub_accounts = response.data.accounts;
-                    } else {
-                        console.log(response.data.message);
-                    }
-                })
-                .catch(error => {
-                    console.log(error);
-                });
-            }  
+            }
         }
     });
-
-    app.get_sub_accounts();
 </script>

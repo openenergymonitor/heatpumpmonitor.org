@@ -192,7 +192,7 @@ $navigation = array(
                                     <img width="32" height="32" class="rounded-circle avatar-image">
                                 </a>
                                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="avatarDropdown">
-                                    <li><a class="dropdown-item" href="<?php echo $path; ?>user/view"><i class="bi bi-person-circle"></i> My account</a></li>
+                                    <li><a class="dropdown-item" href="<?php echo $path; ?>user/account"><i class="bi bi-person-circle"></i> My account</a></li>
                                     <li><a class="dropdown-item" href="<?php echo $path; ?>system/list/user"><i class="bi bi-list-ul"></i> My systems</a></li>
                                     <?php if ($session['admin']) { ?>
                                         <li>

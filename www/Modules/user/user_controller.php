@@ -22,8 +22,10 @@ function user_controller() {
         }
     }
 
-    if ($route->action=="view" && $session['userid']) {
-        return view("Modules/user/account_view.php", array('account'=>$user->get($session['userid'])));  
+    if ($route->action=="account" && $session['userid']) {
+        return view("Modules/user/account_view.php", array(
+            'account'=>$user->get($session['userid'])
+        ));  
     }
 
     if ($route->action=="admin" && $session['admin']) {
@@ -50,13 +52,20 @@ function user_controller() {
         exit();
     }
 
-    // JSON API
-    $route->format = "json";
 
     // Sub accounts requires active session
     if ($route->action=="subaccounts" && $session['userid']) {
-        return $user->get_sub_accounts($session['userid']);
+        if ($route->format=="html") {
+            return view("Modules/user/Views/subaccount/subaccount_view.php", array());
+        } else {
+            return $user->get_sub_accounts($session['userid']);
+        }
     }
+
+
+    // JSON API
+    $route->format = "json";
+
 
     // Change user password requires active session
     if ($route->action=="changepassword" && $session['userid']) {
