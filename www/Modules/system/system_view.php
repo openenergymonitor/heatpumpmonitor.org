@@ -233,7 +233,7 @@ global $settings, $session, $path;
     <?php include "Modules/system/photo_lightbox_template.html"; ?>
 
     <!-- System Photos - Edit Mode -->
-    <div class="container mt-3" style="max-width:800px" v-if="mode=='edit'">
+    <div class="container mt-3" style="max-width:800px" v-if="mode=='edit' && system.id">
         <div class="card mt-3">
             <h5 class="card-header">System Photos</h5>
             <div class="card-body">
@@ -385,7 +385,7 @@ global $settings, $session, $path;
         </div>
     </div>
 
-    <div class="container mt-3" style="max-width:800px">
+    <div class="container mt-3" style="max-width:800px" v-if="system.id">
         <div class="row" v-if="system.url!=''">
             <p v-if="mode=='view'">Information about this system.</p>
             <div v-if="mode=='edit'">
@@ -528,13 +528,14 @@ global $settings, $session, $path;
 
         </div>
     </div>
+    <br>
     <div style=" background-color:#eee; padding-top:20px; padding-bottom:10px" v-if="mode=='edit' && system.url!=''">
         <div class="container" style="max-width:800px;">
             <?php if ($settings['public_mode_enabled']) { ?>
-            <div class="row">
+            <div class="row" v-if="system.id">
                 <div class="col">
-                    <p><b>Agree to share this information publicly</b></p>
-                    <p class="text-muted small">Leave unchecked to keep your system private for personal use only. You can change this setting at any time.</p>
+                    <p><b>Do you want to share this information publicly?</b></p>
+                    <p class="text-muted small"><b>Leave unchecked to keep your system private</b>. You can change this setting at any time.</p>
                 </div>
                 <div class="col">
                     <div class="form-check">
@@ -561,7 +562,8 @@ global $settings, $session, $path;
                     <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                     Saving...
                 </span>
-                <span v-else>Save</span>
+                <span v-if="!saving && system.id">Save</span>
+                <span v-if="!saving && !system.id">Get started</span>
             </button>
             <button type="button" class="btn btn-light" @click="cancel" style="margin-left:10px" :disabled="saving">Cancel</button>
             <br><br>
