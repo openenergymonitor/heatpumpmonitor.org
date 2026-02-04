@@ -237,11 +237,14 @@ function process_stats() {
         let power = data["heatpump_elec"][z][1];
 
         let dhw = false;
-        if (dhw_enable) dhw = data["heatpump_dhw"][z][1];
+        if (dhw_enable && data["heatpump_dhw"][z] != undefined) {
+            dhw = data["heatpump_dhw"][z][1];
+        }
 
         let cool = false;
-        if (cooling_enable && data["heatpump_cooling"][z] != undefined) cool = data["heatpump_cooling"][z][1];
-
+        if (cooling_enable && data["heatpump_cooling"][z] != undefined) {
+            cool = data["heatpump_cooling"][z][1];
+        }
 
         // let ch = false;
         // if (data["heatpump_ch"]!=undefined) ch = data["heatpump_ch"][z][1];
@@ -421,8 +424,13 @@ function calculate_window_cops() {
             let dhw = false;
             let cool = false;
 
-            if (dhw_enable) dhw = data["heatpump_dhw"][z][1];
-            if (cooling_enable && data["heatpump_cooling"][z] != undefined) cool = data["heatpump_cooling"][z][1];
+            if (dhw_enable && data["heatpump_dhw"][z] != undefined) {
+                dhw = data["heatpump_dhw"][z][1];
+            }
+
+            if (cooling_enable && data["heatpump_cooling"][z] != undefined) {
+                cool = data["heatpump_cooling"][z][1];
+            }
             
             if (elec != null && heat !=null) {
 
