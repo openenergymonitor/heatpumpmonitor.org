@@ -357,8 +357,8 @@ global $settings;
                     this.saveStatus = { success: false, message: 'Please enter a valid email address' };
                     return;
                 }
-                if (this.editForm.password && this.editForm.password.length < 6) {
-                    this.saveStatus = { success: false, message: 'Password must be at least 6 characters' };
+                if (this.editForm.password && this.editForm.password.length < 8) {
+                    this.saveStatus = { success: false, message: 'Password must be at least 8 characters' };
                     return;
                 }
                 

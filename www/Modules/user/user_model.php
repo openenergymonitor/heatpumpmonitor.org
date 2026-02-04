@@ -611,7 +611,7 @@ class User
     public function change_password_no_check($userid, $new) {
         $userid = (int) $userid;
 
-        if (strlen($new) < 4 || strlen($new) > 250) return array('success'=>false, 'message'=>"Password length error");
+        if (strlen($new) < 8 || strlen($new) > 250) return array('success'=>false, 'message'=>"Password length error");
 
         // Save new password
         $hash = hash('sha256', $new);

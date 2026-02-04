@@ -88,6 +88,9 @@ function user_controller() {
         // Update sub account details requires active session
         if ($route->action=="update-subaccount") {
             $data = json_decode(file_get_contents('php://input'), true);
+            if ($data===null) {
+                return array("success"=>false, "message"=>"Invalid JSON data.");
+            }
             return $user->update_sub_account($session['userid'], $data);
         }
 
