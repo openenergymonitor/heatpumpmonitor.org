@@ -123,8 +123,7 @@ function user_controller() {
             if ($route->action=="switch") {
                 $userid = get('userid');
                 $user->admin_switch_user($userid);
-                header("Location: ".$path."user/view");
-                exit();
+                header("Location: ".$path."system/list/user");
             }
         }
     }

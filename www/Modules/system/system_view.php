@@ -26,9 +26,19 @@ global $settings, $session, $path;
                 </a>
             </div>
 
+            <div v-if="!system.share" class="badge bg-danger ms-2 float-end">
+                <i class="fas fa-lock"></i> Private
+            </div>
+
             <div v-if="system.hp_model!=''">
                 <h3>{{ system.hp_output }} kW, {{ system.hp_manufacturer }} {{ system.hp_model }}</h3>
                 <p>{{ system.location }}, <span v-if="system.installer_name"><a :href="system.installer_url">{{ system.installer_name }}</a></span></p>
+            </div>
+            <div v-else>
+                <h3 v-if="system.id">
+                    System: {{ system.id }} 
+                </h3>
+                <h3 v-else>Add New System</h3>
             </div>
             <a v-if="system.id" :href="path+'dashboard?id='+system.id"><button class="btn btn-primary mb-3"><span class="d-none d-lg-inline-block">Emoncms</span> Dashboard</button></a>
             <a v-if="system.id" :href="path+'heatloss?id='+system.id"><button class="btn btn-secondary mb-3">Heat demand <span class="d-none d-lg-inline-block">tool</span></button></a>
@@ -154,26 +164,32 @@ global $settings, $session, $path;
     </div>
 
     <div class="container mt-3" style="max-width:800px" v-if="mode=='edit'">
-
-        <div class="row">
-            <div class="col-4">
-                <div class="input-group mt-3">
-                    <span class="input-group-text">App ID</span>
-                    <input type="text" class="form-control" v-model="system.app_id" placeholder="App ID" disabled>
+        <div class="card mt-3">
+            <h5 class="card-header">Emoncms.org MyHeatpump app</h5>
+            <div class="card-body">
+                <p>Each system is linked to an Emoncms.org MyHeatpump app. The app ID, read key, and URL shown here are for configuration validation and admin purposes only, they are not shared publicly.</p>
+                <div class="row">
+                    <div class="col-4">
+                        <div class="input-group mt-3">
+                            <span class="input-group-text">App ID</span>
+                            <input type="text" class="form-control" v-model="system.app_id" placeholder="App ID" disabled>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="input-group mt-3">
+                            <span class="input-group-text">Read API Key</span>
+                            <input type="text" class="form-control" v-model="system.readkey" placeholder="Read API Key" disabled>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <div class="col">
-                <div class="input-group mt-3">
-                    <span class="input-group-text">Read API Key</span>
-                    <input type="text" class="form-control" v-model="system.readkey" placeholder="Read API Key" disabled>
-                </div>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col">
-                <div class="input-group mt-3">
-                    <span class="input-group-text">URL</span>
-                    <input type="text" class="form-control" v-model="system.url" placeholder="Full app URL" disabled>
+                <div class="row">
+                    <div class="col">
+                        <div class="input-group mt-3">
+                            <span class="input-group-text">URL</span>
+                            <input type="text" class="form-control" v-model="system.url" placeholder="Full app URL" disabled>
+                            <a :href="system.url" target="_blank" class="btn btn-primary" v-if="system.url">Open</a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -228,6 +244,168 @@ global $settings, $session, $path;
             </div>
         </div>
     </div>
+
+    <div class="container" style="max-width:800px" v-if="system.id">
+        <div class="row" v-if="system.url!=''">
+            <p v-if="mode=='view'">Information about this system.</p>
+            <div v-if="mode=='edit'">
+                <div class="row align-items-stretch">
+                    <div class="col-12 col-sm-6 mt-3">
+                        <div class="alert alert-info h-100" role="alert">
+                            <h5 class="alert-heading">Making this system public?</h5>
+                            <p>Please complete this form to help others interpret the monitored data and enable richer analysis.</p>
+                            <p>While we encourage filling out the entire form for comprehensive understanding, you can use the 'Basic & Required' option if time is limited or information is unavailable.</p>
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-6 mt-3">
+                        <div class="alert alert-danger h-100" role="alert">
+                            <h5 class="alert-heading">Private only?</h5>
+                            <p>HeatpumpMonitor can also be used for private systems, fill out as much or as little of the form as you like.</p>
+                            <p>The information you provide may still be useful for your own reference and for any support or troubleshooting in the future.</p>
+                        </div>    
+                    </div>
+                </div>
+
+
+                <hr>
+                <div class="row">
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" v-model="form_type" value="basic" @change="filter_schema_groups">
+                            <label>Basic and required fields</label>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" v-model="form_type" value="full" @change="filter_schema_groups">
+                            <label>Full form</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <hr class="mt-3">
+            </div>
+
+            <table class="table mt-3">
+                <tbody>
+                    <tr>
+                        <th style="background-color:#f0f0f0;">Heat pump</th>
+                        <td style="background-color:#f0f0f0;"></td>
+                        <td style="background-color:#f0f0f0;"></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span>Manufacturer</span> <span v-if="mode=='edit'" style="color:#aa0000">*</span>
+                        </td>
+                        <td></td>
+                        <td>
+                            <div class="input-group" v-if="mode=='edit'">
+                                <input id="heatpumpManufacturer" v-model="system.hp_manufacturer" class="form-control" type="text" placeholder="Manufacturer name" required>
+                            </div>
+                            <span v-if="mode=='view'">{{ system.hp_manufacturer }}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span>Model</span> <span v-if="mode=='edit'" style="color:#aa0000">*</span>
+                        </td>
+                        <td></td>
+                        <td>
+                            <div class="input-group" v-if="mode=='edit'">
+                                <input id="heatpumpModel" v-model="system.hp_model" class="form-control" type="text" placeholder="Model name" required>
+                            </div>
+                            <span v-if="mode=='view'">{{ system.hp_model }}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span>Refrigerant</span>
+                        </td>
+                        <td></td>
+                        <td>
+                            <select class="form-control" v-if="mode=='edit'" v-model="system.refrigerant">
+                                <option value="" v-if="refrigerants.length>1">Select refrigerant...</option>
+                                <option v-for="refrigerant in refrigerants" :value="refrigerant">
+                                    {{ refrigerant }}
+                                </option>
+                            </select>
+                            <span v-if="mode=='view'">{{ system.refrigerant }}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span>Type</span>
+                        </td>
+                        <td></td>
+                        <td>
+                            <select class="form-select" v-if="mode=='edit'" v-model="system.hp_type">
+                                <option value="" v-if="types.length>1">Select type...</option>
+                                <option v-for="type in types">{{ type }}</option>
+                            </select>
+                            <span v-if="mode=='view'">{{ system.hp_type }}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span>Badge Capacity (kW)</span> <span v-if="mode=='edit'" style="color:#aa0000">*</span>
+                        </td>
+                        <td></td>
+                        <td>
+                            <div class="input-group" v-if="mode=='edit'">
+                                <input v-model="system.hp_output" class="form-control" type="number" step="0.1" placeholder="e.g. 5.0" required>
+                                <span class="input-group-text">kW</span>
+                            </div>
+                            <span v-if="mode=='view'">{{ system.hp_output }}</span> <span v-if="mode=='view'" style="color:#666; font-size:14px">kW</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span>Heat pump has backup heater installed and in use</span> <!----></td> 
+                        <td><span data-bs-toggle="tooltip" data-bs-placement="top" title="This is an inline electric element that can top up the heat pump output mostly for space heating"><i class="fas fa-question-circle"></i></span></td>
+                        <td><span><input type="checkbox" v-model="system.uses_backup_heater"></span> <!----></td>
+                    </tr>
+                </tbody>
+
+                <tbody v-for="group,group_name in filtered_schema_groups">
+                    <tr>
+                        <th style="background-color:#f0f0f0;">{{ group_name }}</th>
+                        <td style="background-color:#f0f0f0;"></td>
+                        <td style="background-color:#f0f0f0;"></td>
+                    </tr>
+                    <tr v-for="(field,key) in group">
+                        <td>
+                            <span>{{ field.name }}</span> <span v-if="!field.optional && mode=='edit'" style="color:#aa0000">*</span>
+                        </td>
+                        <td>
+                            <span v-if="field.helper" data-bs-toggle="tooltip" data-bs-placement="top" :title="field.helper">
+                                <i class="fas fa-question-circle"></i>
+                            </span>
+                        </td>
+                        <td>
+                            <span v-if="field.type=='tinyint(1)'">
+                                <input type="checkbox" v-model="system[key]" :disabled="mode=='view' || field.disabled" @change="filter_schema_groups">
+                            </span>
+                            <span v-if="field.type!='tinyint(1)'">
+                                <!-- Edit mode text input -->
+                                <div class="input-group" v-if="mode=='edit' && !field.options">
+                                    <input class="form-control" type="text" v-model="system[key]" @change="filter_schema_groups">
+                                    <span class="input-group-text" v-if="field.unit">{{ field.unit }}</span>
+                                </div>
+                                <!-- View mode select input -->
+                                <select class="form-control" v-if="mode=='edit' && field.options" v-model="system[key]" @change="filter_schema_groups">
+                                    <option v-for="option in field.options">{{ option }}</option>
+                                </select>
+                                <!-- View mode text -->
+                                <span v-if="mode=='view'">{{ system[key] }}</span> <span v-if="mode=='view'" style="color:#666; font-size:14px">{{ field.unit }}</span>
+                            </span>
+                        </td>
+                    </tr>
+                </tbody>
+
+            </table>
+
+        </div>
+    </div>
+
 
     <!-- Photo Lightbox - Using shared template -->
     <?php include "Modules/system/photo_lightbox_template.html"; ?>
@@ -385,156 +563,14 @@ global $settings, $session, $path;
         </div>
     </div>
 
-    <div class="container mt-3" style="max-width:800px" v-if="system.id">
-        <div class="row" v-if="system.url!=''">
-            <p v-if="mode=='view'">Information about this system.</p>
-            <div v-if="mode=='edit'">
-                <p>Please complete this form to provide valuable context about the system, which will help others interpret the monitored data effectively and enable richer data analysis.<br><br>We encourage you to fill out the entire form, as it offers the most comprehensive understanding for others. However, if time is limited or you lack some information, you may opt for the 'Basic & Required' option to keep it simple.</p>
-                <hr>
-                <div class="row">
-                    <div class="col">
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" v-model="form_type" value="basic" @change="filter_schema_groups">
-                            <label>Basic and required fields</label>
-                        </div>
-                    </div>
-                    <div class="col">
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" v-model="form_type" value="full" @change="filter_schema_groups">
-                            <label>Full form</label>
-                        </div>
-                    </div>
-                </div>
-                
-                <hr class="mt-3">
-            </div>
 
-            <table class="table mt-3">
-                <tbody>
-                    <tr>
-                        <th style="background-color:#f0f0f0;">Heat pump</th>
-                        <td style="background-color:#f0f0f0;"></td>
-                        <td style="background-color:#f0f0f0;"></td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <span>Manufacturer</span> <span v-if="mode=='edit'" style="color:#aa0000">*</span>
-                        </td>
-                        <td></td>
-                        <td>
-                            <div class="input-group" v-if="mode=='edit'">
-                                <input id="heatpumpManufacturer" v-model="system.hp_manufacturer" class="form-control" type="text" placeholder="Manufacturer name" required>
-                            </div>
-                            <span v-if="mode=='view'">{{ system.hp_manufacturer }}</span>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <span>Model</span> <span v-if="mode=='edit'" style="color:#aa0000">*</span>
-                        </td>
-                        <td></td>
-                        <td>
-                            <div class="input-group" v-if="mode=='edit'">
-                                <input id="heatpumpModel" v-model="system.hp_model" class="form-control" type="text" placeholder="Model name" required>
-                            </div>
-                            <span v-if="mode=='view'">{{ system.hp_model }}</span>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <span>Refrigerant</span>
-                        </td>
-                        <td></td>
-                        <td>
-                            <select class="form-control" v-if="mode=='edit'" v-model="system.refrigerant">
-                                <option value="" v-if="refrigerants.length>1">Select refrigerant...</option>
-                                <option v-for="refrigerant in refrigerants" :value="refrigerant">
-                                    {{ refrigerant }}
-                                </option>
-                            </select>
-                            <span v-if="mode=='view'">{{ system.refrigerant }}</span>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <span>Type</span>
-                        </td>
-                        <td></td>
-                        <td>
-                            <select class="form-select" v-if="mode=='edit'" v-model="system.hp_type">
-                                <option value="" v-if="types.length>1">Select type...</option>
-                                <option v-for="type in types">{{ type }}</option>
-                            </select>
-                            <span v-if="mode=='view'">{{ system.hp_type }}</span>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <span>Badge Capacity (kW)</span> <span v-if="mode=='edit'" style="color:#aa0000">*</span>
-                        </td>
-                        <td></td>
-                        <td>
-                            <div class="input-group" v-if="mode=='edit'">
-                                <input v-model="system.hp_output" class="form-control" type="number" step="0.1" placeholder="e.g. 5.0" required>
-                                <span class="input-group-text">kW</span>
-                            </div>
-                            <span v-if="mode=='view'">{{ system.hp_output }}</span> <span v-if="mode=='view'" style="color:#666; font-size:14px">kW</span>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td><span>Heat pump has backup heater installed and in use</span> <!----></td> 
-                        <td><span data-bs-toggle="tooltip" data-bs-placement="top" title="This is an inline electric element that can top up the heat pump output mostly for space heating"><i class="fas fa-question-circle"></i></span></td>
-                        <td><span><input type="checkbox" v-model="system.uses_backup_heater"></span> <!----></td>
-                    </tr>
-                </tbody>
-
-                <tbody v-for="group,group_name in filtered_schema_groups">
-                    <tr>
-                        <th style="background-color:#f0f0f0;">{{ group_name }}</th>
-                        <td style="background-color:#f0f0f0;"></td>
-                        <td style="background-color:#f0f0f0;"></td>
-                    </tr>
-                    <tr v-for="(field,key) in group">
-                        <td>
-                            <span>{{ field.name }}</span> <span v-if="!field.optional && mode=='edit'" style="color:#aa0000">*</span>
-                        </td>
-                        <td>
-                            <span v-if="field.helper" data-bs-toggle="tooltip" data-bs-placement="top" :title="field.helper">
-                                <i class="fas fa-question-circle"></i>
-                            </span>
-                        </td>
-                        <td>
-                            <span v-if="field.type=='tinyint(1)'">
-                                <input type="checkbox" v-model="system[key]" :disabled="mode=='view' || field.disabled" @change="filter_schema_groups">
-                            </span>
-                            <span v-if="field.type!='tinyint(1)'">
-                                <!-- Edit mode text input -->
-                                <div class="input-group" v-if="mode=='edit' && !field.options">
-                                    <input class="form-control" type="text" v-model="system[key]" @change="filter_schema_groups">
-                                    <span class="input-group-text" v-if="field.unit">{{ field.unit }}</span>
-                                </div>
-                                <!-- View mode select input -->
-                                <select class="form-control" v-if="mode=='edit' && field.options" v-model="system[key]" @change="filter_schema_groups">
-                                    <option v-for="option in field.options">{{ option }}</option>
-                                </select>
-                                <!-- View mode text -->
-                                <span v-if="mode=='view'">{{ system[key] }}</span> <span v-if="mode=='view'" style="color:#666; font-size:14px">{{ field.unit }}</span>
-                            </span>
-                        </td>
-                    </tr>
-                </tbody>
-
-            </table>
-
-        </div>
-    </div>
     <br>
     <div style=" background-color:#eee; padding-top:20px; padding-bottom:10px" v-if="mode=='edit' && system.url!=''">
         <div class="container" style="max-width:800px;">
             <?php if ($settings['public_mode_enabled']) { ?>
             <div class="row" v-if="system.id">
                 <div class="col">
-                    <p><b>Do you want to share this information publicly?</b></p>
+                    <p><b>Do you want to share this system publicly?</b></p>
                     <p class="text-muted small"><b>Leave unchecked to keep your system private</b>. You can change this setting at any time.</p>
                 </div>
                 <div class="col">

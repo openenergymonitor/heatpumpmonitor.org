@@ -12,6 +12,11 @@ if ($system_data->hp_output>0 && $system_data->hp_model!="" && $system_data->ref
     $app_title = $system_data->hp_output."kW ".$system_data->hp_model." ".$system_data->refrigerant.", ".$system_data->location;
 }
 
+// if not shared add (private) to the title
+if ($system_data->share==0) {
+    $app_title .= " (Private)";
+}
+
 
 ?>
 <link href="<?php echo $path; ?>Modules/dashboard/config.css?v=<?php echo $v; ?>" rel="stylesheet">

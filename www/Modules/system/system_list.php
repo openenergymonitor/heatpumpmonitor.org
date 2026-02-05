@@ -2288,6 +2288,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     function resize(first = false) {
         var width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
 
+        // Public mode
         if (app.mode == 'public') {
             if (width<800) {
                 app.selected_columns = template_views[app.selected_template]['narrow'];
@@ -2300,6 +2301,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 app.showContent = true;
                 app.columns['training'].heading = "Training";
             }
+        // User mode
         } else if (app.mode == 'user') {
             if (width<800) {
                 app.selected_columns = template_views[app.selected_template]['narrow'];
@@ -2313,6 +2315,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 app.showContent = true;
                 app.columns['training'].heading = "Training";
             }
+        // Admin mode
         } else {
             if (width<800) {
                 app.selected_columns = ['hp_model', 'hp_output', 'combined_cop'];
