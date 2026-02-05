@@ -38,7 +38,6 @@ global $settings, $session, $path;
                 <h3 v-if="system.id">
                     System: {{ system.id }} 
                 </h3>
-                <h3 v-else>Add New System</h3>
             </div>
             <a v-if="system.id" :href="path+'dashboard?id='+system.id"><button class="btn btn-primary mb-3"><span class="d-none d-lg-inline-block">Emoncms</span> Dashboard</button></a>
             <a v-if="system.id" :href="path+'heatloss?id='+system.id"><button class="btn btn-secondary mb-3">Heat demand <span class="d-none d-lg-inline-block">tool</span></button></a>
