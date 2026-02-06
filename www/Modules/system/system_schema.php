@@ -1,12 +1,5 @@
 <?php
 
-$schema['system_access'] = array(
-    'systemid' => array('type' => 'int(11)'),
-    'userid' => array('type' => 'int(11)'),
-    // 0 = no access, 1 = read only, 2 = read and write
-    'access' => array('type' => 'int(11)') 
-);
-
 $schema['system_images'] = array(
     'id' => array(
         'type' => 'int(11)', 
@@ -928,13 +921,6 @@ unset($schema['system_stats_last90_v2']['timestamp']);
 unset($schema['system_stats_last365_v2']['timestamp']);
 unset($schema['system_stats_all_v2']['timestamp']);
 unset($schema['system_stats_custom']['timestamp']);
-
-$schema['system_stats_script'] = array(
-
-    'running' => array('type' => 'int(11)'),
-    'systemid' => array('type' => 'int(11)')
-    
-);
 
 // Schema to hold a list of system_meta changes
 // timestamp, systemid, userid, field, old_value, new_value
