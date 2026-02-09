@@ -543,18 +543,18 @@ global $settings, $session, $path;
                 <input type="file" 
                        ref="outdoorUnitInput" 
                        @change="handleFileSelectForType('outdoor_unit', $event)" 
-                       accept="image/jpeg,image/jpg,image/png,image/webp"
+                       accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif"
                        style="display: none;">
                 <input type="file" 
                        ref="plantRoomInput" 
                        @change="handleFileSelectForType('plant_room', $event)" 
-                       accept="image/jpeg,image/jpg,image/png,image/webp"
+                       accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif"
                        style="display: none;">
                 <input type="file" 
                        ref="otherInput" 
                        @change="handleFileSelectForType('other', $event)" 
                        multiple 
-                       accept="image/jpeg,image/jpg,image/png,image/webp"
+                       accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif"
                        style="display: none;">
 
                 <div class="alert alert-danger" role="alert" v-if="show_photo_error" v-html="photo_message"></div>

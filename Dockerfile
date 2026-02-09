@@ -11,6 +11,14 @@ RUN apt-get update && apt-get install -y \
     && docker-php-ext-install gd \
     && docker-php-ext-install exif
 
+# Install ImageMagick with HEIC/HEIF support for iPhone photo conversion
+RUN apt-get update && apt-get install -y \
+    libmagickwand-dev \
+    libheif-dev \
+    imagemagick \
+    && pecl install imagick \
+    && docker-php-ext-enable imagick
+
 RUN a2enmod rewrite
 
 RUN apt-get update \
