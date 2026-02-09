@@ -12,3 +12,16 @@ www/theme/img/installers/*
 www/theme/img/system/*
 www/theme/img/heatpumps/*
 mysqlbackup
+
+# Ignore all modules except core ones
+www/Modules/*
+www/Modules/*/
+!www/Modules/dashboard/
+!www/Modules/heatpump/
+!www/Modules/histogram/
+!www/Modules/installer/
+!www/Modules/manufacturer/
+!www/Modules/map/
+!www/Modules/system/
+!www/Modules/timeseries/
+!www/Modules/user/

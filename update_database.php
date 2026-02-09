@@ -8,12 +8,20 @@ require "Lib/dbschemasetup.php";
 
 $schema = array();
 
-// just user sessions
-require "Modules/user/user_schema.php";
-require "Modules/system/system_schema.php";
-require "Modules/heatpump/heatpump_schema.php";
-require "Modules/installer/installer_schema.php";
-require "Modules/manufacturer/manufacturer_schema.php";
+// Automatically scan and load all schema files from Modules
+$modules_dir = "Modules";
+if ($handle = opendir($modules_dir)) {
+    while (false !== ($module = readdir($handle))) {
+        if ($module != "." && $module != ".." && is_dir($modules_dir . "/" . $module)) {
+            $schema_file = $modules_dir . "/" . $module . "/" . $module . "_schema.php";
+            if (file_exists($schema_file)) {
+                echo "Loading schema: $schema_file\n";
+                require $schema_file;
+            }
+        }
+    }
+    closedir($handle);
+}
 
 // Remove array item $schema['system_stats_daily']
 unset($schema['system_stats_daily']);
