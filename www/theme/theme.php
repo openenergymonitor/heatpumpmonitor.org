@@ -200,6 +200,8 @@ $navigation = array(
                                         </li>
                                         <li><a class="dropdown-item" href="<?php echo $path; ?>user/admin"><i class="bi bi-people"></i> Admin users</a></li>
                                         <li><a class="dropdown-item" href="<?php echo $path; ?>system/list/admin"><i class="bi bi-gear"></i> Admin systems</a></li>
+                                        <li><a class="dropdown-item" href="<?php echo $path; ?>shop"><i class="bi bi-shop"></i> Admin shop</a></li>
+                                        <li><hr class="dropdown-divider"></li>
                                         <li><a class="dropdown-item" href="<?php echo $path; ?>system/log"><i class="bi bi-clock-history"></i> Change log</a></li>
                                         <li><a class="dropdown-item" href="<?php echo $path; ?>system/photos/admin"><i class="bi bi-images"></i> System photos</a></li>
                                     <?php } ?>
