@@ -1428,7 +1428,7 @@ global $settings, $session, $path;
             .then(function(response) {
                 // Add in_use_msg
                 for (var appx in response.data) {
-                    if (app.system.url == response.data[appx].url) {
+                    if (app.system.app_id == response.data[appx].id) {
                         app.new_app_selection = response.data[appx].id;
                         continue;
                     }
