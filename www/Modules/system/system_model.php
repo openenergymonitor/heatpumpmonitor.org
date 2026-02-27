@@ -891,15 +891,15 @@ class System
 
             $result = $this->emoncms_mysqli->query("SELECT * FROM app WHERE userid='$account_id'");
             while ($app_row = $result->fetch_object()) {
+
                 if (!isset($app_row->app)) {
                     continue;
                 }
-
                 if ($app_row->app=="myheatpump") {
 
                     // Check if app is already added, skip if it is
-                    $result = $this->mysqli->query("SELECT id FROM system_meta WHERE app_id='{$app_row->id}' LIMIT 1");
-                    if ($result->num_rows>0) {
+                    $result2 = $this->mysqli->query("SELECT id FROM system_meta WHERE app_id='{$app_row->id}' LIMIT 1");
+                    if ($result2->num_rows>0) {
                         $app_row->in_use = 1;
                     } else {
                         $app_row->in_use = 0;
