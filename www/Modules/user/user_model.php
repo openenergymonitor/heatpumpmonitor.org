@@ -321,7 +321,7 @@ class User
     public function count_sub_accounts($admin_userid)
     {
         $admin_userid = (int) $admin_userid;
-        $result = $this->emoncms_mysqli->query("SELECT COUNT(*) AS sub_account_count FROM billing_linked WHERE adminuser='$admin_userid'");
+        $result = $this->emoncms_mysqli->query("SELECT COUNT(*) AS sub_account_count FROM accounts WHERE adminuser='$admin_userid'");
         if ($linked_row = $result->fetch_object()) {
             return (int) $linked_row->sub_account_count;
         } else {
@@ -460,7 +460,7 @@ class User
         $accounts = array($admin_userid);
 
         // Get linked users
-        $result = $this->emoncms_mysqli->query("SELECT linkeduser FROM billing_linked WHERE adminuser='$admin_userid'");
+        $result = $this->emoncms_mysqli->query("SELECT linkeduser FROM accounts WHERE adminuser='$admin_userid'");
         while ($row = $result->fetch_object()) {
             $accounts[] = (int) $row->linkeduser;
         }
@@ -473,7 +473,7 @@ class User
         $userid = (int) $userid;
 
         // Get sub accounts from local accounts table
-        $result = $this->emoncms_mysqli->query("SELECT u.id, u.username, u.email, u.access, u.lastactive FROM billing_linked a JOIN users u ON a.linkeduser = u.id WHERE a.adminuser = '$userid' ORDER BY u.id ASC");
+        $result = $this->emoncms_mysqli->query("SELECT u.id, u.username, u.email, u.access, u.lastactive FROM accounts a JOIN users u ON a.linkeduser = u.id WHERE a.adminuser = '$userid' ORDER BY u.id ASC");
         $accounts = array();
         while ($row = $result->fetch_object()) {
 
@@ -521,7 +521,7 @@ class User
         }
 
         // Check that sub account belongs to admin user
-        $result = $this->emoncms_mysqli->query("SELECT COUNT(*) as count FROM billing_linked WHERE adminuser='$admin_userid' AND linkeduser='$sub_account_userid'");
+        $result = $this->emoncms_mysqli->query("SELECT COUNT(*) as count FROM accounts WHERE adminuser='$admin_userid' AND linkeduser='$sub_account_userid'");
         $row = $result->fetch_object();
         if ($row->count == 0) {
             return array('success' => false, 'message' => 'Sub account does not belong to admin user');

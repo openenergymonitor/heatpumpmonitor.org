@@ -721,7 +721,7 @@ class SystemStats
         $accounts = array($admin_userid);
 
         // Get linked users
-        $result = $this->emoncms_mysqli->query("SELECT linkeduser FROM billing_linked WHERE adminuser='$admin_userid'");
+        $result = $this->emoncms_mysqli->query("SELECT linkeduser FROM accounts WHERE adminuser='$admin_userid'");
         while ($row = $result->fetch_object()) {
             $accounts[] = (int) $row->linkeduser;
         }
