@@ -10,6 +10,8 @@ class User
     private $host;
     private $rememberme;
 
+    private $email_verification = false;
+
     public function __construct($mysqli, $rememberme)
     {
         $this->mysqli = $mysqli;
@@ -21,6 +23,10 @@ class User
 
         global $settings;
         $this->host = $settings['emoncms_host'];
+        
+        if (isset($settings["email_verification"])) {
+            $this->email_verification = $settings["email_verification"];
+        }
     }
 
     public function emon_session_start()
@@ -115,7 +121,7 @@ class User
 
         $userData = $result->fetch_object();
         
-        if (isset($userData->email_verified) && !$userData->email_verified) return array('success'=>false, 'message'=>"Please verify email address");
+        if ($this->email_verification && isset($userData->email_verified) && !$userData->email_verified) return array('success'=>false, 'message'=>"Please verify email address");
 
         $hash = hash('sha256', $userData->salt . hash('sha256', $password));
 
@@ -127,7 +133,7 @@ class User
             // Default write access
             // if (!isset($userData->access)) $userData->access = 2;
             
-            if ($userData->term>0) {
+            if (isset($userData->term) && $userData->term>0) {
                 $d = new DateTime();
                 $d->setTimestamp($userData->term);
                 $d->modify("+4 weeks");
@@ -137,7 +143,7 @@ class User
                 }
             }
             
-            if ($userData->archived==1) {
+            if (isset($userData->archived) && $userData->archived==1) {
                 // $this->log->error("Login: Account archived message:$username");             
                 return array('success'=>false, 'message'=>"This account has been archived.<br>Please contact us if you wish to restore the account:<br>support@openenergymonitor.zendesk.com");
             }

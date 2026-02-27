@@ -21,15 +21,15 @@ $settings = array(
         "port"=>3306
     ),
     "mailersend_api_key"=>"",
-
+    "email_verification"=>false,
     "change_notifications_enabled"=>false,
+    "public_mode_enabled"=>true,
+    "read_only_mode"=>false,
 
     "admin_emails"=>array(
         // array("email" => "hello@example.com"),
     ),
 
-    "public_mode_enabled"=>true,
     "emoncmsorg_only"=>true,
     // "clearkey"=>"",
-    "read_only_mode"=>false
 );
