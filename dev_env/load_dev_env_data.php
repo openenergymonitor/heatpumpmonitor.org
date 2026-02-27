@@ -198,9 +198,6 @@ if ($load_users) {
             $admin = 0;
         }
 
-        // Password not needed as using dev environment login admin:admin
-        // enable in settings.php: dev_env_login_enabled = true
-
         // Check if username already exists without prepared statement
         $result = $mysqli->query("SELECT * FROM users WHERE username='$username'");
         if ($result->num_rows==0) {

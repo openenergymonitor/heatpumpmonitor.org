@@ -26,10 +26,6 @@ if (file_exists("settings.php")) {
     require "env.settings.php";
 }
 
-if (!isset($settings['dev_env_login_enabled'])) {
-    $settings['dev_env_login_enabled'] = false;
-}
-
 if (!isset($settings['emoncms_host'])) {
     $settings['emoncms_host'] = "https://emoncms.org";
 }
