@@ -29,7 +29,5 @@ $settings = array(
     "admin_emails"=>array(
         // array("email" => "hello@example.com"),
     ),
-
-    "emoncmsorg_only"=>true,
     // "clearkey"=>"",
 );
