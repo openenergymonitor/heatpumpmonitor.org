@@ -3,6 +3,7 @@
 $settings = array(
     // HeatpumpMonitor requires a linked Emoncms installation
     "emoncms_host"=>"https://emoncms.org",
+    "path"=>"/opt/openenergymonitor/heatpumpmonitor",
 
     "sql"=>array(
         "server"=>"localhost",
@@ -11,12 +12,24 @@ $settings = array(
         "database"=>"heatpumpmonitor",
         "port"=>3306
     ),
+
+    "emoncms_credentials"=>array(
+        "server"=>"localhost",
+        "username"=>"emoncms",
+        "password"=>"emoncms",
+        "database"=>"emoncms",
+        "port"=>3306
+    ),
     "mailersend_api_key"=>"",
+
     "change_notifications_enabled"=>false,
+
+    "admin_emails"=>array(
+        // array("email" => "hello@example.com"),
+    ),
+
     "public_mode_enabled"=>true,
-    
-    // Enable development environment login (default admin/admin)
-    // This enables a simple login method for development environments
-    // Do not enable on production systems
-    "dev_env_login_enabled"=>false
+    "emoncmsorg_only"=>true,
+    // "clearkey"=>"",
+    "read_only_mode"=>false
 );
