@@ -30,6 +30,20 @@ $emoncms_host = parse_url($settings['emoncms_host'], PHP_URL_HOST);
         background-color: #44b3e2;
         color: white;
     }
+
+    .auth-brand {
+        font-size: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 12px;
+    }
+
+    .auth-brand-logo {
+        height: 36px;
+        width: 36px;
+        margin-right: 10px;
+    }
     
     .form-control::placeholder {
         opacity: 0.4;
@@ -57,18 +71,19 @@ $emoncms_host = parse_url($settings['emoncms_host'], PHP_URL_HOST);
     <div class="card auth-card shadow-lg border-0">
         <!-- Dynamic Header -->
         <div class="auth-header rounded-top p-4 text-center">
+            <a class="auth-brand text-white text-decoration-none" href="<?php echo $path; ?>">
+                <img src="<?php echo $path; ?>theme/img/logo/apple-touch-icon.png" alt="HeatpumpMonitor Logo" class="auth-brand-logo">
+                <span><b>HeatpumpMonitor</b>.org</span>
+            </a>
             <transition name="fade" mode="out-in">
                 <div v-if="mode === 'login'" key="login">
-                    <h1 class="h3 mb-2">Sign In</h1>
                     <p class="mb-0 opacity-75">Login with {{ emoncmsHost }}</p>
                 </div>
                 <div v-else-if="mode === 'register'" key="register">
-                    <h1 class="h3 mb-2">Create Account</h1>
                     <p class="mb-0 opacity-75">Join HeatpumpMonitor.org</p>
                 </div>
                 <div v-else-if="mode === 'reset'" key="reset">
-                    <h1 class="h3 mb-2">Reset Password</h1>
-                    <p class="mb-0 opacity-75">We'll send you recovery instructions</p>
+                    <p class="mb-0 opacity-75">Reset your password</p>
                 </div>
             </transition>
         </div>
