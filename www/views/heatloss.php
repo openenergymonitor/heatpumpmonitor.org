@@ -16,7 +16,6 @@ if (isset($session['admin']) && $session['admin']) {
     <div style=" background-color:#f0f0f0; padding-top:20px; padding-bottom:10px">
         <div class="container-fluid">
             <h3>Heat demand explorer</h3>
-            <a href="<?php echo $path; ?>system/view?id=<?php echo $systemid; ?>" class="btn btn-primary">Back to System</a>
         </div>
     </div>
 
@@ -164,6 +163,9 @@ if (isset($session['admin']) && $session['admin']) {
                 heat loss tools use but are at least in a typical 100m2 house not that different from the average heat demand for hot water and
                 so could be viewed as cancelling out.
             </p>
+        </div>
+        <div style="text-align:center; padding:20px 0">
+          <a href="<?php echo $path; ?>system/view?id=<?php echo $id; ?>" class="btn btn-primary">Back to System</a>
         </div>
     </div>
 </div>
