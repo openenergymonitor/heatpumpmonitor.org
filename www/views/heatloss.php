@@ -1,6 +1,6 @@
 <?php
 defined('EMONCMS_EXEC') or die('Restricted access');
-global $session;
+global $session, $path;
 $admin = 0;
 if (isset($session['admin']) && $session['admin']) {
     $admin = 1;
@@ -16,6 +16,7 @@ if (isset($session['admin']) && $session['admin']) {
     <div style=" background-color:#f0f0f0; padding-top:20px; padding-bottom:10px">
         <div class="container-fluid">
             <h3>Heat demand explorer</h3>
+            <a href="<?php echo $path; ?>system/view?id=<?php echo $systemid; ?>" class="btn btn-primary">Back to System</a>
         </div>
     </div>
 
