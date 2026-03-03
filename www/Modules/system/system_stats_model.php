@@ -369,6 +369,8 @@ class SystemStats
         $totals['eon_next_pumped_v2_cost'] = 0;
         $totals['error_air'] = 0;
         $totals['error_air_kwh'] = 0;
+        $totals['immersion_kwh'] = 0;
+        $totals['boiler_kwh'] = 0;
 
         // Quality
         $quality_fields = array('elec','heat','flowT','returnT','outsideT','roomT');
@@ -423,6 +425,9 @@ class SystemStats
             $totals['error_air'] += $row->error_air;
             $totals['error_air_kwh'] += $row->error_air_kwh;
             
+            $totals['immersion_kwh'] += $row->immersion_kwh;
+            $totals['boiler_kwh'] += $row->boiler_kwh;
+
             $days++;
         }
 
@@ -502,6 +507,9 @@ class SystemStats
 
         $stats['error_air'] = $totals['error_air'];
         $stats['error_air_kwh'] = $totals['error_air_kwh'];
+
+        $stats['immersion_kwh'] = $totals['immersion_kwh'];
+        $stats['boiler_kwh'] = $totals['boiler_kwh'];
 
         $stats['unit_rate_agile'] = null;
         $stats['unit_rate_cosy'] = null;
