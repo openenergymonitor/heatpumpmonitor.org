@@ -193,6 +193,7 @@ function process_stats() {
         "heatpump_elec": { name: "HP electric consumption", unit: "W", dp: 0 },
         "heatpump_heat": { name: "HP heat output", unit: "W", dp: 0 },
         "immersion_elec": { name: "Immersion/backup", unit: "W", dp: 0 },
+        "boiler_heat": { name: "Boiler heat output", unit: "W", dp: 0 },
         "heatpump_heat_carnot": { name: "Simulated heat output", unit: "W", dp: 0 },
         "heatpump_flowT": { name: "Flow temperature", unit: "°C", dp: 1 },
         "heatpump_returnT": { name: "Return temperature", unit: "°C", dp: 1 },

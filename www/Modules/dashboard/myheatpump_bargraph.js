@@ -10,6 +10,7 @@ var process_daily_timeout = 1; // start at 1s
 
 var show_daily_cooling = false;
 var show_daily_immersion = false;
+var show_daily_boiler = false;
 
 function process_daily_data() {
 
@@ -119,6 +120,15 @@ function bargraph_load(start, end) {
                     }
                 }
 
+                // Is there boiler data?
+                show_daily_boiler = false;
+                for (var z in daily_data["boiler_kwh"]) {
+                    if (daily_data["boiler_kwh"][z][1] > 0) {
+                        show_daily_boiler = true;
+                        break;
+                    }
+                }
+
                 if (show_daily_dhw) {
                     $(".bargraph_mode[mode='water']").show();
                     $(".bargraph_mode[mode='space']").show();
@@ -217,6 +227,7 @@ function bargraph_draw() {
     var elec_kwh_in_window = 0;
     var heat_kwh_in_window = 0;
     var immersion_kwh_in_window = 0;
+    var boiler_kwh_in_window = 0;
     var days_elec = 0;
     var days_heat = 0;
 
@@ -237,7 +248,6 @@ function bargraph_draw() {
             bars: { show: true, align: "center", barWidth: 0.75 * DAY, fill: 1.0, lineWidth: 0 },
             stack: true
         });
-        
 
         for (var z in data["heatpump_heat_kwhd"]) {
             heat_kwh_in_window += data["heatpump_heat_kwhd"][z][1];
@@ -354,6 +364,21 @@ function bargraph_draw() {
         }
     }
 
+    // If boiler data is available and we are in combined mode, overlay boiler data on top of heating data
+    if (show_daily_boiler && (bargraph_mode=="combined" || bargraph_mode=="space")) {
+        data["boiler_kwhd"] = daily_data["boiler_kwh"];
+        bargraph_series.push({
+            data: data["boiler_kwhd"], color: "#ff9e80",
+            bars: { show: true, align: "center", barWidth: 0.75 * DAY, fill: 0.8, lineWidth: 0 },
+            stack: true
+        });
+
+        // Calculate total boiler energy
+        for (var z in data["boiler_kwhd"]) {
+            boiler_kwh_in_window += data["boiler_kwhd"][z][1];
+        }
+    }
+
     var cop_in_window = 0; 
     if (elec_kwh_in_window>0) {
         cop_in_window = heat_kwh_in_window / elec_kwh_in_window;
@@ -378,13 +403,21 @@ function bargraph_draw() {
     tooltip_text += prefix+"Electric: " + elec_kwh_in_window.toFixed(0) + " kWh (" + (elec_kwh_in_window / days_elec).toFixed(1) + " kWh/d)\n";
     tooltip_text += prefix+"Heat: " + heat_kwh_in_window.toFixed(0) + " kWh (" + (heat_kwh_in_window / days_heat).toFixed(1) + " kWh/d)\n";
 
+    // Only show immersion tooltip if in combined or water mode, to avoid confusion when looking at space heating data
     if (show_daily_immersion && (bargraph_mode=="combined" || bargraph_mode=="water")) {
         tooltip_text += "Immersion: " + immersion_kwh_in_window.toFixed(0) + " kWh (" + (immersion_kwh_in_window / days_heat).toFixed(1) + " kWh/d)\n";
     }
+
+    // Only show boiler tooltip if in combined or space mode, to avoid confusion when looking at water heating data
+    if (show_daily_boiler && (bargraph_mode=="combined" || bargraph_mode=="space")) {
+        tooltip_text += "Boiler: " + boiler_kwh_in_window.toFixed(0) + " kWh (" + (boiler_kwh_in_window / days_heat).toFixed(1) + " kWh/d)\n";
+    }
+
     tooltip_text += "Days: " + days_elec;
     $("#window-cop").attr("title", tooltip_text);
 
     $("#window-carnot-cop").html("");
+
 
     var options = {
         xaxis: {
@@ -423,7 +456,6 @@ function bargraph_draw() {
             clickable: true
         }
     }
-    
     if ($('#placeholder').width()) {
         var plot = $.plot($('#placeholder'), bargraph_series, options);
         $('#placeholder').append("<div id='bargraph-label' style='position:absolute;left:50px;top:30px;color:#666;font-size:12px'></div>");
@@ -504,6 +536,16 @@ function bargraph_tooltip(item)
         }
     }
 
+    // boiler tooltip info
+    var boiler_str = "";
+    if (show_daily_boiler) {
+        var boiler_kwh = null;
+        if (data["boiler_kwhd"].length && data["boiler_kwhd"][z] != undefined) boiler_kwh = data["boiler_kwhd"][z][1];
+        if (boiler_kwh !== null) {
+            boiler_str = "<br>Boiler heat: " + boiler_kwh.toFixed(1) + " kWh";
+        }
+    }
+
     var error_str = "";
     if (data["error_air"] != undefined && data["error_air"].length && data["error_air"][z] != undefined) {
         let error_air = data["error_air"][z][1];
@@ -522,7 +564,7 @@ function bargraph_tooltip(item)
     if (elec_kwh !== null) elec_kwh = (elec_kwh).toFixed(1); else elec_kwh = "---";
     if (heat_kwh !== null) heat_kwh = (heat_kwh).toFixed(1); else heat_kwh = "---";
 
-    tooltip(item.pageX, item.pageY, date + "<br>" + hp_prefix + "Electric: " + elec_kwh + " kWh<br>" + hp_prefix + "Heat: " + heat_kwh + " kWh"+cooling_str+ immersion_str + "<br>" + outside_temp_str + "COP: " + COP + str_prc_carnot + error_str, "#fff", "#000");
+    tooltip(item.pageX, item.pageY, date + "<br>" + hp_prefix + "Electric: " + elec_kwh + " kWh<br>" + hp_prefix + "Heat: " + heat_kwh + " kWh"+cooling_str+ immersion_str + boiler_str + "<br>" + outside_temp_str + "COP: " + COP + str_prc_carnot + error_str, "#fff", "#000");
 }
 
 

@@ -38,6 +38,7 @@ function powergraph_load() {
         "heatpump_outsideT": { label: "OutsideT", yaxis: 2, color: "#c880ff" },
         "heatpump_roomT": { label: "RoomT", yaxis: 2, color: "#000" },
         "heatpump_flowrate": { label: "Flow rate", yaxis: 3, color: 6 },
+        "boiler_heat": { label: "Boiler", yaxis: 1, color: "#FF5349", lines: { show: true, fill: 0.2, lineWidth: 0.5 } },
         "heatpump_heat": { label: "Heat", yaxis: 1, color: 0, lines: { show: true, fill: 0.2, lineWidth: 0.5 } },
         "heatpump_elec": { label: "Electric", yaxis: 1, color: 1, lines: { show: true, fill: 0.3, lineWidth: 0.5 } },
         "immersion_elec": { label: "Immersion", yaxis: 1, color: 4, lines: { show: true, fill: 0.3, lineWidth: 0.5 } },
@@ -865,6 +866,7 @@ function powergraph_tooltip(item) {
         dp = 3;
     }
     else if (item.series.label == "Immersion") { name = "Immersion"; unit = "W"; }
+    else if (item.series.label == "Boiler") { name = "Boiler"; unit = "W"; }
     else if (item.series.label == "DHW T") { name = "DHW T"; unit = "°C"; dp = 1; }
     else if (item.series.label == "DHW TargetT") { name = "DHW Target T"; unit = "°C"; dp = 1; }
     else if (item.series.label == "DHW T (Fitted)") { name = "DHW T (Fitted)"; unit = "°C"; dp = 1; }
@@ -947,7 +949,7 @@ $(".show_stats_category").click(function () {
     var key = $(this).attr("key");
     var color = $(this).css("color");
     $(".stats_category").hide();
-    $(".stats_category[key='" + key + "']").show();
+    $(".stats_category[key='" + key + "'").show();
     $(".show_stats_category").css("border-bottom", "none");
     $(this).css("border-bottom", "1px solid " + color);
 });

@@ -42,10 +42,14 @@ config.app = {
     "heatpump_dhwT": { "type": "feed", "autoname": "heatpump_dhwT", "optional": true, "description": "Domestic Hot Water temperature" },
     "heatpump_dhwTargetT": { "type": "feed", "autoname": "heatpump_dhwTargetT", "optional": true, "description": "Target DHW Temperature" },
     "heatpump_dhwT_unit": {"type": "select", "name": "DHW Temperature Unit", "options": {"%": "%", "°C": "°C"}, "default": "°C", "optional": true, "description": "Select the unit for the DHW temperature feed."},
+
+    // Hybrid Boiler
+    'boiler_heat': { "type": "feed", "autoname": "boiler_heat", "optional": true, "description": "Boiler heat output in watts" },
+
     // Other
     "starting_power": { "type": "value", "default": 150, "name": "Starting power", "description": "Starting power of heatpump in watts" },
     "auto_detect_cooling":{"type":"checkbox", "default":false, "name": "Auto detect cooling", "description":"Auto detect summer cooling if cooling status feed is not present"},
-    "enable_process_daily":{"type":"checkbox", "default":false, "name": "Enable daily pre-processor", "description":"Enable split between water and space heating in daily view"},
+    "enable_process_daily":{"type":"checkbox", "default":true, "name": "Enable daily pre-processor", "description":"Enable split between water and space heating in daily view"},
     "start_date": { "type": "value", "default": 0, "name": "Start date", "description": "Start date for all time values (unix timestamp)" },
 };
 // config.feeds = feed.list();
@@ -73,6 +77,7 @@ var updaterinst = false;
 var elec_enabled = false;
 var heat_enabled = false;
 var immersion_enabled = false;
+var boiler_enabled = false;
 var feeds = {};
 var progtime = 0;
 var firstrun = true;
@@ -159,6 +164,7 @@ function show() {
     if (feeds["heatpump_elec_kwh"] != undefined) elec_enabled = true;
     if (feeds["heatpump_heat"] != undefined && feeds["heatpump_heat_kwh"] != undefined) heat_enabled = true;
     if (feeds["immersion_elec"] != undefined) immersion_enabled = true;
+    if (feeds["boiler_heat"] != undefined) boiler_enabled = true;
 
     if (feeds["heatpump_flowrate"] != undefined) {
         $("#show_flow_rate_bound").show();
@@ -324,6 +330,12 @@ function show() {
                     $("#total_elec").html(Math.round(result.combined_elec_kwh));
                     $("#total_heat").html(Math.round(result.combined_heat_kwh));
                     $("#total_cop").html(result.combined_cop.toFixed(2));
+                }
+
+                // if result includes boiler show this
+                if (boiler_enabled && result.boiler_kwh != undefined) {
+                    $("#total_boiler").html(Math.round(result.boiler_kwh));
+                    $("#boiler_total_bound").show();
                 }
             }
         });
