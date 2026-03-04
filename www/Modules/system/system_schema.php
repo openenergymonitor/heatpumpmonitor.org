@@ -187,6 +187,16 @@ $schema['system_meta'] = array(
         'show'  => false
     ),
 
+    'hp_hybrid' => array(
+        'type' => 'tinyint(1)', 
+        'editable' => true, 
+        'optional' => true, 
+        'name' => 'Hybrid heat pump system', 
+        'helper' => 'A hybrid system is one that includes a non-electric backup heating system such as a gas boiler',
+        'group' => 'Heat pump',
+        'show'  => false
+    ),
+
     'hp_manufacturer' => array(
         'type' => 'varchar(64)',
         'filter_regex' => '/[^a-zA-Z0-9\s\.\,\-\+\(\)\&]/u',

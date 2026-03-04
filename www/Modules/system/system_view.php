@@ -343,7 +343,7 @@ global $settings, $session, $path;
                             </select>
                             <span v-if="mode=='view'">{{ system.hp_type }}</span>
                         </td>
-                    </tr>
+                    </tr>        
                     <tr>
                         <td>
                             <span>Badge Capacity (kW)</span> <span v-if="mode=='edit'" style="color:#aa0000">*</span>
@@ -362,6 +362,12 @@ global $settings, $session, $path;
                         <td><span data-bs-toggle="tooltip" data-bs-placement="top" title="This is an inline electric element that can top up the heat pump output mostly for space heating"><i class="fas fa-question-circle"></i></span></td>
                         <td><span><input type="checkbox" v-model="system.uses_backup_heater"></span> <!----></td>
                     </tr>
+
+                    <tr>
+                        <td><span>Hybrid heat pump system (boiler installed and used)</span> <!----></td> 
+                        <td><span data-bs-toggle="tooltip" data-bs-placement="top" title="A hybrid system is one that includes a non-electric heating system such as a gas boiler"><i class="fas fa-question-circle"></i></span></td>
+                        <td><span><input type="checkbox" v-model="system.hp_hybrid"></span> <!----></td>
+                    </tr>        
                 </tbody>
 
                 <tbody v-for="group,group_name in filtered_schema_groups">

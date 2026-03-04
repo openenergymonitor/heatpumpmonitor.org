@@ -1647,12 +1647,20 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     return photos;
                 }
                 if (key=='hp_type') {
+
+                    let hybrid_str = "";
+                    if (system['hp_hybrid'] == 1) {
+                        hybrid_str = " <span class='text-muted' style='font-size:0.8em'>(HYBRID)</span>";
+                    }
+
                     if (val=="Air Source") {
-                        return "<span style='color:#4f8baa'>Air</span>";
+                        val = "<span style='color:#4f8baa'>Air</span>";
                     }
                     if (val=="Ground Source") {
-                        return "<span style='color:#938e03'>Ground</span>";
+                        val = "<span style='color:#938e03'>Ground</span>";
                     }
+
+                    return val + hybrid_str;
                 }
                 if (key=='hp_output') {
                     if (val==null || val==0) return '';
