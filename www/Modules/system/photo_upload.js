@@ -12,7 +12,7 @@ var PhotoUploadMixin = {
             isDragActiveType: null,
             max_photos: 4,
             max_file_size: 5 * 1024 * 1024, // 5MB
-            allowed_types: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
+            allowed_types: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic', 'image/heif'],
             show_photo_error: false,
             photo_message: ''
         };
