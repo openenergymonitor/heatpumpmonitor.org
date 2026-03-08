@@ -165,7 +165,7 @@ if (isset($session['admin']) && $session['admin']) {
             </p>
         </div>
         <div style="text-align:center; padding:20px 0">
-          <a href="<?php echo $path; ?>system/view?id=<?php echo $id; ?>" class="btn btn-primary">Back to System</a>
+          <a href="<?php echo $path; ?>system/view?id=<?php echo $systemid; ?>" class="btn btn-primary">Back to System</a>
         </div>
     </div>
 </div>
