@@ -6,15 +6,15 @@ services:
     build: .
     links:
       - db
+      - emoncms
     ports:
-      # Expose Emoncms on localhost port 8080
+      # Expose heatpumpmonitor on localhost port 8080
       - 8080:80
     volumes:
-      # Mount emoncms files from local FS for dev
+      # Mount heatpumpmonitor files from local FS for dev
       - ./www:/var/www/heatpumpmonitororg
     working_dir: /var/www/heatpumpmonitororg
     env_file:
-      # Use default enviroment variables file for dev
       - 'default.docker-env'
     depends_on:
       load_dev_env_data:
@@ -26,38 +26,41 @@ services:
     links:
       - db
     volumes:
-      # Mount emoncms files from local FS for dev
       - ./www:/var/www/heatpumpmonitororg
-      - ./load_dev_env_data.php:/var/load_dev_env_data.php:ro
+      - ./dev_env/load_dev_env_data.php:/var/load_dev_env_data.php:ro
       - ./load_installer_logos.php:/var/load_installer_logos.php:ro
       - ./generate_thumbnails.php:/var/generate_thumbnails.php:ro
     working_dir: /var/www/heatpumpmonitororg
     env_file:
-      # Use default enviroment variables file for dev
       - 'default.docker-env'
     environment:
-      # Dont reload all data, just users and system meta data
       - "RELOAD_ALL=0"
-      # Clear database before loading data
       - "CLEAR_DB=0"
-      # Load the users
       - "LOAD_USERS=1"
-      # Load system meta data
       - "LOAD_SYSTEM_META=1"
-      # Loading running stats is enough to provide the list of systems
       - "LOAD_RUNNING_STATS=1"
-      # Use only when required, this is slow and uses server bandwidth
       - "LOAD_MONTHLY_STATS=0"
-      #- "LOAD_MONTHLY_STATS=[1,2,204,789]"
-      # Use only when required, this is even slower and uses server bandwidth
       - "LOAD_DAILY_STATS=0"
-      #- "LOAD_DAILY_STATS=[1,2,204,789]"
-      # Load the manufacturers
       - "LOAD_MANUFACTURERS=1"
-      # Load the heatpump models
       - "LOAD_HEATPUMP_MODELS=1"
-    # working_dir: /var/www/heatpumpmonitororg  # Set the working directory
     entrypoint: ["bash", "-c", "php /var/load_dev_env_data.php && php /var/generate_thumbnails.php "]
+    depends_on:
+      db:
+        condition: service_healthy
+
+  emoncms:
+    image: ghcr.io/jeremypoulter/emoncms:pr-1
+    ports:
+      - 8081:80
+    volumes:
+      - emon-phpfina:/var/opt/emoncms/phpfina
+      - emon-phptimeseries:/var/opt/emoncms/phptimeseries
+    links:
+      - db
+      - redis
+      - mqtt
+    env_file:
+      - 'emoncms.docker-env'
     depends_on:
       db:
         condition: service_healthy
@@ -72,6 +75,7 @@ services:
       - 'default.docker-env'
     volumes:
       - emon-db-data:/var/lib/mysql
+      - ./docker/emoncms-init.sql:/docker-entrypoint-initdb.d/02-emoncms.sql:ro
     logging:
       driver: json-file
       options:
@@ -91,6 +95,32 @@ services:
       start_period: 60s
       timeout: 2s
       retries: 10
+
+  redis:
+    image: redis:7.0
+    volumes:
+      - emon-redis-data:/data
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+
+  mqtt:
+    image: eclipse-mosquitto:2.0
+    build: docker/mqtt
+    ports:
+      - 1883:1883
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+
 volumes:
   emon-db-data:
+    driver: local
+  emon-phpfina:
+    driver: local
+  emon-phptimeseries:
+    driver: local
+  emon-redis-data:
     driver: local
