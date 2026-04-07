@@ -1197,7 +1197,7 @@ global $settings, $session, $path;
                     }
                     // Check file size
                     if (file.size > this.max_file_size) {
-                        this.showFileError(`"${file.name}" is too large. Maximum size is 5MB.`);
+                        this.showFileError(`"${file.name}" is ${file.size} and is too large. Maximum size is 5MB.`);
                         return false;
                     }
                     return true;
