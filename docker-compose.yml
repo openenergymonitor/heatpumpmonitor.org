@@ -16,6 +16,9 @@ services:
     working_dir: /var/www/heatpumpmonitororg
     env_file:
       - 'default.docker-env'
+    environment:
+      # Base URL for Emoncms API (service name on compose network); override via host .env if needed
+      EMONCMS_HOST: ${EMONCMS_HOST:-http://emoncms}
     depends_on:
       load_dev_env_data:
         condition: service_completed_successfully
@@ -34,6 +37,7 @@ services:
     env_file:
       - 'default.docker-env'
     environment:
+      - "EMONCMS_HOST=${EMONCMS_HOST:-http://emoncms}"
       - "RELOAD_ALL=0"
       - "CLEAR_DB=0"
       - "LOAD_USERS=1"
