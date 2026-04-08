@@ -5,7 +5,8 @@ MYSQL_PORT=3306
 MYSQL_DATABASE=heatpumpmonitor
 MYSQL_USER=heatpumpmonitor
 MYSQL_PASSWORD=heatpumpmonitor
-MYSQL_RANDOM_ROOT_PASSWORD=yes
+# Dev-only: known root password so you can run GRANTs if the DB volume predates docker/emoncms-init.sql
+MYSQL_ROOT_PASSWORD=heatpumpmonitor_root_dev
 MYSQL_INITDB_SKIP_TZINFO=true
 EMONCMS_MYSQL_HOST=db
 EMONCMS_MYSQL_PORT=3306

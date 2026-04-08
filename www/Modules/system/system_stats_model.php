@@ -5,6 +5,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 class SystemStats
 {
+    /** Per-day MyHeatPump rows on the emoncms database (`id` = emoncms app id). */
+    private const EMONCMS_DAILY_STATS_TABLE = 'system_stats_daily';
+
     private $mysqli;
     private $emoncms_mysqli;
     private $system;
@@ -166,8 +169,9 @@ class SystemStats
     
     // --------------------------------------------------------------------------------------------
 
-    public function save_stats_table($table_name,$stats) {
-        // Generate query from schema
+    public function save_stats_table($table_name, $stats, $mysqli = null)
+    {
+        $db = $mysqli ?? $this->mysqli;
         $fields = array();
         $qmarks = array();
         $codes = array();
@@ -180,11 +184,11 @@ class SystemStats
                 $values[] = $stats[$field];
             }
         }
-        $fields = implode(',',$fields);
-        $qmarks = implode(',',$qmarks);
-        $codes = implode('',$codes);
+        $fields = implode(',', $fields);
+        $qmarks = implode(',', $qmarks);
+        $codes = implode('', $codes);
 
-        $stmt = $this->mysqli->prepare("INSERT INTO $table_name ($fields) VALUES ($qmarks)");
+        $stmt = $db->prepare("INSERT INTO $table_name ($fields) VALUES ($qmarks)");
         $stmt->bind_param($codes, ...$values);
         $stmt->execute();
         $stmt->close();
@@ -322,8 +326,8 @@ class SystemStats
         
         $rows = array();
 
-        // Get daily data from system_stats_daily table for this system and time period
-        $result = $this->emoncms_mysqli->query("SELECT * FROM myheatpump_daily_stats $where");
+        $t = self::EMONCMS_DAILY_STATS_TABLE;
+        $result = $this->emoncms_mysqli->query("SELECT * FROM $t $where");
         while ($row = $result->fetch_object()) {
             $rows[] = $row;
         }
@@ -642,7 +646,8 @@ class SystemStats
             $where = "WHERE id=$app_id AND timestamp>=$start AND timestamp<$end";
         }
         // Get data
-        $result = $this->emoncms_mysqli->query("SELECT $field_select FROM myheatpump_daily_stats $where ORDER BY timestamp ASC");
+        $t = self::EMONCMS_DAILY_STATS_TABLE;
+        $result = $this->emoncms_mysqli->query("SELECT $field_select FROM $t $where ORDER BY timestamp ASC");
         while ($row = $result->fetch_object()) {
             $data = array();
             foreach ($valid_fields as $field) {
@@ -699,8 +704,8 @@ class SystemStats
         }
         fputcsv($fh, $header);
 
-        // Get data
-        $result = $this->mysqli->query("SELECT * FROM myheatpump_daily_stats $where");
+        $t = self::EMONCMS_DAILY_STATS_TABLE;
+        $result = $this->emoncms_mysqli->query("SELECT * FROM $t $where");
         while ($row = $result->fetch_object()) {
             $data = array();
             foreach ($this->schema['system_stats_daily'] as $field => $field_schema) {
@@ -708,7 +713,7 @@ class SystemStats
             }
             fputcsv($fh, $data);
         }
-        
+
         fclose($fh);
         exit;
     }

@@ -47,6 +47,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      emoncms:
+        condition: service_healthy
 
   emoncms:
     image: ghcr.io/jeremypoulter/emoncms:pr-1
@@ -55,6 +57,12 @@ services:
     volumes:
       - emon-phpfina:/var/opt/emoncms/phpfina
       - emon-phptimeseries:/var/opt/emoncms/phptimeseries
+      # Override baked-in sql_ready (mysqladmin ping); see emoncms-docker web/sql_ready.sh — remove after image rebuild
+      - ./docker/emoncms-sql_ready.sh:/opt/openenergymonitor/sql_ready.sh:ro
+      # Fix sync_upload cwd/symlink (see emoncms-docker web/sync_upload-run.sh) — remove after image rebuild
+      - ./docker/emoncms-sync_upload-run.sh:/etc/s6-overlay/s6-rc.d/sync_upload/run:ro
+      # service-runner.py uses localhost by default; use REDIS_HOST (see emoncms-docker web/service-runner.py)
+      - ./docker/emoncms-service-runner.py:/var/www/emoncms/scripts/services/service-runner/service-runner.py:ro
     links:
       - db
       - redis
@@ -64,7 +72,18 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+    # Apache starts only after sql_ready (s6: emoncms_pre → sql_ready → apache2), so HTTP up ⇒ DB schema applied
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1/ >/dev/null || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 120s
 
+  # Same base as emoncms-docker docker-compose.yml db (mariadb:11.0 + MARIADB_* env); plus:
+  # default.docker-env (MYSQL_USER/PASSWORD/DATABASE for init), emoncms-init.sql, publish 3306, healthcheck
   db:
     image: mariadb:11.0
     environment:
@@ -81,7 +100,7 @@ services:
       options:
         max-size: "10m"
     ports:
-      - 3306:3306
+      - "3306:3306"
     healthcheck:
       test:
         [
@@ -100,6 +119,12 @@ services:
     image: redis:7.0
     volumes:
       - emon-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+      start_period: 5s
     logging:
       driver: json-file
       options:
@@ -107,7 +132,15 @@ services:
 
   mqtt:
     image: eclipse-mosquitto:2.0
-    build: docker/mqtt
+    volumes:
+      - ./docker/mqtt/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    command:
+      - /bin/sh
+      - -c
+      - |
+        touch /mosquitto/config/passwd
+        /usr/bin/mosquitto_passwd -b /mosquitto/config/passwd emonpi emonpimqtt2016
+        exec /usr/sbin/mosquitto -c /mosquitto/config/mosquitto.conf
     ports:
       - 1883:1883
     logging:

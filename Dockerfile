@@ -37,6 +37,6 @@ RUN a2ensite heatpumpmonitororg
 
 COPY www/example.settings.php www/settings.php
 
-COPY load_dev_env_data.php /var/
+COPY dev_env/load_dev_env_data.php /var/load_dev_env_data.php
 COPY generate_thumbnails.php /var/
 # CMD [ "php", "load_dev_env_data.php" ]

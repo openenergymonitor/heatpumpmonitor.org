@@ -3,6 +3,11 @@
 // -------------------------------------------------------------------------------------
 // This script pulls in public data from heatpumpmonitor.org and loads it into the database
 // private data is not loaded and is replaced with dummy data
+//
+// Data split (see www/Modules/user/user_model.php, Lib/load_database.php):
+// - heatpumpmonitor DB ($mysqli): system_meta, stats aggregates, manufacturers, heatpumps, etc.
+// - emoncms DB ($emoncms_mysqli): users, accounts (sub-accounts), system_stats_daily (per-day app rows)
+// - heatpumpmonitor "user_schema" only defines user_sessions (remember-me); there is no local users table
 // -------------------------------------------------------------------------------------
 
 // Set the host to pull data from
@@ -24,15 +29,11 @@ define('EMONCMS_EXEC', 1);
 require "Lib/load_database.php";
 require "core.php";
 require "Lib/dbschemasetup.php";
+require "Lib/load_module_schemas.php";
 
-// Load the schema
-$schema = array();
-require "Modules/user/user_schema.php";
-require "Modules/system/system_schema.php";
-require "Modules/heatpump/heatpump_schema.php";
-require "Modules/installer/installer_schema.php";
-require "Modules/manufacturer/manufacturer_schema.php";
-require "Modules/dashboard/myheatpump_schema.php";
+// Same module schema discovery as update_database.php
+$schema = load_module_schemas();
+unset($schema['system_stats_daily']);
 
 require ("Modules/user/user_model.php");
 $user_class = new User($mysqli, false); // false for rememberme in CLI context
@@ -170,11 +171,16 @@ db_schema_setup($mysqli, $schema, true);
 
 
 // -------------------------------------------------------------------------------------
-// 2. Create users
+// 2. Create users (emoncms: users + accounts; matches User model emoncms_mysqli)
 // -------------------------------------------------------------------------------------
 
 if ($load_users) {
-    // Get list of userid's
+    global $emoncms_mysqli;
+
+    $dev_password_plain = 'password';
+    load_dev_ensure_emoncms_accounts_table($emoncms_mysqli);
+    print "- Seeding emoncms users (dev password for all: $dev_password_plain)\n";
+
     $users = array();
     $userid = 1;
     foreach ($systems as $system) {
@@ -182,7 +188,6 @@ if ($load_users) {
         $userid++;
     }
 
-    // Create users using userid and dummy data
     $index = 0;
     $created_users = 0;
     foreach ($users as $userid => $location) {
@@ -190,7 +195,6 @@ if ($load_users) {
         $username = "user".$userid;
         $email = "example@heatpumpmonitor.org";
 
-        // Make first user admin
         if ($index==0) {
             $admin = 1;
             $username = "admin";
@@ -198,68 +202,46 @@ if ($load_users) {
             $admin = 0;
         }
 
-        // Check if username already exists without prepared statement
-        $result = $mysqli->query("SELECT * FROM users WHERE username='$username'");
-        if ($result->num_rows==0) {
-            $created = time();
-            $stmt = $mysqli->prepare("INSERT INTO users ( id, username, email, created, admin) VALUES (?,?,?,?,?)");
-            $stmt->bind_param("isssi", $userid, $username, $email, $created, $admin);
-            $stmt->execute();
-            $stmt->close();
-            $created_users++;
+        $esc = $emoncms_mysqli->real_escape_string($username);
+        $result = $emoncms_mysqli->query("SELECT id FROM users WHERE username='$esc'");
+        if ($result && $result->num_rows==0) {
+            if (load_dev_insert_emoncms_user($emoncms_mysqli, $userid, $username, $email, $admin, $dev_password_plain)) {
+                $created_users++;
+            }
         }
         $index++;
     }
-    print "- Created ".$created_users." users\n";
-}
+    print "- Created ".$created_users." emoncms users\n";
 
-// -------------------------------------------------------------------------------------
-// 2b. Create admin user with sub-accounts (to replicate issue #112)
-// -------------------------------------------------------------------------------------
-if ($load_users) {
-    print "- Creating admin user with sub-accounts for testing issue #112\n";
-    
-    // Create an installer admin user (similar to Libtek - user 45903)
+    print "- Creating installer admin + sub-accounts (issue #112 testing)\n";
+
     $installer_admin_id = 9000;
     $installer_username = "installer_admin";
     $installer_email = "installer@example.com";
-    $created = time();
-    $admin = 0; // Not a system admin, just an installer admin
-    
-    // Check if installer admin already exists
-    $result = $mysqli->query("SELECT * FROM users WHERE id='$installer_admin_id'");
-    if ($result->num_rows == 0) {
-        $stmt = $mysqli->prepare("INSERT INTO users (id, username, email, created, admin) VALUES (?,?,?,?,?)");
-        $stmt->bind_param("isssi", $installer_admin_id, $installer_username, $installer_email, $created, $admin);
-        $stmt->execute();
-        $stmt->close();
-        print "  Created installer admin user: $installer_username (id: $installer_admin_id)\n";
+
+    $result = $emoncms_mysqli->query("SELECT id FROM users WHERE id='$installer_admin_id'");
+    if ($result && $result->num_rows == 0) {
+        if (load_dev_insert_emoncms_user($emoncms_mysqli, $installer_admin_id, $installer_username, $installer_email, 0, $dev_password_plain)) {
+            print "  Created installer admin user: $installer_username (id: $installer_admin_id)\n";
+        }
     }
-    
-    // Create two sub-accounts for this installer admin
+
     $sub_accounts = [
         ['id' => 9001, 'username' => 'subaccount1', 'email' => 'sub1@example.com'],
         ['id' => 9002, 'username' => 'subaccount2', 'email' => 'sub2@example.com']
     ];
-    
-    $created_sub_accounts = 0;
+
     foreach ($sub_accounts as $sub) {
-        // Check if sub-account already exists
-        $result = $mysqli->query("SELECT * FROM users WHERE id='{$sub['id']}'");
-        if ($result->num_rows == 0) {
-            $stmt = $mysqli->prepare("INSERT INTO users (id, username, email, created, admin) VALUES (?,?,?,?,?)");
-            $admin_val = 0;
-            $stmt->bind_param("isssi", $sub['id'], $sub['username'], $sub['email'], $created, $admin_val);
-            $stmt->execute();
-            $stmt->close();
-            $created_sub_accounts++;
-            print "  Created sub-account: {$sub['username']} (id: {$sub['id']})\n";
+        $result = $emoncms_mysqli->query("SELECT id FROM users WHERE id='{$sub['id']}'");
+        if ($result && $result->num_rows == 0) {
+            if (load_dev_insert_emoncms_user($emoncms_mysqli, $sub['id'], $sub['username'], $sub['email'], 0, $dev_password_plain)) {
+                print "  Created sub-account: {$sub['username']} (id: {$sub['id']})\n";
+            }
         }
-        
-        // Link sub-account to installer admin in accounts table
-        $result = $mysqli->query("SELECT * FROM accounts WHERE adminuser='$installer_admin_id' AND linkeduser='{$sub['id']}'");
-        if ($result->num_rows == 0) {
-            $stmt = $mysqli->prepare("INSERT INTO accounts (adminuser, linkeduser) VALUES (?,?)");
+
+        $result = $emoncms_mysqli->query("SELECT adminuser FROM accounts WHERE adminuser='$installer_admin_id' AND linkeduser='{$sub['id']}'");
+        if ($result && $result->num_rows == 0) {
+            $stmt = $emoncms_mysqli->prepare("INSERT INTO accounts (adminuser, linkeduser) VALUES (?,?)");
             $stmt->bind_param("ii", $installer_admin_id, $sub['id']);
             $stmt->execute();
             $stmt->close();
@@ -604,9 +586,16 @@ if ($load_monthly_stats) {
 }
 
 // -------------------------------------------------------------------------------------
-// 5. Load daily data
+// 5. Load daily data (emoncms system_stats_daily only; id = app id)
 // -------------------------------------------------------------------------------------
 if ($load_daily_stats) {
+    global $emoncms_mysqli;
+    $emoncms_daily_schema = array();
+    $schema = array();
+    require "Modules/system/system_schema.php";
+    $emoncms_daily_schema['system_stats_daily'] = $schema['system_stats_daily'];
+    db_schema_setup($emoncms_mysqli, $emoncms_daily_schema, true);
+
     if( is_int($load_daily_stats)) {
         // If load_daily_stats is an integer load all systems
         $system_ids = array();
@@ -621,8 +610,13 @@ if ($load_daily_stats) {
         print "- Loading daily stats for system: $system_id ";
         $days = 0;
 
-        // Clear existing daily data for the system
-        $mysqli->query("DELETE FROM system_stats_daily WHERE id='$system_id'");
+        $app_id = $system_stats_class->get_app_id($system_id);
+        if ($app_id === false || (int) $app_id <= 0) {
+            print "skip (no app_id)\n";
+            continue;
+        }
+
+        $emoncms_mysqli->query("DELETE FROM system_stats_daily WHERE id='" . (int) $app_id . "'");
 
         // Initialize cURL session to download the CSV
         $apiUrl = 'https://heatpumpmonitor.org/system/stats/export/daily?id='.$system_id;
@@ -651,8 +645,7 @@ if ($load_daily_stats) {
                     $row[$field] = $data[$i]; 
                 }
 
-                // Save the data to the database
-                $system_stats_class->save_day($row['id'], $row);
+                $system_stats_class->save_stats_table('system_stats_daily', $row, $emoncms_mysqli);
                 $days++;
 
                 // print a . every 1000 rows
@@ -666,6 +659,76 @@ if ($load_daily_stats) {
 }
 
 print "Done\n";
+
+/** Same hashing as www/Modules/user/user_model.php::login and emoncms user registration */
+function load_dev_emoncms_user_password_hash($plain_password, $salt)
+{
+    return hash('sha256', $salt . hash('sha256', $plain_password));
+}
+
+function load_dev_uuid_v4()
+{
+    $b = random_bytes(16);
+    $b[6] = chr(ord($b[6]) & 0x0f | 0x40);
+    $b[8] = chr(ord($b[8]) & 0x3f | 0x80);
+    return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($b), 4));
+}
+
+/** HeatpumpMonitor sub-account links; lives on emoncms DB with users (see User::get_user_accounts). */
+function load_dev_ensure_emoncms_accounts_table($db)
+{
+    $db->query(
+        "CREATE TABLE IF NOT EXISTS accounts (
+            adminuser INT(11) NOT NULL,
+            linkeduser INT(11) NOT NULL,
+            PRIMARY KEY (adminuser, linkeduser)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+    );
+}
+
+function load_dev_insert_emoncms_user($db, $id, $username, $email, $admin, $plain_password)
+{
+    $salt = generate_secure_key(16);
+    $passhash = load_dev_emoncms_user_password_hash($plain_password, $salt);
+    $api_read = generate_secure_key(16);
+    $api_write = generate_secure_key(16);
+    $uuid = load_dev_uuid_v4();
+    $timezone = 'Europe/London';
+    $access = 2;
+    $lastactive = time();
+    $email_verified = 1;
+
+    $stmt = $db->prepare(
+        "INSERT INTO users (id, username, password, email, salt, apikey_read, apikey_write, timezone, uuid, admin, access, lastactive, email_verified) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)"
+    );
+    if (!$stmt) {
+        echo "  prepare users INSERT failed: ".$db->error."\n";
+        return false;
+    }
+    $stmt->bind_param(
+        "issssssssiiii",
+        $id,
+        $username,
+        $passhash,
+        $email,
+        $salt,
+        $api_read,
+        $api_write,
+        $timezone,
+        $uuid,
+        $admin,
+        $access,
+        $lastactive,
+        $email_verified
+    );
+    if (!$stmt->execute()) {
+        echo "  INSERT users failed (id=$id, username=$username): ".$db->error."\n";
+        $stmt->close();
+        return false;
+    }
+    $stmt->close();
+    return true;
+}
 
 function confirm($message) {
     echo "$message (y/n): ";

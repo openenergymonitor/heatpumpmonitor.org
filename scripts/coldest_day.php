@@ -4,6 +4,7 @@ $dir = dirname(__FILE__);
 chdir("$dir/../www");
 
 require "Lib/load_database.php";
+global $emoncms_mysqli;
 
 require("Modules/user/user_model.php");
 $user = new User($mysqli,false);
@@ -32,7 +33,16 @@ foreach ($data as $row) {
     $last_flowT = $row2->measured_mean_flow_temp_coldest_day;
 
 
-    $result = $mysqli->query("SELECT * FROM system_stats_daily WHERE `id` = '$systemid' AND `timestamp` > '$start_1year_ago' ORDER BY `combined_outsideT_mean` ASC LIMIT 1");
+    $appid = $system_stats->get_app_id($systemid);
+    if ($appid === false || (int) $appid <= 0) {
+        echo "  skip (no app_id)\n";
+        continue;
+    }
+    $result = $emoncms_mysqli->query("SELECT * FROM system_stats_daily WHERE `id` = '$appid' AND `timestamp` > '$start_1year_ago' ORDER BY `combined_outsideT_mean` ASC LIMIT 1");
+    if ($result === false) {
+        echo "  emoncms query error: ".$emoncms_mysqli->error."\n";
+        continue;
+    }
 
     while ($row = $result->fetch_object()) {
         $roomT = $row->running_roomT_mean;
