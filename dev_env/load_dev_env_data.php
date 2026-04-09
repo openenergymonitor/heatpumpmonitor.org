@@ -13,13 +13,15 @@
 // Set the host to pull data from
 $heatpumpmonitor_host = "https://heatpumpmonitor.org";
 
-// Change to www directory
+// Change to www directory (script may live at repo root or in dev_env/)
 $dir = dirname(__FILE__);
 
-if(is_dir("/var/www/heatpumpmonitororg")) {
+if (is_dir("/var/www/heatpumpmonitororg")) {
     chdir("/var/www/heatpumpmonitororg");
-} elseif(is_dir("$dir/www")) {
+} elseif (is_dir("$dir/www")) {
     chdir("$dir/www");
+} elseif (is_dir("$dir/../www")) {
+    chdir("$dir/../www");
 } else {
     die("Error: could not find heatpumpmonitor.org directory");
 }
@@ -179,7 +181,7 @@ if ($load_users) {
 
     $dev_password_plain = 'password';
     load_dev_ensure_emoncms_accounts_table($emoncms_mysqli);
-    print "- Seeding emoncms users (dev password for all: $dev_password_plain)\n";
+    print "- Seeding emoncms users (passwords: user admin => admin; all other seeded users => $dev_password_plain)\n";
 
     $users = array();
     $userid = 1;
