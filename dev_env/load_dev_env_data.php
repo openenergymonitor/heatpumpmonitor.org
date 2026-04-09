@@ -205,7 +205,7 @@ if ($load_users) {
         $esc = $emoncms_mysqli->real_escape_string($username);
         $result = $emoncms_mysqli->query("SELECT id FROM users WHERE username='$esc'");
         if ($result && $result->num_rows==0) {
-            if (load_dev_insert_emoncms_user($emoncms_mysqli, $userid, $username, $email, $admin, $dev_password_plain)) {
+            if (load_dev_insert_emoncms_user($emoncms_mysqli, $userid, $username, $email, $admin, $admin ? "admin" : $dev_password_plain)) {
                 $created_users++;
             }
         }

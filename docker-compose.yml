@@ -23,6 +23,33 @@ services:
       load_dev_env_data:
         condition: service_completed_successfully
 
+  # Optional: load Emoncms phpfina test feeds (see docker/testdataset/). Enable with: docker compose --profile testdata up
+  load_emoncms_testdata:
+    profiles:
+      - testdata
+    image: ghcr.io/jeremypoulter/emoncms:pr-1
+    user: "0:0"
+    entrypoint: ["/bin/bash", "/bootstrap/run.sh"]
+    env_file:
+      - "emoncms.docker-env"
+    environment:
+      TESTDATASET_EMONCMS_USER_ID: ${TESTDATASET_EMONCMS_USER_ID:-1}
+      PHP_CLI_MEMORY_LIMIT: ${PHP_CLI_MEMORY_LIMIT:-1024M}
+    volumes:
+      - emon-phpfina:/var/opt/emoncms/phpfina
+      - ${TESTDATASET_PATH:-../testdataset}:/testdataset:ro
+      - ./docker/testdataset/scripts-settings.php:/bootstrap/scripts-settings.php:ro
+      - ./docker/testdataset/run.sh:/bootstrap/run.sh:ro
+    links:
+      - db
+      - redis
+      - mqtt
+    depends_on:
+      load_dev_env_data:
+        condition: service_completed_successfully
+      emoncms:
+        condition: service_healthy
+
   # This container will load the data (if requested) and then stop
   load_dev_env_data:
     build: .

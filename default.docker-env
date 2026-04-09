@@ -14,3 +14,8 @@ EMONCMS_MYSQL_DATABASE=emoncms
 EMONCMS_MYSQL_USER=emoncms
 EMONCMS_MYSQL_PASSWORD=emoncms
 
+# Compose-only (put in .env beside docker-compose.yml, not required in this file):
+# TESTDATASET_PATH=/absolute/path/to/testdataset   # default ../testdataset
+# TESTDATASET_EMONCMS_USER_ID=1                   # Emoncms user id for test feeds (default 1 = admin)
+# PHP_CLI_MEMORY_LIMIT=1024M                       # load_emoncms_testdata only; postprocess needs >128M
+
