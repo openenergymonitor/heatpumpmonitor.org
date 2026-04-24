@@ -46,6 +46,14 @@ The [testdataset](https://github.com/emoncms/testdataset) repo (clone as a sibli
 - **`TESTDATASET_EMONCMS_USER_ID`:** Numeric Emoncms user id to attach feeds to. Default `1` (the `admin` user created by `load_dev_env_data` when `LOAD_USERS=1`). Override in `.env` e.g. `TESTDATASET_EMONCMS_USER_ID=2` for `user2`.
 - **`PHP_CLI_MEMORY_LIMIT`:** PHP CLI memory for `add_feeds_to_account.php` / `post_process.php` (default `1024M`). Raise in `.env` if postprocess still exhausts memory.
 
+After the feeds are imported, `load_emoncms_testdata` also runs `docker/testdataset/configure_hpm_app.php` to:
+
+1. Create a `myheatpump` app in Emoncms for the target user (via `/app/add.json` + `/app/setconfig.json`).
+2. Map the testdataset feeds (`heatpump_elec`, `heatpump_heat`, `heatpump_flowT`, ...) into the app config by name.
+3. Point the user's heatpumpmonitor `system_meta` row at the new `app_id` + `readkey` (creating one if missing).
+
+Overrides (set in `.env` beside `docker-compose.yml`): `HPM_APP_NAME` (default `My Heatpump`), `HPM_SYSTEM_LOCATION` (default `Test System`). This step is idempotent — re-running will reuse an existing app with the same name and update the same `system_meta` row.
+
 Re-running the loader may append or duplicate data; reset the `emon-phpfina` volume (and re-run stack) for a clean feed store.
 
 Scripts and layout: [docker/testdataset/](docker/testdataset/).

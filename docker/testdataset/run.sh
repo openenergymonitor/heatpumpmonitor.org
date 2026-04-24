@@ -52,4 +52,13 @@ echo "Running add_feeds_to_account.php (WORKDIR=$WORKDIR, memory_limit=$PHP_MEM)
 php -d "memory_limit=$PHP_MEM" scripts/add_feeds_to_account.php
 echo "Running post_process.php..."
 php -d "memory_limit=$PHP_MEM" scripts/post_process.php
+
+# Bootstrap the heatpumpmonitor MyHeatpump app + system_meta row against the freshly imported feeds.
+if [[ -f /bootstrap/configure_hpm_app.php ]]; then
+  echo "Running configure_hpm_app.php..."
+  php /bootstrap/configure_hpm_app.php
+else
+  echo "configure_hpm_app.php not mounted; skipping heatpumpmonitor app wiring"
+fi
+
 echo "load_emoncms_testdata: done"
