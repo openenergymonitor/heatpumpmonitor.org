@@ -23,11 +23,11 @@ services:
       load_dev_env_data:
         condition: service_completed_successfully
 
-  # Optional: load Emoncms phpfina test feeds + configure a MyHeatpump app pointed at a heatpumpmonitor
-  # system_meta row (see docker/testdataset/). Enable with: docker compose --profile testdata up
+  # Always-run loader: imports the Emoncms phpfina test feeds and creates the MyHeatpump app
+  # (which provisions the `myheatpump_daily_stats` table on the emoncms DB via postprocess).
+  # Idempotent — exits early if the user already has feeds + a myheatpump app. Pass
+  # TESTDATASET_FORCE=1 to bypass the guard and re-run the import.
   load_emoncms_testdata:
-    profiles:
-      - testdata
     image: ghcr.io/jeremypoulter/emoncms:pr-1
     user: "0:0"
     entrypoint: ["/bin/bash", "/bootstrap/run.sh"]
@@ -36,20 +36,16 @@ services:
     environment:
       EMONCMS_HOST: ${EMONCMS_HOST:-http://emoncms}
       TESTDATASET_EMONCMS_USER_ID: ${TESTDATASET_EMONCMS_USER_ID:-1}
+      TESTDATASET_FORCE: ${TESTDATASET_FORCE:-0}
       PHP_CLI_MEMORY_LIMIT: ${PHP_CLI_MEMORY_LIMIT:-1024M}
       HPM_APP_NAME: ${HPM_APP_NAME:-My Heatpump}
-      HPM_SYSTEM_LOCATION: ${HPM_SYSTEM_LOCATION:-Test System}
-      # heatpumpmonitor DB creds (emoncms.docker-env only carries the emoncms DB user)
-      HPM_MYSQL_HOST: db
-      HPM_MYSQL_PORT: "3306"
-      HPM_MYSQL_USER: ${HPM_MYSQL_USER:-heatpumpmonitor}
-      HPM_MYSQL_PASSWORD: ${HPM_MYSQL_PASSWORD:-heatpumpmonitor}
-      HPM_MYSQL_DATABASE: ${HPM_MYSQL_DATABASE:-heatpumpmonitor}
     volumes:
       - emon-phpfina:/var/opt/emoncms/phpfina
       - ${TESTDATASET_PATH:-../testdataset}:/testdataset:ro
       - ./docker/testdataset/scripts-settings.php:/bootstrap/scripts-settings.php:ro
       - ./docker/testdataset/run.sh:/bootstrap/run.sh:ro
+      - ./docker/testdataset/check_loaded.php:/bootstrap/check_loaded.php:ro
+      - ./docker/testdataset/bootstrap_admin.php:/bootstrap/bootstrap_admin.php:ro
       - ./docker/testdataset/configure_hpm_app.php:/bootstrap/configure_hpm_app.php:ro
     links:
       - db
@@ -57,8 +53,6 @@ services:
       - mqtt
       - emoncms
     depends_on:
-      load_dev_env_data:
-        condition: service_completed_successfully
       emoncms:
         condition: service_healthy
 
@@ -77,21 +71,40 @@ services:
       - 'default.docker-env'
     environment:
       - "EMONCMS_HOST=${EMONCMS_HOST:-http://emoncms}"
+      # Used by step 3c (system_meta.app_id linking) when load_emoncms_testdata has run before us
+      - "HPM_APP_NAME=${HPM_APP_NAME:-My Heatpump}"
+      # Dont reload all data, just users and system meta data
       - "RELOAD_ALL=0"
+      # Clear database before loading data
       - "CLEAR_DB=0"
+      # Load the users
       - "LOAD_USERS=1"
+      # Load system meta data
       - "LOAD_SYSTEM_META=1"
+      # Loading running stats is enough to provide the list of systems
       - "LOAD_RUNNING_STATS=1"
+      # Use only when required, this is slow and uses server bandwidth
       - "LOAD_MONTHLY_STATS=0"
+      #- "LOAD_MONTHLY_STATS=[1,2,204,789]"
+      # Use only when required, this is even slower and uses server bandwidth
       - "LOAD_DAILY_STATS=0"
+      #- "LOAD_DAILY_STATS=[1,2,204,789]"
+      # Load the manufacturers
       - "LOAD_MANUFACTURERS=1"
+      # Load the heatpump models
       - "LOAD_HEATPUMP_MODELS=1"
+    # working_dir: /var/www/heatpumpmonitororg  # Set the working directory
     entrypoint: ["bash", "-c", "php /var/load_dev_env_data.php && php /var/generate_thumbnails.php "]
     depends_on:
       db:
         condition: service_healthy
       emoncms:
         condition: service_healthy
+      # load_emoncms_testdata always runs (idempotent; exits early when already loaded), so we
+      # can wait for it unconditionally to ensure the myheatpump app + daily-stats table exist
+      # before step 3c links system_meta.app_id and step 5 populates daily stats.
+      load_emoncms_testdata:
+        condition: service_completed_successfully
 
   emoncms:
     image: ghcr.io/jeremypoulter/emoncms:pr-1

@@ -8,6 +8,18 @@ WORKDIR="${TESTDATASET_WORKDIR:-/tmp/testdataset_run}"
 export TESTDATASET_ZIP="${TESTDATASET_ZIP:-/testdataset/phpfina.zip}"
 ZIP="$TESTDATASET_ZIP"
 
+# Idempotency guard: if the target user already has feeds AND a myheatpump app in the emoncms DB
+# we treat the testdata as already loaded and skip the (slow) phpfina extract + postprocess.
+# Set TESTDATASET_FORCE=1 to re-run anyway (warning: add_feeds_to_account.php may duplicate feeds —
+# `docker compose down -v` first if you want a truly clean slate).
+FORCE="${TESTDATASET_FORCE:-0}"
+if [[ "$FORCE" != "1" && "$FORCE" != "true" ]]; then
+  if php /bootstrap/check_loaded.php; then
+    echo "load_emoncms_testdata: already loaded (set TESTDATASET_FORCE=1 to re-run); skipping."
+    exit 0
+  fi
+fi
+
 if [[ ! -f "$ZIP" ]]; then
   echo "ERROR: $ZIP not found (set TESTDATASET_PATH in .env so ../testdataset resolves to the testdataset repo)" >&2
   exit 1
@@ -48,6 +60,14 @@ sed -i 's|^include "Modules/postprocess/postprocess_model.php";|include "/var/ww
 cd "$WORKDIR"
 # Default CLI memory is often 128M; postprocess (powertokwh, battery sim, etc.) needs more on large feeds.
 PHP_MEM="${PHP_CLI_MEMORY_LIMIT:-1024M}"
+
+# add_feeds_to_account.php and configure_hpm_app.php both look up TESTDATASET_EMONCMS_USER_ID in
+# emoncms's `users` table. dev_env/load_dev_env_data.php normally seeds that, but it now runs
+# AFTER us — so create the admin user up-front. load_dev_env_data's SELECT-by-username guard then
+# leaves this row alone, preserving the apikeys configure_hpm_app.php depends on.
+echo "Running bootstrap_admin.php..."
+php /bootstrap/bootstrap_admin.php
+
 echo "Running add_feeds_to_account.php (WORKDIR=$WORKDIR, memory_limit=$PHP_MEM)..."
 php -d "memory_limit=$PHP_MEM" scripts/add_feeds_to_account.php
 echo "Running post_process.php..."

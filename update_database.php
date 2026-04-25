@@ -10,7 +10,7 @@ require "Lib/load_module_schemas.php";
 echo "Loading module schemas from Modules/*/*_schema.php\n";
 $schema = load_module_schemas();
 
-// Raw per-day MyHeatPump rows live only on the emoncms DB (system_stats_daily; id = app id).
+// Raw per-day MyHeatPump rows live only on the emoncms DB (myheatpump_daily_stats; id = emoncms app id).
 unset($schema['system_stats_daily']);
 
 

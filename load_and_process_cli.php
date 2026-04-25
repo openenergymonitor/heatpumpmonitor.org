@@ -247,7 +247,7 @@ function process_monthly_stats($systemlist, $single_system, $reload) {
             $appid = $system_stats->get_app_id($systemid);
             
             // Get earliest day of data for this system
-            $result = $emoncms_mysqli->query("SELECT MIN(timestamp) AS start FROM system_stats_daily WHERE `id` = '$appid'");
+            $result = $emoncms_mysqli->query("SELECT MIN(timestamp) AS start FROM myheatpump_daily_stats WHERE `id` = '$appid'");
             $row = $result->fetch_object();
             $data_start = $row->start;
             if ($data_start == null) {
@@ -255,7 +255,7 @@ function process_monthly_stats($systemlist, $single_system, $reload) {
             }
 
             // Get last day of data for this system
-            $result = $emoncms_mysqli->query("SELECT MAX(timestamp) AS end FROM system_stats_daily WHERE `id` = '$appid'");
+            $result = $emoncms_mysqli->query("SELECT MAX(timestamp) AS end FROM myheatpump_daily_stats WHERE `id` = '$appid'");
             $row = $result->fetch_object();
             $data_end = $row->end;
             if ($data_end == null) {

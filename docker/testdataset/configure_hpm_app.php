@@ -1,20 +1,18 @@
 #!/usr/bin/env php
 <?php
-// One-shot: create / update a MyHeatpump app in Emoncms for the target user, point their heatpump-
-// monitor.org system_meta row at it, and map testdataset feeds into the app config by name.
+// One-shot: create / update a MyHeatpump app in Emoncms for the target user and map the testdataset
+// feeds into the app config by name. The app's postprocess (run by emoncms via post_process.php
+// before this) creates the `myheatpump_daily_stats` table on the emoncms DB.
 //
-// Runs inside the emoncms image (same stack). Reads emoncms DB to look up the user's API keys and
-// feeds, calls the Emoncms HTTP API (/app/add.json, /app/setconfig.json) with the write apikey, then
-// writes system_meta in the heatpumpmonitor DB via SQL (heatpumpmonitor /system/save needs a browser
-// session, not an apikey, so SQL is the practical bootstrap path here).
+// HeatpumpMonitor's system_meta is wired up later by dev_env/load_dev_env_data.php (see step 3c
+// "Link system_meta to the EmonCMS myheatpump app"); the HPM schema does not exist yet at this
+// point in the bootstrap and load_dev_env_data also owns system_meta seeding.
 //
 // Env:
 //   EMONCMS_HOST (default http://emoncms) — base URL for Emoncms HTTP API
 //   EMONCMS_MYSQL_HOST/PORT/USER/PASSWORD/DATABASE — emoncms DB (users, feed, app)
-//   HPM_MYSQL_HOST/PORT/USER/PASSWORD/DATABASE — heatpumpmonitor DB (system_meta); defaults to MYSQL_*
-//   TESTDATASET_EMONCMS_USER_ID (default 1) — owner of the feeds/app/system
+//   TESTDATASET_EMONCMS_USER_ID (default 1) — owner of the feeds/app
 //   HPM_APP_NAME (default "My Heatpump")
-//   HPM_SYSTEM_LOCATION (default "Test System")
 
 function env_required(string $name): string {
     $v = getenv($name);
@@ -67,23 +65,14 @@ function http_get_json(string $url): array {
 // Inputs
 // -----------------------------------------------------------------------------
 $emoncms_host   = rtrim(env_default('EMONCMS_HOST', 'http://emoncms'), '/');
-$userid         = (int) env_default('TESTDATASET_EMONCMS_USER_ID', '1');
-$app_name       = env_default('HPM_APP_NAME', 'My Heatpump');
-$system_location = env_default('HPM_SYSTEM_LOCATION', 'Test System');
+$userid    = (int) env_default('TESTDATASET_EMONCMS_USER_ID', '1');
+$app_name  = env_default('HPM_APP_NAME', 'My Heatpump');
 
-// Emoncms DB (for lookups + direct INSERT into `app` if the HTTP API is unreachable — see fallback below)
 $em_host = env_default('EMONCMS_MYSQL_HOST', env_default('MYSQL_HOST', 'db'));
 $em_port = (int) env_default('EMONCMS_MYSQL_PORT', env_default('MYSQL_PORT', '3306'));
 $em_user = env_default('EMONCMS_MYSQL_USER', env_default('MYSQL_USER', 'emoncms'));
 $em_pass = env_default('EMONCMS_MYSQL_PASSWORD', env_default('MYSQL_PASSWORD', 'emoncms'));
 $em_db   = env_default('EMONCMS_MYSQL_DATABASE', env_default('MYSQL_DATABASE', 'emoncms'));
-
-// heatpumpmonitor DB — allow override, otherwise use sensible defaults (db host, heatpumpmonitor user)
-$hpm_host = env_default('HPM_MYSQL_HOST', 'db');
-$hpm_port = (int) env_default('HPM_MYSQL_PORT', '3306');
-$hpm_user = env_default('HPM_MYSQL_USER', 'heatpumpmonitor');
-$hpm_pass = env_default('HPM_MYSQL_PASSWORD', 'heatpumpmonitor');
-$hpm_db   = env_default('HPM_MYSQL_DATABASE', 'heatpumpmonitor');
 
 echo "configure_hpm_app: userid=$userid, app_name=\"$app_name\", emoncms_host=$emoncms_host\n";
 
@@ -187,52 +176,5 @@ echo "  app config saved\n";
 
 $em->close();
 
-// -----------------------------------------------------------------------------
-// 4. Point heatpumpmonitor system_meta at the app (create new row or update the user's row)
-// -----------------------------------------------------------------------------
-$hpm = connect_db($hpm_host, $hpm_port, $hpm_user, $hpm_pass, $hpm_db, 'heatpumpmonitor');
-
-// Prefer updating a row already flagged for this app (re-runs), else the user's first row, else INSERT.
-$systemid = null;
-if ($stmt = $hpm->prepare("SELECT id FROM system_meta WHERE app_id=? LIMIT 1")) {
-    $stmt->bind_param('i', $app_id);
-    $stmt->execute();
-    $stmt->bind_result($sid);
-    if ($stmt->fetch()) $systemid = (int) $sid;
-    $stmt->close();
-}
-if ($systemid === null) {
-    if ($stmt = $hpm->prepare("SELECT id FROM system_meta WHERE userid=? ORDER BY id ASC LIMIT 1")) {
-        $stmt->bind_param('i', $userid);
-        $stmt->execute();
-        $stmt->bind_result($sid);
-        if ($stmt->fetch()) $systemid = (int) $sid;
-        $stmt->close();
-    }
-}
-
-$now = time();
-if ($systemid === null) {
-    $stmt = $hpm->prepare("INSERT INTO system_meta (userid, app_id, readkey, location, published, last_updated) VALUES (?,?,?,?,1,?)");
-    $stmt->bind_param('iissi', $userid, $app_id, $apikey_read, $system_location, $now);
-    if (!$stmt->execute()) {
-        fwrite(STDERR, "ERROR: insert system_meta failed: ".$hpm->error."\n");
-        exit(1);
-    }
-    $systemid = (int) $hpm->insert_id;
-    $stmt->close();
-    echo "  created heatpumpmonitor system id=$systemid (location=\"$system_location\")\n";
-} else {
-    $stmt = $hpm->prepare("UPDATE system_meta SET app_id=?, readkey=?, last_updated=? WHERE id=?");
-    $stmt->bind_param('isii', $app_id, $apikey_read, $now, $systemid);
-    if (!$stmt->execute()) {
-        fwrite(STDERR, "ERROR: update system_meta failed: ".$hpm->error."\n");
-        exit(1);
-    }
-    $stmt->close();
-    echo "  updated heatpumpmonitor system id=$systemid → app_id=$app_id\n";
-}
-$hpm->close();
-
 echo "Done. Emoncms app: $emoncms_host/app/view?id=$app_id&readkey=$apikey_read\n";
-echo "     HeatpumpMonitor system: /system/view?id=$systemid (login as $username)\n";
+echo "     HeatpumpMonitor system_meta linkage will be set by load_dev_env_data.php (step 3c).\n";
