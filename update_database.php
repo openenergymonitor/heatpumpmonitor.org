@@ -5,25 +5,12 @@ chdir("$dir/www");
 define('EMONCMS_EXEC', 1);
 require "Lib/load_database.php";
 require "Lib/dbschemasetup.php";
+require "Lib/load_module_schemas.php";
 
-$schema = array();
+echo "Loading module schemas from Modules/*/*_schema.php\n";
+$schema = load_module_schemas();
 
-// Automatically scan and load all schema files from Modules
-$modules_dir = "Modules";
-if ($handle = opendir($modules_dir)) {
-    while (false !== ($module = readdir($handle))) {
-        if ($module != "." && $module != ".." && is_dir($modules_dir . "/" . $module)) {
-            $schema_file = $modules_dir . "/" . $module . "/" . $module . "_schema.php";
-            if (file_exists($schema_file)) {
-                echo "Loading schema: $schema_file\n";
-                require $schema_file;
-            }
-        }
-    }
-    closedir($handle);
-}
-
-// Remove array item $schema['system_stats_daily']
+// Raw per-day MyHeatPump rows live only on the emoncms DB (myheatpump_daily_stats; id = emoncms app id).
 unset($schema['system_stats_daily']);
 
 
