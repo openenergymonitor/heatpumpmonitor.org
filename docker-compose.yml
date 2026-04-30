@@ -7,6 +7,7 @@ services:
     links:
       - db
       - emoncms
+      - redis
     ports:
       # Expose heatpumpmonitor on localhost port 8080
       - 8080:80
@@ -19,9 +20,14 @@ services:
     environment:
       # Base URL for Emoncms API (service name on compose network); override via host .env if needed
       EMONCMS_HOST: ${EMONCMS_HOST:-http://emoncms}
+      # Redis used by system_model.php for feed last-updated lookups (shared with emoncms)
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
     depends_on:
       load_dev_env_data:
         condition: service_completed_successfully
+      redis:
+        condition: service_healthy
 
   # Always-run loader: imports the Emoncms phpfina test feeds and creates the MyHeatpump app
   # (which provisions the `myheatpump_daily_stats` table on the emoncms DB via postprocess).

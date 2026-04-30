@@ -25,7 +25,9 @@ RUN apt-get update \
     && docker-php-ext-configure gettext \
     && docker-php-ext-install gettext
 
-RUN pecl install xdebug 
+RUN pecl install xdebug \
+    && pecl install redis \
+    && docker-php-ext-enable redis
 
 COPY config/php.ini /usr/local/etc/php/
 COPY config/xdebug.ini /usr/local/etc/php/conf.d/xdebug.ini
