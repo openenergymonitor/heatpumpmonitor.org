@@ -1,8 +1,8 @@
 <?php
 
 $settings = array(
-    // HeatpumpMonitor requires a linked Emoncms installation
-    "emoncms_host"=>"https://emoncms.org",
+    // HeatpumpMonitor requires a linked Emoncms installation (Docker: set EMONCMS_HOST, e.g. http://emoncms)
+    "emoncms_host" => getenv("EMONCMS_HOST") ?: "https://emoncms.org",
     "path"=>"/opt/openenergymonitor/heatpumpmonitor",
 
     "sql"=>array(
