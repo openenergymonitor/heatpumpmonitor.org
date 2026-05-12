@@ -328,7 +328,9 @@ class Installer
             if ($host_parts[0] == "www") {
                 $i++;
             }
+            if (!isset($host_parts[$i])) return false;
                 $filename = preg_replace('/[^A-Za-z0-9_\-]/', '', $host_parts[$i]);
+            if ($filename === '') return false;
                 
             $image_data = $this->getFaviconContent($url['host']);
             if ($image_data === false) {
@@ -365,9 +367,11 @@ class Installer
     private function getFaviconContent($url) {
 
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, "https://t0.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://$url&size=16");
+        curl_setopt($ch, CURLOPT_URL, "https://t0.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://" . urlencode($url) . "&size=16");
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10); // 10s total transfer timeout
+        curl_setopt($ch, CURLOPT_MAXFILESIZE, 1048576); // 1MB max
         $image = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
