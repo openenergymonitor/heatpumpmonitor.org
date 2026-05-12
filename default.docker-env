@@ -1,15 +1,21 @@
 DOCKER_ENV=1
-EMONCMS_HOST=https://emoncms.org
+EMONCMS_HOST=http://emoncms
 MYSQL_HOST=db
 MYSQL_PORT=3306
 MYSQL_DATABASE=heatpumpmonitor
 MYSQL_USER=heatpumpmonitor
 MYSQL_PASSWORD=heatpumpmonitor
-MYSQL_RANDOM_ROOT_PASSWORD=yes
+# Dev-only: known root password so you can run GRANTs if the DB volume predates docker/emoncms-init.sql
+MYSQL_ROOT_PASSWORD=heatpumpmonitor_root_dev
 MYSQL_INITDB_SKIP_TZINFO=true
 EMONCMS_MYSQL_HOST=db
 EMONCMS_MYSQL_PORT=3306
-EMONCMS_MYSQL_DATABASE=heatpumpmonitor
-EMONCMS_MYSQL_USER=heatpumpmonitor
-EMONCMS_MYSQL_PASSWORD=heatpumpmonitor
+EMONCMS_MYSQL_DATABASE=emoncms
+EMONCMS_MYSQL_USER=emoncms
+EMONCMS_MYSQL_PASSWORD=emoncms
+
+# Compose-only (put in .env beside docker-compose.yml, not required in this file):
+# TESTDATASET_PATH=/absolute/path/to/testdataset   # default ../testdataset
+# TESTDATASET_EMONCMS_USER_ID=1                   # Emoncms user id for test feeds (default 1 = admin)
+# PHP_CLI_MEMORY_LIMIT=1024M                       # load_emoncms_testdata only; postprocess needs >128M
 

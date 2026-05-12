@@ -67,8 +67,17 @@ $emoncms_mysqli->set_charset("utf8");
 // Check if redis class exists
 // ----------------------------------------------------------------------------------
 if (class_exists('Redis')) {
+    $redis_host = $settings['redis']['host'] ?? (getenv('REDIS_HOST') ?: 'localhost');
+    $redis_port = (int) ($settings['redis']['port'] ?? (getenv('REDIS_PORT') ?: 6379));
     $redis = new Redis();
-    $connected = $redis->connect('localhost');    
+    try {
+        $connected = @$redis->connect($redis_host, $redis_port);
+    } catch (\Throwable $e) {
+        $connected = false;
+    }
+    if (!$connected) {
+        $redis = false;
+    }
 } else {
     $redis = false;
     $connected = false;
