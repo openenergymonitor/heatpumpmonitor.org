@@ -16,17 +16,39 @@ $system = new System($mysqli);
 $systems = $system->list_admin();
 foreach ($systems as $system) {
     $id = (int) $system->id;
-    $location = $system->location;
+    $location = trim($system->location);
 
-    // mysql query to check if latitude and longitude are set
-    $result = $mysqli->query("SELECT latitude, longitude FROM system_meta WHERE id = $id");
+    if ($location === '') {
+        continue; // Skip systems with no location set
+    }
+
+    // Check if latitude and longitude are set
+    $stmt = $mysqli->prepare("SELECT latitude, longitude FROM system_meta WHERE id = ?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $result = $stmt->get_result();
     $row = $result->fetch_object();
+    $stmt->close();
 
     if ($row->latitude == null || $row->longitude == null) {
-        $location = urlencode($location);
         $apikey = $settings['opencagedata_api_key'];
-        $url = "https://api.opencagedata.com/geocode/v1/json?q=$location&key=$apikey";
-        $json = file_get_contents($url);
+        $url = "https://api.opencagedata.com/geocode/v1/json?q=" . urlencode($location) . "&key=" . urlencode($apikey);
+        $context = stream_context_create(['http' => ['timeout' => 10]]);
+        $json = file_get_contents($url, false, $context);
+        if ($json === false) {
+            echo "Error: failed to fetch geocode data for system $id (location: $location)\n";
+            continue;
+        }
+        $responseCode = null;
+        foreach ($http_response_header as $header) {
+            if (preg_match('#^HTTP/\S+ (\d+)#', $header, $m)) {
+                $responseCode = (int) $m[1];
+            }
+        }
+        if ($responseCode !== 200) {
+            echo "Error: geocode API returned HTTP $responseCode for system $id\n";
+            continue;
+        }
         $data = json_decode($json);
         if (isset($data->results[0]->geometry->lat) && isset($data->results[0]->geometry->lng)) {
             // 1 dp ~11 km
