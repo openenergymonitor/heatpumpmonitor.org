@@ -36,6 +36,9 @@ $system = new System($mysqli);
 require ("Modules/system/system_stats_model.php");
 $system_stats = new SystemStats($mysqli,$system);
 
+require_once "Modules/system/system_list_model.php";
+$system_list = new SystemListModel($mysqli, $system);
+
 require_once "Modules/system/system_photos_model.php";
 $system_photos = new SystemPhotos($mysqli, $system);
 

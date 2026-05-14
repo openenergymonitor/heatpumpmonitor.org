@@ -26,17 +26,17 @@ function draw_scatter()
     trace.marker.color = [];
     trace.text = [];
 
-    for (var z in app.fSystems) {
-        let system = app.fSystems[z];
+    var pts = app.chartPoints || [];
+    for (var zi = 0; zi < pts.length; zi++) {
+        let point = pts[zi];
+        let x = point.x;
+        let y = point.y;
+        let colVal = point.color;
 
-        let x = system[app.selected_xaxis];
-        let y = system[app.selected_yaxis];
-
-        if (x==0 || y==0) {
+        if (x === 0 || y === 0) {
             continue;
         }
-
-        if (x==null || y==null) {
+        if (x == null || y == null) {
             continue;
         }
 
@@ -44,29 +44,62 @@ function draw_scatter()
         trace.y.push(y);
 
         if (columns[app.selected_color].options != undefined) {
-            let index = columns[app.selected_color].options.indexOf(system[app.selected_color]);
-            trace.marker.color.push(index);
+            let opts = columns[app.selected_color].options;
+            let index = -1;
+            for (var oi = 0; oi < opts.length; oi++) {
+                if (opts[oi] == colVal) {
+                    index = oi;
+                    break;
+                }
+            }
+            trace.marker.color.push(index >= 0 ? index : 0);
         } else {
-            trace.marker.color.push(system[app.selected_color]);
+            trace.marker.color.push(colVal);
         }
 
+        var xDisp = x;
+        var yDisp = y;
         if (columns[app.selected_xaxis].dp != undefined) {
-            x = x.toFixed(columns[app.selected_xaxis].dp);
+            xDisp = x.toFixed(columns[app.selected_xaxis].dp);
         }
-
         if (columns[app.selected_yaxis].dp != undefined) {
-            y = y.toFixed(columns[app.selected_yaxis].dp);
+            yDisp = y.toFixed(columns[app.selected_yaxis].dp);
         }
 
-        var tooltip = "System: "+system.id+", "+system.location+"<br>"+system.hp_output+" kW "+system.hp_model+"<br>";
-        tooltip += columns[app.selected_xaxis].name + ": "+x+"<br>";
-        tooltip += columns[app.selected_yaxis].name + ": "+y+"<br>";
-        tooltip += columns[app.selected_color].name + ": "+system[app.selected_color];
+        var tooltip = "System: "+point.id+", "+point.location+"<br>"+point.hp_output+" kW "+point.hp_model+"<br>";
+        tooltip += columns[app.selected_xaxis].name + ": "+xDisp+"<br>";
+        tooltip += columns[app.selected_yaxis].name + ": "+yDisp+"<br>";
+        tooltip += columns[app.selected_color].name + ": "+colVal;
 
         trace.text.push(tooltip);
     }
 
     var data = [trace];
+
+    if (trace.x.length === 0) {
+        app.correlation = 0;
+        app.r2 = 0;
+        app.chart_info = "No data points for current filters.";
+        var layoutEmpty = {
+            xaxis: {
+                title: (columns[app.selected_xaxis].group || '').replace("Stats: ", "") + ": " + columns[app.selected_xaxis].name,
+                showgrid: true,
+                zeroline: false,
+            },
+            yaxis: {
+                title: (columns[app.selected_yaxis].group || '').replace("Stats: ", "") + ": " + columns[app.selected_yaxis].name,
+                showgrid: true,
+                zeroline: false,
+            },
+            margin: { t: 10, r: 10 }
+        };
+        Plotly.newPlot('chart', data, layoutEmpty, { displayModeBar: false });
+        if (first_chart_load) {
+            first_chart_load = false;
+            resizeChart();
+        }
+        return;
+    }
 
     // Use appropriate regression method based on toggle
     var regression;

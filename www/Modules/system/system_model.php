@@ -1189,6 +1189,104 @@ class System
         );
     }
 
+    /**
+     * Batch variant of get_last_updated for many app ids (one app query + pipelined Redis hgets).
+     * Returns map app_id => same array shape as get_last_updated(), or false when no feeds.
+     *
+     * @param int[] $app_ids
+     * @return array<int, array|false>
+     */
+    public function get_last_updated_batch(array $app_ids)
+    {
+        global $redis;
+
+        $app_ids = array_values(array_unique(array_filter(array_map('intval', $app_ids))));
+        if (!count($app_ids)) {
+            return array();
+        }
+
+        $ids_string = implode(',', $app_ids);
+        $result = $this->emoncms_mysqli->query("SELECT id, config FROM app WHERE id IN ($ids_string)");
+        if (!$result) {
+            return array();
+        }
+
+        $apps = array();
+        $feed_ids = array();
+        while ($row = $result->fetch_object()) {
+            $id = (int) $row->id;
+            $config = json_decode($row->config);
+            $elec = (isset($config->heatpump_elec) ? (int) $config->heatpump_elec : 0);
+            $heat = (isset($config->heatpump_heat) ? (int) $config->heatpump_heat : 0);
+            $apps[$id] = array('e' => $elec, 'h' => $heat);
+            if ($elec > 0) {
+                $feed_ids[$elec] = true;
+            }
+            if ($heat > 0) {
+                $feed_ids[$heat] = true;
+            }
+        }
+
+        $feed_list = array_keys($feed_ids);
+        $feed_times = array();
+        if (count($feed_list) && $redis && is_object($redis) && method_exists($redis, 'multi')) {
+            $pipeline = defined('Redis::PIPELINE') ? Redis::PIPELINE : 2;
+            $pipe = $redis->multi($pipeline);
+            foreach ($feed_list as $fid) {
+                $pipe->hget("feed:$fid", 'time');
+            }
+            $exec = $pipe->exec();
+            if (is_array($exec)) {
+                foreach ($feed_list as $i => $fid) {
+                    $feed_times[$fid] = isset($exec[$i]) ? (int) $exec[$i] : 0;
+                }
+            }
+        } elseif (count($feed_list) && $redis) {
+            foreach ($feed_list as $fid) {
+                $feed_times[$fid] = (int) $redis->hget("feed:$fid", 'time');
+            }
+        }
+
+        $now = time();
+        $out = array();
+
+        foreach ($apps as $app_id => $fh) {
+            $heatpump_elec_feedid = $fh['e'] ? $fh['e'] : false;
+            $heatpump_heat_feedid = $fh['h'] ? $fh['h'] : false;
+
+            $elec_ago = 876000;
+            $heat_ago = 876000;
+            $max_age = 876000;
+
+            if ($heatpump_elec_feedid) {
+                $elec_last_updated = isset($feed_times[$heatpump_elec_feedid]) ? $feed_times[$heatpump_elec_feedid] : 0;
+                if ($elec_last_updated > 0) {
+                    $elec_ago = ($now - $elec_last_updated) / 3600;
+                    $max_age = $elec_ago;
+                }
+            }
+            if ($heatpump_heat_feedid) {
+                $heat_last_updated = isset($feed_times[$heatpump_heat_feedid]) ? $feed_times[$heatpump_heat_feedid] : 0;
+                if ($heat_last_updated > 0) {
+                    $heat_ago = ($now - $heat_last_updated) / 3600;
+                    if ($max_age === 876000 || $heat_ago > $max_age) {
+                        $max_age = $heat_ago;
+                    }
+                }
+            }
+
+            $out[$app_id] = array(
+                'elec_feedid' => $heatpump_elec_feedid,
+                'heat_feedid' => $heatpump_heat_feedid,
+                'elec_ago' => $elec_ago,
+                'heat_ago' => $heat_ago,
+                'max_age' => $max_age,
+            );
+        }
+
+        return $out;
+    }
+
     // Get list of linked users for an admin user
     public function get_user_accounts($admin_userid)
     {
