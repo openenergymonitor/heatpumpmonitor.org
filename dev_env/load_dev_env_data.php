@@ -596,8 +596,16 @@ if ($load_running_stats) {
         $stats = json_decode($data,true);
         if ($stats==null) die("Error: could not load $table data from heatpumpmonitor.org");
 
+        $table_name = "system_stats_".$table."_v2";
+        // Stats tables have no unique key on `id`, so a re-run of this loader would
+        // accumulate duplicate rows per system. Mirror production load_and_process_cli.php
+        // by deleting any existing row first.
         foreach ($stats as $system) {
-            $system_stats_class->save_stats_table("system_stats_".$table."_v2",$system);
+            $sid = isset($system['id']) ? (int) $system['id'] : 0;
+            if ($sid > 0) {
+                $mysqli->query("DELETE FROM $table_name WHERE id=$sid");
+            }
+            $system_stats_class->save_stats_table($table_name, $system);
         }
         print count($stats)." systems\n";
     }

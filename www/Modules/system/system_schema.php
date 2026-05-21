@@ -7,7 +7,7 @@ $schema['system_images'] = array(
         'Key' => 'PRI', 
         'Extra' => 'auto_increment'
     ),
-    'system_id' => array('type' => 'int(11)', 'Null' => false),
+    'system_id' => array('type' => 'int(11)', 'Null' => false, 'Index' => true),
     'photo_type' => array('type' => 'varchar(50)', 'Null' => false, 'Default' => 'other'),
     'image_path' => array('type' => 'varchar(255)', 'Null' => false),
     'original_filename' => array('type' => 'varchar(255)', 'Null' => false),
@@ -31,12 +31,12 @@ $schema['system_meta'] = array(
         'name' => 'ID',
         'group' => 'Overview'
     ),
-    'userid' => array('type' => 'int(11)', 'editable' => false),
-    'published' => array('type' => 'tinyint(1)', 'editable' => false, 'optional' => false, 'name' => 'Published', 'group' => 'Overview'),
+    'userid' => array('type' => 'int(11)', 'editable' => false, 'Index' => true),
+    'published' => array('type' => 'tinyint(1)', 'editable' => false, 'optional' => false, 'name' => 'Published', 'group' => 'Overview', 'Index' => true),
     'last_updated' => array('type' => 'int(11)', 'editable' => false, 'name' => 'Last updated', 'group' => 'Overview'),
 
     // New method of linking an emoncms instance myheatpump app
-    'app_id' => array('type' => 'int(11)', 'editable' => true),
+    'app_id' => array('type' => 'int(11)', 'editable' => true, 'Index' => true),
     'readkey' => array('type' => 'varchar(64)', 'editable' => true),
     
     /* ------------------------------ Overview ----------------------------- */
@@ -172,7 +172,8 @@ $schema['system_meta'] = array(
         'optional' => false, 
         'name' => 'Share', 
         'group' => 'Overview',
-        'show' => false
+        'show' => false,
+        'Index' => true
     ),
 
     /* ------------------------------ Heat pump system ----------------------------- */
@@ -204,7 +205,8 @@ $schema['system_meta'] = array(
         'optional' => false, 
         'name' => 'Heat pump manufacturer', 
         'group' => 'Heat pump',
-        'show'  => false
+        'show'  => false,
+        'Index' => true
     ),
 
     'hp_model' => array(
@@ -214,7 +216,8 @@ $schema['system_meta'] = array(
         'optional' => false, 
         'name' => 'Heat pump make & model',
         'group' => 'Heat pump',
-        'show'  => false
+        'show'  => false,
+        'Index' => true
     ),
 
     'hp_output' => array(
@@ -797,10 +800,10 @@ $schema['system_meta'] = array(
 
 $schema['system_stats_daily'] = array(
     // System ID
-    'id' => array('type' => 'int(11)'),
+    'id' => array('type' => 'int(11)', 'Index' => true),
     
     // Start of day timestamp
-    'timestamp' => array('type' => 'int(11)'),
+    'timestamp' => array('type' => 'int(11)', 'Index' => true),
     
     // Full period stats
     'combined_elec_kwh' => array('type' => 'float', 'name'=>'Electricity consumption', 'group'=>'Stats: Combined', 'dp'=>0, 'unit'=>'kWh'),
