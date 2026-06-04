@@ -761,7 +761,8 @@ $schema['system_meta'] = array(
         'name' => 'Weighted mean flow temperature on coldest day', 
         'group' => 'Measurements',
         'helper' => '',
-        'unit' => '°C'
+        'unit' => '°C',
+        'dp' => 1
     ),
 
     'measured_max_flow_temp_coldest_day' => array(
@@ -783,7 +784,8 @@ $schema['system_meta'] = array(
         'name' => 'Weighted mean outside temperature on coldest day', 
         'group' => 'Measurements',
         'helper' => '',
-        'unit' => '°C'
+        'unit' => '°C',
+        'dp' => 1
     ),
 
     'measured_room_temp_coldest_day' => array(
@@ -794,7 +796,8 @@ $schema['system_meta'] = array(
         'name' => 'When running room temperature on coldest day', 
         'group' => 'Measurements',
         'helper' => '',
-        'unit' => '°C'
+        'unit' => '°C',
+        'dp' => 1
     )
 );
 

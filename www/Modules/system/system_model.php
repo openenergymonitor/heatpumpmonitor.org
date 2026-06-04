@@ -783,6 +783,8 @@ class System
             if (isset($row['helper'])) $helper = $row['helper'];
             $colum = array("name"=>$row['name'], "group"=>$row['group'], "helper"=>$helper);
             if (isset($row['options'])) $colum['options'] = $row['options'];
+            if (isset($row['dp'])) $colum['dp'] = $row['dp'];
+            if (isset($row['unit'])) $colum['unit'] = $row['unit'];
             $columns[$key] = $colum;
         }
         /*

@@ -1122,8 +1122,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             if (column=='installer_logo' || column=='training' || column=='learnmore') continue;
                             var value = rowObj[column];
                             if (value==null || value==='') value = '';
-                            if (stats_columns[column]!=undefined && stats_columns[column]['dp']!=undefined && value !== '' && !isNaN(value)) {
-                                value = Number(value).toFixed(stats_columns[column]['dp']+1);
+                            if (self.columns[column]!=undefined && self.columns[column]['dp']!=undefined && value !== '' && !isNaN(value)) {
+                                value = Number(value).toFixed(self.columns[column]['dp']+1);
                             }
                             row.push('"'+String(value).replace(/"/g,'""')+'"');
                         }
@@ -1589,7 +1589,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     return "£"+val;
                 }
                 
-                if (stats_columns[key]!=undefined) {
+                if (this.columns[key]!=undefined && this.columns[key]['dp']!=undefined) {
                     if (val == null || val === '' || isNaN(val)) {
                         return val;
                     }
@@ -1597,18 +1597,16 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     if (!isFinite(n)) return val;
                     
                     let unit = '';
-                    if (stats_columns[key]['unit']!=undefined) {
-                        unit = ' '+stats_columns[key]['unit'];
+                    if (this.columns[key]['unit']!=undefined) {
+                        unit = ' '+this.columns[key]['unit'];
                     }
 
                     let prepend = '';
-                    if (stats_columns[key]['prepend']!=undefined) {
-                        prepend = stats_columns[key]['prepend'];
+                    if (this.columns[key]['prepend']!=undefined) {
+                        prepend = this.columns[key]['prepend'];
                     }
                 
-                    if (stats_columns[key]['dp']!=undefined) {
-                        return "<span title='"+n.toFixed(stats_columns[key]['dp']+1)+"'>"+prepend+n.toFixed(stats_columns[key]['dp'])+unit+"</span>";
-                    }
+                    return "<span title='"+n.toFixed(this.columns[key]['dp']+1)+"'>"+prepend+n.toFixed(this.columns[key]['dp'])+unit+"</span>";
                 }
 
                 if (key == 'weighted_average_flow_minus_outside') {
