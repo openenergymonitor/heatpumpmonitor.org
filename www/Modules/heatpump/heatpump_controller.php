@@ -198,7 +198,11 @@ function heatpump_controller() {
             }
             $stmt->close();
 
-            $stats = json_decode(file_get_contents($path."dashboard/getstats?id=$system_id&start=$start&end=$end"));
+            $result = $system_stats->load_from_emoncms($system_id, $start, $end);
+            if (!$result['success']) {
+                return array("error" => "Failed to load stats: " . ($result['message'] ?? 'unknown error'));
+            }
+            $stats = json_decode($result['data']);
             if ($stats === null) {
                 return array("error" => "Failed to load or parse stats from URL");
             }

@@ -1,7 +1,7 @@
 <?php
 defined('EMONCMS_EXEC') or die('Restricted access');
 global $path, $session, $v;
-$v=2;
+$v=3;
 
 $app_title = "My Heatpump";
 if ($private_mode) {
