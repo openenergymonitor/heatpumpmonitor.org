@@ -58,14 +58,22 @@ $delta = 1;
 $timeformat = "notime";
 
 // Load agile data feedid 473228 (AGILE-22-07-22:K_Southern_Wales)
-$url = $settings["emoncms_host"]."/feed/data.json?id=473228&start=$start&end=$end&interval=$interval&average=0&delta=0&skipmissing=0&timeformat=$timeformat";
+$url = $settings["emoncms_host"]."/feed/data.json?id=518384&start=$start&end=$end&interval=$interval&average=0&delta=0&skipmissing=0&timeformat=$timeformat";
 $agile = json_decode(file_get_contents($url));
+
+// Load cosy data feedid 520109 (COSY-22-07-22:K_Southern_Wales)
+$url = $settings["emoncms_host"]."/feed/data.json?id=520109&start=$start&end=$end&interval=$interval&average=0&delta=0&skipmissing=0&timeformat=$timeformat";
+$cosy = json_decode(file_get_contents($url));
+
+// Load go data feedid 520137 (GO-VAR-22-10-14: K_Southern_Wales)
+$url = $settings["emoncms_host"]."/feed/data.json?id=520137&start=$start&end=$end&interval=$interval&average=0&delta=0&skipmissing=0&timeformat=$timeformat";
+$go = json_decode(file_get_contents($url));
 
 // Generate Octopus Cosy data
 // Day rate: 24.51 p/kWh
 // Cosy rate 12.01 p/kWh (04:00-07:00 & 13:00-16:00)
 // Peak rate 35.55 p/kWh (16:00-19:00)
-
+/*
 $cosy = array();
 for ($j=0; $j<count($agile); $j++) {
     $time = $start + $j*$interval;
@@ -75,12 +83,13 @@ for ($j=0; $j<count($agile); $j++) {
     else if ($hour>=13 && $hour<16) $cosy[$j] = 12.01;
     else if ($hour>=16 && $hour<19) $cosy[$j] = 35.55;
     else $cosy[$j] = 24.51;
-}
+}*/
 
 
 // Generate Octopus Go data
 // Day rate: 27.26 p/kWh
 // Night rate 8.00 p/kWh (00:30-05:30)
+/*
 $go = array();
 for ($j=0; $j<count($agile); $j++) {
     $time = $start + $j*$interval;
@@ -89,7 +98,7 @@ for ($j=0; $j<count($agile); $j++) {
     $hour = $date->format('G') + $date->format('i')/60;
     if ($hour>=0.5 && $hour<5.5) $go[$j] = 8.00;
     else $go[$j] = 27.26;
-}
+}*/
 
 $eon_next_pumped_v2 = array();
 // 00:00-04:00: 25.67 p/kWh
@@ -185,50 +194,55 @@ foreach ($data as $row) {
                 $time = $start + $j*$interval;
                 $kwh = $result[$j];
                 if ($kwh!=null) {
-                    $unit_cost_agile = $agile[$j]*0.01;
-                    $unit_cost_cosy = $cosy[$j]*0.01;
-                    $unit_cost_go = $go[$j]*0.01;
+                    $unit_cost_agile = $agile[$j]*0.01*1.05;
+                    $unit_cost_cosy = $cosy[$j]*0.01*1.05;
+                    $unit_cost_go = $go[$j]*0.01*1.05;
                     $unit_cost_eon_next_pumped_v2 = $eon_next_pumped_v2[$j]*0.01;
 
-                    foreach ($periods as $period) {
-                        if ($time>=$starts[$period]) {
-                            $sum_kwh[$period] += $kwh;
-                            $sum_cost_agile[$period] += $kwh*$unit_cost_agile;
-                            $sum_cost_cosy[$period] += $kwh*$unit_cost_cosy;
-                            $sum_cost_go[$period] += $kwh*$unit_cost_go;
-                            $sum_cost_eon_next_pumped_v2[$period] += $kwh*$unit_cost_eon_next_pumped_v2;
+                    // Only sum if $agile[$j] $cosy[$j] $go[$j] $eon_next_pumped_v2[$j] are not null
+                    if ($unit_cost_agile!=null && $unit_cost_cosy!=null && $unit_cost_go!=null && $unit_cost_eon_next_pumped_v2!=null) {
+
+                        foreach ($periods as $period) {
+                            if ($time>=$starts[$period]) {
+                                $sum_kwh[$period] += $kwh;
+                                $sum_cost_agile[$period] += $kwh*$unit_cost_agile;
+                                $sum_cost_cosy[$period] += $kwh*$unit_cost_cosy;
+                                $sum_cost_go[$period] += $kwh*$unit_cost_go;
+                                $sum_cost_eon_next_pumped_v2[$period] += $kwh*$unit_cost_eon_next_pumped_v2;
+                            }
                         }
+
+                        // Allocate to months by start time
+                        $date->setTimestamp($time);
+                        // get timestamp of start of month
+                        $date->modify("midnight first day of this month");
+                        // 00:00:00
+                        $date->setTime(0,0,0);
+
+                        $month = $date->getTimestamp();
+
+                        if (!isset($months_kwh[$month])) {
+                            $months_kwh[$month] = 0;
+                            $months_agile_cost[$month] = 0;
+                            $months_cosy_cost[$month] = 0;
+                            $months_go_cost[$month] = 0;
+                            $months_eon_next_pumped_v2_cost[$month] = 0;
+                        }
+
+                        $months_kwh[$month] += $kwh;
+                        $months_agile_cost[$month] += $kwh*$unit_cost_agile;
+                        $months_cosy_cost[$month] += $kwh*$unit_cost_cosy;
+                        $months_go_cost[$month] += $kwh*$unit_cost_go;
+                        $months_eon_next_pumped_v2_cost[$month] += $kwh*$unit_cost_eon_next_pumped_v2;
+
                     }
-
-                    // Allocate to months by start time
-                    $date->setTimestamp($time);
-                    // get timestamp of start of month
-                    $date->modify("midnight first day of this month");
-                    // 00:00:00
-                    $date->setTime(0,0,0);
-
-                    $month = $date->getTimestamp();
-
-                    if (!isset($months_kwh[$month])) {
-                        $months_kwh[$month] = 0;
-                        $months_agile_cost[$month] = 0;
-                        $months_cosy_cost[$month] = 0;
-                        $months_go_cost[$month] = 0;
-                        $months_eon_next_pumped_v2_cost[$month] = 0;
-                    }
-
-                    $months_kwh[$month] += $kwh;
-                    $months_agile_cost[$month] += $kwh*$unit_cost_agile;
-                    $months_cosy_cost[$month] += $kwh*$unit_cost_cosy;
-                    $months_go_cost[$month] += $kwh*$unit_cost_go;
-                    $months_eon_next_pumped_v2_cost[$month] += $kwh*$unit_cost_eon_next_pumped_v2;
                 }
             }
 
             foreach ($periods as $period) {
                 if ($sum_kwh[$period]>0) {
                     $unit_cost_agile = $sum_cost_agile[$period]/$sum_kwh[$period];
-                    $unit_cost_agile_vat = $unit_cost_agile*1.05*100;
+                    $unit_cost_agile_vat = $unit_cost_agile*100;
                     $unit_cost_cosy = $sum_cost_cosy[$period]/$sum_kwh[$period]*100;
                     $unit_cost_go = $sum_cost_go[$period]/$sum_kwh[$period]*100;
                     $unit_cost_eon_next_pumped_v2 = $sum_cost_eon_next_pumped_v2[$period]/$sum_kwh[$period]*100;
@@ -250,7 +264,7 @@ foreach ($data as $row) {
             foreach ($months_kwh as $month => $kwh) {
                 if ($kwh>0) {
                     $unit_cost_agile = $months_agile_cost[$month]/$kwh;
-                    $unit_cost_agile_vat = $unit_cost_agile*1.05*100;
+                    $unit_cost_agile_vat = $unit_cost_agile*100;
                     $unit_cost_cosy = $months_cosy_cost[$month]/$kwh*100;
                     $unit_cost_go = $months_go_cost[$month]/$kwh*100;
                     $unit_cost_eon_next_pumped_v2 = $months_eon_next_pumped_v2_cost[$month]/$kwh*100;
