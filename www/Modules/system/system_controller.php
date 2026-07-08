@@ -5,7 +5,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 function system_controller() {
 
-    global $session, $route, $user, $system, $mysqli, $system_stats, $system_photos, $settings;
+    global $session, $route, $user, $system, $mysqli, $system_stats, $system_list, $system_photos, $settings;
 
     if ($route->action=="new") {
         $route->format = "html";
@@ -83,12 +83,59 @@ function system_controller() {
     }
 
     if ($route->action=="list") {
+        // Paginated / aggregate JSON API: system/list/<mode>/page.json | summary.json
+        if ($route->format=="json" && ($route->subaction2=="page" || $route->subaction2=="summary")) {
+            $mode = $route->subaction;
+            $userid = isset($session['userid']) ? (int) $session['userid'] : false;
+
+            $allowed = false;
+            if ($mode=="public" && $settings['public_mode_enabled']) {
+                $allowed = true;
+            } elseif ($mode=="user" && $userid) {
+                $allowed = true;
+            } elseif ($mode=="admin" && $userid && $session['admin']) {
+                $allowed = true;
+            }
+            if (!$allowed) {
+                return array("success"=>false, "message"=>"Unauthorized");
+            }
+
+            $params = array(
+                'offset' => get('offset', false, 0),
+                'limit' => get('limit', false, 50),
+                'period' => get('period', false, 'last365'),
+                'month_start' => get('month_start', false, ''),
+                'month_end' => get('month_end', false, ''),
+                'tariff' => get('tariff', false, 'flat'),
+                'sort' => get('sort', false, 'combined_cop'),
+                'dir' => get('dir', false, 'desc'),
+                'min_days' => get('min_days', false, 0),
+                'show_mid' => get('show_mid', false, ''),
+                'show_other' => get('show_other', false, ''),
+                'show_hpint' => get('show_hpint', false, ''),
+                'show_errors' => get('show_errors', false, ''),
+                'admin_restricted' => get('admin_restricted', false, ''),
+                'filter' => get('filter', false, ''),
+                'csv_columns' => get('csv_columns', false, ''),
+                'xaxis' => get('xaxis', false, 'weighted_flowT_minus_outsideT'),
+                'yaxis' => get('yaxis', false, 'combined_cop'),
+                'color' => get('color', false, 'weighted_prc_carnot'),
+                'include_csv' => get('include_csv', false, ''),
+                'include_points' => get('include_points', false, ''),
+            );
+
+            if ($route->subaction2=="page") {
+                return $system_list->query($mode, $userid, $params);
+            }
+            return $system_list->summary($mode, $userid, $params);
+        }
+
         if ($route->format=="html") {
             // Public list view
             if ($route->subaction=="public" && $settings['public_mode_enabled']) {
                 return view("Modules/system/system_list.php",array(
                     "mode"=>"public",
-                    "systems"=>$system->list_public(),
+                    "systems"=>array(),
                     "columns"=>$system->get_columns(),
                     "stats_columns"=>$system_stats->schema['system_stats_monthly_v2']
                 ));
@@ -98,7 +145,7 @@ function system_controller() {
                 if ($session['userid']) {
                     return view("Modules/system/system_list.php",array(
                         "mode" => "user",
-                        "systems"=>$system->list_user($session['userid']),
+                        "systems"=>array(),
                         "columns"=>$system->get_columns(),
                         "stats_columns"=>$system_stats->schema['system_stats_monthly_v2']
                     ));
@@ -109,14 +156,14 @@ function system_controller() {
                 if ($session['userid'] && $session['admin']) {
                     return view("Modules/system/system_list.php",array(
                         "mode" => "admin",
-                        "systems"=>$system->list_admin(),
+                        "systems"=>array(),
                         "columns"=>$system->get_columns(),
                         "stats_columns"=>$system_stats->schema['system_stats_monthly_v2']
                     ));
                 }
             }
         } else {
-            // Public list view
+            // Public list view (legacy JSON — full list)
             if ($route->subaction=="public") {
                 return $system->list_public();
 

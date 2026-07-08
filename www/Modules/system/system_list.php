@@ -282,10 +282,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                             <option value="ne" v-if="!part.allNumerical">does not contain</option>
                                             <option value="eq" v-if="part.allNumerical">=</option>
                                             <option value="ne" v-if="part.allNumerical">!=</option>
-                                            <option value="gt" v-if="part.allNumerical">></option>
-                                            <option value="lt" v-if="part.allNumerical"><</option>
-                                            <option value="gte" v-if="part.allNumerical">>=</option>
-                                            <option value="lte" v-if="part.allNumerical"><=</option>
+                                            <option value="gt" v-if="part.allNumerical">&gt;</option>
+                                            <option value="lt" v-if="part.allNumerical">&lt;</option>
+                                            <option value="gte" v-if="part.allNumerical">&gt;=</option>
+                                            <option value="lte" v-if="part.allNumerical">&lt;=</option>
                                         </select>
                                         <input type="text" v-model="part.value" class="form-control form-control-sm mb-2" placeholder="enter value" list="possibleValues" style="width:auto;">
                                         <datalist id="possibleValues">
@@ -385,7 +385,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             <div class="col-lg-3">
                                 <div class="input-group mb-3">
                                     <span class="input-group-text">X-axis</span>
-                                    <select class="form-control" v-model="selected_xaxis" @change="draw_scatter">
+                                    <select class="form-control" v-model="selected_xaxis" @change="chartAxisChanged">
                                         <optgroup v-for="(group, group_name) in column_groups" :label="group_name">
                                             <option v-for="row in group" :value="row.key" v-if="row.name">{{ row.name }}</option>
                                         </optgroup>
@@ -397,7 +397,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             <div class="col-lg-3">
                                 <div class="input-group mb-3">
                                     <span class="input-group-text">Y-axis</span>
-                                    <select class="form-control" v-model="selected_yaxis" @change="draw_scatter">
+                                    <select class="form-control" v-model="selected_yaxis" @change="chartAxisChanged">
                                         <optgroup v-for="(group, group_name) in column_groups" :label="group_name">
                                             <option v-for="row in group" :value="row.key" v-if="row.name">{{ row.name }}</option>
                                         </optgroup>
@@ -409,7 +409,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             <div class="col-lg-3">
                                 <div class="input-group mb-3">
                                     <span class="input-group-text">Colour map</span>
-                                    <select class="form-control" v-model="selected_color" @change="draw_scatter">
+                                    <select class="form-control" v-model="selected_color" @change="chartAxisChanged">
                                         <optgroup v-for="(group, group_name) in column_groups" :label="group_name">
                                             <option v-for="row in group" :value="row.key" v-if="row.name">{{ row.name }}</option>
                                         </optgroup>
@@ -496,6 +496,12 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
                         </td>
                     </tr>
+                    <tr ref="loadMoreSentinel" v-show="has_more && fSystems.length && !loading">
+                        <td :colspan="999" class="text-center py-2 text-muted">
+                            <span v-if="loadingNextPage" class="spinner-border spinner-border-sm" role="status"></span>
+                            <span v-else>Scroll to load more…</span>
+                        </td>
+                    </tr>
                 </table>
                 
                 <div class="card" v-if="!loading">
@@ -503,7 +509,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                   <div class="card-body">
                     <p class="card-text">Number of systems in selection: <b>{{ totals.listed_system_count }}</b></p>
                     <p class="card-text">Average of individual system {{ stats_time_start === 'last365' ? 'SPF' : 'COP' }} values: <b>{{ totals.average_cop | toFixed(2) }}</b></p>
-                    <p class="card-text">Average {{ stats_time_start === 'last365' ? 'SPF' : 'COP' }} based on total sum of heat and electric values: <b>{{ totals.average_cop_kwh | toFixed(2) }}</p>
+                    <p class="card-text">Average {{ stats_time_start === 'last365' ? 'SPF' : 'COP' }} based on total sum of heat and electric values: <b>{{ totals.average_cop_kwh | toFixed(2) }}</b></p>
                     <!-- csv export button copy table data to clipboard -->
                     <button class="btn btn-primary" @click="export_csv">Copy table data to clipboard</button>                    
                   </div>
@@ -643,7 +649,79 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     
     var columns = <?php echo json_encode($columns); ?>;
     var stats_columns = <?php echo json_encode($stats_columns); ?>;
-    var systems = <?php echo json_encode($systems); ?>;
+    var systems = [];
+
+    /** Boundary HTML + meter class flags for one row (stats/meta come from API). */
+    function decorateListRow(system) {
+        var boundary_code = system.boundary_code;
+        var metering = system.boundary_metering || {};
+        var type = system.hp_type;
+        var helper = "";
+        if (type == "Ground Source" || type == "Water Source") {
+            helper = "- Compressor metered\n";
+        } else if (type != "Air-to-Air") {
+            helper = "- Compressor and fan metered\n";
+        }
+        if (metering.hydraulic_separation) {
+            if (metering.secondary_pumps_metered === true) {
+                helper += "- Hydraulic separation used and secondary pumps/fans metered\n";
+            } else if (metering.secondary_pumps_metered === false) {
+                helper += "- Hydraulic separation used but secondary pumps/fans not metered\n";
+            }
+        }
+        if (metering.primary_pump_metered === true) {
+            helper += "- Primary pump metered\n";
+        } else if (metering.primary_pump_metered === false) {
+            helper += "- Primary pump not metered\n";
+        }
+        if (metering.immersion_heater_used === true) {
+            if (metering.immersion_heater_metered === true) {
+                helper += "- Immersion heater used and metered\n";
+            } else if (metering.immersion_heater_metered === false) {
+                helper += "- Immersion heater used but not metered\n";
+            }
+        } else if (metering.immersion_heater_used === false) {
+            helper += "- Immersion heater not installed or used\n";
+        }
+        if (metering.backup_heater_used === true) {
+            if (metering.backup_heater_metered === true) {
+                helper += "- Backup heater used and metered\n";
+            } else if (metering.backup_heater_metered === false) {
+                helper += "- Backup heater used but not metered\n";
+            }
+        } else if (metering.backup_heater_used === false) {
+            helper += "- Backup heater not installed or used\n";
+        }
+        if ((type == "Ground Source" || type == "Water Source")) {
+            if (metering.brine_pump_metered === true) {
+                helper += "- Brine pump used and metered\n";
+            } else if (metering.brine_pump_metered === false) {
+                helper += "- Brine pump used but not metered\n";
+            }
+        }
+        if (type == "Air-to-Air") {
+            helper = "";
+        }
+        system.boundary = "<span class='H"+boundary_code+"' title='System boundary H"+boundary_code+"\n"+helper+"'>H"+boundary_code+"</span>";
+
+        var heat_meter = system.heat_meter;
+        var elec_meter = system.electric_meter;
+        system.heat_meter_class2 = heat_meter != null && heat_meter.indexOf("class 2") != -1;
+        system.elec_meter_class1 = elec_meter != null && elec_meter.indexOf("class 1") != -1;
+        return system;
+    }
+
+    function monthLabelToIso(label) {
+        if (!label || typeof label !== 'string') return '';
+        var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sept','Oct','Nov','Dec'];
+        var parts = label.trim().split(' ');
+        if (parts.length < 2) return '';
+        var month = parts[0];
+        var year = parts[1];
+        var idx = months.indexOf(month);
+        if (idx < 0) return '';
+        return year + '-' + (idx + 1) + '-01';
+    }
 
     columns['hp_type'].name = "Source";
     columns['hp_manufacturer'].name = "Manufacturer";
@@ -828,109 +906,6 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         d.setMonth(d.getMonth() - 1);
     }
 
-    // Generate boundary HTML from API-provided boundary_code and boundary_metering
-    for (var i = 0; i < systems.length; i++) {
-        var boundary_code = systems[i].boundary_code;
-        var metering = systems[i].boundary_metering || {};
-        var type = systems[i].hp_type;
-        
-        // Build helper text from structured metering data
-        var helper = "";
-        
-        // Compressor/fan status
-        if (type == "Ground Source" || type == "Water Source") {
-            helper = "- Compressor metered\n";
-        } else if (type != "Air-to-Air") {
-            helper = "- Compressor and fan metered\n";
-        }
-        
-        // Hydraulic separation / secondary pumps
-        if (metering.hydraulic_separation) {
-            if (metering.secondary_pumps_metered === true) {
-                helper += "- Hydraulic separation used and secondary pumps/fans metered\n";
-            } else if (metering.secondary_pumps_metered === false) {
-                helper += "- Hydraulic separation used but secondary pumps/fans not metered\n";
-            }
-        }
-        
-        // Primary pump
-        if (metering.primary_pump_metered === true) {
-            helper += "- Primary pump metered\n";
-        } else if (metering.primary_pump_metered === false) {
-            helper += "- Primary pump not metered\n";
-        }
-        
-        // Immersion heater
-        if (metering.immersion_heater_used === true) {
-            if (metering.immersion_heater_metered === true) {
-                helper += "- Immersion heater used and metered\n";
-            } else if (metering.immersion_heater_metered === false) {
-                helper += "- Immersion heater used but not metered\n";
-            }
-        } else if (metering.immersion_heater_used === false) {
-            helper += "- Immersion heater not installed or used\n";
-        }
-        
-        // Backup heater
-        if (metering.backup_heater_used === true) {
-            if (metering.backup_heater_metered === true) {
-                helper += "- Backup heater used and metered\n";
-            } else if (metering.backup_heater_metered === false) {
-                helper += "- Backup heater used but not metered\n";
-            }
-        } else if (metering.backup_heater_used === false) {
-            helper += "- Backup heater not installed or used\n";
-        }
-        
-        // Brine pump
-        if ((type == "Ground Source" || type == "Water Source")) {
-            if (metering.brine_pump_metered === true) {
-                helper += "- Brine pump used and metered\n";
-            } else if (metering.brine_pump_metered === false) {
-                helper += "- Brine pump used but not metered\n";
-            }
-        }
-        
-        // Air to air is always 2
-        if (type == "Air-to-Air") {
-            helper = "";
-        }
-        
-        systems[i].boundary = "<span class='H"+boundary_code+"' title='System boundary H"+boundary_code+"\n"+helper+"'>H"+boundary_code+"</span>";
-        
-        systems[i].boundary_code = boundary_code;
-    }
-
-    // Calculate over-sizing factor
-    for (var z in systems) {
-        let system = systems[z];
-        let oversizing_factor = 0;
-        
-        if (system['measured_heat_loss']>0 && system['hp_max_output']>0) {
-            oversizing_factor = system['hp_max_output'] / system['measured_heat_loss'];
-        }
-        
-        if (system['measured_heat_loss']>0 && system['hp_max_output_test']>0) {
-            oversizing_factor = system['hp_max_output_test'] / system['measured_heat_loss'];
-        }
-        
-        if (oversizing_factor != null) {
-            oversizing_factor = oversizing_factor.toFixed(1)*1;
-        }
-        
-        systems[z]['oversizing_factor'] = oversizing_factor;
-        
-        // Add computed hp_make_model field for sorting
-        systems[z]['hp_make_model'] = (system['hp_manufacturer'] || '') + ' ' + (system['hp_model'] || '');
-        
-        // Add computed training field for sorting (count of training badges)
-        let training_count = 0;
-        if (system['heatgeek'] == 1) training_count++;
-        if (system['ultimaterenewables'] == 1) training_count++;
-        if (system['heatingacademy'] == 1) training_count++;
-        systems[z]['training'] = training_count;
-    }
-
     // if not 365 days column heading is COP
     if (stats_time_start != 'last365') {
         columns['combined_cop'].name = 'COP';
@@ -993,131 +968,52 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             lightboxOpen: false,
             currentPhotoIndex: 0,
             system_photos: [],
-            loadingPhotos: false
+            loadingPhotos: false,
+
+            has_more: false,
+            listOffset: 0,
+            pageLimit: 50,
+            loadingNextPage: false,
+            chartPoints: [],
+            summaryTotals: { average_cop: 0, average_cop_kwh: 0, listed_system_count: 0 },
+            summaryCsv: { columns: [], rows: [] },
+            listRequestSeq: 0,
+            pageCancelSource: null,
+            summaryCancelSource: null,
+            loadMoreObserver: null,
+            _observerAttached: false
         },
         methods: {
             tariff_mode_changed: function() {
-                this.tariff_calc();
-                // sort by heat unit cost
-                app.currentSortDir = 'asc';
-                app.currentSortColumn = 'combined_heat_unit_cost';
-                app.sort_only('combined_heat_unit_cost');
-
-                app.url_update();
+                this.currentSortDir = 'asc';
+                this.currentSortColumn = 'combined_heat_unit_cost';
+                this.url_update();
+                this.reload();
             },
- 
+
             tariff_calc: function() {
-
-                for (var i = 0; i < app.systems.length; i++) {
-                    if (this.tariff_mode == 'flat') {
-                        app.systems[i].selected_unit_rate = 24.86;
-                        // remove electricity_tariff from selected columns
-                        if (app.selected_template == 'costs') {
-                            if (app.selected_columns.includes('electricity_tariff')) {
-                                app.selected_columns.splice(app.selected_columns.indexOf('electricity_tariff'), 1);
-                            }
-                        }
-                    } else if (this.tariff_mode == 'agile') {
-                        app.systems[i].selected_unit_rate = app.systems[i].unit_rate_agile;
-                        // remove electricity_tariff from selected columns
-                        if (app.selected_template == 'costs') {
-                            if (app.selected_columns.includes('electricity_tariff')) {
-                                app.selected_columns.splice(app.selected_columns.indexOf('electricity_tariff'), 1);
-                            }
-                        }
-                    } else if (this.tariff_mode == 'cosy') {
-                        app.systems[i].selected_unit_rate = app.systems[i].unit_rate_cosy;
-                        // remove electricity_tariff from selected columns
-                        if (app.selected_template == 'costs') {
-                            if (app.selected_columns.includes('electricity_tariff')) {
-                                app.selected_columns.splice(app.selected_columns.indexOf('electricity_tariff'), 1);
-                            }
-                        }
-                    } else if (this.tariff_mode == 'go') {
-                        app.systems[i].selected_unit_rate = app.systems[i].unit_rate_go;
-                        // remove electricity_tariff from selected columns
-                        if (app.selected_template == 'costs') {
-                            if (app.selected_columns.includes('electricity_tariff')) {
-                                app.selected_columns.splice(app.selected_columns.indexOf('electricity_tariff'), 1);
-                            }
-                        }
-                    } else if (this.tariff_mode == 'ovohp') {
-                        app.systems[i].selected_unit_rate = 15.0;
-                        // remove electricity_tariff from selected columns
-                        if (app.selected_template == 'costs') {
-                            if (app.selected_columns.includes('electricity_tariff')) {
-                                app.selected_columns.splice(app.selected_columns.indexOf('electricity_tariff'), 1);
-                            }
-                        }
-                    } else if (this.tariff_mode == 'eon_next_pumped_v2') {
-                        app.systems[i].selected_unit_rate = app.systems[i].unit_rate_eon_next_pumped_v2;
-                        // remove electricity_tariff from selected columns
-                        if (app.selected_template == 'costs') {
-                            if (app.selected_columns.includes('electricity_tariff')) {
-                                app.selected_columns.splice(app.selected_columns.indexOf('electricity_tariff'), 1);
-                            }
-                        }
-                    }
-                    /*
-                    } else if (this.tariff_mode == 'user') {
-                        app.systems[i].selected_unit_rate = app.systems[i].electricity_tariff_unit_rate_all;
-                        // add electricity_tariff to selected columns if not already there
-                        if (app.selected_template == 'costs') {
-                            if (!app.selected_columns.includes('electricity_tariff')) {
-                                // add after hp_model
-                                app.selected_columns.splice(app.selected_columns.indexOf('hp_model')+1, 0, 'electricity_tariff');
-                            }
-                        }
-                    }*/
-
-                    // recalculate costs
-                    // for each category
-                    let categories = ['combined','running','space','water'];
-                    for (var z in categories) {
-                        let category = categories[z];
-
-                        // cost
-                        if (app.systems[i].selected_unit_rate==0 || app.systems[i].selected_unit_rate==null) {
-                            app.systems[i].selected_unit_rate = null;
-                        }
-                        let cost = app.systems[i][category+"_elec_kwh"] * app.systems[i].selected_unit_rate * 0.01;
-                        cost = cost.toFixed(columns[category+'_cost']['dp'])*1;
-                        if (cost === 0) cost = null;
-                        app.systems[i][category+"_cost"] = cost;
-
-                        // unitcost
-                        if (app.systems[i][category+"_cop"]>0) {
-                            let unitcost = app.systems[i].selected_unit_rate / app.systems[i][category+"_cop"];
-                            unitcost = unitcost.toFixed(columns[category+'_heat_unit_cost']['dp'])*1;
-                            if (unitcost === 0) unitcost = null;
-                            app.systems[i][category+"_heat_unit_cost"] = unitcost;
-                        } else {
-                            app.systems[i][category+"_heat_unit_cost"] = null;
-                        }
-                    }
-                }
+                /* Costs come from server using tariff_mode */
             },
             template_view: function(template) {
                 this.selected_template = template;
                 if (template == 'topofthescops') {
-                    app.currentSortDir = 'desc'
-                    app.sort_only('combined_cop');
-                    app.columns['combined_cop'].dp = 1;
+                    this.currentSortDir = 'desc';
+                    this.currentSortColumn = 'combined_cop';
+                    this.columns['combined_cop'].dp = 1;
+                    this.reload();
                 } else if (template == 'heatpumpfabric') {
-                    // app.stats_time_start = "last365";
-                    app.currentSortDir = 'asc';
-                    app.currentSortColumn = 'combined_elec_kwh_per_m2';
-                    app.stats_time_start_change();
+                    this.currentSortDir = 'asc';
+                    this.currentSortColumn = 'combined_elec_kwh_per_m2';
+                    this.stats_time_start_change();
 
                 } else if (template == 'costs') {
-                    // app.stats_time_start = "last365";
-                    app.currentSortDir = 'asc'
-                    app.currentSortColumn = 'combined_heat_unit_cost';
-                    app.columns['combined_cop'].dp = 2;
-                    app.stats_time_start_change();
+                    this.currentSortDir = 'asc';
+                    this.currentSortColumn = 'combined_heat_unit_cost';
+                    this.columns['combined_cop'].dp = 2;
+                    this.stats_time_start_change();
                 }
 
-                app.url_update();
+                this.url_update();
 
                 resize();
             },
@@ -1125,22 +1021,18 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 window.location = path+"system/new";
             },
             view: function(index) {
-                // window.location = this.systems[index].url;
-                let systemid = this.systems[index].id;
+                let systemid = this.fSystems[index].id;
                 window.location = path+"system/view?id=" + systemid;
             },
             remove: function(systemid) {
 
-                // find system
-                var index = this.systems.findIndex(x => x.id === systemid);
+                var index = this.fSystems.findIndex(x => x.id === systemid);
 
-                if (confirm("Are you sure you want to delete system: " + systemid + " "+ this.systems[index].location + "?")) {
-                    // axios delete
+                if (confirm("Are you sure you want to delete system: " + systemid + " "+ this.fSystems[index].location + "?")) {
                     axios.get(path+'system/delete?id=' + systemid)
                         .then(response => {
                             if (response.data.success) {
-                                this.systems.splice(index, 1);
-                                this.filter_systems(); // Refresh the filtered systems list
+                                this.reload();
                             } else {
                                 alert("Error deleting system: " + response.data.message);
                             }
@@ -1181,7 +1073,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     }
                 }
 
-                app.url_update();
+                this.url_update();
+                this.refreshSummaryOnly();
             },
             toggle_field_group: function(group) {
                 // hide all
@@ -1203,67 +1096,54 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         this.currentSortDir = 'desc';
                     }
                 }
-                this.sort_only(column);
-                this.filter_systems();
+                this.reload();
             },
             sort_only: function(column) {
-                this.systems.sort((a, b) => {
-                    let modifier = 1;
-                    if (this.currentSortDir == 'desc') modifier = -1;
-
-                    let aValue = a[column];
-                    let bValue = b[column];
-
-                    if (aValue === null || aValue === undefined) aValue = this.currentSortDir == 'desc' ? -Infinity : Infinity;
-                    if (bValue === null || bValue === undefined) bValue = this.currentSortDir == 'desc' ? -Infinity : Infinity;
-
-                    if (aValue < bValue) return -1 * modifier;
-                    if (aValue > bValue) return 1 * modifier;
-                    return 0;
-                });
+                this.currentSortColumn = column;
+                this.reload();
             },
             export_csv: function() {
-                console.log('export csv');
-                // copy table data to clipboard as csv
-                
-
-                var csv = [];
-
-                var header = [];
-                for (var i = 0; i < this.selected_columns.length; i++) {
-                    // filter out logo, training, learnmore
-                    if (this.selected_columns[i]=='installer_logo') continue;
-                    if (this.selected_columns[i]=='training') continue;
-                    if (this.selected_columns[i]=='learnmore') continue;
-                    header.push('"'+this.columns[this.selected_columns[i]].name+'"');
-                }
-                csv.push(header.join(","));
-
-                for (var i = 0; i < this.fSystems.length; i++) {
-                    var row = [];
-                    for (var j = 0; j < this.selected_columns.length; j++) {
-                        // filter out logo, training, learnmore
-                        if (this.selected_columns[j]=='installer_logo') continue;
-                        if (this.selected_columns[j]=='training') continue;
-                        if (this.selected_columns[j]=='learnmore') continue;
-
-                        var column = this.selected_columns[j];
-
-                        var value = this.fSystems[i][column];
-                        if (value==null) value = '';
-
-                        // if float 3dp
-                        if (stats_columns[column]!=undefined) {
-                            if (stats_columns[column]['dp']!=undefined && value != null && value != '') {
-                                value = value.toFixed(stats_columns[column]['dp']+1);
-                            }
-                        }
-                        row.push('"'+value+'"');
+                var self = this;
+                var buildAndCopy = function() {
+                    var csv = [];
+                    var header = [];
+                    var rows = self.summaryCsv.rows || [];
+                    for (var i = 0; i < self.selected_columns.length; i++) {
+                        var k = self.selected_columns[i];
+                        if (k=='installer_logo' || k=='training' || k=='learnmore') continue;
+                        header.push('"'+self.columns[k].name+'"');
                     }
-                    csv.push(row.join(","));
+                    csv.push(header.join(","));
+                    for (var r = 0; r < rows.length; r++) {
+                        var rowObj = rows[r];
+                        var row = [];
+                        for (var j = 0; j < self.selected_columns.length; j++) {
+                            var column = self.selected_columns[j];
+                            if (column=='installer_logo' || column=='training' || column=='learnmore') continue;
+                            var value = rowObj[column];
+                            if (value==null || value==='') value = '';
+                            if (self.columns[column]!=undefined && self.columns[column]['dp']!=undefined && value !== '' && !isNaN(value)) {
+                                value = Number(value).toFixed(self.columns[column]['dp']+1);
+                            }
+                            row.push('"'+String(value).replace(/"/g,'""')+'"');
+                        }
+                        csv.push(row.join(","));
+                    }
+                    copy_text_to_clipboard(csv.join("\n"), 'CSV data copied to clipboard');
+                };
+                if (!this.summaryCsv.rows || !this.summaryCsv.rows.length) {
+                    axios.get(path + 'system/list/' + mode + '/summary.json', {
+                        params: this.buildApiParams({ include_csv: 1, include_points: 0 })
+                    }).then(function(res) {
+                        if (!res.data || !res.data.success) return;
+                        if (res.data.csv) {
+                            self.summaryCsv = res.data.csv;
+                        }
+                        buildAndCopy();
+                    }).catch(function(e) { console.warn(e); });
+                    return;
                 }
-                var csv_string = csv.join("\n");
-                copy_text_to_clipboard(csv_string, 'CSV data copied to clipboard');
+                buildAndCopy();
             },
             stats_time_start_change: function () {
                 // change available_months_end to only show months after start
@@ -1304,174 +1184,187 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     columns['combined_cop'].heading = 'COP';
                 }
                 
-                this.load_system_stats();
+                this.reload();
                 this.url_update();
             },
             stats_time_end_change: function () {
-                this.load_system_stats();
+                this.reload();
+                this.url_update();
             },
-            load_system_stats: function () {
-                
-                // Start
-                let start = this.stats_time_start;
-                if (start!='last7' && start!='last30' && start!='last90' && start!='last365' && start!='all' && start!='custom') {
-                    // Convert e.g Mar 2023 to 2023-03-01
-                    let months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sept','Oct','Nov','Dec'];
-                    let month = start.split(' ')[0];
-                    let year = start.split(' ')[1];
-                    start = year + '-' + (months.indexOf(month)+1) + '-01';
-                }
-
-                // End
-                let end = this.stats_time_end;
-                if (end!='only') {
-                    // Convert e.g Mar 2023 to 2023-03-01
-                    let months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sept','Oct','Nov','Dec'];
-                    let month = end.split(' ')[0];
-                    let year = end.split(' ')[1];
-                    end = year + '-' + (months.indexOf(month)+1) + '-01';
+            buildApiParams: function(extra) {
+                var presets = ['last7','last30','last90','last365','all','custom'];
+                var p = Object.assign({
+                    tariff: this.tariff_mode,
+                    sort: this.currentSortColumn,
+                    dir: this.currentSortDir,
+                    min_days: this.minDays,
+                    show_mid: this.show_mid ? 1 : '',
+                    show_other: this.show_other ? 1 : '',
+                    show_hpint: this.show_hpint ? 1 : '',
+                    show_errors: this.show_errors ? 1 : '',
+                    filter: this.filterKey,
+                    admin_restricted: (this.mode === 'admin' && this.admin_restricted_list) ? 1 : '',
+                    xaxis: this.selected_xaxis,
+                    yaxis: this.selected_yaxis,
+                    color: this.selected_color,
+                    csv_columns: this.selected_columns.join(','),
+                    include_csv: 0,
+                    include_points: this.chart_enable ? 1 : 0
+                }, extra || {});
+                if (presets.indexOf(this.stats_time_start) >= 0) {
+                    p.period = this.stats_time_start;
+                    p.month_start = '';
+                    p.month_end = '';
                 } else {
-                    end = start;
+                    p.period = this.stats_time_start;
+                    p.month_start = monthLabelToIso(this.stats_time_start);
+                    if (this.stats_time_end === 'only') {
+                        p.month_end = p.month_start;
+                    } else {
+                        p.month_end = monthLabelToIso(this.stats_time_end);
+                    }
                 }
-
-                var url = path+'system/stats';
-                var params = {
-                    start: start,
-                    end: end
+                return p;
+            },
+            applySummaryResponse: function(sum) {
+                if (!sum || !sum.success) return;
+                var avg = sum.totals.average_cop;
+                var avgk = sum.totals.average_cop_kwh;
+                if (isNaN(avg)) avg = 0;
+                if (isNaN(avgk)) avgk = 0;
+                this.summaryTotals = {
+                    average_cop: avg,
+                    average_cop_kwh: avgk,
+                    listed_system_count: sum.counts.listed_system_count
                 };
-
-                if (start == 'last7' || start == 'last30' || start == 'last90' || start == 'last365' || start == 'all' || start == 'custom') {
-                    
-                    url = path+'system/stats/'+start;
-                    params = {};
+                this.num_flagged = sum.counts.num_flagged;
+                this.num_mid = sum.counts.num_mid;
+                this.num_other = sum.counts.num_other;
+                this.num_hpint = sum.counts.num_hpint;
+                if (sum.points !== undefined) {
+                    this.chartPoints = sum.points || [];
                 }
-
-                if (mode == "user") {
-                    params.mode = "user";
-                } else if (mode == "admin") {
-                    params.mode = "admin";
+                if (sum.csv !== undefined) {
+                    this.summaryCsv = sum.csv || { columns: [], rows: [] };
                 }
-
-                // Load system/stats data
-                axios.get(url, {
-                        params: params
-                    })
-                    .then(response => {
-                        var stats = response.data;
-                        for (var i = 0; i < app.systems.length; i++) {
-                            let id = app.systems[i].id;
-                            if (stats[id]) {
-                                // copy stats data to system
-                                for (var key in stats[id]) {
-                                    app.systems[i][key] = stats[id][key];
-                                }
-
-                                // for each category
-                                let categories = ['combined','running','space','water'];
-                                for (var z in categories) {
-                                    let category = categories[z];
-
-                                    
-                                    if (app.systems[i].floor_area!=null && app.systems[i].floor_area>0) {
-                                        // elec kwh/m2
-                                        let elec_kwh_per_m2 = 1*app.systems[i][category+"_elec_kwh"] / app.systems[i].floor_area;
-                                        elec_kwh_per_m2 = elec_kwh_per_m2.toFixed(columns[category+'_elec_kwh_per_m2']['dp'])*1;
-                                        if (elec_kwh_per_m2===0) elec_kwh_per_m2 = null;
-                                        app.systems[i][category+"_elec_kwh_per_m2"] = elec_kwh_per_m2;
-
-                                        // heat kwh/m2
-                                        let heat_kwh_per_m2 = 1*app.systems[i][category+"_heat_kwh"] / app.systems[i].floor_area;
-                                        heat_kwh_per_m2 = heat_kwh_per_m2.toFixed(columns[category+'_elec_kwh_per_m2']['dp'])*1;
-                                        if (heat_kwh_per_m2===0) heat_kwh_per_m2 = null;
-                                        app.systems[i][category+"_heat_kwh_per_m2"] = heat_kwh_per_m2;
-                                    } else {
-                                        app.systems[i][category+"_elec_kwh_per_m2"] = null;
-                                        app.systems[i][category+"_heat_kwh_per_m2"] = null;
-                                    }
-                                }
-
-                                // Auto flag air errors if error_air_kwh / combined_elec_kwh > 0.1
-                                if (app.systems[i].error_air_kwh!=null && app.systems[i].error_air_kwh>0) {
-                                    if (app.systems[i].combined_elec_kwh!=null && app.systems[i].combined_elec_kwh>0) {
-
-                                        let prc = (app.systems[i].error_air_kwh / app.systems[i].combined_elec_kwh * 100).toFixed(1);
-
-                                        let electric_not_including_air_error = app.systems[i].combined_elec_kwh - app.systems[i].error_air_kwh;
-                                        let cop_not_including_air_error = 0;
-                                        if (electric_not_including_air_error>0) {
-                                            cop_not_including_air_error = app.systems[i].combined_heat_kwh / electric_not_including_air_error;
-                                        }
-                                        let difference = app.systems[i].combined_cop - cop_not_including_air_error;
-                                        // abs difference
-                                        let abs_difference = Math.abs(difference);
-
-                                        if (abs_difference > 0.2) {
-
-                                            let note = 'Heat meter air error\n';
-                                            note += (app.systems[i].error_air / 3600).toFixed(0) + " hours, ";
-                                            note += (app.systems[i].error_air_kwh).toFixed(0) + " kWh electric\n";
-                                            note += "% of electric consumption: " + prc + "%\n";
-                                            note += "COP listed: " + app.systems[i].combined_cop.toFixed(2) + "\n";
-                                            note += "COP not including air error: " + cop_not_including_air_error.toFixed(2)+"\n";
-                                            note += "Difference: " + difference.toFixed(2);
-
-                                            // Save existing static node if it exists
-                                            if (app.systems[i].dynamic_data_flag == undefined || app.systems[i].dynamic_data_flag == 0) {
-                                                app.systems[i].data_flag_static = app.systems[i].data_flag;
-                                                app.systems[i].data_flag_note_static = app.systems[i].data_flag_note;
-                                            }
-
-                                            app.systems[i].dynamic_data_flag = 1;
-                                            app.systems[i].data_flag = 1;
-                                            app.systems[i].data_flag_note = note;
-
-                                        }
-                                    }
-                                } else {
-                                    if (app.systems[i].dynamic_data_flag != undefined && app.systems[i].dynamic_data_flag == 1) {
-                                        // If dynamic data flag is set, reset it
-                                        app.systems[i].dynamic_data_flag = 0;
-                                        app.systems[i].data_flag = app.systems[i].data_flag_static;
-                                        app.systems[i].data_flag_note = app.systems[i].data_flag_note_static;
-
-                                    }
-                                }
-
-                                let prc_demand_hot_water = null;
-                                if (app.systems[i]['water_heat_kwh']>0 && app.systems[i]['space_heat_kwh']>0) {
-                                    prc_demand_hot_water = app.systems[i]['water_heat_kwh'] / (app.systems[i]['water_heat_kwh'] + app.systems[i]['space_heat_kwh']) * 100;
-                                }
-                                app.systems[i]['prc_demand_hot_water'] = prc_demand_hot_water;      
-
-                            } else {
-                                // for (var col in stats_columns) {
-                                //    app.systems[i][stats_columns[col]] = 0;
-                                // }
-                                app.systems[i]['combined_cop'] = 0;
-                                app.systems[i]['combined_data_length'] = 0;
-                            }
-                        }
-
-                        app.tariff_calc();
-
-                        // sort
-                        app.sort_only(app.currentSortColumn);
-
-                        app.filter_systems();
-                        app.loading = false;
-                        
-                    })
-                    .catch(error => {
-                        app.loading = false;
-                        alert("Error loading data: " + error);
+            },
+            applyPageResponse: function(page, replace) {
+                if (!page || !page.success) return;
+                this.has_more = page.has_more;
+                this.listOffset = (page.offset || 0) + ((page.rows && page.rows.length) ? page.rows.length : 0);
+                var rows = page.rows || [];
+                for (var i = 0; i < rows.length; i++) {
+                    decorateListRow(rows[i]);
+                }
+                if (replace) {
+                    this.fSystems = rows;
+                } else {
+                    this.fSystems = this.fSystems.concat(rows);
+                }
+            },
+            reload: function() {
+                var seq = ++this.listRequestSeq;
+                if (this.pageCancelSource) {
+                    try { this.pageCancelSource.cancel('reload'); } catch (e) {}
+                }
+                if (this.summaryCancelSource) {
+                    try { this.summaryCancelSource.cancel('reload'); } catch (e) {}
+                }
+                this.pageCancelSource = axios.CancelToken.source();
+                this.summaryCancelSource = axios.CancelToken.source();
+                this.loading = true;
+                this.loadingNextPage = false;
+                this.listOffset = 0;
+                this.fSystems = [];
+                this.has_more = false;
+                this.chartPoints = [];
+                this.summaryCsv = { columns: [], rows: [] };
+                var appvm = this;
+                var basePage = this.buildApiParams({ offset: 0, limit: this.pageLimit });
+                var baseSum = this.buildApiParams({});
+                Promise.all([
+                    axios.get(path + 'system/list/' + mode + '/page.json', { params: basePage, cancelToken: this.pageCancelSource.token }),
+                    axios.get(path + 'system/list/' + mode + '/summary.json', { params: baseSum, cancelToken: this.summaryCancelSource.token })
+                ]).then(function(results) {
+                    if (seq !== appvm.listRequestSeq) return;
+                    appvm.applySummaryResponse(results[1].data);
+                    appvm.applyPageResponse(results[0].data, true);
+                    appvm.loading = false;
+                    appvm.url_update();
+                    appvm.$nextTick(function() {
+                        appvm.attachLoadObserver();
+                        if (appvm.chart_enable) draw_scatter();
                     });
+                }).catch(function(err) {
+                    if (axios.isCancel && axios.isCancel(err)) return;
+                    appvm.loading = false;
+                    alert('Error loading list: ' + err);
+                });
+            },
+            refreshSummaryOnly: function() {
+                var seq = this.listRequestSeq;
+                if (this.summaryCancelSource) {
+                    try { this.summaryCancelSource.cancel('chart'); } catch (e) {}
+                }
+                this.summaryCancelSource = axios.CancelToken.source();
+                var appvm = this;
+                axios.get(path + 'system/list/' + mode + '/summary.json', {
+                    params: this.buildApiParams({}),
+                    cancelToken: this.summaryCancelSource.token
+                }).then(function(res) {
+                    if (seq !== appvm.listRequestSeq) return;
+                    appvm.applySummaryResponse(res.data);
+                    appvm.$nextTick(function() {
+                        if (appvm.chart_enable) draw_scatter();
+                    });
+                }).catch(function(err) {
+                    if (!(axios.isCancel && axios.isCancel(err))) console.warn(err);
+                });
+            },
+            loadNextPage: function() {
+                if (!this.has_more || this.loadingNextPage || this.loading) return;
+                var seq = this.listRequestSeq;
+                this.loadingNextPage = true;
+                if (this.pageCancelSource) {
+                    try { this.pageCancelSource.cancel('next'); } catch (e) {}
+                }
+                this.pageCancelSource = axios.CancelToken.source();
+                var appvm = this;
+                var params = this.buildApiParams({ offset: this.listOffset, limit: this.pageLimit });
+                axios.get(path + 'system/list/' + mode + '/page.json', { params: params, cancelToken: this.pageCancelSource.token })
+                    .then(function(res) {
+                        if (seq !== appvm.listRequestSeq) return;
+                        appvm.applyPageResponse(res.data, false);
+                        appvm.loadingNextPage = false;
+                        appvm.$nextTick(function() { appvm.attachLoadObserver(); });
+                    }).catch(function(err) {
+                        appvm.loadingNextPage = false;
+                        if (!(axios.isCancel && axios.isCancel(err))) console.warn(err);
+                    });
+            },
+            attachLoadObserver: function() {
+                var self = this;
+                if (!this.loadMoreObserver) {
+                    this.loadMoreObserver = new IntersectionObserver(function(entries) {
+                        entries.forEach(function(en) {
+                            if (en.isIntersecting) self.loadNextPage();
+                        });
+                    }, { root: null, rootMargin: '400px', threshold: 0 });
+                }
+                var el = this.$refs.loadMoreSentinel;
+                if (el) {
+                    try { this.loadMoreObserver.disconnect(); } catch (e2) {}
+                    this.loadMoreObserver.observe(el);
+                }
             },
             toggle_chart: function() {
                 this.chart_enable = !this.chart_enable;
 
-                app.url_update();
-                
+                this.url_update();
+
                 if (this.chart_enable) {
+                    this.refreshSummaryOnly();
+                    var self = this;
                     setTimeout(function() {
                         draw_scatter();
                     }, 200);
@@ -1553,7 +1446,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     else if (this.stats_time_start=='last90') return (100*val/(90*24*3600)).toFixed(dp) + append_prc;
                     else if (this.stats_time_start=='last365') return (100*val/(365*24*3600)).toFixed(dp) + append_prc;
                     */
-                    return (val/(24*3600)).toFixed(0)+" days";
+                    return (Number(val)/(24*3600)).toFixed(0)+" days";
                 }
 
                 if (key=='data_flag') {
@@ -1687,7 +1580,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 if (key=='error_air') {
                     // convert seconds to hours
                     if (val==null) return '';
-                    return (val/3600).toFixed(0) + ' hrs';
+                    return (Number(val)/3600).toFixed(0) + ' hrs';
                 }
                 
                 if (key=='installation_Cost') {
@@ -1696,34 +1589,34 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     return "£"+val;
                 }
                 
-                if (stats_columns[key]!=undefined) {
-                    if (isNaN(val) || val == null) {
+                if (this.columns[key]!=undefined && this.columns[key]['dp']!=undefined) {
+                    if (val == null || val === '' || isNaN(val)) {
                         return val;
                     }
+                    var n = (typeof val === 'number') ? val : Number(val);
+                    if (!isFinite(n)) return val;
                     
                     let unit = '';
-                    if (stats_columns[key]['unit']!=undefined) {
-                        unit = ' '+stats_columns[key]['unit'];
+                    if (this.columns[key]['unit']!=undefined) {
+                        unit = ' '+this.columns[key]['unit'];
                     }
 
                     let prepend = '';
-                    if (stats_columns[key]['prepend']!=undefined) {
-                        prepend = stats_columns[key]['prepend'];
+                    if (this.columns[key]['prepend']!=undefined) {
+                        prepend = this.columns[key]['prepend'];
                     }
                 
-                    if (stats_columns[key]['dp']!=undefined) {
-                        return "<span title='"+val.toFixed(stats_columns[key]['dp']+1)+"'>"+prepend+val.toFixed(stats_columns[key]['dp'])+unit+"</span>";
-                    }
+                    return "<span title='"+n.toFixed(this.columns[key]['dp']+1)+"'>"+prepend+n.toFixed(this.columns[key]['dp'])+unit+"</span>";
                 }
 
                 if (key == 'weighted_average_flow_minus_outside') {
                     if (val == null || val == 0 ) return '';
-                    return val.toFixed(1);
+                    return Number(val).toFixed(1);
                 }
 
                 if (key == 'prc_demand_hot_water') {
                     if (val == null || val == 0 ) return '';
-                    return val.toFixed(0) + '%';
+                    return Number(val).toFixed(0) + '%';
                 }
                 
                 return val;
@@ -1824,7 +1717,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 part.operatorSign = this.getOperatorSign(part.operator);
 
                 // don't have the installer URL and icons don't look great in filter display, so ignore the formatting
-                if (part.field == 'installer_name' || this.columns[part.field].group == 'Training') {
+                var colMeta = this.columns[part.field];
+                if (part.field == 'installer_name' || (colMeta && colMeta.group == 'Training')) {
                     part.formattedValue = part.value;
                 } else {
                     part.formattedValue = this.column_format({ [part.field]: part.value }, part.field);
@@ -1872,7 +1766,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             },
 
             updatePossibleValues(field, index) {
-                const values = [...new Set(this.systems.map(system => system[field]).filter(value => value !== null && value !== undefined))];
+                const values = [...new Set(this.fSystems.map(system => system[field]).filter(value => value !== null && value !== undefined))];
                 
                 // check if all values are numerical
                 const allNumerical = values.every(value => !isNaN(value));
@@ -1888,221 +1782,32 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     this.possibleValues = values.sort();
                 }
             },
- 
-            filterNodes(row) {
 
-                // empty the array storing filter query parts before parsing
-                this.filter_query_parts = []; 
-
-                if (this.filterKey != '') {
-                    if (this.filterKey === 'MID') {
-                        return row.mid_metering === 1;
-                    } else if (this.filterKey === 'HG' || this.filterKey === 'HeatGeek') {
-                        return row.heatgeek === 1;
-                    } else if (this.filterKey === 'NHG') {
-                        return row.heatgeek === 0;
-                    } else if (this.filterKey === 'UR') {
-                        return row.ultimaterenewables === 1;
-                    } else if (this.filterKey === 'HA') {
-                        return row.heatingacademy === 1;
-                    } else if (this.filterKey === 'HG4') {
-                        return row.heatgeek === 1 && row.combined_cop > 4; // Special filter
-                    } else {
-
-                        // if first part of this.filterKey is 'query' then format is query:field_name:value,field_name:value
-                        if (this.filterKey.indexOf('query') === 0) {
-                            // remove 'query:' from start
-                            var query = this.filterKey.substring(6);
-                            var query_parts = query.split(',');
-
-                            var result = true;
-
-                            for (var i = 0; i < query_parts.length; i++) {
-                                var query_part = query_parts[i].split(':');
-                                var field = query_part[0];
-                                var value = query_part[1];
-                                var operator = query_part[2] || 'eq'; // default to 'eq' if no operator is provided
-                                var enabled = query_part[3] || 't'; // default to 't' if no status is provided
-
-                                // store the parsed query string
-                                this.filter_query_parts.push(this.deriveColumnValues({
-                                    field: field, 
-                                    value: value, 
-                                    operator: operator,
-                                    enabled: enabled === 't' ? true : false,
-                                }));
-
-                                if (enabled === 'f') {
-                                    continue;
-                                }
-
-                                // if numeric check for exact match otherwise check for partial match
-                                if (!isNaN(value)) {                                    
-                                    // optional - select operator (e.g. gt, lt, gte, lte, ne), default is 'equals'
-                                    // the additional benefit of 'greater'/'less than' operators is that they can be used for specifying ranges of values
-                                    switch (operator) {
-                                        case 'gt':
-                                            if (!(row[field] > value)) {
-                                                result = false;
-                                            }
-                                            break;
-                                        case 'lt':
-                                            if (!(row[field] < value)) {
-                                                result = false;
-                                            }
-                                            break;
-                                        case 'gte':
-                                            if (!(row[field] >= value)) {
-                                                result = false;
-                                            }
-                                            break;
-                                        case 'lte':
-                                            if (!(row[field] <= value)) {
-                                                result = false;
-                                            }
-                                            break;
-                                        case 'ne':
-                                            if (!(row[field] != value)) {
-                                                result = false;
-                                            }
-                                            break;
-                                        default:
-                                            // the default operator is 'equals', which is the original behaviour before adding support for other operators
-                                            if (row[field] != value) {
-                                                result = false;
-                                            }
-                                    }          
-                                // if not numeric check for partial match                                                          
-                                } else {
-                                    // default operator 'eq' means "contains", whereas 'ne' means "does not contain"
-                                    switch (operator) {
-                                        case 'ne':
-                                            if (String(row[field]).toLowerCase().indexOf(value.toLowerCase()) != -1) {
-                                                result = false;
-                                            }
-                                            break;
-                                        default:
-                                            if (String(row[field]).toLowerCase().indexOf(value.toLowerCase()) == -1) {
-                                                result = false;
-                                            }
-                                    }                                    
-                                }
-                            }
-                            return result;
-                        // search all fields and check if any contains the searched value (filterKey)
-                        } else {
-                            return Object.keys(row).some((key) => {
-                                return String(row[key]).toLowerCase().indexOf(this.filterKey.toLowerCase()) > -1
-                            })
-                        }
-                    }
+            /** Parse query:… filterKey into filter_query_parts for the sidebar (filtering is server-side). */
+            syncFilterPartsFromFilterKey: function() {
+                this.filter_query_parts = [];
+                if (!this.filterKey || this.filterKey.indexOf('query') !== 0) {
+                    return;
                 }
-                return true;
-            },
-
-            // Filter systems with combined_cop <= 0
-            filterCop(row) {
-                return row.combined_cop > 0;
-            },
-
-            filterDays(row) {
-                if (this.minDays==null || this.minDays=='' || isNaN(this.minDays)) this.minDays = 0;
-                this.minDays = parseInt(this.minDays);
-                let minDays = this.minDays-1;
-                if (minDays<0) minDays = 0;
-                return (row.combined_data_length/ (24 * 3600)) >= minDays;
-            },
-            
-            filterMetering(row) {
-            
-                var show = false;
-                
-                if (this.show_mid && row.mid_metering) {
-                    show = true;
-                }
-                if (this.show_other && !row.mid_metering && row.heat_meter != 'Heat pump integration') {
-                    show = true;
-                }
-                if (this.show_hpint && !row.mid_metering && row.heat_meter == 'Heat pump integration') {
-                    show = true;
-                }
-
-                
-                if (this.show_errors && row.data_flag) {
-                    show = true;
-                } else {
-                    if (row.data_flag) {
-                        show = false;
-                    }
-                }
-                return show;
-            },
-            
-            system_count(systems) {
-                // Count flagged systems
-                this.num_flagged = 0
-                this.num_mid = 0
-                this.num_other = 0
-                this.num_hpint = 0
-                this.num_class2_heat = 0
-                this.num_class1_elec = 0
-                this.num_other_metering = 0
-                
-                for (var i = 0; i < systems.length; i++) {
-                
-                    if (systems[i].data_flag) {
-                        this.num_flagged ++;
-                    } else {
-                        if (systems[i].mid_metering) {
-                            this.num_mid ++;
-                        } else {
-                            if (systems[i].heat_meter == 'Heat pump integration') {
-                                this.num_hpint ++;
-                            } else {
-                                this.num_other ++;
-                            }
-                        }
-                        
-                        /*
-                        if (systems[i].heat_meter_class2) {
-                            this.num_class2_heat++;
-                        }
-
-                        if (systems[i].elec_meter_class1) {
-                            this.num_class1_elec++;
-                        }
-                        
-                        if (!systems[i].elec_meter_class1 && !systems[i].heat_meter_class2) {
-                            this.num_other_metering++;
-                        }
-                        */
-                    }
+                var query = this.filterKey.substring(6);
+                var query_parts = query.split(',');
+                for (var i = 0; i < query_parts.length; i++) {
+                    var query_part = query_parts[i].split(':');
+                    var field = query_part[0];
+                    var value = query_part[1];
+                    var operator = query_part[2] || 'eq';
+                    var enabled = query_part[3] || 't';
+                    this.filter_query_parts.push(this.deriveColumnValues({
+                        field: field,
+                        value: value,
+                        operator: operator,
+                        enabled: enabled === 't'
+                    }));
                 }
             },
 
             filter_systems: function() {
-            
-                var filtered_nodes_days = this.systems.filter(this.filterNodes).filter(this.filterDays);
-
-                if (app.mode == 'admin' && app.admin_restricted_list) {
-                    // Only show systems that are awaiting approval or have error flag
-                    filtered_nodes_days = filtered_nodes_days.filter(function(row) {
-                        // if (row.share == 0) return true;
-                        if (row.share == 1 && row.published == 0) return true;
-                        if  (row.data_flag) return true;
-                        return false;
-                    });
-                }
-                
-                this.system_count(filtered_nodes_days);
-            
-                this.fSystems = filtered_nodes_days.filter(this.filterMetering)
-
-                if (this.chart_enable) {
-                    draw_scatter();
-                }
-
-                this.url_update();
+                this.reload();
             },
             url_update(field_keys) {
 
@@ -2170,16 +1875,35 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             },
             toggle_restricted_list: function() {
                 this.admin_restricted_list = !this.admin_restricted_list;
-                this.filter_systems();
+                this.reload();
             },
+            chartAxisChanged: function() {
+                this.url_update();
+                this.refreshSummaryOnly();
+            },
+        },
+        mounted: function() {
+            var self = this;
+            this.syncFilterPartsFromFilterKey();
+            this.populateColumnOptions();
+            this.$nextTick(function() {
+                resize(true);
+                self.reload();
+            });
+        },
+        updated: function() {
+            if (this.has_more && this.fSystems.length && !this.loading) {
+                this.$nextTick(this.attachLoadObserver);
+            }
         },
         filters: {
             toFixed: function(val, dp) {
-                if (isNaN(val) || val == null) {
+                if (val == null || val === '' || isNaN(val)) {
                     return val;
-                } else {
-                    return val.toFixed(dp)
                 }
+                var num = (typeof val === 'number') ? val : Number(val);
+                if (!isFinite(num)) return val;
+                return num.toFixed(dp);
             },
             time_ago: function(val) {
                 return time_ago(val);
@@ -2187,73 +1911,22 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         },
 
         computed: {
-            /*
-            fSystems: function () {
-            
-                var filtered_nodes_days = this.systems.filter(this.filterNodes).filter(this.filterDays);
-
-                // if public mode only show systems with data
-                if (this.mode=='public') {
-                    //filtered_nodes_days = filtered_nodes_days.filter(this.filterCop);
-                }
-                
-                this.system_count(filtered_nodes_days);
-            
-            
-                return filtered_nodes_days.filter(this.filterMetering)
-            },*/
-            // calculate total scop of fSystems
+            // Totals from server (full filtered set; not just loaded rows)
             totals: function () {
-                var totals = {
-                    average_cop: 0,
-                    elec_kwh: 0,
-                    heat_kwh: 0,
-                    average_cop_kwh: 0,
-                    count: 0,
-                    listed_system_count: 0
+                var t = this.summaryTotals;
+                var ac = t.average_cop;
+                var ack = t.average_cop_kwh;
+                if (ac == null || isNaN(ac)) ac = 0;
+                if (ack == null || isNaN(ack)) ack = 0;
+                return {
+                    average_cop: ac,
+                    average_cop_kwh: ack,
+                    listed_system_count: t.listed_system_count || 0
                 };
-                var count = 0;
-                for (var i = 0; i < this.fSystems.length; i++) {
-                    if (this.fSystems[i].combined_elec_kwh>0 && this.fSystems[i].combined_heat_kwh>0 && this.fSystems[i].combined_heat_kwh>this.fSystems[i].combined_elec_kwh) {
-                        totals.average_cop += this.fSystems[i].combined_cop*1;
-                        totals.elec_kwh += this.fSystems[i].combined_elec_kwh;
-                        totals.heat_kwh += this.fSystems[i].combined_heat_kwh;
-                        totals.count++;
-                    }
-                    totals.listed_system_count++;
-                }
-                totals.average_cop = totals.average_cop / totals.count;
-                totals.average_cop_kwh = totals.heat_kwh / totals.elec_kwh;
-
-                return totals;
             }
         }
     });
-   
-   
-    for (var i = 0; i < app.systems.length; i++) {
-        let heat_meter = app.systems[i].heat_meter;
-        let elec_meter = app.systems[i].electric_meter;
-        
-        if (heat_meter!=null && heat_meter.indexOf("class 2")!=-1) {
-            app.systems[i].heat_meter_class2 = true;
-        } else {
-            app.systems[i].heat_meter_class2 = false;
-        }
-        
-        if (elec_meter!=null && elec_meter.indexOf("class 1")!=-1) {
-            app.systems[i].elec_meter_class1 = true;
-        } else {
-            app.systems[i].elec_meter_class1 = false;
-        }
-    }
-
     Vue.component('v-select', VueSelect.VueSelect);
-        
-    app.load_system_stats();
-    app.sort_only('combined_cop');
-    app.populateColumnOptions();
-    resize(true);
 
     function time_ago(val,ago='') {
         if (val == null || val == 0) {
