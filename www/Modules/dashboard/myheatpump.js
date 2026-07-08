@@ -266,6 +266,10 @@ function show() {
             $("#show_dhw_temp").click();
             show_dhw_temp = true;
         }
+        if (urlParams.cool) {
+            $("#show_defrost_and_loss").click();
+            show_defrost_and_loss = true;
+        }
         if (urlParams.carnot) {
             $("#carnot_enable")[0].click();
             $("#heatpump_factor").val(urlParams.carnot);

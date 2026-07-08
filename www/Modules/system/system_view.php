@@ -25,6 +25,13 @@ global $settings, $session, $path;
                     <i class="fa fa-envelope" style="color: #ffffff;"></i> Email
                 </a>
             </div>
+            <?php if (isset($session['admin']) && $session['admin'] == 1) { ?>
+            <div style="float:right; margin-right:10px;" v-if="admin && system.id">
+                <a :href="'https://emoncms.org/admin/setuser?id='+system.userid" target="_blank" class="btn btn-dark">
+                     CMS <i class="fa fa-sign-in-alt" style="color: #ffffff;"></i>
+                </a>
+            </div>
+            <?php } ?>
 
             <div v-if="!system.share" class="badge bg-danger ms-2 float-end">
                 <i class="fas fa-lock"></i> Private

@@ -18,7 +18,11 @@ function map_controller() {
     if ($route->action == "search") {
         $route->format = "json";
         // map/search?location=Basingstoke, Hampshire, UK
-        $location = isset($_GET['location']) ? $_GET['location'] : '';
+        $location = isset($_GET['location']) ? trim($_GET['location']) : '';
+
+        if ($location === '' || strlen($location) > 200) {
+            return array("success" => false, "message" => "Invalid location");
+        }
 
         $location = urlencode($location);
         $url = "https://api.opencagedata.com/geocode/v1/json?q=$location&key=".$settings['opencagedata_api_key'];
