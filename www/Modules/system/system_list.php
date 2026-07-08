@@ -444,6 +444,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
                 <table v-else id="custom" class="table table-striped table-sm mt-3">
                     <tr>
+                        <th v-if="showContent" style="width:40px"></th>
                         <th v-if="mode!='public'" @click="sort('id', 'asc')" style="cursor:pointer">ID</th>
                         <th v-if="mode=='admin' || mode=='user'" @click="sort('name', 'asc')" style="cursor:pointer">User
                             <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='name'"></i>
@@ -461,7 +462,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <th v-if="mode!='public'" :style="(showContent)?'width:120px':'width:20px'"></th>
 
                     </tr>
-                    <tr v-for="(system,index) in fSystems" v-if="mode!='public' || (mode=='public' && system.combined_data_length!=0)">
+                    <tr v-for="(system,index) in fSystems">
+                        <td v-if="showContent">{{ index + 1 }}</td>
                         <td v-if="mode!='public'">{{ system.id }}</td>
                         <td v-if="mode=='admin' || mode=='user'"><span style="color:#888">{{ system.username }}</span></td>
                         <td v-for="column in selected_columns" v-html="column_format(system,column)" v-bind:class="sinceClass(system,column)" style=""></td>
@@ -2037,6 +2039,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 }
                 return show;
             },
+
+            filterPublicData(row) {
+                return this.mode != 'public' || row.combined_data_length != 0;
+            },
             
             system_count(systems) {
                 // Count flagged systems
@@ -2096,7 +2102,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 
                 this.system_count(filtered_nodes_days);
             
-                this.fSystems = filtered_nodes_days.filter(this.filterMetering)
+                this.fSystems = filtered_nodes_days.filter(this.filterMetering).filter(this.filterPublicData)
 
                 if (this.chart_enable) {
                     draw_scatter();
