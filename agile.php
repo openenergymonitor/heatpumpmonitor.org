@@ -193,49 +193,47 @@ foreach ($data as $row) {
             for ($j=0; $j<count($result); $j++) {
                 $time = $start + $j*$interval;
                 $kwh = $result[$j];
-                if ($kwh!=null) {
+                // $kwh>=0 rejects negative deltas from meter resets / feed re-basing,
+                // which otherwise break the weighted-average bound and produce absurd p/kWh
+                if ($kwh!==null && $kwh>=0 && $agile[$j]!==null && $cosy[$j]!==null && $go[$j]!==null) {
                     $unit_cost_agile = $agile[$j]*0.01*1.05;
                     $unit_cost_cosy = $cosy[$j]*0.01*1.05;
                     $unit_cost_go = $go[$j]*0.01*1.05;
                     $unit_cost_eon_next_pumped_v2 = $eon_next_pumped_v2[$j]*0.01;
 
-                    // Only sum if $agile[$j] $cosy[$j] $go[$j] $eon_next_pumped_v2[$j] are not null
-                    if ($unit_cost_agile!=null && $unit_cost_cosy!=null && $unit_cost_go!=null && $unit_cost_eon_next_pumped_v2!=null) {
-
-                        foreach ($periods as $period) {
-                            if ($time>=$starts[$period]) {
-                                $sum_kwh[$period] += $kwh;
-                                $sum_cost_agile[$period] += $kwh*$unit_cost_agile;
-                                $sum_cost_cosy[$period] += $kwh*$unit_cost_cosy;
-                                $sum_cost_go[$period] += $kwh*$unit_cost_go;
-                                $sum_cost_eon_next_pumped_v2[$period] += $kwh*$unit_cost_eon_next_pumped_v2;
-                            }
+                    foreach ($periods as $period) {
+                        if ($time>=$starts[$period]) {
+                            $sum_kwh[$period] += $kwh;
+                            $sum_cost_agile[$period] += $kwh*$unit_cost_agile;
+                            $sum_cost_cosy[$period] += $kwh*$unit_cost_cosy;
+                            $sum_cost_go[$period] += $kwh*$unit_cost_go;
+                            $sum_cost_eon_next_pumped_v2[$period] += $kwh*$unit_cost_eon_next_pumped_v2;
                         }
-
-                        // Allocate to months by start time
-                        $date->setTimestamp($time);
-                        // get timestamp of start of month
-                        $date->modify("midnight first day of this month");
-                        // 00:00:00
-                        $date->setTime(0,0,0);
-
-                        $month = $date->getTimestamp();
-
-                        if (!isset($months_kwh[$month])) {
-                            $months_kwh[$month] = 0;
-                            $months_agile_cost[$month] = 0;
-                            $months_cosy_cost[$month] = 0;
-                            $months_go_cost[$month] = 0;
-                            $months_eon_next_pumped_v2_cost[$month] = 0;
-                        }
-
-                        $months_kwh[$month] += $kwh;
-                        $months_agile_cost[$month] += $kwh*$unit_cost_agile;
-                        $months_cosy_cost[$month] += $kwh*$unit_cost_cosy;
-                        $months_go_cost[$month] += $kwh*$unit_cost_go;
-                        $months_eon_next_pumped_v2_cost[$month] += $kwh*$unit_cost_eon_next_pumped_v2;
-
                     }
+
+                    // Allocate to months by start time
+                    $date->setTimestamp($time);
+                    // get timestamp of start of month
+                    $date->modify("midnight first day of this month");
+                    // 00:00:00
+                    $date->setTime(0,0,0);
+
+                    $month = $date->getTimestamp();
+
+                    if (!isset($months_kwh[$month])) {
+                        $months_kwh[$month] = 0;
+                        $months_agile_cost[$month] = 0;
+                        $months_cosy_cost[$month] = 0;
+                        $months_go_cost[$month] = 0;
+                        $months_eon_next_pumped_v2_cost[$month] = 0;
+                    }
+
+                    $months_kwh[$month] += $kwh;
+                    $months_agile_cost[$month] += $kwh*$unit_cost_agile;
+                    $months_cosy_cost[$month] += $kwh*$unit_cost_cosy;
+                    $months_go_cost[$month] += $kwh*$unit_cost_go;
+                    $months_eon_next_pumped_v2_cost[$month] += $kwh*$unit_cost_eon_next_pumped_v2;
+
                 }
             }
 
