@@ -3,6 +3,7 @@ define('EMONCMS_EXEC', 1);
 $dir = dirname(__FILE__);
 chdir("$dir/../www");
 
+// test
 require "Lib/load_database.php";
 
 require("Modules/user/user_model.php");
@@ -23,6 +24,10 @@ $data = $system->list_admin();
 foreach ($data as $row) {
     $systemid = $row->id;
     echo "System ".$row->id." ".$row->location."\n";
+    
+    // Daily stats are stored in the emoncms.org app database, keyed by app_id
+    $appid = (int) $row->app_id;
+    if ($appid <= 0) continue;
 
     // Get current values from system_meta to compare
     $result2 = $mysqli->query("SELECT measured_outside_temp_coldest_day, measured_room_temp_coldest_day, measured_mean_flow_temp_coldest_day FROM system_meta WHERE `id` = '$systemid' LIMIT 1");
@@ -31,14 +36,26 @@ foreach ($data as $row) {
     $last_roomT = $row2->measured_room_temp_coldest_day;
     $last_flowT = $row2->measured_mean_flow_temp_coldest_day;
 
-
-    $result = $mysqli->query("SELECT * FROM system_stats_daily WHERE `id` = '$systemid' AND `timestamp` > '$start_1year_ago' ORDER BY `combined_outsideT_mean` ASC LIMIT 1");
+    // Find the coldest day (by combined outside temp) in the last year from the daily stats table
+    $result = $emoncms_mysqli->query("SELECT * FROM myheatpump_daily_stats WHERE `id` = '$appid' AND `timestamp` > '$start_1year_ago' ORDER BY `combined_outsideT_mean` ASC LIMIT 1");
 
     while ($row = $result->fetch_object()) {
         $roomT = $row->running_roomT_mean;
         $outsideT = $row->weighted_outsideT;
         $combined_cop = $row->combined_cop;
         $flowT = $row->weighted_flowT;
+
+        // skip if outside temp is null
+        if ($outsideT === null) {
+            echo " Skipping system $systemid - outside temp is null\n";
+
+            // clear any existing values in system_meta for this system
+            if ($apply_changes) {
+                $mysqli->query("UPDATE system_meta SET measured_outside_temp_coldest_day = NULL, measured_room_temp_coldest_day = NULL, measured_mean_flow_temp_coldest_day = NULL WHERE `id` = '$systemid'");
+            }
+
+            continue;
+        }
 
         if ($outsideT>-10 && $outsideT<5 && $combined_cop>0) {
 
