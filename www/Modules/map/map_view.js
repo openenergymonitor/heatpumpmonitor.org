@@ -30,7 +30,7 @@
         view: new ol.View({
             center: ol.proj.fromLonLat([-4.0, 54]),
             zoom: 6,
-            maxZoom: 14
+            maxZoom: 19
         })
     });
 
@@ -188,7 +188,7 @@
 
         return `
             <div class="overlay-title">${system.location}</div>
-            <div class="overlay-line">${system.hp_output}kW, ${system.hp_manufacturer} ${system.hp_model} (SPF: ${system.combined_cop.toFixed(1)})</div>
+            <div class="overlay-line">${system.hp_output}kW, ${system.hp_manufacturer} ${system.hp_model} (SPF: ${system.combined_cop != null ? system.combined_cop.toFixed(1) : 'N/A'})</div>
             <div class="overlay-line">${system.installer_name ? `${logo_img} ${system.installer_name}` : ''}</div>
             <button class="btn btn-outline-primary btn-sm" onclick="window.location.href='${path}system/view?id=${system.id}'">View System</button>
             <button class="btn btn-outline-primary btn-sm" onclick="window.location.href='${system.installer_url}'">View Installer</button>
