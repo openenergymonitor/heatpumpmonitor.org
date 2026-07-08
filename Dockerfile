@@ -11,6 +11,14 @@ RUN apt-get update && apt-get install -y \
     && docker-php-ext-install gd \
     && docker-php-ext-install exif
 
+# Install ImageMagick with HEIC/HEIF support for iPhone photo conversion
+RUN apt-get update && apt-get install -y \
+    libmagickwand-dev \
+    libheif-dev \
+    imagemagick \
+    && pecl install imagick \
+    && docker-php-ext-enable imagick
+
 RUN a2enmod rewrite
 
 RUN apt-get update \
@@ -25,7 +33,9 @@ RUN apt-get update \
     && docker-php-ext-configure gettext \
     && docker-php-ext-install gettext
 
-RUN pecl install xdebug 
+RUN pecl install xdebug \
+    && pecl install redis \
+    && docker-php-ext-enable redis
 
 COPY config/php.ini /usr/local/etc/php/
 COPY config/xdebug.ini /usr/local/etc/php/conf.d/xdebug.ini
@@ -37,6 +47,6 @@ RUN a2ensite heatpumpmonitororg
 
 COPY www/example.settings.php www/settings.php
 
-COPY load_dev_env_data.php /var/
+COPY dev_env/load_dev_env_data.php /var/load_dev_env_data.php
 COPY generate_thumbnails.php /var/
 # CMD [ "php", "load_dev_env_data.php" ]

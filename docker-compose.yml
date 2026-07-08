@@ -6,19 +6,61 @@ services:
     build: .
     links:
       - db
+      - emoncms
+      - redis
     ports:
-      # Expose Emoncms on localhost port 8080
+      # Expose heatpumpmonitor on localhost port 8080
       - 8080:80
     volumes:
-      # Mount emoncms files from local FS for dev
+      # Mount heatpumpmonitor files from local FS for dev
       - ./www:/var/www/heatpumpmonitororg
     working_dir: /var/www/heatpumpmonitororg
     env_file:
-      # Use default enviroment variables file for dev
       - 'default.docker-env'
+    environment:
+      # Base URL for Emoncms API (service name on compose network); override via host .env if needed
+      EMONCMS_HOST: ${EMONCMS_HOST:-http://emoncms}
+      # Redis used by system_model.php for feed last-updated lookups (shared with emoncms)
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
     depends_on:
       load_dev_env_data:
         condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  # Always-run loader: imports the Emoncms phpfina test feeds and creates the MyHeatpump app
+  # (which provisions the `myheatpump_daily_stats` table on the emoncms DB via postprocess).
+  # Idempotent — exits early if the user already has feeds + a myheatpump app. Pass
+  # TESTDATASET_FORCE=1 to bypass the guard and re-run the import.
+  load_emoncms_testdata:
+    image: ghcr.io/jeremypoulter/emoncms:pr-1
+    user: "0:0"
+    entrypoint: ["/bin/bash", "/bootstrap/run.sh"]
+    env_file:
+      - "emoncms.docker-env"
+    environment:
+      EMONCMS_HOST: ${EMONCMS_HOST:-http://emoncms}
+      TESTDATASET_EMONCMS_USER_ID: ${TESTDATASET_EMONCMS_USER_ID:-1}
+      TESTDATASET_FORCE: ${TESTDATASET_FORCE:-0}
+      PHP_CLI_MEMORY_LIMIT: ${PHP_CLI_MEMORY_LIMIT:-1024M}
+      HPM_APP_NAME: ${HPM_APP_NAME:-My Heatpump}
+    volumes:
+      - emon-phpfina:/var/opt/emoncms/phpfina
+      - ${TESTDATASET_PATH:-../testdataset}:/testdataset:ro
+      - ./docker/testdataset/scripts-settings.php:/bootstrap/scripts-settings.php:ro
+      - ./docker/testdataset/run.sh:/bootstrap/run.sh:ro
+      - ./docker/testdataset/check_loaded.php:/bootstrap/check_loaded.php:ro
+      - ./docker/testdataset/bootstrap_admin.php:/bootstrap/bootstrap_admin.php:ro
+      - ./docker/testdataset/configure_hpm_app.php:/bootstrap/configure_hpm_app.php:ro
+    links:
+      - db
+      - redis
+      - mqtt
+      - emoncms
+    depends_on:
+      emoncms:
+        condition: service_healthy
 
   # This container will load the data (if requested) and then stop
   load_dev_env_data:
@@ -26,16 +68,17 @@ services:
     links:
       - db
     volumes:
-      # Mount emoncms files from local FS for dev
       - ./www:/var/www/heatpumpmonitororg
-      - ./load_dev_env_data.php:/var/load_dev_env_data.php:ro
+      - ./dev_env/load_dev_env_data.php:/var/load_dev_env_data.php:ro
       - ./load_installer_logos.php:/var/load_installer_logos.php:ro
       - ./generate_thumbnails.php:/var/generate_thumbnails.php:ro
     working_dir: /var/www/heatpumpmonitororg
     env_file:
-      # Use default enviroment variables file for dev
       - 'default.docker-env'
     environment:
+      - "EMONCMS_HOST=${EMONCMS_HOST:-http://emoncms}"
+      # Used by step 3c (system_meta.app_id linking) when load_emoncms_testdata has run before us
+      - "HPM_APP_NAME=${HPM_APP_NAME:-My Heatpump}"
       # Dont reload all data, just users and system meta data
       - "RELOAD_ALL=0"
       # Clear database before loading data
@@ -61,7 +104,48 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      emoncms:
+        condition: service_healthy
+      # load_emoncms_testdata always runs (idempotent; exits early when already loaded), so we
+      # can wait for it unconditionally to ensure the myheatpump app + daily-stats table exist
+      # before step 3c links system_meta.app_id and step 5 populates daily stats.
+      load_emoncms_testdata:
+        condition: service_completed_successfully
 
+  emoncms:
+    image: ghcr.io/jeremypoulter/emoncms:pr-1
+    ports:
+      - 8081:80
+    volumes:
+      - emon-phpfina:/var/opt/emoncms/phpfina
+      - emon-phptimeseries:/var/opt/emoncms/phptimeseries
+      # Override baked-in sql_ready (mysqladmin ping); see emoncms-docker web/sql_ready.sh — remove after image rebuild
+      - ./docker/emoncms-sql_ready.sh:/opt/openenergymonitor/sql_ready.sh:ro
+      # Fix sync_upload cwd/symlink (see emoncms-docker web/sync_upload-run.sh) — remove after image rebuild
+      - ./docker/emoncms-sync_upload-run.sh:/etc/s6-overlay/s6-rc.d/sync_upload/run:ro
+      # service-runner.py uses localhost by default; use REDIS_HOST (see emoncms-docker web/service-runner.py)
+      - ./docker/emoncms-service-runner.py:/var/www/emoncms/scripts/services/service-runner/service-runner.py:ro
+    links:
+      - db
+      - redis
+      - mqtt
+    env_file:
+      - 'emoncms.docker-env'
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    # Apache starts only after sql_ready (s6: emoncms_pre → sql_ready → apache2), so HTTP up ⇒ DB schema applied
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1/ >/dev/null || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 120s
+
+  # Same base as emoncms-docker docker-compose.yml db (mariadb:11.0 + MARIADB_* env); plus:
+  # default.docker-env (MYSQL_USER/PASSWORD/DATABASE for init), emoncms-init.sql, publish 3306, healthcheck
   db:
     image: mariadb:11.0
     environment:
@@ -72,12 +156,13 @@ services:
       - 'default.docker-env'
     volumes:
       - emon-db-data:/var/lib/mysql
+      - ./docker/emoncms-init.sql:/docker-entrypoint-initdb.d/02-emoncms.sql:ro
     logging:
       driver: json-file
       options:
         max-size: "10m"
     ports:
-      - 3306:3306
+      - "3306:3306"
     healthcheck:
       test:
         [
@@ -91,6 +176,46 @@ services:
       start_period: 60s
       timeout: 2s
       retries: 10
+
+  redis:
+    image: redis:7.0
+    volumes:
+      - emon-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+      start_period: 5s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+
+  mqtt:
+    image: eclipse-mosquitto:2.0
+    volumes:
+      - ./docker/mqtt/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    command:
+      - /bin/sh
+      - -c
+      - |
+        touch /mosquitto/config/passwd
+        /usr/bin/mosquitto_passwd -b /mosquitto/config/passwd emonpi emonpimqtt2016
+        exec /usr/sbin/mosquitto -c /mosquitto/config/mosquitto.conf
+    ports:
+      - 1883:1883
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+
 volumes:
   emon-db-data:
+    driver: local
+  emon-phpfina:
+    driver: local
+  emon-phptimeseries:
+    driver: local
+  emon-redis-data:
     driver: local
