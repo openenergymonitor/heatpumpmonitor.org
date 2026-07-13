@@ -970,11 +970,8 @@ class System
         }
 
         // 3. The user is an admin of the account that owns the system
-        $result = $this->emoncms_mysqli->query("SELECT COUNT(*) as count FROM accounts WHERE linkeduser='{$row->userid}' AND adminuser='$userid'");
-        if ($row = $result->fetch_object()) {
-            if ($row->count>0) {
-                return true;
-            }
+        if ($this->is_account_admin($userid, (int) $row->userid)) {
+            return true;
         }
 
         return false;
@@ -1010,14 +1007,24 @@ class System
         }
 
         // 4. The user is an admin of the account that owns the system
-        $result = $this->emoncms_mysqli->query("SELECT COUNT(*) as count FROM accounts WHERE linkeduser='{$row->userid}' AND adminuser='$userid'");
-        if ($row = $result->fetch_object()) {
-            if ($row->count>0) {
-                return true;
-            }
+        if ($this->is_account_admin($userid, (int) $row->userid)) {
+            return true;
         }
 
         return false;
+    }
+
+    private function is_account_admin($adminuser, $linkeduser) {
+        $adminuser = (int) $adminuser;
+        $linkeduser = (int) $linkeduser;
+        
+        $stmt = $this->emoncms_mysqli->prepare("SELECT COUNT(*) FROM accounts WHERE linkeduser=? AND adminuser=?");
+        $stmt->bind_param("ii", $linkeduser, $adminuser);
+        $stmt->execute();
+        $stmt->bind_result($count);
+        $stmt->fetch();
+        $stmt->close();
+        return $count > 0;
     }
 
     public function is_admin($userid) {
