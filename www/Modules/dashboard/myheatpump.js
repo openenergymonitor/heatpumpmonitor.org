@@ -124,6 +124,17 @@ $.ajax({
 
         feeds = result.feeds;
 
+        if (result.starting_power != undefined) {
+            starting_power = result.starting_power;
+        }
+        if (result.start_time != undefined) {
+            start_time = result.start_time;
+        }
+        if (result.auto_detect_cooling != undefined) {
+            config.app.auto_detect_cooling.value = result.auto_detect_cooling;
+        }
+        
+
         show();
     }
 });

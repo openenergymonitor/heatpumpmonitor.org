@@ -154,7 +154,7 @@ if (isset($session['admin']) && $session['admin']) {
         <div class="row">
 
 
-            <p>Each datapoint shows the average heat output over a 24 hour period. Hover over data point for more information.</p>
+            <p>Each datapoint shows the average heat output over a 24 hour period. Hover over data point for more information, click on a data point to open the dashboard view for that day.</p>
 
             <p><b>Note:</b> The measured heat output shown here is the combined heat output of space heating and hot water.
                 While it doesnt compare directly to the heat loss of the building, it is a good indicator of the heat demand from the heat pump.
@@ -194,6 +194,7 @@ if (isset($session['admin']) && $session['admin']) {
             system_list: {},
             total_elec_kwh: 0,
             total_heat_kwh: 0,
+            total_cool_kwh: 0,
             total_cop: 0,
             base_DT: 4,
             design_DT: 23,
@@ -417,7 +418,8 @@ if (isset($session['admin']) && $session['admin']) {
             'running_returnT_mean',
             'combined_elec_kwh',
             'combined_heat_kwh',
-            'combined_data_length'
+            'combined_data_length',
+            'cooling_heat_kwh'
         ];
 
         $.ajax({
@@ -486,25 +488,41 @@ if (isset($session['admin']) && $session['admin']) {
 
                 var total_elec_kwh = 0;
                 var total_heat_kwh = 0;
+                var total_cool_kwh = 0;
 
                 data['heat_vs_dt'] = [];
+                data['cool_vs_dt'] = [];
                 for (var i = 0; i < data[mode + '_heat_mean'].length; i++) {
                     if (data[mode + '_roomT_mean'][i][1] > 0 && data[mode + '_data_length'][i][1] > 64800) {
                         var x = data[mode + '_roomT_mean'][i][1] - data[mode + '_outsideT_mean'][i][1];
-                        if (x > 0) {
+                        //if (x > 0) {
+                            // Convert heat from W to kW
                             var y = data[mode + '_heat_mean'][i][1]*0.001;
+
+                            // Check if cooling is present and subtract from heat output
+                            var cool = null;
+                            if (data['cooling_heat_kwh'][i][1] > 0) {
+                                cool = data['cooling_heat_kwh'][i][1] / 24.0;
+                            }
+                            // Subtract cooling from heat output if cooling is present
+                            if (cool !== null) y -= cool;
+
+                            // Add to series
                             data['heat_vs_dt'].push([x, y, i]);
+                            data['cool_vs_dt'].push([x, cool, i]);
 
                             if (y > max_heat) max_heat = y;
-                        }
+                        //}
 
                         total_elec_kwh += data['combined_elec_kwh'][i][1];
                         total_heat_kwh += data['combined_heat_kwh'][i][1];
+                        total_cool_kwh += data['cooling_heat_kwh'][i][1];
                     }
                 }
 
                 app.total_elec_kwh = total_elec_kwh;
                 app.total_heat_kwh = total_heat_kwh;
+                app.total_cool_kwh = total_cool_kwh;
                 app.total_cop = total_heat_kwh / total_elec_kwh;
 
                 draw();
@@ -516,11 +534,18 @@ if (isset($session['admin']) && $session['admin']) {
 
         console.log("Draw")
 
+        // Left hand edge of chart: minimum DT in the data (can be negative when cooling), capped at 0
+        var min_dt = 0;
+        for (var i = 0; i < data['heat_vs_dt'].length; i++) {
+            if (data['heat_vs_dt'][i][0] < min_dt) min_dt = data['heat_vs_dt'][i][0];
+        }
+
         // Flot options
         var options = {
             series: {},
             xaxis: {
                 axisLabel: 'Room - Outside Temperature',
+                min: min_dt,
                 max: app.design_DT
             },
             yaxis: {
@@ -551,10 +576,24 @@ if (isset($session['admin']) && $session['admin']) {
             }
         }];
 
+        // Add cooling data series
+        series.push({
+            data: data['cool_vs_dt'],
+            color: 'purple',
+            lines: {
+                show: false,
+                fill: false
+            },
+            points: {
+                show: true,
+                radius: 2
+            }
+        });
+
         // Add horizontal line for heat loss
         series.push({
             data: [
-                [0, app.calculated_heatloss],
+                [min_dt, app.calculated_heatloss],
                 [app.design_DT, app.calculated_heatloss]
             ],
             color: 'grey',
@@ -570,7 +609,7 @@ if (isset($session['admin']) && $session['admin']) {
         // Add horizontal line for heatpump output
         series.push({
             data: [
-                [0, hp_output],
+                [min_dt, hp_output],
                 [app.design_DT, hp_output]
             ],
             color: 'black',
@@ -587,7 +626,7 @@ if (isset($session['admin']) && $session['admin']) {
         if (app.datasheet_hp_max > 0) {
             series.push({
                 data: [
-                    [0, app.datasheet_hp_max],
+                    [min_dt, app.datasheet_hp_max],
                     [app.design_DT, app.datasheet_hp_max]
                 ],
                 color: '#aa0000',
@@ -605,7 +644,7 @@ if (isset($session['admin']) && $session['admin']) {
         if (app.measured_hp_max > 0) {
             series.push({
                 data: [
-                    [0, app.measured_hp_max],
+                    [min_dt, app.measured_hp_max],
                     [app.design_DT, app.measured_hp_max]
                 ],
                 color: '#ddaaaa',
@@ -677,22 +716,22 @@ if (isset($session['admin']) && $session['admin']) {
         var o = false;
 
         if (hp_output>0) {
-            o = chart.pointOffset({ x: 0, y: hp_output });
+            o = chart.pointOffset({ x: min_dt, y: hp_output });
             placeholder.append("<div style='position:absolute;left:" + (o.left + 4) + "px;top:" + (o.top - 23) + "px;color:#666;font-size:smaller'>Heatpump badge capacity</div>");
         }
         if (app.datasheet_hp_max > 0) {
-            o = chart.pointOffset({ x: 0, y: app.datasheet_hp_max });
+            o = chart.pointOffset({ x: min_dt, y: app.datasheet_hp_max });
             let offset = -23;
             if ((hp_output - app.datasheet_hp_max)<0.5) offset = 5;
             console.log(hp_output - app.datasheet_hp_max);
             placeholder.append("<div style='position:absolute;left:" + (o.left + 4) + "px;top:" + (o.top + offset) + "px;color:#666;font-size:smaller'>Heatpump datasheet capacity</div>");
         }
         if (app.measured_hp_max > 0) {
-            o = chart.pointOffset({ x: 0, y: app.measured_hp_max });
+            o = chart.pointOffset({ x: min_dt, y: app.measured_hp_max });
             placeholder.append("<div style='position:absolute;left:" + (o.left + 4) + "px;top:" + (o.top - 23) + "px;color:#666;font-size:smaller'>Max capacity test result</div>");
         }
         if (app.calculated_heatloss>0) {
-            o = chart.pointOffset({ x: 0, y: app.calculated_heatloss });
+            o = chart.pointOffset({ x: min_dt, y: app.calculated_heatloss });
             placeholder.append("<div style='position:absolute;left:" + (o.left + 4) + "px;top:" + (o.top - 23) + "px;color:#666;font-size:smaller'>Heat loss value on form</div>");
         }
     }
@@ -707,9 +746,10 @@ if (isset($session['admin']) && $session['admin']) {
                 $("#tooltip").remove();
                 var DT = item.datapoint[0];
                 var HEAT = item.datapoint[1];
+                var heat_label = item.seriesIndex === 1 ? "Cooling" : "Heat";
 
                 var str = "";
-                str += "Heat: " + HEAT.toFixed(3) + " kW<br>";
+                str += heat_label + ": " + HEAT.toFixed(3) + " kW<br>";
                 str += "DT: " + DT.toFixed(1) + " °K<br>";
 
                 var original_index = data['heat_vs_dt'][item.dataIndex][2];
@@ -729,6 +769,18 @@ if (isset($session['admin']) && $session['admin']) {
         } else {
             $("#tooltip").remove();
             previousPoint = null;
+        }
+        $("#placeholder").css('cursor', item && item.seriesIndex < 2 ? 'pointer' : 'default');
+    });
+
+    // Open dashboard for the day of the clicked data point
+    $("#placeholder").bind("plotclick", function(event, pos, item) {
+        // Only the heat (0) and cooling (1) series carry the original data index
+        if (item && item.seriesIndex < 2) {
+            var original_index = item.series.data[item.dataIndex][2];
+            var start = data[mode + '_heat_mean'][original_index][0] / 1000;
+            var end = start + 86400;
+            window.open(path + "dashboard?id=" + app.systemid + "&mode=power&start=" + start + "&end=" + end);
         }
     });
 

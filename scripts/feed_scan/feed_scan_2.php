@@ -12,7 +12,7 @@ $user = new User($mysqli,false);
 require ("Modules/system/system_model.php");
 $system = new System($mysqli);
 
-$system_id = 2;
+$system_id = 748;
 
 // 1. Determine the app id.
 $result = $mysqli->query("SELECT app_id FROM system_meta WHERE id = $system_id");
@@ -96,9 +96,11 @@ foreach ($meta as $key => $feed_meta) {
 //    by differencing running totals at episode start and end.
 
 define('WINDOW', 60);          // rolling window: 60 x 10s = 10 minutes
-define('STDEV_MAX', 0.15);     // max flowT standard deviation within the window (°C)
+define('STDEV_MAX', 0.01);     // max flowT standard deviation within the window (°C)
+define('SLOPE_MAX', 0.5);      // max |flowT slope| over the whole episode (°C/hour, 0 = no constraint)
 define('MIN_ELEC', 150);       // compressor running threshold (W)
 define('BLOCK_SIZE', 86400);   // 10s samples read per block per feed (10 days, ~340kB)
+define('MAX_EPISODES', 1000);    // for testing: stop after this many episodes (0 = scan everything)
 
 if (!isset($feedids["heatpump_elec"]) || !isset($feedids["heatpump_flowT"])) {
     die("heatpump_elec and heatpump_flowT feeds are required\n");
@@ -119,13 +121,15 @@ for ($f=0; $f<$F; $f++) $ring[$f] = array_fill(0, WINDOW, NAN);
 $win_sum = array_fill(0, $F, 0.0); $win_n = array_fill(0, $F, 0);
 $run_sum = array_fill(0, $F, 0.0); $run_n = array_fill(0, $F, 0);
 $win_sumsq = 0.0; $run_sumsq = 0.0;   // flowT only, for stdev
+$win_sumxy = 0.0; $run_sumxy = 0.0;   // flowT only, sum of (run index * flowT) for slope
 $run_len = 0;
 
 $episodes = array();
 $total_stable = 0;
+$rejected_slope = 0;
 $ep = false;
 
-$close_episode = function() use (&$episodes, &$ep, &$total_stable, $keys, $F, $KF, $latest_start_time) {
+$close_episode = function() use (&$episodes, &$ep, &$total_stable, &$rejected_slope, $keys, $F, $KF, $latest_start_time) {
     $n_samples = $ep['last_i'] - $ep['start_i'] + 1;
     $e = array(
         "start_time" => $latest_start_time + $ep['start_i'] * 10,
@@ -142,13 +146,30 @@ $close_episode = function() use (&$episodes, &$ep, &$total_stable, $keys, $F, $K
     $mean = $e["heatpump_flowT"];
     $var = ($ep['end_sumsq'] - $ep['start_sumsq']) / $nf - $mean * $mean;
     $e["flowT_stdev"] = $var > 0 ? sqrt($var) : 0.0;
-    // flowT drift: change in the 10 min window mean between open and close (°C/hour)
-    $e["flowT_drift"] = ($ep['close_mean'] - $ep['open_mean']) / ($e["duration"] / 3600.0);
+    // flowT slope over the whole episode: least squares fit against sample index.
+    // sum_xy is shifted so x runs 0..n-1 within the episode, which keeps the
+    // sums well conditioned; sum_x and sum_x2 then have closed forms.
+    $n = $n_samples;
+    $sum_y = $ep['end_sum'][$KF] - $ep['start_sum'][$KF];
+    $sum_xy = ($ep['end_sumxy'] - $ep['start_sumxy']) - $ep['start_g'] * $sum_y;
+    $sum_x = $n * ($n - 1) / 2;
+    $sum_x2 = ($n - 1) * $n * (2 * $n - 1) / 6;
+    $den = $n * $sum_x2 - $sum_x * $sum_x;
+    $slope = $den > 0 ? ($n * $sum_xy - $sum_x * $sum_y) / $den : 0.0;  // °C per sample
+    $e["flowT_slope"] = $slope * 360.0;  // °C per hour (360 x 10s samples per hour)
+
     $e["dT"] = isset($e["heatpump_returnT"]) ? $e["heatpump_flowT"] - $e["heatpump_returnT"] : NAN;
     $e["cop"] = (isset($e["heatpump_heat"]) && $e["heatpump_elec"] > 0) ? $e["heatpump_heat"] / $e["heatpump_elec"] : NAN;
+    $ep = false;
+
+    // optional constraint: reject episodes with too much overall slope
+    if (SLOPE_MAX > 0 && abs($e["flowT_slope"]) > SLOPE_MAX) {
+        $rejected_slope++;
+        return;
+    }
+
     $episodes[] = $e;
     $total_stable += $e["duration"];
-    $ep = false;
 };
 
 $scan_start = microtime(true);
@@ -175,13 +196,18 @@ while ($i < $npoints) {
             $pos = $run_len % WINDOW;
             $full = $run_len >= WINDOW;
 
-            // flowT sum of squares (evict before the ring slot is overwritten below)
+            // flowT sum of squares and sum of (run index * flowT) for stdev and slope
+            // (evict before the ring slot is overwritten below; the evicted sample
+            //  was pushed WINDOW samples ago so its run index is run_len - WINDOW)
             if ($full) {
                 $old = $ring[$KF][$pos];
                 $win_sumsq -= $old * $old;
+                $win_sumxy -= ($run_len - WINDOW) * $old;
             }
             $win_sumsq += $flowT * $flowT;
             $run_sumsq += $flowT * $flowT;
+            $win_sumxy += $run_len * $flowT;
+            $run_sumxy += $run_len * $flowT;
 
             for ($f=0; $f<$F; $f++) {
                 if ($full) {
@@ -208,7 +234,7 @@ while ($i < $npoints) {
                         $ep['last_i'] = $i;
                         $ep['end_sum'] = $run_sum; $ep['end_n'] = $run_n;
                         $ep['end_sumsq'] = $run_sumsq;
-                        $ep['close_mean'] = $mean;
+                        $ep['end_sumxy'] = $run_sumxy;
                     } else {
                         if ($ep) $close_episode();
                         // run totals minus window totals = totals at the window start
@@ -219,11 +245,13 @@ while ($i < $npoints) {
                         }
                         $ep = array(
                             'start_i' => $i - (WINDOW - 1), 'last_i' => $i,
+                            'start_g' => $run_len - WINDOW,   // run index of the first episode sample
                             'start_sum' => $start_sum, 'start_n' => $start_n,
                             'start_sumsq' => $run_sumsq - $win_sumsq,
+                            'start_sumxy' => $run_sumxy - $win_sumxy,
                             'end_sum' => $run_sum, 'end_n' => $run_n,
                             'end_sumsq' => $run_sumsq,
-                            'open_mean' => $mean, 'close_mean' => $mean
+                            'end_sumxy' => $run_sumxy
                         );
                     }
                 } else if ($ep && ($i - $ep['last_i']) >= WINDOW) {
@@ -237,12 +265,16 @@ while ($i < $npoints) {
             if ($run_len > 0) {
                 $run_len = 0;
                 $run_sumsq = 0.0; $win_sumsq = 0.0;
+                $run_sumxy = 0.0; $win_sumxy = 0.0;
                 for ($f=0; $f<$F; $f++) {
                     $run_sum[$f] = 0.0; $run_n[$f] = 0;
                     $win_sum[$f] = 0.0; $win_n[$f] = 0;
                 }
             }
         }
+
+        // For testing: stop once we have MAX_EPISODES episodes
+        if (MAX_EPISODES > 0 && count($episodes) >= MAX_EPISODES) break 2;
 
         // Print . for every 24h that has been processed
         if ($i % 8640 == 0) {
@@ -260,7 +292,8 @@ while ($i < $npoints) {
         }
     }
 }
-if ($ep) $close_episode();
+// close any episode still open at the end of the scan (unless we stopped at the test limit)
+if ($ep && (MAX_EPISODES == 0 || count($episodes) < MAX_EPISODES)) $close_episode();
 
 foreach ($fh as $h) fclose($h);
 
@@ -270,7 +303,7 @@ $elapsed = microtime(true) - $scan_start;
 /*
 $csvfile = $dir."/episodes_".$system_id.".csv";
 $csv = fopen($csvfile, 'w');
-$header = array("start_time", "date", "duration_s", "flowT_stdev", "flowT_drift_per_h");
+$header = array("start_time", "date", "duration_s", "flowT_stdev", "flowT_slope_per_h");
 foreach ($keys as $key) $header[] = str_replace("heatpump_", "", $key);
 $header[] = "dT";
 $header[] = "cop";
@@ -282,20 +315,40 @@ foreach ($episodes as $e) {
         date("Y-m-d H:i", $e["start_time"]),
         $e["duration"],
         round($e["flowT_stdev"], 4),
-        round($e["flowT_drift"], 3)
+        round($e["flowT_slope"], 3)
     );
     foreach ($keys as $key) $row[] = round($e[$key], 3);
     $row[] = round($e["dT"], 3);
     $row[] = round($e["cop"], 3);
     fputcsv($csv, $row);
 }
-fclose($csv);*/
+fclose($csv);*/  
 
 print "\n\n";
-print "Scanned $npoints samples (".round($npoints * 10 / 86400, 1)." days) in ".round($elapsed, 1)."s\n";
+print "Scanned $i of $npoints samples (".round($i * 10 / 86400, 1)." days) in ".round($elapsed, 1)."s\n";
 print "Stable episodes: ".count($episodes)."\n";
-print "Total stable time: ".round($total_stable / 3600, 1)." hours (".round(100 * $total_stable / ($npoints * 10), 1)."% of period)\n";
-print "Output: $csvfile\n";
+if (SLOPE_MAX > 0) {
+    print "Rejected for slope > ".SLOPE_MAX."C/h: $rejected_slope\n";
+}
+if ($i > 0) {
+    print "Total stable time: ".round($total_stable / 3600, 1)." hours (".round(100 * $total_stable / ($i * 10), 1)."% of scanned period)\n";
+}
+print "\n";
+
+// Print episodes for inspection
+foreach ($episodes as $e) {
+    print date("Y-m-d H:i", $e["start_time"])
+        ."  dur: ".str_pad(round($e["duration"] / 60)."m", 5)
+        ."  flowT: ".number_format($e["heatpump_flowT"], 2)
+        ." (sd ".number_format($e["flowT_stdev"], 3)
+        .", slope ".number_format($e["flowT_slope"], 3)."/h)"
+        ."  dT: ".number_format($e["dT"], 2)
+        ."  elec: ".str_pad(round($e["heatpump_elec"])."W", 6)
+        .(isset($e["heatpump_outsideT"]) ? "  outT: ".number_format($e["heatpump_outsideT"], 1) : "")
+        ."  cop: ".number_format($e["cop"], 2)
+        ."  https://heatpumpmonitor.org/dashboard?id=".$system_id."&mode=power&start=".$e["start_time"]."&end=".$e["end_time"]
+        ."\n";
+}
 
 // Read a block of $n 10s-aligned samples starting at time $t0 from a phpfina feed.
 // Feeds stored at other intervals are resampled by repetition. Missing data is NAN.
