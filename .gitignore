@@ -25,3 +25,4 @@ www/Modules/*/
 !www/Modules/system/
 !www/Modules/timeseries/
 !www/Modules/user/
+!www/Modules/home/
