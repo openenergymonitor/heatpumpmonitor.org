@@ -65,7 +65,8 @@ function home_controller() {
             "sort" => array(
                 "field" => "combined_cop",
                 "order" => "desc"
-            )
+            ),
+            "stats_table" => "system_stats_last365_v2"
         );
 
         $systems = $system_stats->combined_meta_stats_query($query);
@@ -111,6 +112,74 @@ function home_controller() {
         }
         return $output_systems;
     }
+
+    if ($route->action == "cooling_systems") {
+        $route->format = "json";
+
+        $query = array(
+            'meta_filters' => array(
+                'mid_metering' => 1,
+                'metering_boundary_code' => 4
+            ),
+            'meta_fields' => array(
+                'id',
+                'location',
+                'hp_type',
+                'hp_manufacturer',
+                'hp_model',
+                'hp_output',
+                'floor_area',
+                'data_flag'
+            ),
+            'stats_fields' => array(
+                'cooling_elec_kwh',
+                'cooling_heat_kwh',
+                'cooling_cop',
+                'combined_data_length',
+                'error_air_kwh'
+            ),
+            "sort" => array(
+                "field" => "cooling_heat_kwh",
+                "order" => "desc"
+            ),
+            "stats_table" => "system_stats_last7_v2"
+        );
+
+        $systems = $system_stats->combined_meta_stats_query($query);
+
+        $output_systems = array();
+        foreach ($systems as $system) {
+
+            // Only include systems with a valid COP figure
+            if ($system->cooling_cop === null) continue;
+            // filter out systems with less than 1 kWh of cooling heat delivered
+            if ($system->cooling_heat_kwh < 1) continue;
+
+            // combined_data_length in seconds converted to days
+            $days = $system->combined_data_length / 86400;
+            if ($days <= 5) continue;
+
+            // auto_flag_air_error($system);
+            // if ($system->data_flag == 1) continue;
+
+            // Trim the payload to what the home page uses
+            $output_systems[] = array(
+                'id' => (int) $system->id,
+                'location' => $system->location,
+                'hp_type' => $system->hp_type,
+                'hp_manufacturer' => $system->hp_manufacturer,
+                'hp_model' => $system->hp_model,
+                'hp_output' => $system->hp_output !== null ? (float) $system->hp_output : null,
+                'floor_area' => $system->floor_area !== null ? (float) $system->floor_area : null,
+                'cooling_cop' => round($system->cooling_cop, 2),
+                'cooling_elec_kwh' => round($system->cooling_elec_kwh),
+                'cooling_heat_kwh' => round($system->cooling_heat_kwh)
+            );
+        }
+        return $output_systems;
+    }
+
+
 
     return false;
 }

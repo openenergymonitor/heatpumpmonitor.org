@@ -739,6 +739,17 @@ class SystemStats
 
     public function combined_meta_stats_query($query) {
 
+        // Validate stats_table name
+        if (!isset($query['stats_table']) || !isset($this->schema[$query['stats_table']])) {
+            return [];
+        }
+        // check if it exists in the schema
+        $stats_table = $query['stats_table'];
+        if (!isset($this->schema[$stats_table])) {
+            return [];
+        }
+
+
         // Derive allowlists from the loaded schema definitions so they stay in
         // sync automatically as fields are added or removed from the schema.
         // Sensitive fields are excluded: they can be neither selected nor filtered on.
@@ -794,7 +805,7 @@ class SystemStats
 
         $ids_string = implode(',', array_map('intval', $system_ids));
         $stats_result = $this->mysqli->query(
-            "SELECT $stats_select FROM system_stats_last365_v2 WHERE id IN ($ids_string)"
+            "SELECT $stats_select FROM $stats_table WHERE id IN ($ids_string)"
         );
 
         // --- Merge meta + stats ---

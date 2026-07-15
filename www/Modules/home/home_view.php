@@ -803,7 +803,7 @@ global $path;
                 <div class="col-6 col-lg-3">
                     <div class="hpm-stat-card">
                         <div class="hpm-stat-value">{{ stats.system_count }}</div>
-                        <div class="hpm-stat-label">monitored systems</div>
+                        <div class="hpm-stat-label">MID monitored systems with at least one year of data</div>
                     </div>
                 </div>
                 <div class="col-6 col-lg-3">
@@ -829,6 +829,7 @@ global $path;
     </section>
 
     <!-- ============ Featured data story ============ -->
+    <!-- Live cooling activity over the last 7 days from home/cooling_systems -->
     <section class="hpm-section hpm-section-sky pt-0">
         <div class="container">
             <div class="hpm-featured">
@@ -836,30 +837,28 @@ global $path;
                     <span class="hpm-chip"><span class="hpm-dot"></span> Right now &middot; UK heatwave</span>
                     <span class="hpm-chip-plain">Featured this week</span>
                 </div>
-                <div class="row g-4 g-lg-5 align-items-start">
+                <div class="row g-4 g-lg-5 align-items-start" v-if="cooling.length">
                     <div class="col-lg-7">
-                        <h2 class="mb-3"><i class="bi bi-sun" style="color:#f5c26b;"></i> Who&rsquo;s keeping cool &mdash; and how hard they&rsquo;re working</h2>
+                        <h2 class="mb-3"><i class="bi bi-sun" style="color:#f5c26b;"></i> Who&rsquo;s keeping cool?</h2>
                         <p class="mb-4">
-                            It topped 31&deg;C this week, and <strong>41 monitored systems</strong> are running
-                            in reverse to provide active cooling. The same meters that track winter performance
-                            record the cooling energy delivered &mdash; and the indoor temperature each home
-                            is holding.
+                            While we usually focus on winter heating, heat pumps can also be configured (with care) to provide cooling in the summer. 
+                            There are <strong>{{ cooling.length }} systems</strong> on HeatpumpMonitor that have provided active cooling over the last 7 days.
                         </p>
                         <div class="hpm-featured-stats">
                             <div class="hpm-featured-stat">
-                                <div class="hpm-num">31.4&deg;C</div>
-                                <div class="hpm-lab">peak outdoor, top systems</div>
-                            </div>
-                            <div class="hpm-featured-stat">
-                                <div class="hpm-num">22.9&deg;C</div>
-                                <div class="hpm-lab">held indoors, average</div>
-                            </div>
-                            <div class="hpm-featured-stat">
-                                <div class="hpm-num">41</div>
+                                <div class="hpm-num">{{ cooling.length }}</div>
                                 <div class="hpm-lab">systems actively cooling</div>
                             </div>
                             <div class="hpm-featured-stat">
-                                <div class="hpm-num">214 kWh</div>
+                                <div class="hpm-num">{{ fmt(coolingTotalKwh) }} kWh</div>
+                                <div class="hpm-lab">cooling delivered, last 7 days</div>
+                            </div>
+                            <div class="hpm-featured-stat">
+                                <div class="hpm-num">{{ coolingAvgCop.toFixed(1) }}</div>
+                                <div class="hpm-lab">average cooling COP</div>
+                            </div>
+                            <div class="hpm-featured-stat">
+                                <div class="hpm-num">{{ fmt(coolingTop[0].heat) }} kWh</div>
                                 <div class="hpm-lab">top cooling, last 7 days</div>
                             </div>
                         </div>
@@ -868,38 +867,22 @@ global $path;
                         <div class="hpm-leaderboard">
                             <div class="hpm-leaderboard-head">
                                 <h3>Most cooling delivered</h3>
-                                <span>kWh (7d) &middot; indoor</span>
+                                <span>kWh (7d) &middot; COP</span>
                             </div>
                             <ol>
-                                <li>
-                                    <span class="hpm-rank">1</span>
-                                    <span><span class="hpm-place">Lewisham, London</span><br><span class="hpm-model">Vaillant Arotherm+</span></span>
-                                    <span class="hpm-val"><span class="hpm-kwh">214</span><br><span class="hpm-temp">22.6&deg;C</span></span>
-                                </li>
-                                <li>
-                                    <span class="hpm-rank">2</span>
-                                    <span><span class="hpm-place">Cambridge</span><br><span class="hpm-model">Daikin Altherma 3</span></span>
-                                    <span class="hpm-val"><span class="hpm-kwh">198</span><br><span class="hpm-temp">23.1&deg;C</span></span>
-                                </li>
-                                <li>
-                                    <span class="hpm-rank">3</span>
-                                    <span><span class="hpm-place">Bristol</span><br><span class="hpm-model">Mitsubishi Ecodan</span></span>
-                                    <span class="hpm-val"><span class="hpm-kwh">176</span><br><span class="hpm-temp">22.9&deg;C</span></span>
-                                </li>
-                                <li>
-                                    <span class="hpm-rank">4</span>
-                                    <span><span class="hpm-place">Reading</span><br><span class="hpm-model">Samsung Gen6 R290</span></span>
-                                    <span class="hpm-val"><span class="hpm-kwh">152</span><br><span class="hpm-temp">23.4&deg;C</span></span>
-                                </li>
-                                <li>
-                                    <span class="hpm-rank">5</span>
-                                    <span><span class="hpm-place">Norwich</span><br><span class="hpm-model">LG Therma V</span></span>
-                                    <span class="hpm-val"><span class="hpm-kwh">141</span><br><span class="hpm-temp">23.8&deg;C</span></span>
+                                <li v-for="(h, i) in coolingTop" style="padding:0;">
+                                    <a class="hpm-leader-link" :href="path + 'system/view?id=' + h.id">
+                                        <span class="hpm-rank">{{ i + 1 }}</span>
+                                        <span><span class="hpm-place">{{ h.location }}</span><br><span class="hpm-model">{{ homeSubtitle(h) }}</span></span>
+                                        <span class="hpm-val"><span class="hpm-kwh">{{ fmt(h.heat) }}</span><br><span class="hpm-temp">{{ h.cop ? "COP " + h.cop.toFixed(1) : "—" }}</span></span>
+                                    </a>
                                 </li>
                             </ol>
                         </div>
                     </div>
                 </div>
+                <p class="mb-0" v-else-if="coolingError">Couldn&rsquo;t load live cooling data right now &mdash; please try again shortly.</p>
+                <p class="mb-0" v-else>Loading live cooling data&hellip;</p>
             </div>
         </div>
     </section>
@@ -1211,7 +1194,15 @@ global $path;
     <section class="hpm-section">
         <div class="container">
             <div class="hpm-eyebrow"><span class="hpm-eyebrow-num">03</span> Design flow temperature</div>
-            <h2 class="hpm-display mb-3">The design flow temperature <span class="hpm-accent">isn&rsquo;t destiny</span>.</h2>
+            <!--<h2 class="hpm-display mb-3">The design flow temperature <span class="hpm-accent">isn&rsquo;t destiny</span>.</h2>-->
+            <h2 class="hpm-display mb-3">What <span class="hpm-accent">performance</span> can I expect?</h2>
+
+            <p class="hpm-lead mb-5">
+                The design flow temperature of a system (the flow temperature the system is designed to run at on the coldest point of the year) is often used to predict how efficient a system will run.
+
+                In practice we find that systems designed to run at higher flow temperatures can often run at lower flow temperatures than expected and consequently achieved higher performance. <b>This crucially requires carefull tuning of weather-compensation or the use of a heat pump optimiser.</b>
+            </p>
+            <!--
             <p class="hpm-lead mb-5">
                 Every installation is designed around a <strong>flow temperature</strong> &mdash; how hot
                 the radiator water should need to be on the coldest day of the year. Hotter water means
@@ -1221,12 +1212,13 @@ global $path;
                 largely because most systems never actually run as hot as they were designed to.
                 Pick a design temperature and see what systems achieved.
             </p>
+            -->
 
             <div class="row g-4" v-if="!finderLoading && !finderError">
                 <div class="col-lg-7">
                     <div class="hpm-chart-card">
-                        <h3>One row per design temperature</h3>
-                        <div class="hpm-chart-sub">Each dot is one system's measured SCOP over the last 365 days &middot; click a row to select it</div>
+                        <h3>Design temperature vs Performance</h3>
+                        <div class="hpm-chart-sub">Each dot is one system's measured SPF/SCOP over the last 365 days &middot; click a row to select it</div>
                         <svg class="hpm-dft" viewBox="0 0 680 304" role="img"
                              aria-label="Five dot strips of measured SCOP, one per design flow temperature from 35 to 55 degrees. Group means fall gently from about 4.1 at 35 degrees design to about 3.6 at 55 degrees, while the spread within every group is far wider than the difference between them.">
                             <g>
@@ -1258,10 +1250,10 @@ global $path;
                 <div class="col-lg-5 d-flex flex-column gap-4">
                     <div class="hpm-chart-card" v-if="dftSel.n">
                         <h3>Designed for {{ designTemp }}&deg;C</h3>
-                        <div class="hpm-chart-sub">{{ dftSel.n }} system{{ dftSel.n===1 ? '' : 's' }} &middot; SCOP range {{ dftSel.lo.toFixed(1) }}&ndash;{{ dftSel.hi.toFixed(1) }}<template v-if="dftSel.n < 8"> &middot; early days, treat with caution</template></div>
+                        <div class="hpm-chart-sub">{{ dftSel.n }} system{{ dftSel.n===1 ? '' : 's' }} &middot; performance range {{ dftSel.lo.toFixed(1) }}&ndash;{{ dftSel.hi.toFixed(1) }}<template v-if="dftSel.n < 8"> &middot; early days, treat with caution</template></div>
                         <div class="hpm-dft-mean-stat">
                             <span class="val">{{ dftSel.mean.toFixed(2) }}</span>
-                            <span class="lab">mean SCOP &mdash; heat delivered per unit of electricity</span>
+                            <span class="lab">mean SPF &mdash; heat delivered per unit of electricity</span>
                         </div>
                         <template v-if="dftSel.actual !== null">
                             <svg class="hpm-thermo" viewBox="0 0 420 96" role="img"
@@ -1292,11 +1284,9 @@ global $path;
                     <div class="hpm-note-card">
                         <div class="hpm-note-eyebrow">Why cooler than designed?</div>
                         <p>
-                            Heat-loss calculations are deliberately cautious, so many systems are sized for
-                            a colder house than they ever meet. People and appliances add a few hundred watts
-                            the calculations ignore. And true design-temperature weather is brief &mdash; the
-                            building&rsquo;s thermal mass rides through short cold snaps. Efficiency follows the
-                            temperature a system <em>actually</em> runs at, not the one on the design sheet.
+                            Heat-loss calculations have historically over-estimated heat loss due to factors such as air change rate assumptions.
+                            An apparent 8.5 kW heat loss using the old air-change rate assumptions might be closer to 4.6 kW in reality and consequently radiators sized for 50C at 8.5 kW can actually run at 40C to meet the real heat loss.
+                            Gains from people and appliances and the way thermal mass helps homes ride through breif dips in outside temperature are also not taken into account in the design calculations. 
                         </p>
                     </div>
                 </div>
@@ -1306,6 +1296,7 @@ global $path;
                 <p class="mb-0">{{ finderError ? "Couldn’t load live system data right now — please try again shortly." : "Loading live system data…" }}</p>
             </div>
 
+            <!--
             <p class="hpm-finder-footnote">
                 Groups include systems specifying a design flow temperature within 2&deg;C of the label.
                 &ldquo;Ran at&rdquo; is the weighted mean flow temperature measured on each system&rsquo;s coldest
@@ -1314,6 +1305,7 @@ global $path;
                 temperature alone doesn&rsquo;t explain: hot-water share, controls and commissioning matter as much.
                 <a href="https://community.openenergymonitor.org/t/what-scop-can-you-expect-from-a-system-that-runs-at-55c-and-50c-flow-temperatures-on-the-coldest-days/29547" target="_blank" rel="noopener">Follow the full investigation on our forum <i class="bi bi-arrow-right"></i></a>
             </p>
+-->
         </div>
     </section>
 
@@ -1321,6 +1313,7 @@ global $path;
     <!-- Live scatter of SCOP against running-temperature metrics, from the
          same home/find_homes_like_this dataset. Background:
          docs.openenergymonitor.org/heatpumpmonitor/low_temperature.html -->
+    <!--
     <section class="hpm-section hpm-section-sky">
         <div class="container">
             <div class="hpm-eyebrow"><span class="hpm-eyebrow-num">04</span> What actually correlates</div>
@@ -1420,7 +1413,7 @@ global $path;
             </p>
         </div>
     </section>
-
+    -->
     <!-- ============ 05 · Explore the data ============ -->
     <section class="hpm-section">
         <div class="container">
@@ -1560,6 +1553,9 @@ global $path;
             homes: [],
             finderLoading: true,
             finderError: false,
+            // Featured story: systems actively cooling over the last 7 days
+            cooling: [],
+            coolingError: false,
             finder: Object.assign({}, FINDER_DEFAULTS),
             showCheapest: true,
             costTariff: "agile",
@@ -1655,8 +1651,49 @@ global $path;
                     self.finderLoading = false;
                     self.finderError = true;
                 });
+
+            fetch(path + "home/cooling_systems")
+                .then(function(response) {
+                    if (!response.ok) throw new Error("HTTP " + response.status);
+                    return response.json();
+                })
+                .then(function(data) {
+                    self.cooling = data.map(function(s) {
+                        return {
+                            id: s.id,
+                            location: s.location || "",
+                            manufacturer: s.hp_manufacturer || "",
+                            model: s.hp_model || "",
+                            capacity: s.hp_output,
+                            floor: s.floor_area,
+                            cop: s.cooling_cop,
+                            elec: s.cooling_elec_kwh,
+                            heat: s.cooling_heat_kwh
+                        };
+                    });
+                })
+                .catch(function(error) {
+                    console.error("cooling_systems:", error);
+                    self.coolingError = true;
+                });
         },
         computed: {
+            // ---- Featured story: active cooling over the last 7 days ----
+            coolingTop: function() {
+                return this.cooling.slice().sort(function(a, b) { return b.heat - a.heat; }).slice(0, 5);
+            },
+            coolingTotalKwh: function() {
+                return this.cooling.reduce(function(sum, h) { return sum + h.heat; }, 0);
+            },
+            // Fleet-wide cooling COP: total heat removed over total electricity used,
+            // across the systems reporting both
+            coolingAvgCop: function() {
+                var elec = 0, heat = 0;
+                this.cooling.forEach(function(h) {
+                    if (h.elec > 0 && h.heat > 0) { elec += h.elec; heat += h.heat; }
+                });
+                return elec > 0 ? heat / elec : 0;
+            },
             finderActive: function() {
                 var f = this.finder;
                 return Object.keys(FINDER_DEFAULTS).some(function(k) { return f[k] !== "Any"; });
