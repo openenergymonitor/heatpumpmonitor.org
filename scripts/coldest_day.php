@@ -23,11 +23,14 @@ $apply_changes = true;
 $data = $system->list_admin();
 foreach ($data as $row) {
     $systemid = $row->id;
+    // if ($systemid != 759) continue; // TEMP: only process system 759 for now
+
     echo "System ".$row->id." ".$row->location."\n";
     
     // Daily stats are stored in the emoncms.org app database, keyed by app_id
     $appid = (int) $row->app_id;
     if ($appid <= 0) continue;
+
 
     // Get current values from system_meta to compare
     $result2 = $mysqli->query("SELECT measured_outside_temp_coldest_day, measured_room_temp_coldest_day, measured_mean_flow_temp_coldest_day FROM system_meta WHERE `id` = '$systemid' LIMIT 1");
@@ -36,54 +39,54 @@ foreach ($data as $row) {
     $last_roomT = $row2->measured_room_temp_coldest_day;
     $last_flowT = $row2->measured_mean_flow_temp_coldest_day;
 
-    // Find the coldest day (by combined outside temp) in the last year from the daily stats table
-    $result = $emoncms_mysqli->query("SELECT * FROM myheatpump_daily_stats WHERE `id` = '$appid' AND `timestamp` > '$start_1year_ago' ORDER BY `combined_outsideT_mean` ASC LIMIT 1");
+    // Find the coldest day (by combined outside temp) in the last year from the daily stats table,
+    // ignoring days where the outside temp is missing (NULLs would otherwise sort first)
+    $result = $emoncms_mysqli->query("SELECT * FROM myheatpump_daily_stats WHERE `id` = '$appid' AND `timestamp` > '$start_1year_ago' AND `weighted_outsideT` IS NOT NULL ORDER BY `weighted_outsideT` ASC LIMIT 1");
+    $row = $result->fetch_object();
 
-    while ($row = $result->fetch_object()) {
-        $roomT = $row->running_roomT_mean;
-        $outsideT = $row->weighted_outsideT;
-        $combined_cop = $row->combined_cop;
-        $flowT = $row->weighted_flowT;
+    // only clear existing values if there are no sub 4C days at all
+    if (!$row || $row->weighted_outsideT >= 4) {
+        echo " Skipping system $systemid - no days below 4C with outside temp data\n";
 
-        // skip if outside temp is null
-        if ($outsideT === null) {
-            echo " Skipping system $systemid - outside temp is null\n";
-
-            // clear any existing values in system_meta for this system
-            if ($apply_changes) {
-                $mysqli->query("UPDATE system_meta SET measured_outside_temp_coldest_day = NULL, measured_room_temp_coldest_day = NULL, measured_mean_flow_temp_coldest_day = NULL WHERE `id` = '$systemid'");
-            }
-
-            continue;
+        // clear any existing values in system_meta for this system
+        if ($apply_changes) {
+            $mysqli->query("UPDATE system_meta SET measured_outside_temp_coldest_day = NULL, measured_room_temp_coldest_day = NULL, measured_mean_flow_temp_coldest_day = NULL WHERE `id` = '$systemid'");
         }
 
-        if ($outsideT>-10 && $outsideT<5 && $combined_cop>0) {
+        continue;
+    }
 
-            echo_status($outsideT, $last_outsideT, "outside temp");
-            echo_status ($roomT, $last_roomT, "room temp");
-            echo_status ($flowT, $last_flowT, "flow temp");
+    $roomT = $row->running_roomT_mean;
+    $outsideT = $row->weighted_outsideT;
+    $combined_cop = $row->combined_cop;
+    $flowT = $row->weighted_flowT;
 
-            // update system_meta with all coldest day measurements in a single query
-            if ($apply_changes) {
+    if ($outsideT>-10 && $outsideT<5 && $combined_cop>0) {
 
-                // Update each field individually if numeric
-                if (is_numeric($outsideT)) {
-                    $mysqli->query("UPDATE system_meta SET measured_outside_temp_coldest_day = '$outsideT' WHERE `id` = '$systemid'");
-                } else {
-                    echo " Skipping outside temp update - invalid value: $outsideT\n";
-                }
+        echo_status($outsideT, $last_outsideT, "outside temp");
+        echo_status ($roomT, $last_roomT, "room temp");
+        echo_status ($flowT, $last_flowT, "flow temp");
 
-                if (is_numeric($roomT)) {
-                    $mysqli->query("UPDATE system_meta SET measured_room_temp_coldest_day = '$roomT' WHERE `id` = '$systemid'");
-                } else {
-                    echo " Skipping room temp update - invalid value: $roomT\n";
-                }
+        // update system_meta with all coldest day measurements in a single query
+        if ($apply_changes) {
 
-                if (is_numeric($flowT)) {
-                    $mysqli->query("UPDATE system_meta SET measured_mean_flow_temp_coldest_day = '$flowT' WHERE `id` = '$systemid'");
-                } else {
-                    echo " Skipping flow temp update - invalid value: $flowT\n";
-                }
+            // Update each field individually if numeric
+            if (is_numeric($outsideT)) {
+                $mysqli->query("UPDATE system_meta SET measured_outside_temp_coldest_day = '$outsideT' WHERE `id` = '$systemid'");
+            } else {
+                echo " Skipping outside temp update - invalid value: $outsideT\n";
+            }
+
+            if (is_numeric($roomT)) {
+                $mysqli->query("UPDATE system_meta SET measured_room_temp_coldest_day = '$roomT' WHERE `id` = '$systemid'");
+            } else {
+                echo " Skipping room temp update - invalid value: $roomT\n";
+            }
+
+            if (is_numeric($flowT)) {
+                $mysqli->query("UPDATE system_meta SET measured_mean_flow_temp_coldest_day = '$flowT' WHERE `id` = '$systemid'");
+            } else {
+                echo " Skipping flow temp update - invalid value: $flowT\n";
             }
         }
     }

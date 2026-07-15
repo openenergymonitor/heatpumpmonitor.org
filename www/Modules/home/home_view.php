@@ -205,6 +205,38 @@ global $path;
     color: var(--hpm-muted);
 }
 
+/* ---- "Top of the SCOPs" winner card ---- */
+.hpm-winner-card {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    text-decoration: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.hpm-winner-card:hover {
+    border-color: var(--hpm-amber);
+    box-shadow: 0 8px 24px rgba(20, 52, 74, 0.12);
+}
+.hpm-winner-trophy {
+    flex: 0 0 auto;
+    width: 3.6rem;
+    height: 3.6rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fdf1d7 0%, #f8dfa8 100%);
+    color: #b8860b;
+    font-size: 1.75rem;
+}
+.hpm-winner-eyebrow {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--hpm-amber);
+}
+
 /* ---- featured story panel ---- */
 .hpm-featured {
     background: linear-gradient(120deg, var(--hpm-panel-1) 0%, var(--hpm-panel-2) 100%);
@@ -654,6 +686,14 @@ global $path;
     outline: 3px solid rgba(68, 179, 226, 0.55);
     outline-offset: 2px;
 }
+/* Compact variant for the segmented control inside a leaderboard header */
+.hpm-leaderboard-head { flex-wrap: wrap; align-items: center; }
+.hpm-leaderboard-head .hpm-seg { padding: 0.2rem; }
+.hpm-leaderboard-head .hpm-seg button {
+    padding: 0.3rem 0.65rem;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
 
 /* COP distribution dot strip */
 .hpm-strip { width: 100%; height: auto; display: block; }
@@ -706,8 +746,23 @@ global $path;
 .hpm-dft .row-count { font-size: 11.5px; fill: var(--hpm-muted); font-family: inherit; cursor: pointer; }
 .hpm-dft .row-mean { font-size: 15px; font-weight: 700; fill: var(--hpm-ink); font-family: inherit; font-variant-numeric: tabular-nums; }
 .hpm-dft .row-mean .lab { font-size: 11.5px; font-weight: 600; fill: var(--hpm-muted); }
-.hpm-dft .dot-sel { fill: var(--hpm-teal); stroke: #fff; stroke-width: 1.5; cursor: pointer; }
-.hpm-dft .dot-dim { fill: #aac4d4; stroke: #fff; stroke-width: 1.5; cursor: pointer; }
+.hpm-dft .dot-sel { fill: var(--hpm-teal); stroke: #fff; stroke-width: 1.5; cursor: pointer; transition: stroke 0.12s ease, stroke-width 0.12s ease, filter 0.12s ease; }
+.hpm-dft .dot-dim { fill: #aac4d4; stroke: #fff; stroke-width: 1.5; cursor: pointer; transition: stroke 0.12s ease, stroke-width 0.12s ease, filter 0.12s ease, fill 0.12s ease; }
+.hpm-dft .dot-sel:hover,
+.hpm-dft .dot-dim:hover {
+    stroke: rgba(42, 157, 143, 0.4);
+    stroke-width: 5;
+    filter: drop-shadow(0 0 4px rgba(42, 157, 143, 0.65));
+}
+.hpm-dft .dot-dim:hover { fill: var(--hpm-teal); }
+.hpm-dft .dot-sel.nm { fill: var(--hpm-amber); }
+.hpm-dft .dot-dim.nm { fill: #d9b98c; }
+.hpm-dft .dot-sel.nm:hover,
+.hpm-dft .dot-dim.nm:hover {
+    stroke: rgba(201, 119, 22, 0.4);
+    filter: drop-shadow(0 0 4px rgba(201, 119, 22, 0.65));
+}
+.hpm-dft .dot-dim.nm:hover { fill: var(--hpm-amber); }
 .hpm-dft .mean-tick { stroke: var(--hpm-ink); stroke-width: 2; opacity: 0.75; }
 
 .hpm-thermo { width: 100%; height: auto; display: block; }
@@ -814,8 +869,8 @@ global $path;
                 </div>
                 <div class="col-6 col-lg-3">
                     <div class="hpm-stat-card">
-                        <div class="hpm-stat-value">£{{ (stats.median_electricity_kwh * stats.median_unit_rate_agile * 0.01).toFixed(0) }} <small>/year</small></div>
-                        <div class="hpm-stat-label">Median running costs on Octopus Agile for {{ stats.median_electricity_kwh }} kWh ({{ stats.median_unit_rate_agile }} <small>p/kWh</small>)</div>
+                        <div class="hpm-stat-value">£{{ (9000 / stats.mean_spf_h4 * stats.median_unit_rate_agile * 0.01).toFixed(0) }} <small>/year</small></div>
+                        <div class="hpm-stat-label">Running costs for a typical UK home. Heat demand of 9000 kWh/year, Octopus Agile median unit rate {{ stats.median_unit_rate_agile }} p/kWh.</div>
                     </div>
                 </div>
                 <div class="col-6 col-lg-3">
@@ -1137,7 +1192,7 @@ global $path;
                             </div>
                         </div>
                     </div>
-                    <div class="col-lg-5">
+                    <div class="col-lg-5 d-flex flex-column gap-4">
                         <div class="hpm-leaderboard">
                             <div class="hpm-leaderboard-head" style="flex-wrap:wrap;">
                                 <h3>{{ tariffRankDef.title }}</h3>
@@ -1160,6 +1215,19 @@ global $path;
                                 Explore all {{ tariffStats.n }} in cost mode <i class="bi bi-arrow-right"></i>
                             </a>
                         </div>
+                        <!--
+                        <div class="hpm-note-card">
+                            <div class="hpm-note-eyebrow">Go further &middot; solar &amp; battery storage</div>
+                            <p class="mb-2">
+                                Further savings are possible by combining a heat pump with battery storage and/or solar PV.
+                                In our energy co-benefits model, built on real half-hourly household data, a heat pump with
+                                an SPF of 4 saves &pound;134/year over gas on a flat-rate tariff and &pound;475/year on Agile.
+                                Adding 4 kWp of solar PV and a 10 kWh home battery arbitraging Agile prices lifts the combined
+                                saving to &approx;&pound;630/year &mdash; all figures include annualised equipment costs.
+                            </p>
+                            <p class="mb-0"><a href="https://community.openenergymonitor.org/t/what-are-the-co-benefits-of-solar-battery-hp-ev-tariff/30095" target="_blank" rel="noopener" style="color:#9fd3ec;">Explore the co-benefits analysis on our forum <i class="bi bi-arrow-right"></i></a></p>
+                        </div>
+-->
                     </div>
                 </div>
             </div>
@@ -1188,19 +1256,122 @@ global $path;
         </div>
     </section>
 
-    <!-- ============ 03 · Design flow temperature ============ -->
-    <!-- Uses the same home/find_homes_like_this dataset as the finder below.
-         Background: community.openenergymonitor.org/t/29547 -->
+    <!-- ============ 03 · SPF distribution ============ -->
+    <!-- Histogram of measured SPF across the same home/find_homes_like_this
+         dataset used by the sections above and below. -->
     <section class="hpm-section">
         <div class="container">
-            <div class="hpm-eyebrow"><span class="hpm-eyebrow-num">03</span> Design flow temperature</div>
+            <div class="hpm-eyebrow"><span class="hpm-eyebrow-num">03</span> Efficiency distribution</div>
+            <h2 class="hpm-display mb-3">How <span class="hpm-accent">efficient</span> are these systems?</h2>
+            <p class="hpm-lead mb-5">
+                The seasonal performance factor (SPF) is the headline efficiency figure for a heat pump: the units of heat delivered per unit of electricity consumed over a full year, space heating and hot water combined. This is how it&rsquo;s distributed across the systems used throughout this page.
+            </p>
+
+            <div v-if="!finderLoading && !finderError">
+                <div class="row g-3 mb-4">
+                    <div class="col-sm-6">
+                        <div class="hpm-stat-card">
+                            <div class="hpm-stat-value hpm-stat-teal">{{ spfStats.mean.toFixed(2) }}</div>
+                            <div class="hpm-stat-label">mean SPF, range {{ spfStats.min.toFixed(1) }}&ndash;{{ spfStats.max.toFixed(1) }}</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <a v-if="spfRankedHomes.length" class="hpm-stat-card hpm-winner-card" :href="path + 'system/view?id=' + spfRankedHomes[0].id">
+                            <div class="hpm-winner-trophy"><i class="bi bi-trophy-fill"></i></div>
+                            <div>
+                                <div class="hpm-winner-eyebrow">Top of the SCOPs</div>
+                                <div class="hpm-stat-value hpm-stat-teal">{{ spfRankedHomes[0].cop.toFixed(2) }}</div>
+                                <div class="hpm-stat-label">{{ spfRankedHomes[0].location }} &middot; {{ homeSubtitle(spfRankedHomes[0]) }}</div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="row g-4">
+                <div class="col-lg-7">
+                    <div class="hpm-chart-card">
+                        <h3>Measured SPF across {{ spfStats.n }} systems</h3>
+                        <div class="hpm-chart-sub">Space heating &amp; hot water combined, last 365 days &middot; count of systems per 0.1 SPF band &middot; hover for detail</div>
+                        <svg class="hpm-hist" viewBox="0 0 680 350" role="img"
+                             :aria-label="'Histogram of measured SPF across ' + spfStats.n + ' systems in 0.1 SPF bands. The median is ' + spfStats.median.toFixed(2) + ', and half of all systems fall between ' + spfStats.q1.toFixed(1) + ' and ' + spfStats.q3.toFixed(1) + '.'">
+                            <rect class="iqr" :x="spfX(spfStats.q1)" y="18" :width="spfX(spfStats.q3) - spfX(spfStats.q1)" height="282"></rect>
+                            <g>
+                                <line v-for="t in spfYTicks" class="grid" x1="50" :y1="spfY(t)" x2="660" :y2="spfY(t)"></line>
+                                <text v-for="t in spfYTicks" class="axis-label" x="42" :y="spfY(t) + 4" text-anchor="end">{{ t }}</text>
+                                <text class="axis-title" x="16" y="160" transform="rotate(-90 16 160)" text-anchor="middle">Systems</text>
+                            </g>
+                            <g>
+                                <text v-for="t in spfXTicks" class="axis-label" :x="spfX(t)" y="322" text-anchor="middle">{{ t.toFixed(1) }}</text>
+                                <text class="axis-title" x="355" y="348" text-anchor="middle">Measured SPF &mdash; heat delivered per unit of electricity</text>
+                            </g>
+                            <g>
+                                <rect v-for="b in spfBins" class="bar" :x="b.x + 1" :y="b.y" :width="b.w - 2" :height="b.h" rx="2">
+                                    <title>{{ b.label }}</title>
+                                </rect>
+                            </g>
+                            <line class="median-line" :x1="spfX(spfStats.median)" y1="18" :x2="spfX(spfStats.median)" y2="300"></line>
+                            <g>
+                                <rect class="median-chip" :x="spfX(spfStats.median) - 52" y="256" width="104" height="24" rx="5"></rect>
+                                <text class="median-chip-text" :x="spfX(spfStats.median)" y="272" text-anchor="middle">Median {{ spfStats.median.toFixed(2) }}</text>
+                            </g>
+                        </svg>
+                        <div class="hpm-legend">
+                            <span><span class="hpm-swatch" style="background:#2a9d8f;"></span> Systems per 0.1 SPF band</span>
+                            <span><span class="hpm-swatch" style="background:rgba(42,157,143,0.16); width:1rem; border-radius:3px;"></span> Middle 50% of systems</span>
+                            <span><span class="hpm-swatch" style="background:#c97716; height:0.2rem; width:1rem; border-radius:2px;"></span> Median</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-5">
+                    <div class="hpm-leaderboard">
+                        <div class="hpm-leaderboard-head">
+                            <h3>SPF ranking</h3>
+                            <div class="hpm-seg">
+                                <button :class="{active: spfLeaderMode==='top'}" @click="spfLeaderMode='top'">Top 5</button>
+                                <button :class="{active: spfLeaderMode==='median'}" @click="spfLeaderMode='median'">Median 5</button>
+                                <button :class="{active: spfLeaderMode==='bottom'}" @click="spfLeaderMode='bottom'">Bottom 5</button>
+                            </div>
+                        </div>
+                        <ol>
+                            <li v-for="r in spfLeaders" style="padding:0;">
+                                <a class="hpm-leader-link" :href="path + 'system/view?id=' + r.h.id">
+                                    <span class="hpm-rank">{{ r.rank }}</span>
+                                    <span><span class="hpm-place">{{ r.h.location }}</span><br><span class="hpm-model">{{ homeSubtitle(r.h) }}</span></span>
+                                    <span class="hpm-val"><span class="hpm-kwh">{{ r.h.cop.toFixed(2) }}</span><br><span class="hpm-temp">SPF</span></span>
+                                </a>
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+                </div>
+
+                <div class="hpm-note-card mt-4">
+                    <div class="hpm-note-eyebrow">How SPF is measured</div>
+                    <p>
+                        These figures are measured at the <strong>H4 boundary</strong>: all electricity used by the system &mdash; the heat pump itself, circulation pumps, controls and any backup heating &mdash; counted against the heat delivered for space heating and hot water over the last 365 days. This is the same boundary used by previous UK Gov funded field trials, making the figures directly comparable.
+                    </p>
+                </div>
+            </div>
+
+            <div v-else class="hpm-finder-empty">
+                <p class="mb-0">{{ finderError ? "Couldn’t load live system data right now — please try again shortly." : "Loading live system data…" }}</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ 04 · Design flow temperature ============ -->
+    <!-- Uses the same home/find_homes_like_this dataset as the finder below.
+         Background: community.openenergymonitor.org/t/29547 -->
+    <section class="hpm-section hpm-section-sky">
+        <div class="container">
+            <div class="hpm-eyebrow"><span class="hpm-eyebrow-num">04</span> Design flow temperature</div>
             <!--<h2 class="hpm-display mb-3">The design flow temperature <span class="hpm-accent">isn&rsquo;t destiny</span>.</h2>-->
             <h2 class="hpm-display mb-3">What <span class="hpm-accent">performance</span> can I expect?</h2>
 
             <p class="hpm-lead mb-5">
-                The design flow temperature of a system (the flow temperature the system is designed to run at on the coldest point of the year) is often used to predict how efficient a system will run.
+                The flow temperature that a system is designed to run at on the coldest hours of the year (e.g -3°C) is often used to predict how efficiently that system will run over a full year.
 
-                In practice we find that systems designed to run at higher flow temperatures can often run at lower flow temperatures than expected and consequently achieved higher performance. <b>This crucially requires carefull tuning of weather-compensation or the use of a heat pump optimiser.</b>
+                In practice, for a variety of reasons, we don't find that strong a correlation between the design flow temperature and the actual average flow temperature that systems runs at on the coldest days.
             </p>
             <!--
             <p class="hpm-lead mb-5">
@@ -1218,7 +1389,7 @@ global $path;
                 <div class="col-lg-7">
                     <div class="hpm-chart-card">
                         <h3>Design temperature vs Performance</h3>
-                        <div class="hpm-chart-sub">Each dot is one system's measured SPF/SCOP over the last 365 days &middot; click a row to select it</div>
+                        <div class="hpm-chart-sub">Each dot is one system's measured SPF/SCOP over the last 365 days &middot; click a row to select it &middot; click a dot to open that system</div>
                         <svg class="hpm-dft" viewBox="0 0 680 304" role="img"
                              aria-label="Five dot strips of measured SCOP, one per design flow temperature from 35 to 55 degrees. Group means fall gently from about 4.1 at 35 degrees design to about 3.6 at 55 degrees, while the spread within every group is far wider than the difference between them.">
                             <g>
@@ -1233,8 +1404,8 @@ global $path;
                                 <text class="row-label" x="12" :y="row.center - 1" @click="designTemp=row.t">{{ row.t }}&deg;C</text>
                                 <text class="row-count" x="12" :y="row.center + 15" @click="designTemp=row.t">{{ row.n }} system{{ row.n===1 ? '' : 's' }}</text>
                                 <line v-if="row.n" class="mean-tick" :x1="row.meanX" :y1="row.center - 17" :x2="row.meanX" :y2="row.center + 17"></line>
-                                <circle v-for="d in row.dots" :class="row.t===designTemp ? 'dot-sel' : 'dot-dim'"
-                                        :cx="d.x" :cy="d.y" :r="d.r" @click="designTemp=row.t">
+                                <circle v-for="d in row.dots" :class="[row.t===designTemp ? 'dot-sel' : 'dot-dim', {nm: d.nm}]"
+                                        :cx="d.x" :cy="d.y" :r="d.r" @click.stop="openSystem(d.id)">
                                     <title>{{ d.label }}</title>
                                 </circle>
                                 <text v-if="row.n" class="row-mean" x="674" :y="row.center + 5" text-anchor="end"><tspan class="lab">mean </tspan>{{ row.mean.toFixed(2) }}</text>
@@ -1242,6 +1413,7 @@ global $path;
                         </svg>
                         <div class="hpm-legend">
                             <span><span class="hpm-swatch" style="background:#2a9d8f;"></span> Selected group</span>
+                            <span><span class="hpm-swatch" style="background:#c97716;"></span> No coldest-day flow temp data</span>
                             <span><span class="hpm-swatch" style="background:#aac4d4;"></span> Other design temperatures</span>
                             <span><span class="hpm-swatch" style="background:#14344a; width:0.2rem; border-radius:2px;"></span> Group mean</span>
                         </div>
@@ -1313,7 +1485,7 @@ global $path;
     <!-- Live scatter of SCOP against running-temperature metrics, from the
          same home/find_homes_like_this dataset. Background:
          docs.openenergymonitor.org/heatpumpmonitor/low_temperature.html -->
-    <!--
+    
     <section class="hpm-section hpm-section-sky">
         <div class="container">
             <div class="hpm-eyebrow"><span class="hpm-eyebrow-num">04</span> What actually correlates</div>
@@ -1413,8 +1585,10 @@ global $path;
             </p>
         </div>
     </section>
-    -->
+    
     <!-- ============ 05 · Explore the data ============ -->
+
+    
     <section class="hpm-section">
         <div class="container">
             <div class="hpm-eyebrow"><span class="hpm-eyebrow-num">05</span> Explore the data</div>
@@ -1459,9 +1633,10 @@ global $path;
                 </div>
             </div>
         </div>
-    </section>
+    </section>-->
 
     <!-- ============ 06 · Add your system ============ -->
+    
     <section class="hpm-section hpm-section-sky">
         <div class="container">
             <div class="hpm-eyebrow"><span class="hpm-eyebrow-num">06</span> Join in</div>
@@ -1500,8 +1675,9 @@ global $path;
             </div>
         </div>
     </section>
-
+    -->
     <!-- ============ Closing band ============ -->
+    
     <section class="hpm-closing">
         <div class="container">
             <div class="row align-items-center g-4">
@@ -1523,7 +1699,7 @@ global $path;
             </div>
         </div>
     </section>
-
+    
 </div>
 
 <script>
@@ -1551,6 +1727,7 @@ global $path;
 
             // Homes like yours
             homes: [],
+            spfLeaderMode: "top",
             finderLoading: true,
             finderError: false,
             // Featured story: systems actively cooling over the last 7 days
@@ -2004,6 +2181,105 @@ global $path;
                 return ticks;
             },
 
+            // ---- SPF distribution histogram ----
+            spfValues: function() {
+                return this.homes.map(function(h) { return h.cop; })
+                    .filter(function(v) { return v !== null && v > 0; })
+                    .sort(function(a, b) { return a - b; });
+            },
+            spfStats: function() {
+                var v = this.spfValues;
+                var q = this.quantile;
+                if (!v.length) return { n: 0, median: 0, mean: 0, q1: 0, q3: 0, min: 0, max: 0 };
+                return {
+                    n: v.length,
+                    median: q(v, 0.5),
+                    mean: v.reduce(function(a, b) { return a + b; }, 0) / v.length,
+                    q1: q(v, 0.25),
+                    q3: q(v, 0.75),
+                    min: v[0],
+                    max: v[v.length - 1]
+                };
+            },
+            // Systems ranked by SPF, best first, for the winner card and top/median/bottom 5 card
+            spfRankedHomes: function() {
+                return this.homes
+                    .filter(function(h) { return h.cop !== null && h.cop > 0; })
+                    .slice()
+                    .sort(function(a, b) { return b.cop - a.cop; });
+            },
+            spfLeaders: function() {
+                var ranked = this.spfRankedHomes;
+                var n = ranked.length;
+                if (!n) return [];
+                var start = 0;
+                if (this.spfLeaderMode === "bottom") start = Math.max(0, n - 5);
+                else if (this.spfLeaderMode === "median") start = Math.max(0, Math.round(n / 2) - 3);
+                return ranked.slice(start, start + 5).map(function(h, i) {
+                    return { h: h, rank: start + i + 1 };
+                });
+            },
+            // SPF axis snapped outwards to 0.5 steps
+            spfDomain: function() {
+                var v = this.spfValues;
+                if (!v.length) return { lo: 2, hi: 6 };
+                var lo = Math.floor(v[0] * 2) / 2;
+                var hi = Math.ceil(v[v.length - 1] * 2) / 2;
+                if (hi - lo < 1) hi = lo + 1;
+                return { lo: lo, hi: hi };
+            },
+            spfXTicks: function() {
+                var ticks = [];
+                var d = this.spfDomain;
+                for (var t = d.lo; t <= d.hi + 1e-9; t += 0.5) ticks.push(t);
+                return ticks;
+            },
+            spfBinCounts: function() {
+                var d = this.spfDomain;
+                var binw = 0.1;
+                var nbins = Math.round((d.hi - d.lo) / binw);
+                var counts = [];
+                for (var i = 0; i < nbins; i++) counts.push(0);
+                this.spfValues.forEach(function(v) {
+                    // the epsilon keeps values like 3.5 out of the 3.4–3.5 bin
+                    var i = Math.min(Math.floor((v - d.lo) / binw + 1e-9), nbins - 1);
+                    if (i < 0) i = 0;
+                    counts[i]++;
+                });
+                return counts;
+            },
+            spfMaxCount: function() {
+                return Math.max.apply(null, this.spfBinCounts.concat([1]));
+            },
+            spfBins: function() {
+                var d = this.spfDomain;
+                var binw = 0.1;
+                var self = this;
+                return this.spfBinCounts.map(function(c, i) {
+                    var x0 = d.lo + i * binw;
+                    var x1 = x0 + binw;
+                    var y = self.spfY(c);
+                    return {
+                        x: self.spfX(x0),
+                        w: self.spfX(x1) - self.spfX(x0),
+                        y: y,
+                        h: 300 - y,
+                        label: "SPF " + x0.toFixed(1) + "–" + x1.toFixed(1) + " — " + c + " system" + (c === 1 ? "" : "s"),
+                        count: c
+                    };
+                });
+            },
+            spfYTicks: function() {
+                var steps = [1, 2, 5, 10, 20, 25, 50, 100];
+                var step = steps[steps.length - 1];
+                for (var i = 0; i < steps.length; i++) {
+                    if (this.spfMaxCount / steps[i] <= 5) { step = steps[i]; break; }
+                }
+                var ticks = [];
+                for (var t = step; t <= this.spfMaxCount + 1e-9; t += step) ticks.push(t);
+                return ticks;
+            },
+
             // ---- Design flow temperature explorer ----
             // Systems grouped by design flow temp, within 2°C of each label
             dftGroups: function() {
@@ -2088,13 +2364,16 @@ global $path;
                         stacks[bin] = k + 1;
                         var side = k % 2 ? 1 : -1;
                         var level = Math.ceil(k / 2);
+                        var hasMeasured = h.measured !== null && h.measured > 20;
                         return {
+                            id: h.id,
                             x: self.dftX(h.cop),
                             y: center + side * level * dy,
                             r: r,
+                            nm: !hasMeasured,
                             label: h.location + " — " + subtitle(h) + " · SCOP " + h.cop.toFixed(1)
                                  + " · designed " + h.design + "°C"
-                                 + (h.measured !== null ? ", ran at " + h.measured.toFixed(1) + "°C" : "")
+                                 + (hasMeasured ? ", ran at " + h.measured.toFixed(1) + "°C" : ", no coldest-day flow temp data")
                         };
                     });
                     return { t: t, top: top, center: center, n: g.length, mean: stats.mean, meanX: self.dftX(stats.mean), dots: dots };
@@ -2189,6 +2468,16 @@ global $path;
             // Map a bin count onto the histogram's 30–300 plot height
             histY: function(count) {
                 return 300 - (count / this.histMaxCount) * 270;
+            },
+            // Map SPF onto the distribution histogram's 50–660 plot width
+            spfX: function(v) {
+                var d = this.spfDomain;
+                var c = Math.min(Math.max(v, d.lo), d.hi);
+                return 50 + (c - d.lo) / (d.hi - d.lo) * 610;
+            },
+            // Map a bin count onto the distribution histogram's 30–300 plot height
+            spfY: function(count) {
+                return 300 - (count / this.spfMaxCount) * 270;
             },
             // The selected running-temperature metric for a system, or null
             metricValue: function(h) {
