@@ -124,7 +124,7 @@ foreach ($data as $row) {
     $userid = (int) $row->userid;
     $systemid = (int) $row->id;
 
-    //if ($systemid!=150) continue;
+    //if ($systemid!=112) continue;
 
     print $systemid."\n";
     
@@ -144,7 +144,7 @@ foreach ($data as $row) {
             $apikeystr = "";
             if ($config->apikey) $apikeystr = "&apikey=".$config->apikey;
             // Load heatpump_elec_kwh feed data
-            $url = "$config->server/feed/data.json?id=".$config->feeds->heatpump_elec_kwh->feedid."&start=$start&end=$end&interval=$interval&average=0&delta=1&skipmissing=0&timeformat=$timeformat".$apikeystr;
+            $url = "$config->server/feed/data.json?id=".$config->feeds->heatpump_elec->feedid."&start=$start&end=$end&interval=$interval&average=1&skipmissing=0&timeformat=$timeformat".$apikeystr;
             
             $result_str = file_get_contents($url);
             $result = json_decode($result_str);
@@ -192,7 +192,7 @@ foreach ($data as $row) {
 
             for ($j=0; $j<count($result); $j++) {
                 $time = $start + $j*$interval;
-                $kwh = $result[$j];
+                $kwh = $result[$j] * 1800 / 3600000;
                 // $kwh>=0 rejects negative deltas from meter resets / feed re-basing,
                 // which otherwise break the weighted-average bound and produce absurd p/kWh
                 if ($kwh!==null && $kwh>=0 && $agile[$j]!==null && $cosy[$j]!==null && $go[$j]!==null) {

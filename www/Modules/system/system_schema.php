@@ -656,7 +656,19 @@ $schema['system_meta'] = array(
         'name' => 'Includes indoor controller or other controls', 
         'group' => 'Metering',
         'basic' => true
-    ),    
+    ),
+    
+    'metering_boundary_code' => array(
+        'type' => 'int(11)',
+        'editable' => true, 
+        'optional' => true, 
+        'name' => 'Metering boundary code', 
+        'heading' => 'Hx',
+        'helper' => 'SEPEMO metering boundary code',
+        'group' => 'Metering',
+        'disabled' => true,
+        'basic' => true
+    ),
 
     'notes' => array(
         'type' => 'text',

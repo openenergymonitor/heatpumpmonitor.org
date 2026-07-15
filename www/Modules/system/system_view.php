@@ -399,7 +399,7 @@ global $settings, $session, $path;
                             <span v-if="field.type!='tinyint(1)'">
                                 <!-- Edit mode text input -->
                                 <div class="input-group" v-if="mode=='edit' && !field.options">
-                                    <input class="form-control" type="text" v-model="system[key]" @change="filter_schema_groups">
+                                    <input class="form-control" type="text" v-model="system[key]" @change="filter_schema_groups" :disabled="field.disabled">
                                     <span class="input-group-text" v-if="field.unit">{{ field.unit }}</span>
                                 </div>
                                 <!-- View mode select input -->
@@ -1064,6 +1064,9 @@ global $settings, $session, $path;
                     this.schema_groups['Measurements']['measured_outside_temp_coldest_day'].show = true;
                 }
 
+                // Determine metering boundary code and keep detailed metering info
+                app.system.metering_boundary_code = calculate_boundary(app.system);
+
             },
 
             filter_schema_groups: function() {
@@ -1462,5 +1465,52 @@ global $settings, $session, $path;
                 app.loading_available_apps = false;
             });
     }
+
+    /**
+     * Calculate monitoring boundary (H1-H4) based on system configuration
+     * 
+     * Based on SEPEMO (Seasonal Performance factor and Monitoring) definitions:
+     * H1: Only includes the energy input to the heat pump compressor
+     * H2: Includes compressor and source fan(s) or brine pump(s)
+     * H3: Includes all energy inputs from H2 plus additional auxiliary energy (backup/immersion heaters)
+     * H4: Covers all energy inputs from H3, plus building circulation pump(s) or fans
+     * 
+     * @param object $system System metadata object
+     * @return int Boundary code (1-4)
+     */
+    function calculate_boundary(system) {
+        const value = (key, fallback) => system[key] ?? fallback;
+        const enabled = (key) => {
+            const v = value(key, 0);
+            return v === true || v === 1 || v === '1';
+        };
+
+        const type = value('hp_type', '');
+        const is_ground_or_water = (type === 'Ground Source' || type === 'Water Source');
+        const is_air_to_air = (type === 'Air-to-Air');
+
+        const hydraulic_separation = value('hydraulic_separation', 'None');
+        const has_hydraulic_separation = hydraulic_separation !== 'None';
+
+        const brine_pump_metered = is_ground_or_water ? enabled('metering_inc_brine_pumps') : null;
+        const primary_pump_metered = enabled('metering_inc_central_heating_pumps');
+        const secondary_pumps_metered = has_hydraulic_separation ? enabled('metering_inc_secondary_heating_pumps') : null;
+
+        const immersion_heater_used = enabled('legionella_immersion');
+        const immersion_heater_metered = immersion_heater_used ? enabled('metering_inc_immersion') : null;
+
+        const backup_heater_used = enabled('uses_backup_heater');
+        const backup_heater_metered = backup_heater_used ? enabled('metering_inc_boost') : null;
+
+        let boundary_code = 4;
+        if (has_hydraulic_separation && secondary_pumps_metered === false) boundary_code = 3;
+        if (!primary_pump_metered) boundary_code = 3;
+        if (immersion_heater_used && immersion_heater_metered === false) boundary_code = 2;
+        if (backup_heater_used && backup_heater_metered === false) boundary_code = 2;
+        if (is_ground_or_water && brine_pump_metered === false) boundary_code = 1;
+        if (is_air_to_air) boundary_code = 2;
+
+        return boundary_code;
+     }
 
 </script>

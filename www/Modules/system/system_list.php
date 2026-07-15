@@ -830,75 +830,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
     // Generate boundary HTML from API-provided boundary_code and boundary_metering
     for (var i = 0; i < systems.length; i++) {
-        var boundary_code = systems[i].boundary_code;
-        var metering = systems[i].boundary_metering || {};
-        var type = systems[i].hp_type;
-        
-        // Build helper text from structured metering data
-        var helper = "";
-        
-        // Compressor/fan status
-        if (type == "Ground Source" || type == "Water Source") {
-            helper = "- Compressor metered\n";
-        } else if (type != "Air-to-Air") {
-            helper = "- Compressor and fan metered\n";
-        }
-        
-        // Hydraulic separation / secondary pumps
-        if (metering.hydraulic_separation) {
-            if (metering.secondary_pumps_metered === true) {
-                helper += "- Hydraulic separation used and secondary pumps/fans metered\n";
-            } else if (metering.secondary_pumps_metered === false) {
-                helper += "- Hydraulic separation used but secondary pumps/fans not metered\n";
-            }
-        }
-        
-        // Primary pump
-        if (metering.primary_pump_metered === true) {
-            helper += "- Primary pump metered\n";
-        } else if (metering.primary_pump_metered === false) {
-            helper += "- Primary pump not metered\n";
-        }
-        
-        // Immersion heater
-        if (metering.immersion_heater_used === true) {
-            if (metering.immersion_heater_metered === true) {
-                helper += "- Immersion heater used and metered\n";
-            } else if (metering.immersion_heater_metered === false) {
-                helper += "- Immersion heater used but not metered\n";
-            }
-        } else if (metering.immersion_heater_used === false) {
-            helper += "- Immersion heater not installed or used\n";
-        }
-        
-        // Backup heater
-        if (metering.backup_heater_used === true) {
-            if (metering.backup_heater_metered === true) {
-                helper += "- Backup heater used and metered\n";
-            } else if (metering.backup_heater_metered === false) {
-                helper += "- Backup heater used but not metered\n";
-            }
-        } else if (metering.backup_heater_used === false) {
-            helper += "- Backup heater not installed or used\n";
-        }
-        
-        // Brine pump
-        if ((type == "Ground Source" || type == "Water Source")) {
-            if (metering.brine_pump_metered === true) {
-                helper += "- Brine pump used and metered\n";
-            } else if (metering.brine_pump_metered === false) {
-                helper += "- Brine pump used but not metered\n";
-            }
-        }
-        
-        // Air to air is always 2
-        if (type == "Air-to-Air") {
-            helper = "";
-        }
-        
-        systems[i].boundary = "<span class='H"+boundary_code+"' title='System boundary H"+boundary_code+"\n"+helper+"'>H"+boundary_code+"</span>";
-        
-        systems[i].boundary_code = boundary_code;
+        systems[i].boundary = metering_boundary_helper(systems[i]);
     }
 
     // Calculate over-sizing factor
@@ -1736,7 +1668,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     column=='quality_elec' || column=='water_cop' || column=='prc_demand_hot_water' ||
                     column=='space_cop' || column=='running_cop')
                 {
-                    if (system.boundary_code!=4) {
+                    if (system.metering_boundary_code!=4) {
                         return 'partial';
                     }
                     
@@ -2343,5 +2275,64 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         // apply changes here directly in future
         location.reload();
     }); 
+
+    function metering_boundary_helper(system) {
+        const value = (key, fallback) => system[key] ?? fallback;
+        const enabled = (key) => {
+            const raw = value(key, 0);
+            return raw === true || raw === 1 || raw === '1';
+        };
+        const escape_attr = (s) => String(s).replace(/[&<>"']/g, (c) => (
+            { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+        ));
+
+        const type = value('hp_type', '');
+        const is_ground_or_water = type === 'Ground Source' || type === 'Water Source';
+        const is_air_to_air = type === 'Air-to-Air';
+        const has_hydraulic_separation = value('hydraulic_separation', 'None') !== 'None';
+
+        const lines = [];
+
+        // Air-to-air never gets helper text.
+        if (!is_air_to_air) {
+            lines.push(is_ground_or_water
+            ? '- Compressor metered'
+            : '- Compressor and fan metered');
+
+            if (has_hydraulic_separation) {
+            lines.push(enabled('metering_inc_secondary_heating_pumps')
+                ? '- Hydraulic separation used and secondary pumps/fans metered'
+                : '- Hydraulic separation used but secondary pumps/fans not metered');
+            }
+
+            lines.push(enabled('metering_inc_central_heating_pumps')
+            ? '- Primary pump metered'
+            : '- Primary pump not metered');
+
+            lines.push(
+            !enabled('legionella_immersion') ? '- Immersion heater not installed or used'
+            : enabled('metering_inc_immersion') ? '- Immersion heater used and metered'
+            : '- Immersion heater used but not metered');
+
+            lines.push(
+            !enabled('uses_backup_heater') ? '- Backup heater not installed or used'
+            : enabled('metering_inc_boost') ? '- Backup heater used and metered'
+            : '- Backup heater used but not metered');
+
+            if (is_ground_or_water) {
+            lines.push(enabled('metering_inc_brine_pumps')
+                ? '- Brine pump used and metered'
+                : '- Brine pump used but not metered');
+            }
+        }
+
+        const code = value('metering_boundary_code', '');
+        const helper = lines.length ? lines.join('\n') + '\n' : '';
+        const title = escape_attr(`System boundary H${code}\n${helper}`);
+        const safe_code = escape_attr(code);
+
+        return `<span class="H${safe_code}" title="${title}">H${safe_code}</span>`;
+    }
+
 
 </script>

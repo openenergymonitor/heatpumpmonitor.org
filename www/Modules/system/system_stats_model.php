@@ -736,4 +736,89 @@ class SystemStats
 
         return $accounts;
     }
+
+    public function combined_meta_stats_query($query) {
+
+        // Derive allowlists from the loaded schema definitions so they stay in
+        // sync automatically as fields are added or removed from the schema.
+        // Sensitive fields are excluded: they can be neither selected nor filtered on.
+        $blocked_fields = ['url', 'userid', 'app_id', 'readkey'];
+        $allowed_meta_fields  = array_diff(array_keys($this->system->schema_meta), $blocked_fields);
+        $allowed_stats_fields = array_diff(array_keys($this->schema['system_stats_last365_v2']), $blocked_fields);
+
+        // --- Build meta SELECT (always include id) ---
+        $meta_select_fields = array_unique(array_merge(['id'], $query['meta_fields']));
+        $meta_select_fields = array_intersect($meta_select_fields, $allowed_meta_fields);
+        $meta_select = implode(', ', $meta_select_fields);
+
+        // --- Build WHERE clause (integer values only; cast with intval) ---
+        // Only shared and published systems are ever returned; these filters are
+        // enforced here and cannot be overridden by caller-supplied values.
+        if (!isset($query['meta_filters'])) $query['meta_filters'] = [];
+        $query['meta_filters']['share'] = 1;
+        $query['meta_filters']['published'] = 1;
+
+        $where_parts = [];
+        foreach ($query['meta_filters'] as $field => $value) {
+            if (!in_array($field, $allowed_meta_fields)) {
+                continue;
+            }
+
+            $field_schema = $this->system->schema_meta[$field];
+            $field_type = isset($field_schema['type']) ? strtolower($field_schema['type']) : '';
+
+            if (strpos($field_type, 'int') !== false || strpos($field_type, 'float') !== false) {
+                $where_parts[] = "`$field` = " . ((strpos($field_type, 'float') !== false) ? floatval($value) : intval($value));
+            } else if (isset($field_schema['options']) && in_array($value, $field_schema['options'])) {
+                $where_parts[] = "`$field` = '" . $this->mysqli->real_escape_string($value) . "'";
+            }
+        }
+        $where_sql = $where_parts ? 'WHERE ' . implode(' AND ', $where_parts) : '';
+
+        // --- Query system_meta ---
+        $meta_result = $this->mysqli->query("SELECT $meta_select FROM system_meta $where_sql");
+
+        $system_ids = [];
+        $system_meta = [];
+        while ($row = $meta_result->fetch_object()) {
+            $system_ids[] = $row->id;
+            $system_meta[$row->id] = $row;
+        }
+
+        if (empty($system_ids)) return [];
+
+        // --- Build stats SELECT (always include id) ---
+        $stats_select_fields = array_unique(array_merge(['id'], $query['stats_fields']));
+        $stats_select_fields = array_intersect($stats_select_fields, $allowed_stats_fields);
+        $stats_select = implode(', ', $stats_select_fields);
+
+        $ids_string = implode(',', array_map('intval', $system_ids));
+        $stats_result = $this->mysqli->query(
+            "SELECT $stats_select FROM system_stats_last365_v2 WHERE id IN ($ids_string)"
+        );
+
+        // --- Merge meta + stats ---
+        $systems = [];
+        while ($row = $stats_result->fetch_object()) {
+            if (!isset($system_meta[$row->id])) continue;
+            $systems[] = (object) array_merge((array) $system_meta[$row->id], (array) $row);
+        }
+
+        // --- Sort (field must be allowlisted; null values sort last) ---
+        if (isset($query['sort']['field'])) {
+            $sort_field = $query['sort']['field'];
+            if (in_array($sort_field, $allowed_meta_fields) || in_array($sort_field, $allowed_stats_fields)) {
+                $descending = !isset($query['sort']['order']) || strtolower($query['sort']['order']) !== 'asc';
+                usort($systems, function($a, $b) use ($sort_field, $descending) {
+                    $a_val = $a->$sort_field ?? null;
+                    $b_val = $b->$sort_field ?? null;
+                    if ($a_val === null) return $b_val === null ? 0 : 1;
+                    if ($b_val === null) return -1;
+                    return $descending ? ($b_val <=> $a_val) : ($a_val <=> $b_val);
+                });
+            }
+        }
+
+        return $systems;
+    }
 }
