@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Design-parameter SPF predictor</title>
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<style>
+:root {
+  color-scheme: light;
+  --surface-1: #fcfcfb;
+  --surface-2: #f3f2ef;
+  --border:    #e2e1dc;
+  --text-primary:   #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted:     #8a8985;
+  --series-1: #2a78d6;   /* space heating */
+  --series-2: #008300;   /* hot water */
+  --accent:   #2a78d6;
+  --warn-bg:  #fdf3e3;
+  --warn-ink: #7a5200;
+  --grid:     #ebeae6;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --surface-2: #232322;
+    --border:    #3a3936;
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted:     #8b8a83;
+    --series-1: #3987e5;
+    --series-2: #008300;
+    --accent:   #3987e5;
+    --warn-bg:  #33290f;
+    --warn-ink: #e8c46a;
+    --grid:     #2c2c2a;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--surface-1); color: var(--text-primary);
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+header { padding: 20px 24px 4px; max-width: 1240px; margin: 0 auto; }
+header h1 { font-size: 21px; margin: 0 0 2px; font-weight: 650; }
+header p  { margin: 0; color: var(--text-secondary); font-size: 14px; max-width: 72ch; }
+.layout { display: flex; flex-wrap: wrap; gap: 20px; padding: 16px 24px 40px; max-width: 1240px; margin: 0 auto; align-items: flex-start; }
+.controls { flex: 0 1 320px; min-width: 280px; display: flex; flex-direction: column; gap: 14px; }
+.results  { flex: 1 1 560px; min-width: 320px; display: flex; flex-direction: column; gap: 20px; }
+
+fieldset {
+  border: 1px solid var(--border); border-radius: 10px;
+  padding: 12px 14px 14px; margin: 0; background: var(--surface-2);
+}
+legend { font-size: 12.5px; font-weight: 650; letter-spacing: .04em; text-transform: uppercase; color: var(--text-secondary); padding: 0 6px; }
+.field { display: grid; grid-template-columns: 1fr 86px; gap: 4px 10px; align-items: center; margin-top: 9px; }
+.field:first-of-type { margin-top: 2px; }
+.field label { font-size: 13.5px; color: var(--text-primary); }
+.field .hint { grid-column: 1 / -1; font-size: 12px; color: var(--text-muted); margin-top: -2px; }
+.field input[type=number] {
+  width: 100%; padding: 4px 7px; font: inherit; font-size: 13.5px;
+  color: var(--text-primary); background: var(--surface-1);
+  border: 1px solid var(--border); border-radius: 6px;
+}
+.field input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); margin: 0; }
+
+.warns { display: flex; flex-direction: column; gap: 8px; }
+.warn { background: var(--warn-bg); color: var(--warn-ink); border-radius: 8px; padding: 8px 12px; font-size: 13.5px; }
+.warn::before { content: "⚠ "; }
+
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.tile {
+  border: 1px solid var(--border); border-radius: 10px;
+  padding: 12px 14px 10px; background: var(--surface-2);
+}
+.tile .k { font-size: 12px; color: var(--text-secondary); letter-spacing: .02em; }
+.tile .v { font-size: 26px; font-weight: 680; letter-spacing: -0.01em; margin-top: 1px; font-variant-numeric: tabular-nums; }
+.tile .v small { font-size: 13px; font-weight: 480; color: var(--text-secondary); margin-left: 2px; }
+.tile .s { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.tile.hero { border-color: var(--accent); }
+.tile.hero .v { font-size: 34px; color: var(--accent); }
+
+.card { border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px 10px; background: var(--surface-2); }
+.card h2 { font-size: 14.5px; font-weight: 650; margin: 0 0 2px; }
+.card .sub { font-size: 12.5px; color: var(--text-muted); margin: 0 0 6px; }
+.chartwrap { position: relative; }
+svg { display: block; width: 100%; height: auto; }
+.gridline { stroke: var(--grid); stroke-width: 1; }
+.axisline { stroke: var(--border); stroke-width: 1; }
+.ticklab { fill: var(--text-muted); font-size: 11px; }
+.axistitle { fill: var(--text-secondary); font-size: 11.5px; }
+.dline { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.dlabel { font-size: 11.5px; font-weight: 600; }
+.crosshair { stroke: var(--text-muted); stroke-width: 1; stroke-dasharray: 3 3; }
+.hoverdot { stroke: var(--surface-2); stroke-width: 2; }
+.tooltip {
+  position: absolute; pointer-events: none; background: var(--surface-1);
+  border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px;
+  font-size: 12.5px; box-shadow: 0 2px 10px rgba(0,0,0,.12); white-space: nowrap; z-index: 5;
+}
+.tooltip .t { color: var(--text-secondary); }
+.tooltip .row { display: flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
+.swatch { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+.legend { display: flex; gap: 16px; font-size: 12.5px; color: var(--text-secondary); margin: 2px 0 4px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+
+details.table { border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2); padding: 0 16px; }
+details.table summary { cursor: pointer; padding: 10px 0; font-size: 13.5px; color: var(--text-secondary); }
+details.table table { border-collapse: collapse; width: 100%; font-size: 12.5px; margin-bottom: 12px; font-variant-numeric: tabular-nums; }
+details.table th, details.table td { text-align: right; padding: 3px 10px; border-bottom: 1px solid var(--border); }
+details.table th { color: var(--text-secondary); font-weight: 600; }
+footer { max-width: 1240px; margin: 0 auto; padding: 0 24px 32px; font-size: 12.5px; color: var(--text-muted); }
+footer a { color: inherit; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>Design-parameter SPF predictor</h1>
+    <p>Seasonal performance from the design sheet alone: the weather-compensation curve implied by
+       heat loss and emitter sizing, priced over a standard weather year with a load-dependent
+       ideal-Carnot model (H*). No monitoring data required. Defaults are calibrated to the
+       median observed system in the HeatpumpMonitor.org fleet: annual heat demand, hot-water
+       share and the coldest-day flow temperature all match the fleet medians.</p>
+  </header>
+
+  <div class="layout">
+    <div class="controls">
+      <fieldset>
+        <legend>Building</legend>
+        <div class="field">
+          <label for="hl">Heat loss <small>kW</small></label>
+          <input id="hl" type="number" v-model.number="p.heatLoss" min="1" max="30" step="0.1">
+          <input type="range" v-model.number="p.heatLoss" min="1" max="15" step="0.1" aria-label="Heat loss slider">
+          <div class="hint">at design outside temperature, room at set temperature — default calibrated
+            so annual heat matches the fleet median (13,200 kWh); median measured heat-loss calcs
+            are 5.1 kW (paper calcs ~30% higher still) — real operation implies less, reflecting
+            zoning and setback</div>
+        </div>
+        <div class="field">
+          <label for="dot">Design outside temp <small>°C</small></label>
+          <input id="dot" type="number" v-model.number="p.designTemp" min="-15" max="5" step="0.5">
+          <input type="range" v-model.number="p.designTemp" min="-10" max="4" step="0.5" aria-label="Design outside temperature slider">
+        </div>
+        <div class="field">
+          <label for="room">Room temperature <small>°C</small></label>
+          <input id="room" type="number" v-model.number="p.room" min="16" max="24" step="0.5">
+          <input type="range" v-model.number="p.room" min="17" max="23" step="0.5" aria-label="Room temperature slider">
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Gains</legend>
+        <div class="field">
+          <label for="mg">Body heat <small>W</small></label>
+          <input id="mg" type="number" v-model.number="p.metabolicGains" min="0" max="400" step="10">
+          <input type="range" v-model.number="p.metabolicGains" min="0" max="300" step="10" aria-label="Metabolic gains slider">
+          <div class="hint">occupancy-averaged metabolic gains, ≈ 60 W per person present</div>
+        </div>
+        <div class="field">
+          <label for="lg">Lighting &amp; appliances <small>W</small></label>
+          <input id="lg" type="number" v-model.number="p.lacGains" min="0" max="800" step="10">
+          <input type="range" v-model.number="p.lacGains" min="0" max="600" step="10" aria-label="Lighting and appliance gains slider">
+          <div class="hint">annual-average electrical gains (2,000 kWh/yr ≈ 230 W); add ~50 W
+            if the hot-water cylinder is inside the heated space</div>
+        </div>
+        <div class="field">
+          <label for="sg">Solar aperture <small>m²</small></label>
+          <input id="sg" type="number" v-model.number="p.solarScale" min="0" max="12" step="0.5">
+          <input type="range" v-model.number="p.solarScale" min="0" max="10" step="0.5" aria-label="Solar gains scale slider">
+          <div class="hint">effective south-facing glazing area; gains = irradiance × aperture × 0.9</div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Emitters</legend>
+        <div class="field">
+          <label for="ft">Design flow temp <small>°C</small></label>
+          <input id="ft" type="number" v-model.number="p.flowDesign" min="26" max="70" step="0.5">
+          <input type="range" v-model.number="p.flowDesign" min="30" max="60" step="0.5" aria-label="Design flow temperature slider">
+          <div class="hint">flow temperature needed at the design condition, no gains ·
+            implies {{ fmt(rad50/1000, 1) }} kW of ΔT50 radiator capacity ·
+            default chosen so the operating curve passes through the fleet's median
+            coldest-day observation (37.3 °C flow at −1.8 °C outside); declared design
+            flow temps have a median of 45 °C but systems run well below them</div>
+        </div>
+        <div class="field">
+          <label for="dt">Flow − return ΔT <small>K</small></label>
+          <input id="dt" type="number" v-model.number="p.systemDT" min="3" max="10" step="0.5">
+          <input type="range" v-model.number="p.systemDT" min="3" max="10" step="0.5" aria-label="System delta T slider">
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Heat pump</legend>
+        <div class="field">
+          <label for="cap">Rated capacity <small>kW</small></label>
+          <input id="cap" type="number" v-model.number="p.capacity" min="2" max="30" step="0.5">
+          <input type="range" v-model.number="p.capacity" min="3" max="20" step="0.5" aria-label="Capacity slider">
+        </div>
+        <div class="field">
+          <label for="mm">Minimum modulation <small>%</small></label>
+          <input id="mm" type="number" v-model.number="p.minMod" min="0" max="60" step="1">
+          <input type="range" v-model.number="p.minMod" min="0" max="60" step="1" aria-label="Minimum modulation slider">
+          <div class="hint">below this output the unit cycles at its minimum rate</div>
+        </div>
+        <div class="field">
+          <label for="eta">Machine quality, % of Carnot</label>
+          <input id="eta" type="number" v-model.number="p.eta" min="30" max="60" step="1">
+          <input type="range" v-model.number="p.eta" min="35" max="55" step="1" aria-label="Percent of Carnot slider">
+          <div class="hint">defrost-free machine quality against the load-corrected ideal (H*);
+            bench value ≈ 47% — defrost is modelled separately below, and together they
+            reproduce the fleet's field median SPF / H* of ≈ 45–46%</div>
+        </div>
+        <div class="field">
+          <label for="dfr">Peak defrost penalty <small>%</small></label>
+          <input id="dfr" type="number" v-model.number="p.defrostD" min="0" max="30" step="1">
+          <input type="range" v-model.number="p.defrostD" min="0" max="25" step="1" aria-label="Defrost penalty slider">
+          <div class="hint">COP reduction in the frosting band (full between −2 and +2 °C, fading by
+            +6 °C, tapering in drier air below −2 °C); 13% reproduces both fleet-level estimates
+            (~1.6% of net heat, ~0.15–0.2 SPF/yr) and a measured cold-month penalty of 0.5–0.6 COP</div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Hot water</legend>
+        <div class="field">
+          <label for="share">DHW share of annual heat <small>%</small></label>
+          <input id="share" type="number" v-model.number="p.dhwShare" min="0" max="60" step="1">
+          <input type="range" v-model.number="p.dhwShare" min="0" max="50" step="1" aria-label="DHW share slider">
+          <div class="hint">default is the fleet median measured share</div>
+        </div>
+        <div class="field">
+          <label for="dhwt">DHW target temp <small>°C</small></label>
+          <input id="dhwt" type="number" v-model.number="p.dhwTarget" min="38" max="65" step="1">
+          <input type="range" v-model.number="p.dhwTarget" min="40" max="60" step="1" aria-label="DHW target slider">
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Model constants</legend>
+        <div class="field">
+          <label for="ac">Condenser offset <small>K/load</small></label>
+          <input id="ac" type="number" v-model.number="p.aCond" min="0" max="8" step="0.5">
+        </div>
+        <div class="field">
+          <label for="be">Evaporator offset <small>K/load</small></label>
+          <input id="be" type="number" v-model.number="p.bEvap" min="0" max="16" step="0.5">
+          <div class="hint">H* convention: +3 / −8 K per unit load ratio (doc 05)</div>
+        </div>
+      </fieldset>
+    </div>
+
+    <div class="results">
+      <div class="warns" v-if="warnings.length">
+        <div class="warn" v-for="w in warnings" :key="w">{{ w }}</div>
+      </div>
+
+      <div class="tiles">
+        <div class="tile hero">
+          <div class="k">Predicted SPF</div>
+          <div class="v">{{ fmt(m.spf, 2) }}</div>
+          <div class="s">±0.2 with truthful inputs · {{ fmt(m.spfNoDefrost, 2) }} before defrost</div>
+        </div>
+        <div class="tile">
+          <div class="k">H* — ideal achievable COP</div>
+          <div class="v">{{ fmt(m.hstar, 2) }}</div>
+          <div class="s">load-corrected Carnot ceiling</div>
+        </div>
+        <div class="tile">
+          <div class="k">Annual heat</div>
+          <div class="v">{{ fmt(m.totalHeatKwh, 0) }}<small>kWh</small></div>
+          <div class="s">{{ fmt(m.spaceHeatKwh, 0) }} space + {{ fmt(m.dhwHeatKwh, 0) }} DHW</div>
+        </div>
+        <div class="tile">
+          <div class="k">Annual electricity</div>
+          <div class="v">{{ fmt(m.elecKwh, 0) }}<small>kWh</small></div>
+          <div class="s">at {{ p.eta }}% of Carnot, incl. defrost</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Weather-compensation curve</h2>
+        <p class="sub">Heat-weighted mean flow temperature the emitters require at each outside temperature — the curve the
+           controls should be commissioned to. It sits below the design point because internal and solar gains
+           carry part of the load; the design anchor assumes no gains.</p>
+        <chart-line v-if="valid" :series="wcSeries" :x-label="'Outside temperature (°C)'" :y-label="'Flow temperature (°C)'"
+                    :fmt-y="v => v.toFixed(1) + ' °C'"
+                    :marker="{ x: p.designTemp, y: p.flowDesign, label: 'design point' }"></chart-line>
+      </div>
+
+      <div class="card">
+        <h2>Predicted COP by outside temperature</h2>
+        <p class="sub">η × ideal Carnot at effective condenser/evaporator temperatures, including the cycling floor at low
+           load and the defrost derating — visible as the dip in the frosting band around 0 °C. The curve runs off-scale
+           in mild weather, where the lift is tiny but almost no heat is delivered — the seasonal harmonic mean weighs
+           it accordingly.</p>
+        <div class="legend">
+          <span><span class="swatch" style="background: var(--series-1)"></span>space heating</span>
+          <span><span class="swatch" style="background: var(--series-2)"></span>hot water</span>
+        </div>
+        <chart-line v-if="valid" :series="copSeries" :x-label="'Outside temperature (°C)'" :y-label="'COP'"
+                    :fmt-y="v => v.toFixed(2)" :y-cap="copCap"></chart-line>
+      </div>
+
+      <div class="card">
+        <h2>Where the heat is delivered</h2>
+        <p class="sub">Annual heat by outside temperature — what the harmonic averaging weighs. Mild hours dominate the total.</p>
+        <div class="legend">
+          <span><span class="swatch" style="background: var(--series-1)"></span>space heating</span>
+          <span><span class="swatch" style="background: var(--series-2)"></span>hot water</span>
+        </div>
+        <chart-bars v-if="valid" :bins="heatBins" :x-label="'Outside temperature (°C)'" :y-label="'Heat (kWh per 0.5 K bin)'"></chart-bars>
+      </div>
+
+      <details class="table">
+        <summary>Data table — per-temperature operating points</summary>
+        <table>
+          <thead><tr><th>Outside °C</th><th>Hours</th><th>Space load kW</th><th>Flow °C</th><th>Load ratio</th><th>Space COP</th><th>DHW COP</th></tr></thead>
+          <tbody>
+            <tr v-for="r in m.rows" :key="r.t">
+              <td>{{ r.t.toFixed(2) }}</td><td>{{ r.hours.toFixed(0) }}</td>
+              <td>{{ r.q > 0 ? (r.q/1000).toFixed(2) : '—' }}</td>
+              <td>{{ r.q > 0 ? r.flow.toFixed(1) : '—' }}</td>
+              <td>{{ r.q > 0 ? r.r.toFixed(2) : '—' }}</td>
+              <td>{{ r.q > 0 ? r.cop.toFixed(2) : '—' }}</td>
+              <td>{{ r.copDhw.toFixed(2) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+    </div>
+  </div>
+
+  <footer>
+    Model: H*_design — heat-weighted harmonic mean of an ideal Carnot COP with load-dependent
+    condenser/evaporator offsets, computed over the design weather-compensation curve and a standard
+    weather year (Llanberis 2024, half-hourly temperature and solar, shifted so the year's
+    0.4th-percentile cold matches the design outside temperature). Space heating demand nets off
+    internal gains (body heat, lighting &amp; appliances) and solar gains (irradiance × aperture × 0.9),
+    smoothed over 24 h to represent thermal mass, clipped at zero. Defrost is a COP derating in the
+    frosting band (−2…+2 °C, fading by +6 °C), calibrated to fleet and field measurements
+    (~0.15–0.2 SPF/yr); H* itself stays defrost-free. Radiator exponent 1.3. Validated against a
+    dynamic simulation fleet to ±0.2 SPF (90%) with truthful inputs; see
+    docs/08_design_parameter_model.md. Assumes constant room setpoint, open-loop hydraulics and
+    weather compensation commissioned to actual demand.
+  </footer>
+</div>
+
+<script>
+"use strict";
+
+// Llanberis 2024, half-hourly, binned at 0.5 K of actual outside temperature.
+// Each bin holds 4 sub-groups [sample count, mean 24h-smoothed temp, mean
+// 24h-smoothed solar W/m2] — the joint distribution the demand model needs:
+// space demand responds to the smoothed climate (thermal mass), while the
+// Carnot evaporator side sees the actual air temperature.
+// ref = the year's 0.4th-percentile cold, aligned to the design outside temp.
+const WEATHER = {"ref":-1.1,"binw":0.5,"t0":-4.75,"bins":[[[1,-0.829,20.64],[1,-0.796,19.45]],[[1,-0.533,36.45],[1,-0.475,36.45]],[[1,-1.09,33.66],[1,-1.142,42.1],[1,-0.417,36.45],[1,-0.346,36.45]],[[2,-1.005,24.45],[2,-0.889,22.44],[1,-1.133,51.9],[1,-1.108,52.45]],[[3,-1.098,52.86],[3,-0.773,41.93],[3,-0.602,36.49],[3,-0.541,36.21]],[[2,-1.154,50.46],[2,-0.622,36.45],[2,-0.45,31.28],[2,-0.419,32.11]],[[3,-0.699,30.47],[3,-0.904,52.89],[3,0.433,31.93],[3,2.051,80.27]],[[8,-0.025,25.77],[8,1.74,23.13],[7,2.081,78.9],[7,2.974,146.57]],[[8,-0.353,28.88],[8,1.204,27.93],[8,1.956,55.43],[8,3.566,179.95]],[[13,0.861,28.45],[13,1.504,34.8],[12,2.437,55.58],[12,3.069,122.3]],[[19,1.023,37.01],[19,2.021,37.25],[18,2.734,80.15],[18,5.674,154.88]],[[26,0.668,36.13],[26,1.604,38.62],[25,2.25,42.93],[25,3.308,102.1]],[[42,1.305,31.8],[42,1.91,32.28],[42,3.081,62.84],[42,4.774,132.18]],[[47,1.44,32.7],[47,2.171,35.63],[46,3.83,43.89],[46,4.718,122.66]],[[46,1.391,35.59],[46,2.683,26.31],[45,3.606,46.26],[45,5.226,109.56]],[[50,1.683,31.54],[50,3.137,24.09],[49,3.654,72.67],[49,5.862,131.24]],[[59,2.472,23.93],[59,3.32,24.26],[59,3.845,64.13],[59,5.832,101.86]],[[64,2.639,25.87],[64,3.675,36.89],[64,4.893,40.15],[64,6.653,122.95]],[[66,3.209,25.75],[66,4.433,35.27],[65,5.233,56.17],[65,6.878,143.84]],[[104,3.612,36.48],[104,5.217,29.15],[104,5.578,71.89],[104,7.084,155.69]],[[90,4.463,26.73],[90,5.369,25.75],[89,5.849,42.66],[89,7.213,129.4]],[[114,4.874,25.99],[114,5.821,32.0],[113,6.613,56.61],[113,7.933,184.45]],[[130,5.151,32.4],[130,6.563,24.3],[130,6.922,70.81],[130,8.423,184.65]],[[141,5.545,26.63],[141,6.692,28.82],[140,7.011,68.48],[140,8.483,161.59]],[[145,5.958,34.88],[145,7.112,35.3],[144,7.43,70.81],[144,9.034,178.13]],[[143,6.542,35.39],[143,7.691,32.09],[143,8.224,74.43],[143,9.612,192.06]],[[145,6.978,27.95],[145,8.029,35.64],[144,8.358,96.37],[144,9.906,194.61]],[[171,7.654,34.04],[171,8.663,37.34],[170,8.931,87.54],[170,10.503,205.8]],[[186,8.175,34.94],[186,9.084,42.54],[186,9.511,75.06],[186,10.376,195.65]],[[223,8.666,28.19],[223,9.688,41.66],[222,9.83,101.35],[222,11.614,199.73]],[[227,8.72,31.83],[227,10.073,38.7],[226,10.118,106.88],[226,12.294,200.8]],[[215,9.607,27.72],[215,10.312,45.41],[215,10.701,90.78],[214,12.468,206.12]],[[184,9.847,41.44],[184,10.68,71.79],[184,11.604,111.09],[184,12.81,230.26]],[[194,10.279,42.1],[194,11.485,74.6],[194,12.178,115.85],[194,13.06,227.6]],[[162,10.914,46.69],[162,12.089,70.01],[162,12.594,143.96],[162,13.864,247.56]],[[176,11.568,46.9],[176,12.396,94.21],[176,12.693,156.45],[176,14.007,234.15]],[[145,11.89,37.75],[145,12.725,85.8],[145,13.208,178.98],[145,14.787,233.08]],[[144,12.047,60.03],[144,13.193,105.41],[144,13.624,187.98],[144,15.117,253.84]],[[156,12.716,55.39],[156,13.292,122.36],[156,14.26,163.69],[156,15.594,242.91]],[[139,13.199,58.06],[139,13.765,125.16],[139,14.626,164.02],[139,15.637,257.43]],[[116,13.479,106.1],[116,14.72,134.77],[116,14.573,205.38],[116,15.914,267.62]],[[95,13.971,92.29],[95,14.802,137.39],[94,14.993,182.4],[94,15.993,264.03]],[[85,14.402,93.4],[85,15.163,125.35],[85,14.552,215.87],[85,16.328,252.71]],[[71,14.235,120.48],[71,15.021,158.74],[70,15.589,181.2],[70,16.439,253.45]],[[54,14.566,131.24],[54,15.23,164.94],[54,15.129,252.42],[54,17.004,271.24]],[[34,13.908,161.68],[34,15.445,170.16],[34,15.278,253.27],[34,16.951,267.13]],[[35,14.924,146.91],[35,15.268,185.61],[35,15.071,265.57],[35,17.12,265.0]],[[27,14.734,167.79],[27,15.287,248.21],[27,16.332,242.91],[27,17.029,285.02]],[[21,15.154,226.02],[21,16.489,227.4],[20,16.685,243.49],[20,17.251,300.73]],[[16,15.304,221.03],[16,16.076,258.2],[15,16.804,275.39],[15,18.08,277.58]],[[13,15.213,242.76],[13,16.418,239.08],[12,15.978,321.17],[12,18.627,271.13]],[[10,15.872,250.45],[10,16.612,270.6],[10,17.415,288.61],[10,18.471,295.54]],[[10,16.49,261.56],[10,18.046,262.98],[10,19.041,250.31],[10,21.096,207.95]],[[6,16.294,266.15],[6,17.309,292.88],[5,18.532,266.25],[5,20.213,257.58]],[[8,17.008,298.83],[8,17.57,287.53],[8,18.443,262.02],[8,18.818,286.92]],[[4,17.134,298.15],[4,18.654,251.52],[4,18.346,281.4],[4,18.434,328.6]],[[3,18.268,277.5],[3,18.783,303.81],[2,18.47,328.6],[2,21.193,254.5]],[[3,19.357,279.01],[3,18.465,328.6],[2,20.264,254.21],[2,20.739,254.21]]]};
+const RAD_EXP = 1.3;
+const DHW_APPROACH = 4.0, DHW_LOAD = 0.9;
+
+// Frosting-band weight for the defrost penalty: 1 between -2 and +2 C,
+// fading to 0 by +6 C, tapering below -2 C as the air dries.
+function frostW(t) {
+  if (t >= 6) return 0;
+  if (t > 2) return (6 - t) / 4;
+  if (t >= -2) return 1;
+  return Math.max(0.4, 1 - (-2 - t) * 0.075);
+}
+
+// The design-parameter model (analysis/design_model.py, doc 08), closed form.
+// Space demand per sample group: U*(room - smoothedT) - internal gains -
+// smoothed solar * aperture * 0.9, clipped to [0, capacity].
+function computeModel(p) {
+  const hlW = p.heatLoss * 1000, capW = p.capacity * 1000;
+  const u = hlW / (p.room - p.designTemp);                       // W/K
+  const mwtDesign = p.flowDesign - p.systemDT / 2;
+  const rad50 = hlW / Math.pow((mwtDesign - p.room) / 50, RAD_EXP);
+  const shift = p.designTemp - WEATHER.ref;
+  const minModW = (p.minMod / 100) * capW;
+  const gainsW = p.metabolicGains + p.lacGains;
+  const share = Math.min(Math.max(p.dhwShare / 100, 0), 0.6);
+  const eta = p.eta / 100;
+  const D = p.defrostD / 100;
+
+  // Two accumulators: the pure H* metric is defrost-free (doc 05 convention);
+  // electricity and predicted COP include the frost-band derating.
+  let spaceH = 0, spaceIE = 0, spaceIEd = 0, totalHours = 0, sumInvCd = 0, sumInvCdD = 0;
+  const rows = [];
+  for (let i = 0; i < WEATHER.bins.length; i++) {
+    const groups = WEATHER.bins[i];
+    if (!groups) continue;
+    const t = WEATHER.t0 + i * WEATHER.binw + shift;
+    const fw = frostW(t);
+
+    // DHW ideal COP at this temperature (constant year-round demand)
+    const tcD = p.dhwTarget + DHW_APPROACH + p.aCond * DHW_LOAD;
+    const teD = t - p.bEvap * DHW_LOAD;
+    const carnotDhw = (tcD + 273.15) / (tcD - teD);
+
+    let hours = 0, binH = 0, binIE = 0, binIEd = 0, binFlow = 0, binR = 0;
+    for (const [cnt, tSm, sSm] of groups) {
+      const h = cnt * 0.5;
+      hours += h;
+      let q = u * (p.room - (tSm + shift)) - gainsW - sSm * p.solarScale * 0.9;
+      q = Math.min(Math.max(q, 0), capW);
+      if (q <= 0) continue;
+      const mwt = p.room + 50 * Math.pow(q / rad50, 1 / RAD_EXP);
+      const flow = mwt + p.systemDT / 2;
+      const r = Math.max(q, minModW) / capW;
+      const tc = flow + p.aCond * r, te = t - p.bEvap * r;
+      const carnot = (tc + 273.15) / (tc - te);
+      binH += q * h;
+      binIE += (q / carnot) * h;
+      binIEd += (q / (carnot * (1 - D * fw))) * h;
+      binFlow += q * h * flow;
+      binR += q * h * r;
+    }
+    totalHours += hours;
+    sumInvCd += hours / carnotDhw;
+    sumInvCdD += hours / (carnotDhw * (1 - D * fw));
+    spaceH += binH;
+    spaceIE += binIE;
+    spaceIEd += binIEd;
+    rows.push({
+      t, hours,
+      q: binH / hours,                                  // mean space load, W
+      flow: binH > 0 ? binFlow / binH : NaN,            // heat-weighted mean
+      r: binH > 0 ? binR / binH : NaN,
+      cop: binH > 0 ? eta * (binH / binIEd) : NaN,      // incl. defrost derating
+      copDhw: eta * carnotDhw * (1 - D * fw),
+      spaceKwh: binH / 1000,
+    });
+  }
+
+  const dhwH = spaceH * share / (1 - share);
+  const dhwIE = dhwH * (sumInvCd / totalHours);
+  const dhwIEd = dhwH * (sumInvCdD / totalHours);
+  const heat = spaceH + dhwH;
+  const hstar = heat / (spaceIE + dhwIE);               // defrost-free ceiling
+  const elec = (spaceIEd + dhwIEd) / eta;
+  return {
+    hstar, spf: heat / elec, spfNoDefrost: eta * hstar, rows, rad50,
+    spaceHeatKwh: spaceH / 1000, dhwHeatKwh: dhwH / 1000,
+    totalHeatKwh: heat / 1000,
+    elecKwh: elec / 1000,
+    dhwPerHourW: totalHours ? dhwH / totalHours : 0,
+  };
+}
+
+// ---------------------------------------------------------------- charts
+let CHART_UID = 0;
+const chartBase = {
+  props: { xLabel: String, yLabel: String },
+  data() { return { uid: ++CHART_UID, hover: null, W: 640, H: 260, M: { l: 46, r: 14, t: 8, b: 36 } }; },
+  computed: {
+    plotW() { return this.W - this.M.l - this.M.r; },
+    plotH() { return this.H - this.M.t - this.M.b; },
+  },
+  methods: {
+    sx(x) { return this.M.l + (x - this.xmin) / (this.xmax - this.xmin) * this.plotW; },
+    sy(y) { return this.M.t + (1 - (y - this.ymin) / (this.ymax - this.ymin)) * this.plotH; },
+    ticks(min, max, n = 5) {
+      const span = max - min, step0 = span / n;
+      const mag = Math.pow(10, Math.floor(Math.log10(step0)));
+      const step = [1, 2, 2.5, 5, 10].map(s => s * mag).find(s => span / s <= n + 1) || mag * 10;
+      const t = []; for (let v = Math.ceil(min / step) * step; v <= max + 1e-9; v += step) t.push(v);
+      return t;
+    },
+    svgX(evt) {
+      const rect = evt.currentTarget.getBoundingClientRect();
+      return (evt.clientX - rect.left) / rect.width * this.W;
+    },
+    leave() { this.hover = null; },
+  },
+};
+
+// Multi-series line chart with crosshair + tooltip.
+const ChartLine = {
+  mixins: [chartBase],
+  props: { series: Array, fmtY: Function, yCap: Number, marker: Object },
+  computed: {
+    xmin() { return Math.min(...this.series.flatMap(s => s.pts.map(p => p[0]))); },
+    xmax() { return Math.max(...this.series.flatMap(s => s.pts.map(p => p[0]))); },
+    ymin() {
+      const lo = Math.min(...this.series.flatMap(s => s.pts.map(p => p[1])));
+      return Math.min(0, lo) === 0 && lo > 3 ? Math.floor(lo - 1) : Math.min(0, Math.floor(lo));
+    },
+    ymax() {
+      const hi = Math.max(...this.series.flatMap(s => s.pts.map(p => p[1])));
+      return (this.yCap ? Math.min(hi, this.yCap) : hi) * 1.06;
+    },
+    paths() {
+      return this.series.map(s => ({
+        ...s,
+        d: s.pts.map((p, i) => (i ? "L" : "M") + this.sx(p[0]).toFixed(1) + " " + this.sy(p[1]).toFixed(1)).join(" "),
+      }));
+    },
+  },
+  methods: {
+    move(evt) {
+      const x = this.xmin + (this.svgX(evt) - this.M.l) / this.plotW * (this.xmax - this.xmin);
+      const pts = this.series[0].pts;
+      let best = 0;
+      for (let i = 1; i < pts.length; i++)
+        if (Math.abs(pts[i][0] - x) < Math.abs(pts[best][0] - x)) best = i;
+      const xv = pts[best][0];
+      this.hover = {
+        x: xv, sx: this.sx(xv),
+        vals: this.series.map(s => {
+          const p = s.pts.find(q => Math.abs(q[0] - xv) < 1e-6);
+          return p ? { name: s.name, color: s.color, y: p[1], sy: this.sy(p[1]) } : null;
+        }).filter(Boolean),
+      };
+    },
+  },
+  template: `
+  <div class="chartwrap">
+    <svg :viewBox="'0 0 ' + W + ' ' + H" @mousemove="move" @mouseleave="leave" role="img">
+      <defs>
+        <clipPath :id="'plotclip' + uid"><rect :x="M.l" :y="M.t" :width="plotW" :height="plotH"></rect></clipPath>
+      </defs>
+      <g v-for="t in ticks(ymin, ymax)" :key="'y' + t">
+        <line class="gridline" :x1="M.l" :x2="W - M.r" :y1="sy(t)" :y2="sy(t)"></line>
+        <text class="ticklab" :x="M.l - 7" :y="sy(t) + 3.5" text-anchor="end">{{ t }}</text>
+      </g>
+      <g v-for="t in ticks(xmin, xmax, 7)" :key="'x' + t">
+        <text class="ticklab" :x="sx(t)" :y="H - M.b + 16" text-anchor="middle">{{ t }}</text>
+      </g>
+      <line class="axisline" :x1="M.l" :x2="W - M.r" :y1="H - M.b" :y2="H - M.b"></line>
+      <text class="axistitle" :x="M.l + plotW / 2" :y="H - 4" text-anchor="middle">{{ xLabel }}</text>
+      <text class="axistitle" :transform="'rotate(-90 12 ' + (M.t + plotH / 2) + ')'"
+            :x="12" :y="M.t + plotH / 2" text-anchor="middle">{{ yLabel }}</text>
+      <g :clip-path="'url(#plotclip' + uid + ')'">
+        <path v-for="s in paths" :key="s.name" class="dline" :d="s.d" :style="{ stroke: s.color }"></path>
+      </g>
+      <g v-if="marker && marker.x >= xmin && marker.x <= xmax">
+        <circle :cx="sx(marker.x)" :cy="sy(marker.y)" r="4.5" class="hoverdot"
+                :style="{ fill: 'var(--series-1)' }"></circle>
+        <text class="dlabel" :x="sx(marker.x) + 8" :y="sy(marker.y) - 8"
+              :style="{ fill: 'var(--text-secondary)' }">{{ marker.label }}</text>
+      </g>
+      <g v-if="hover">
+        <line class="crosshair" :x1="hover.sx" :x2="hover.sx" :y1="M.t" :y2="H - M.b"></line>
+        <circle v-for="v in hover.vals" :key="v.name" class="hoverdot" r="4.5"
+                :cx="hover.sx" :cy="Math.max(v.sy, M.t)" :style="{ fill: v.color }"></circle>
+      </g>
+    </svg>
+    <div v-if="hover" class="tooltip" :style="{ left: (hover.sx / W * 100) + '%', top: '6px',
+         transform: hover.sx > W * 0.6 ? 'translateX(-108%)' : 'translateX(10px)' }">
+      <div class="t">{{ hover.x.toFixed(2) }} °C outside</div>
+      <div class="row" v-for="v in hover.vals" :key="v.name">
+        <span class="swatch" :style="{ background: v.color }"></span>{{ v.name }}: {{ fmtY(v.y) }}
+      </div>
+    </div>
+  </div>`,
+};
+
+// Stacked bar histogram with per-bin hover.
+const ChartBars = {
+  mixins: [chartBase],
+  props: { bins: Array },   // [{t, space, dhw}] kWh
+  computed: {
+    xmin() { return this.bins[0].t - 0.25; },
+    xmax() { return this.bins[this.bins.length - 1].t + 0.25; },
+    ymin() { return 0; },
+    ymax() { return Math.max(...this.bins.map(b => b.space + b.dhw)) * 1.08 || 1; },
+    bw() { return this.plotW / this.bins.length; },
+  },
+  methods: {
+    move(evt) {
+      const i = Math.max(0, Math.min(this.bins.length - 1,
+        Math.floor((this.svgX(evt) - this.M.l) / this.bw)));
+      const b = this.bins[i];
+      this.hover = { ...b, sx: this.M.l + (i + 0.5) * this.bw };
+    },
+  },
+  template: `
+  <div class="chartwrap">
+    <svg :viewBox="'0 0 ' + W + ' ' + H" @mousemove="move" @mouseleave="leave" role="img">
+      <g v-for="t in ticks(ymin, ymax)" :key="'y' + t">
+        <line class="gridline" :x1="M.l" :x2="W - M.r" :y1="sy(t)" :y2="sy(t)"></line>
+        <text class="ticklab" :x="M.l - 7" :y="sy(t) + 3.5" text-anchor="end">{{ t }}</text>
+      </g>
+      <g v-for="t in ticks(xmin, xmax, 7)" :key="'x' + t">
+        <text class="ticklab" :x="sx(t)" :y="H - M.b + 16" text-anchor="middle">{{ t }}</text>
+      </g>
+      <g v-for="(b, i) in bins" :key="b.t">
+        <rect v-if="b.space > 0" :x="M.l + i * bw + 1" :width="Math.max(bw - 2, 1)"
+              :y="sy(b.space)" :height="H - M.b - sy(b.space)"
+              rx="1.5" :style="{ fill: 'var(--series-1)', opacity: hover && hover.t === b.t ? 1 : 0.88 }"></rect>
+        <rect v-if="b.dhw > 0" :x="M.l + i * bw + 1" :width="Math.max(bw - 2, 1)"
+              :y="sy(b.space + b.dhw)" :height="Math.max(sy(b.space) - sy(b.space + b.dhw) - (b.space > 0 ? 2 : 0), 0)"
+              rx="1.5" :style="{ fill: 'var(--series-2)', opacity: hover && hover.t === b.t ? 1 : 0.88 }"></rect>
+      </g>
+      <line class="axisline" :x1="M.l" :x2="W - M.r" :y1="H - M.b" :y2="H - M.b"></line>
+      <text class="axistitle" :x="M.l + plotW / 2" :y="H - 4" text-anchor="middle">{{ xLabel }}</text>
+      <text class="axistitle" :transform="'rotate(-90 12 ' + (M.t + plotH / 2) + ')'"
+            :x="12" :y="M.t + plotH / 2" text-anchor="middle">{{ yLabel }}</text>
+    </svg>
+    <div v-if="hover" class="tooltip" :style="{ left: (hover.sx / W * 100) + '%', top: '6px',
+         transform: hover.sx > W * 0.6 ? 'translateX(-108%)' : 'translateX(10px)' }">
+      <div class="t">{{ hover.t.toFixed(2) }} °C outside</div>
+      <div class="row"><span class="swatch" style="background: var(--series-1)"></span>space: {{ hover.space.toFixed(0) }} kWh</div>
+      <div class="row"><span class="swatch" style="background: var(--series-2)"></span>DHW: {{ hover.dhw.toFixed(0) }} kWh</div>
+    </div>
+  </div>`,
+};
+
+Vue.createApp({
+  components: { ChartLine, ChartBars },
+  data() {
+    return {
+      // defaults calibrated to the median observed system in the
+      // HeatpumpMonitor.org fleet (2026-07-15 export, 225 filtered systems):
+      // annual heat 13,035 vs fleet median 13,205 kWh, and the operating
+      // curve passes through the median coldest-day observation
+      // (37.3 C flow at -1.8 C outside). See docs/08.
+      p: {
+        heatLoss: 4.2, designTemp: -1.5, room: 20,
+        metabolicGains: 120, lacGains: 240, solarScale: 4,
+        flowDesign: 41, systemDT: 5,
+        capacity: 6, minMod: 35, eta: 47, defrostD: 13,
+        dhwShare: 14, dhwTarget: 48,
+        aCond: 3, bEvap: 8,
+      },
+    };
+  },
+  computed: {
+    m() { return computeModel(this.p); },
+    rad50() { return this.m.rad50; },
+    valid() { return isFinite(this.m.hstar) && this.m.rows.some(r => r.q > 0); },
+    copCap() {
+      // y-axis ceiling: COP at the temperature by which 99% of space heat is delivered
+      const heating = this.m.rows.filter(r => r.q > 0);
+      const total = heating.reduce((a, r) => a + r.q * r.hours, 0);
+      let cum = 0;
+      for (const r of heating) {
+        cum += r.q * r.hours;
+        if (cum >= 0.99 * total) return Math.max(r.cop, ...this.m.rows.map(x => x.copDhw)) * 1.1;
+      }
+      return undefined;
+    },
+    warnings() {
+      const w = [], p = this.p;
+      if (p.flowDesign - p.systemDT / 2 <= p.room + 2)
+        w.push("Design flow temperature is too close to room temperature — the radiator equation cannot be inverted.");
+      if (p.capacity < p.heatLoss)
+        w.push("Rated capacity is below the design heat loss — output is capped at capacity in cold weather (backup heat is not modelled).");
+      if (this.m.spaceHeatKwh <= 0)
+        w.push("Gains cover the heat loss across the whole weather year — no space heating demand at these settings.");
+      return w;
+    },
+    wcSeries() {
+      const pts = this.m.rows.filter(r => r.q > 0).map(r => [r.t, r.flow]);
+      return [{ name: "flow temperature", color: "var(--series-1)", pts }];
+    },
+    copSeries() {
+      const space = this.m.rows.filter(r => r.q > 0).map(r => [r.t, r.cop]);
+      const dhw = this.m.rows.map(r => [r.t, r.copDhw]);
+      return [
+        { name: "space heating", color: "var(--series-1)", pts: space },
+        { name: "hot water", color: "var(--series-2)", pts: dhw },
+      ];
+    },
+    heatBins() {
+      return this.m.rows.map(r => ({
+        t: r.t,
+        space: r.spaceKwh,
+        dhw: this.m.dhwPerHourW * r.hours / 1000,
+      }));
+    },
+  },
+  methods: {
+    fmt(v, d) {
+      if (!isFinite(v)) return "—";
+      return v.toLocaleString("en-GB", { minimumFractionDigits: d, maximumFractionDigits: d });
+    },
+  },
+}).mount("#app");
+</script>
+</body>
+</html>
