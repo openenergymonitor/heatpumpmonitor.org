@@ -2,14 +2,14 @@
 
 ---
 
-Note from Trystan: This performance prediction project was largely generated using Claude code (Model: Fable - effort high).
+*Note from Trystan: This performance prediction project was largely generated using Claude code (Model: Fable - effort high).
 Appart from this brief introduction the document text is all written by claude as will be clear!
 
 This analysis attempts to progress my earlier manual analysis of the HeatpumpMonitor.org dataset as documented here: [https://docs.openenergymonitor.org/heatpumpmonitor/index.html](https://docs.openenergymonitor.org/heatpumpmonitor/index.html). I think it has uncovered a number of useful ideas!
 
 The analysis also develops a harness for the dynamic heat pump simulator tool that I have been working on here: [https://openenergymonitor.org/tools/dynamic_heatpump](https://openenergymonitor.org/tools/dynamic_heatpump) and uses this to test and refine ideas that could then be applied to the real world data set. More work needs to be done to verify if these ideas work when applied to real data!
 
-The following is work in progress and I welcome suggestions for improvement!
+The following is work in progress and I welcome suggestions for improvement!*
 
 ---
 
