@@ -505,7 +505,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     <p class="card-text">Average of individual system {{ stats_time_start === 'last365' ? 'SPF' : 'COP' }} values: <b>{{ totals.average_cop | toFixed(2) }}</b></p>
                     <p class="card-text">Average {{ stats_time_start === 'last365' ? 'SPF' : 'COP' }} based on total sum of heat and electric values: <b>{{ totals.average_cop_kwh | toFixed(2) }}</p>
                     <!-- csv export button copy table data to clipboard -->
-                    <button class="btn btn-primary" @click="export_csv">Copy table data to clipboard</button>                    
+                    <button class="btn btn-primary" @click="export_csv">Copy table data to clipboard</button>
+                    <!-- csv download of all meta and stats fields -->
+                    <button class="btn btn-primary" @click="download_all_csv">Download all fields</button>
                   </div>
                 </div>                
             </div>
@@ -1196,6 +1198,51 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 }
                 var csv_string = csv.join("\n");
                 copy_text_to_clipboard(csv_string, 'CSV data copied to clipboard');
+            },
+            download_all_csv: function() {
+                // download all meta & stats fields for the current selection as a csv file
+
+                // internal client-side bookkeeping fields, not meaningful data
+                var exclude = ['dynamic_data_flag', 'data_flag_static', 'data_flag_note_static'];
+
+                // union of all field keys across systems, preserving first-seen order
+                // (systems without stats for the selected period have fewer keys)
+                var fields = [];
+                for (var i = 0; i < this.fSystems.length; i++) {
+                    for (var key in this.fSystems[i]) {
+                        if (exclude.indexOf(key) !== -1) continue;
+                        if (fields.indexOf(key) === -1) fields.push(key);
+                    }
+                }
+
+                // escape quotes and wrap, so notes with commas, quotes or newlines stay intact
+                function csv_escape(value) {
+                    if (value == null) return '';
+                    return '"' + String(value).replace(/"/g, '""') + '"';
+                }
+
+                var csv = [];
+                csv.push(fields.map(csv_escape).join(","));
+                for (var i = 0; i < this.fSystems.length; i++) {
+                    var row = [];
+                    for (var j = 0; j < fields.length; j++) {
+                        row.push(csv_escape(this.fSystems[i][fields[j]]));
+                    }
+                    csv.push(row.join(","));
+                }
+                var csv_string = csv.join("\n");
+
+                var period = this.stats_time_start.replace(/[^a-zA-Z0-9]/g, '');
+                var filename = 'heatpumpmonitor_all_fields_' + period + '_' + new Date().toISOString().slice(0,10) + '.csv';
+
+                var blob = new Blob([csv_string], {type: 'text/csv;charset=utf-8;'});
+                var link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(link.href);
             },
             stats_time_start_change: function () {
                 // change available_months_end to only show months after start
