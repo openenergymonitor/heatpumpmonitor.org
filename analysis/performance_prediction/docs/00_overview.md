@@ -108,16 +108,35 @@ metric-search line: on 229 validation-clean air-source systems
 0.48 vs 0.60, PI ±0.58 vs ±0.51), and a 1092-combination offset grid search
 over the entire fixed + load-dependent family finds the optimal load
 coefficient is exactly zero — no coefficients rescue it, under either badge
-or empirically-normalised capacity. The within-machine load penalty is real
-(manufacturer compressor maps confirm it), but in the fleet it is almost
-exactly cancelled by an opposing **while-running** effect: achieved quality
-rises with load factor (better-sized systems run compressors nearer their
-design point), so the net load signal in annual SPF is ≈ 0. The simulator
-only saw the gain because its machines were identical by construction.
+or empirically-normalised capacity. The hard fact: annual quality
+(SPF/H_fixed) shows **no dependence on each system's annualised modelled
+penalty** (P = H\*/H_fixed; observed slope +0.05 where identical machines
+require ≈ 0.45, worth ~0.2 SPF per sd of P). Either an opposing
+**while-running** effect cancels the real steady-state penalty
+(standby/DHW/metering ruled out; low-modulation inefficiency or
+install-quality-vs-sizing remain), or the penalty simply doesn't annualise
+to the modelled size over real operating distributions. Annual aggregates
+can't distinguish these; the net load signal in annual SPF is ≈ 0 either
+way. The simulator only saw the gain because its machines were identical
+by construction.
 `SPF/H*` is not a tighter quality score either (sd 0.041 vs 0.037), though
 it *exposes* the sizing/load effect the fixed convention hides (corr with
 load factor +0.48 vs +0.07) — a useful diagnostic axis, not a fairer
 ranking. Weighted ΔT stands as the best feeds-only annual predictor.
+
+**10. Next: field-measuring the compressor map** (doc 10, planned). The
+surviving question from doc 09 — is the steady-state load penalty real in
+the field and cancelled by an opposing effect, or does it simply not
+annualise to the modelled size? — becomes measurable because the fleet
+contains **150 Arotherm+ systems** (58 of the exact 5 kW unit) and the
+Vaillant datasheet provides a ground-truth COP-per-speed map at 35/30. Stable episodes (feed_scan_2) are the field
+realisation of the datasheet's steady-state condition: episode COP vs
+output at fixed temperatures should reproduce the map per machine, and the
+gap between each system's episode-implied SPF (episode curve × its annual
+temperature/load histogram from feed_scan_5) and its measured running SPF
+is a direct per-machine measurement of the cycling/overhead loss that the
+cancellation argument says is ~±0.2 SPF across the fleet's load-factor
+range. Lab-notes plan in doc 10.
 
 ## Where we stand
 
@@ -137,19 +156,21 @@ ranking. Weighted ΔT stands as the best feeds-only annual predictor.
 
 1. ~~Validate H\* on real raw feeds~~ — **done, negative** (doc 09): H\*
    predicts SPF worse than ΔT and `SPF/H*` is not tighter than
-   `combined_prc_carnot`, so nothing is added to the stats pipeline. The
-   surviving thread is *understanding*, not fleet prediction: per-machine
-   stable-episode analysis (COP vs load ratio at fixed temperatures,
-   compared against manufacturer compressor maps) to separate real offset
-   physics from the quality-rises-with-load-factor gradient, feeding a
-   two-stage model SPF ≈ η(model, sizing) × H.
-2. ML Phase 1: pooled daily-COP model (doc 07).
-3. Re-run the simulator sweep with % carnot also varied to close the
+   `combined_prc_carnot`, so nothing is added to the stats pipeline.
+2. **Compressor-map validation from stable episodes** (doc 10 — the
+   surviving thread from doc 09, now a concrete plan): extract stable
+   episodes for the 150 fleet Arotherms, reproduce the Vaillant COP-vs-speed
+   map from field data, and measure the episode-implied vs annual SPF gap
+   per machine — turning the doc 09 cancellation from an inference into a
+   measurement, and feeding the machine-quality term of a two-stage model
+   SPF ≈ η(model, sizing) × H.
+3. ML Phase 1: pooled daily-COP model (doc 07).
+4. Re-run the simulator sweep with % carnot also varied to close the
    spread decomposition; match sampled design ranges to the fleet.
-4. Metadata additions suggested by the analysis: glycol concentration,
+5. Metadata additions suggested by the analysis: glycol concentration,
    primary pipework length/volume, **as-commissioned WC curve endpoints**
    (doc 08's missing design-time predictor).
-5. Consider publishing standby-corrected SPF (exact decomposition, doc 02).
+6. Consider publishing standby-corrected SPF (exact decomposition, doc 02).
 
 ## Repository layout
 
@@ -169,4 +190,8 @@ sim_results.csv         Monte Carlo sweep output (with H* metrics)
 modulation_features.csv histogram-derived features + residuals
 hstar_fleet.csv         raw-feed fleet scan results (doc 09; scanners live
                         in repo-root scripts/feed_scan/)
+hstar_hist.csv          per-system heat-weighted (flowT, outsideT, load)
+                        histograms (feed_scan_5) — offline metric
+                        reconstruction (analyse_hstar_offsets.py) and the
+                        doc-10 episode-implied SPF weighting
 ```

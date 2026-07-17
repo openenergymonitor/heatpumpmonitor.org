@@ -100,7 +100,7 @@ define('STDEV_MAX', 0.01);     // max flowT standard deviation within the window
 define('SLOPE_MAX', 0.5);      // max |flowT slope| over the whole episode (°C/hour, 0 = no constraint)
 define('MIN_ELEC', 150);       // compressor running threshold (W)
 define('BLOCK_SIZE', 86400);   // 10s samples read per block per feed (10 days, ~340kB)
-define('MAX_EPISODES', 1000);    // for testing: stop after this many episodes (0 = scan everything)
+define('MAX_EPISODES', 10000);    // for testing: stop after this many episodes (0 = scan everything)
 
 if (!isset($feedids["heatpump_elec"]) || !isset($feedids["heatpump_flowT"])) {
     die("heatpump_elec and heatpump_flowT feeds are required\n");
@@ -299,30 +299,9 @@ foreach ($fh as $h) fclose($h);
 
 $elapsed = microtime(true) - $scan_start;
 
-// 8. Write one CSV row per episode
-/*
-$csvfile = $dir."/episodes_".$system_id.".csv";
-$csv = fopen($csvfile, 'w');
-$header = array("start_time", "date", "duration_s", "flowT_stdev", "flowT_slope_per_h");
-foreach ($keys as $key) $header[] = str_replace("heatpump_", "", $key);
-$header[] = "dT";
-$header[] = "cop";
-fputcsv($csv, $header);
-
-foreach ($episodes as $e) {
-    $row = array(
-        $e["start_time"],
-        date("Y-m-d H:i", $e["start_time"]),
-        $e["duration"],
-        round($e["flowT_stdev"], 4),
-        round($e["flowT_slope"], 3)
-    );
-    foreach ($keys as $key) $row[] = round($e[$key], 3);
-    $row[] = round($e["dT"], 3);
-    $row[] = round($e["cop"], 3);
-    fputcsv($csv, $row);
-}
-fclose($csv);*/  
+// 8. Write episodes to the signature_episodes table
+$written = signature_write($mysqli, $system_id, $episodes);
+print "Wrote $written episodes to signature_episodes for system $system_id\n";
 
 print "\n\n";
 print "Scanned $i of $npoints samples (".round($i * 10 / 86400, 1)." days) in ".round($elapsed, 1)."s\n";
@@ -348,6 +327,67 @@ foreach ($episodes as $e) {
         ."  cop: ".number_format($e["cop"], 2)
         ."  https://heatpumpmonitor.org/dashboard?id=".$system_id."&mode=power&start=".$e["start_time"]."&end=".$e["end_time"]
         ."\n";
+}
+
+// Write episodes to the signature_episodes table. Existing rows for this system
+// are removed first so the scan can be re-run idempotently. Inserts run inside a
+// single transaction with a prepared statement for speed. Optional feed means and
+// derived metrics that are missing or non-finite (NAN) are stored as NULL.
+function signature_write($mysqli, $system_id, $episodes)
+{
+    $system_id = (int) $system_id;
+
+    // finite value or null (NAN / INF -> NULL for nullable columns)
+    $nn = function ($v) { return (isset($v) && is_finite($v)) ? $v : null; };
+
+    $mysqli->query("DELETE FROM signature_episodes WHERE system_id = $system_id");
+
+    $sql = "INSERT INTO signature_episodes
+        (system_id, start_time, end_time, duration,
+         elec, flowT, heat, returnT, flowrate, outsideT,
+         dT, cop, flowT_stdev, flowT_slope)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+    $stmt = $mysqli->prepare($sql);
+    if (!$stmt) {
+        print "signature_write prepare failed: " . $mysqli->error . "\n";
+        return 0;
+    }
+
+    // Bind variables (assigned per row below; bind_param binds by reference)
+    $start_time = $end_time = $duration = 0;
+    $elec = $flowT = $heat = $returnT = $flowrate = $outsideT = null;
+    $dT = $cop = $flowT_stdev = $flowT_slope = null;
+
+    $stmt->bind_param(
+        "iiiidddddddddd",
+        $system_id, $start_time, $end_time, $duration,
+        $elec, $flowT, $heat, $returnT, $flowrate, $outsideT,
+        $dT, $cop, $flowT_stdev, $flowT_slope
+    );
+
+    $mysqli->begin_transaction();
+    $written = 0;
+    foreach ($episodes as $e) {
+        $start_time  = (int) $e['start_time'];
+        $end_time    = (int) $e['end_time'];
+        $duration    = (int) $e['duration'];
+        $elec        = $nn($e['heatpump_elec'] ?? null);
+        $flowT       = $nn($e['heatpump_flowT'] ?? null);
+        $heat        = $nn($e['heatpump_heat'] ?? null);
+        $returnT     = $nn($e['heatpump_returnT'] ?? null);
+        $flowrate    = $nn($e['heatpump_flowrate'] ?? null);
+        $outsideT    = $nn($e['heatpump_outsideT'] ?? null);
+        $dT          = $nn($e['dT'] ?? null);
+        $cop         = $nn($e['cop'] ?? null);
+        $flowT_stdev = $nn($e['flowT_stdev'] ?? null);
+        $flowT_slope = $nn($e['flowT_slope'] ?? null);
+        $stmt->execute();
+        $written++;
+    }
+    $mysqli->commit();
+    $stmt->close();
+
+    return $written;
 }
 
 // Read a block of $n 10s-aligned samples starting at time $t0 from a phpfina feed.

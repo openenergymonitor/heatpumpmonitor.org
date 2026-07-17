@@ -26,3 +26,4 @@ www/Modules/*/
 !www/Modules/timeseries/
 !www/Modules/user/
 !www/Modules/home/
+!www/Modules/signature/

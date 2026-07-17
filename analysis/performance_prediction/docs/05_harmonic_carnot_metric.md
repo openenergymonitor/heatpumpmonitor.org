@@ -6,12 +6,14 @@
 > 0.60), and a 1092-combo offset grid search over the whole
 > fixed + load-dependent family found the optimal load coefficient is
 > exactly zero, under both badge and empirically-normalised capacity. The
-> within-machine load penalty this metric models is real (confirmed by
-> manufacturer compressor maps), but in the fleet it is almost exactly
-> cancelled by an opposing while-running effect that improves with load
-> factor — so the net load signal in annual SPF is ≈ 0. The expected gain
-> landed at the bottom of the caveat range below. The document is kept as
-> the design record of the metric and of the simulator testbed results.
+> within-machine load penalty this metric models is real at steady state
+> (manufacturer compressor maps confirm it), but the net load signal in
+> annual fleet SPF is ≈ 0: either an opposing while-running effect cancels
+> the penalty, or the penalty does not annualise to the modelled size over
+> real operating distributions (doc 09 discusses, doc 10 proposes the
+> discriminating measurement). The expected gain landed at the bottom of
+> the caveat range below. The document is kept as the design record of the
+> metric and of the simulator testbed results.
 
 A proposed annualised metric for heat pump monitoring that predicts seasonal
 performance (SPF) substantially better than the current best single metric,

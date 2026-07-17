@@ -1,0 +1,199 @@
+/* Heat pump signature explorer styles.
+   All rules are scoped under #signature so they can't collide with the site's
+   Bootstrap (notably .card and .row). */
+
+#signature {
+    --surface: #fcfcfb;
+    --surface2: #f1efe8;
+    --text: #1a1a19;
+    --muted: #6b6a64;
+    --border: #e1e0d9;
+    --accent: #2a78d6;
+    --trend: #eb6834;
+    --pos: #1baf7a;
+    --neg: #e34948;
+}
+
+/* Summary stat cards */
+#signature .statcards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px;
+    margin: 16px 0;
+}
+#signature .statcard {
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 12px 14px;
+}
+#signature .statcard .l {
+    font-size: 12px;
+    color: var(--muted);
+}
+#signature .statcard .v {
+    font-size: 22px;
+    font-weight: 500;
+    margin-top: 2px;
+}
+
+/* Axis / colour selectors */
+#signature .controls {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin: 8px 0;
+}
+#signature .controls label {
+    font-size: 12px;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 4px;
+}
+#signature .controls select,
+#signature .filters select,
+#signature .filters input {
+    width: 100%;
+    height: 36px;
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0 8px;
+    font-size: 14px;
+}
+
+/* Colour legend bar */
+#signature .cbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--muted);
+    margin: 8px 0;
+}
+
+/* Chart canvas container */
+#signature .chartbox {
+    position: relative;
+    width: 100%;
+    height: 440px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px;
+}
+#signature .hint {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 6px;
+}
+#signature .err {
+    color: var(--trend);
+    font-size: 13px;
+}
+
+/* Constraint rows */
+#signature .filters {
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 12px 14px;
+}
+#signature .frow {
+    display: grid;
+    grid-template-columns: 1.6fr auto 1fr auto 1fr auto;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+}
+#signature .frow .pm {
+    color: var(--muted);
+    text-align: center;
+    font-size: 14px;
+}
+#signature .frow .lbl {
+    color: var(--muted);
+    font-size: 12px;
+    text-align: right;
+}
+#signature .xbtn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 8px;
+    height: 36px;
+    width: 36px;
+    padding: 0;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+/* Correlation chips */
+#signature .corr {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-top: 12px;
+}
+#signature .corr .head {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 8px;
+}
+#signature .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+#signature .chip {
+    font-size: 13px;
+    padding: 4px 10px;
+    border-radius: 16px;
+    background: var(--surface2);
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+#signature .chip b {
+    font-weight: 500;
+}
+#signature .chip.cur {
+    outline: 2px solid var(--accent);
+}
+#signature .bar {
+    display: inline-block;
+    height: 6px;
+    border-radius: 3px;
+    min-width: 2px;
+}
+
+/* System selector type-ahead dropdown */
+#signature .sig-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    margin: 2px 0 0;
+    max-height: 320px;
+    overflow-y: auto;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 4px;
+    list-style: none;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, .12);
+}
+#signature .sig-dropdown li {
+    padding: 7px 10px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+#signature .sig-dropdown li.active {
+    background: var(--surface2);
+}
