@@ -8,8 +8,9 @@ if (isset($session['admin']) && $session['admin']) {
     $admin = 1;
 }
 
-// System to open on load (?id=...); falls back to the first system in the list.
-$systemid = 0;
+// System to open on load: ?id=... if given, otherwise default to 748. If that
+// system isn't in the accessible list, signature.js falls back to the first one.
+$systemid = 748;
 if (isset($_GET['id'])) {
     $systemid = (int) $_GET['id'];
 }
@@ -27,41 +28,34 @@ if (isset($_GET['id'])) {
 
     <div class="container-fluid" style="margin-top:20px; max-width:1100px">
 
-        <!-- System selector: type-ahead over location / make / model / kW (Vue) -->
+        <!-- System selector: a search box filters the dropdown; the dropdown and
+             the prev/next buttons both operate over the filtered list (Vue) -->
         <div id="app">
-            <div class="row">
+            <div class="row g-2 align-items-end">
+                <div class="col-lg-4">
+                    <label class="form-label text-muted small mb-1">Search</label>
+                    <input type="text" class="form-control" v-model="query"
+                        placeholder="">
+                </div>
                 <div class="col-lg-8">
-                    <div class="input-group mb-3 position-relative">
-                        <span class="input-group-text">Select system</span>
-                        <input type="text" class="form-control" v-model="query"
-                            placeholder="Type location, make/model or kW…"
-                            @focus="openList($event)" @input="onInput" @keydown="onKey" @blur="onBlur">
-                        <button class="btn btn-primary" @click="next_system(-1)">&lt;</button>
-                        <button class="btn btn-primary" @click="next_system(1)">&gt;</button>
-
-                        <!-- Filtered match list; mousedown (not click) so it fires before blur.
-                             Highlighted item carries Bootstrap's .active list-group style. -->
-                        <ul v-if="showList && filtered.length"
-                            class="list-group position-absolute w-100 shadow-sm"
-                            style="top:100%; z-index:1000; max-height:320px; overflow:auto">
-                            <li v-for="(s,i) in filtered" :key="s.id"
-                                class="list-group-item list-group-item-action py-2 text-truncate"
-                                style="cursor:pointer"
-                                :class="{active: i===highlight}"
-                                @mousedown.prevent="select(s)"
-                                @mouseenter="highlight=i">{{ label(s) }}</li>
-                        </ul>
+                    <label class="form-label text-muted small mb-1">System <span class="text-muted">({{ filtered.length }} matching)</span></label>
+                    <div class="input-group">
+                        <select class="form-select" v-model="systemid" @change="onSelect">
+                            <option v-for="s in filtered" :key="s.id" :value="s.id">{{ label(s) }}</option>
+                        </select>
+                        <button class="btn btn-primary" @click="step(-1)" title="Previous match">&lt;</button>
+                        <button class="btn btn-primary" @click="step(1)" title="Next match">&gt;</button>
                     </div>
                 </div>
-                <div class="col-lg-4 d-flex align-items-center mb-3">
-                    <span class="text-danger small me-2" id="err"></span>
-                    <span class="text-muted small" id="count"></span>
-                </div>
+            </div>
+            <div class="mt-1">
+                <span class="text-danger small me-2" id="err"></span>
+                <span class="text-muted small" id="count"></span>
             </div>
         </div>
 
         <p class="">
-            Each point is a steady-state operating episode that should be comparable to the heat pump's data sheet. 
+            Each point is a steady-state operating episode that should be comparable to the heat pump's data sheet.
             Click a point to see the episode in the dashboard. Add constraints to hold a property in a narrow band and read the residual correlations.
         </p>
 
@@ -107,7 +101,8 @@ if (isset($_GET['id'])) {
         </div>
 
         <div class="text-center py-4">
-            <a :href="path + 'system/view?id=' + systemid" class="btn btn-primary" id="backbtn">Back to System</a>
+            <!-- href set by signature.js loadSystem() (outside the Vue root) -->
+            <a href="#" class="btn btn-primary" id="backbtn">Back to System</a>
         </div>
     </div>
 </div>
@@ -118,4 +113,4 @@ if (isset($_GET['id'])) {
     var admin = <?php echo $admin; ?>;
     var systemid = <?php echo $systemid; ?>;
 </script>
-<script src="<?php echo $path; ?>Modules/signature/views/signature.js?v=2"></script>
+<script src="<?php echo $path; ?>Modules/signature/views/signature.js?v=8"></script>

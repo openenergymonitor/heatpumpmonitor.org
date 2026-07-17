@@ -49,7 +49,7 @@ function transform(rows) {
             ot:    ot,
             cop:   (r.cop === null || r.cop === undefined) ? NaN : +r.cop,
             lift:  Math.round((ft - ot) * 10) / 10,                // flow minus outside temperature
-            u:     path + "dashboard?id=" + systemid + "&mode=power&start=" + start + "&end=" + end
+            u:     path + "dashboard?id=" + app.systemid + "&mode=power&start=" + start + "&end=" + end
         };
     });
 }
@@ -354,11 +354,12 @@ function refresh() {
     cards();
     build();
     correlations();
+    updateUrl();
 }
 
 // Redraw when the axis/colour selectors change.
 ["xs", "ys", "cs"].forEach(function (id) {
-    document.getElementById(id).addEventListener("change", function () { build(); correlations(); });
+    document.getElementById(id).addEventListener("change", function () { build(); correlations(); updateUrl(); });
 });
 document.getElementById("addf").addEventListener("click", addFilter);
 document.getElementById("clearf").addEventListener("click", function () { filters = []; renderFilters(); refresh(); });
@@ -367,6 +368,11 @@ document.getElementById("clearf").addEventListener("click", function () { filter
 function loadSystem() {
     document.getElementById("err").textContent = "";
     document.getElementById("count").textContent = "Loading…";
+
+    // Point the "Back to System" link at the current system (it sits outside
+    // the Vue root, so its href is set here rather than via a binding).
+    var back = document.getElementById("backbtn");
+    if (back) back.href = path + "system/view?id=" + app.systemid;
     $.ajax({
         type: "GET",
         url: path + "signature/list",
@@ -397,25 +403,27 @@ var app = new Vue({
         path: path,
         systemid: systemid,
         system_list: [],
-        query: "",           // text in the selector input
-        showList: false,     // whether the match list is open
-        highlight: 0         // index of the keyboard-highlighted match
+        query: ""            // free-text search terms
     },
     computed: {
-        // Filter systems by all whitespace-separated terms across location,
-        // manufacturer, model and kW. While the box still holds the current
-        // selection's label (unedited), show the full list for browsing.
+        // Systems matching all whitespace-separated search terms. A term of the
+        // form "<number>kw" (e.g. "7kw", "8.5kw") is an exact badge-capacity
+        // (hp_output) filter; every other term is a substring match across system
+        // id, location, manufacturer, model and kW. Empty search = full list.
+        // Drives both the dropdown options and the prev/next stepping.
         filtered: function () {
             var q = (this.query || "").trim().toLowerCase();
-            var list = this.system_list;
-            if (q && q !== this.selectedLabel().toLowerCase()) {
-                var terms = q.split(/\s+/);
-                list = list.filter(function (s) {
-                    var hay = (s.location + " " + s.hp_manufacturer + " " + s.hp_model + " " + s.hp_output + " kw").toLowerCase();
-                    return terms.every(function (t) { return hay.indexOf(t) !== -1; });
+            if (!q) return this.system_list;
+            var terms = q.split(/\s+/);
+            return this.system_list.filter(function (s) {
+                var hay = (s.id + " " + s.location + " " + s.hp_manufacturer + " " + s.hp_model + " " + s.hp_output + " kw").toLowerCase();
+                var cap = parseFloat(s.hp_output);
+                return terms.every(function (t) {
+                    var m = t.match(/^(\d+(?:\.\d+)?)kw$/);
+                    if (m) return cap === parseFloat(m[1]);   // exact badge capacity
+                    return hay.indexOf(t) !== -1;
                 });
-            }
-            return list.slice(0, 50);   // cap the rendered list for performance
+            });
         }
     },
     methods: {
@@ -423,69 +431,76 @@ var app = new Vue({
         label: function (s) {
             return s.location + ", " + s.hp_manufacturer + " " + s.hp_model + ", " + s.hp_output + " kW";
         },
-        // Label of the currently selected system (empty if none/unknown).
-        selectedLabel: function () {
-            var z = systemid_map[this.systemid];
-            return (z === undefined) ? "" : this.label(this.system_list[z]);
-        },
-        // Open the list and select the input text so typing replaces it.
-        openList: function (e) {
-            this.showList = true;
-            this.highlight = 0;
-            if (e && e.target) e.target.select();
-        },
-        onInput: function () {
-            this.showList = true;
-            this.highlight = 0;
-        },
-        // Delay closing so a mousedown on a list item registers first.
-        onBlur: function () {
-            var self = this;
-            setTimeout(function () { self.showList = false; }, 150);
-        },
-        // Commit a selection: update state, URL and reload episodes.
-        select: function (s) {
-            this.systemid = s.id;
-            this.query = this.label(s);
-            this.showList = false;
+        // Dropdown selection changed (v-model has already set systemid).
+        onSelect: function () {
             updateUrl();
             loadSystem();
         },
-        // Keyboard navigation within the match list.
-        onKey: function (e) {
-            if (e.key === "ArrowDown") {
-                this.showList = true;
-                this.highlight = Math.min(this.highlight + 1, this.filtered.length - 1);
-                e.preventDefault();
-            } else if (e.key === "ArrowUp") {
-                this.highlight = Math.max(this.highlight - 1, 0);
-                e.preventDefault();
-            } else if (e.key === "Enter") {
-                if (this.showList && this.filtered[this.highlight]) this.select(this.filtered[this.highlight]);
-            } else if (e.key === "Escape") {
-                this.showList = false;
-                this.query = this.selectedLabel();
+        // Step to the previous/next system within the filtered list. If the
+        // current system isn't in the filtered list (e.g. just after typing a
+        // new search), start at the first/last match.
+        step: function (direction) {
+            var list = this.filtered;
+            if (!list.length) return;
+            var idx = -1;
+            for (var i = 0; i < list.length; i++) {
+                if (list[i].id === this.systemid) { idx = i; break; }
             }
-        },
-        // Step to the previous/next system in the (location-sorted) list.
-        next_system: function (direction) {
-            var z = systemid_map[app.systemid] * 1;
-            z += direction;
-            if (z >= 0 && z < app.system_list.length) {
-                app.systemid = app.system_list[z].id;
-                app.query = app.label(app.system_list[z]);
-                updateUrl();
-                loadSystem();
-            }
+            idx = (idx === -1) ? (direction > 0 ? 0 : list.length - 1) : idx + direction;
+            if (idx < 0) idx = 0;
+            if (idx >= list.length) idx = list.length - 1;
+            this.systemid = list[idx].id;
+            updateUrl();
+            loadSystem();
         }
     }
 });
 
-// Keep ?id= in sync with the current selection without reloading the page.
+// Serialise the whole view (system, axes/colour, constraints) into the URL so
+// the page can be shared or bookmarked. replaceState (not pushState) keeps the
+// URL current without flooding history as constraint values are edited.
+//   id = system id, x/y/c = axis & colour keys, f = constraints as
+//   "prop:center:tol" joined by commas.
 function updateUrl() {
     var url = new URL(window.location.href);
-    url.searchParams.set('id', app.systemid);
-    window.history.pushState({}, '', url);
+    var p = url.searchParams;
+    p.set('id', app.systemid);
+    p.set('x', document.getElementById('xs').value);
+    p.set('y', document.getElementById('ys').value);
+    p.set('c', document.getElementById('cs').value);
+    if (filters.length) {
+        p.set('f', filters.map(function (f) {
+            return f.prop + ':' + f.center + ':' + f.tol;
+        }).join(','));
+    } else {
+        p.delete('f');
+    }
+    window.history.replaceState({}, '', url);
+}
+
+// Restore axes/colour and constraints from the URL (system id comes via PHP as
+// the initial systemid). Called once before the first load so a shared link
+// opens in the same view. Invalid params are ignored.
+function readUrlState() {
+    var p = new URL(window.location.href).searchParams;
+    var setSel = function (id, key) {
+        var v = p.get(key);
+        if (v && F[v]) document.getElementById(id).value = v;
+    };
+    setSel('xs', 'x');
+    setSel('ys', 'y');
+    setSel('cs', 'c');
+
+    var f = p.get('f');
+    if (f) {
+        filters = f.split(',').map(function (part) {
+            var bits = part.split(':');
+            return { prop: bits[0], center: parseFloat(bits[1]), tol: parseFloat(bits[2]) };
+        }).filter(function (c) {
+            return F[c.prop] && !isNaN(c.center) && !isNaN(c.tol);
+        });
+        renderFilters();
+    }
 }
 
 // Load the system list (public / user / admin), then the first system's data.
@@ -515,10 +530,10 @@ function load_system_list() {
                     updateUrl();
                 }
             }
-            app.query = app.selectedLabel();
             loadSystem();
         }
     });
 }
 
+readUrlState();
 load_system_list();

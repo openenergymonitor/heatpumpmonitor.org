@@ -17,11 +17,19 @@ function signature_controller() {
     // List all episodes for a system
     if ($route->action == "list") {
         $route->format = "json";
-        if (isset($_GET['id'])) {
-            $system_id = (int) $_GET['id'];
-            return $signature_model->get_episodes($system_id);
-        } else {
+        if (!isset($_GET['id'])) {
             return array("error" => "No system ID provided");
         }
+        $system_id = (int) $_GET['id'];
+
+        // Only return episodes the user is allowed to see. has_read_access grants
+        // access to public/published systems (so anonymous viewing works), plus
+        // the system's owner and admins.
+        $userid = isset($session['userid']) ? (int) $session['userid'] : 0;
+        if (!$system->has_read_access($userid, $system_id)) {
+            return array("error" => "Access denied");
+        }
+
+        return $signature_model->get_episodes($system_id);
     }
 }
