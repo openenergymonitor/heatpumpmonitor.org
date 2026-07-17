@@ -1,5 +1,18 @@
 # H\*: heat-weighted harmonic Carnot COP with load-dependent offsets
 
+> **Status (July 2026): tested against raw fleet feeds and NOT adopted —
+> see doc 09 for the empirical results.** On 229 validation-clean air
+> source systems H\* predicts SPF *worse* than weighted dT (cv R² 0.48 vs
+> 0.60), and a 1092-combo offset grid search over the whole
+> fixed + load-dependent family found the optimal load coefficient is
+> exactly zero, under both badge and empirically-normalised capacity. The
+> within-machine load penalty this metric models is real (confirmed by
+> manufacturer compressor maps), but in the fleet it is almost exactly
+> cancelled by an opposing while-running effect that improves with load
+> factor — so the net load signal in annual SPF is ≈ 0. The expected gain
+> landed at the bottom of the caveat range below. The document is kept as
+> the design record of the metric and of the simulator testbed results.
+
 A proposed annualised metric for heat pump monitoring that predicts seasonal
 performance (SPF) substantially better than the current best single metric,
 weighted average flow temperature minus outside temperature. Like the existing
@@ -208,15 +221,21 @@ Three consequences:
    convention is hiding the oversizing-in-operation penalty (doc 03) inside a
    metric that looks flat.
 
-## Suggested next steps
+## Suggested next steps — outcome (July 2026, see doc 09)
 
-1. Compute H\* from raw feeds for a subset of well-monitored systems and test
-   whether `SPF / H*` shows less between-system spread than `combined_prc_carnot`.
-2. If it does, add `weighted_average_variable_carnot` (= H\*) to the
-   heatpumpmonitor stats pipeline alongside the existing weighted temperature
-   stats, and publish `SPF / H*` as the modulation-corrected quality score.
-3. Revisit the fleet-wide SPF prediction chart with H\* on the x-axis — the
-   simulator predicts the 90% prediction interval roughly halves.
+1. ~~Compute H\* from raw feeds for a subset of well-monitored systems and test
+   whether `SPF / H*` shows less between-system spread than `combined_prc_carnot`.~~
+   **Done** (`scripts/feed_scan/feed_scan_4.php`, 229 clean systems): SPF/H\*
+   spread is not smaller (sd 0.041 vs 0.037), so the success criterion was
+   not met. SPF/H\* does however *expose* the sizing/load effect the fixed
+   score hides (corr with load factor +0.48 vs +0.07), making it a useful
+   diagnostic axis rather than a fairer ranking.
+2. **Not adopted** — step 1's criterion failed, and H\* predicts SPF worse
+   than weighted dT (cv R² 0.48 vs 0.60).
+3. **Tested and closed**: the prediction interval does not halve, it widens
+   (±0.58 vs ±0.51). An offset grid search over the full metric family
+   (`analyse_hstar_offsets.py`, histogram from `feed_scan_5.php`) found no
+   coefficients that beat dT; the optimal load coefficient is zero.
 
 ---
 *Background: this metric came out of a residual analysis of the

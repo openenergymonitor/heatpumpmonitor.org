@@ -445,40 +445,7 @@ global $path;
     border-radius: 50%;
 }
 
-/* ---- comparison + note cards ---- */
-.hpm-compare-card {
-    border-radius: 1rem;
-    padding: 1.4rem 1.5rem;
-    height: 100%;
-}
-.hpm-compare-teal {
-    background: #e9f6f4;
-    border: 1px solid #c4e5e0;
-}
-.hpm-compare-amber {
-    background: #fbf1e3;
-    border: 1px solid #eed9ba;
-}
-.hpm-compare-card .hpm-flow {
-    font-size: 0.875rem;
-    font-weight: 700;
-    letter-spacing: 0.03em;
-}
-.hpm-compare-teal .hpm-flow { color: #1e7a6f; }
-.hpm-compare-amber .hpm-flow { color: #a35f0e; }
-.hpm-compare-card .hpm-scop {
-    font-size: 2.6rem;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    line-height: 1.15;
-    font-variant-numeric: tabular-nums;
-}
-.hpm-compare-teal .hpm-scop { color: var(--hpm-teal); }
-.hpm-compare-amber .hpm-scop { color: var(--hpm-amber); }
-.hpm-compare-card .hpm-lab {
-    font-size: 0.9375rem;
-    color: var(--hpm-muted);
-}
+/* ---- note cards ---- */
 .hpm-note-card {
     background: var(--hpm-ink);
     color: rgba(255, 255, 255, 0.85);
@@ -871,6 +838,63 @@ global $path;
 .hpm-scatter .pi-cap { stroke: var(--hpm-blue-deep); stroke-width: 2.5; stroke-linecap: round; opacity: 0.9; }
 .hpm-scatter .pi-mid { fill: var(--hpm-blue-deep); stroke: #fff; stroke-width: 2; }
 
+/* ---- step 3: compact design-parameter model ---- */
+.hpm-dm-cap { font-size: 0.9375rem; color: var(--hpm-ink-soft); margin: 0.25rem 0 0; }
+.hpm-dm-adv { margin-top: 1rem; border-top: 1px solid var(--hpm-line); padding-top: 0.75rem; }
+.hpm-dm-adv summary { cursor: pointer; font-size: 0.875rem; font-weight: 600; color: var(--hpm-muted); }
+.hpm-dm-adv summary:hover { color: var(--hpm-ink); }
+.hpm-dm-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem 1.25rem;
+    margin-top: 0.85rem;
+}
+.hpm-dm-grid label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+    color: var(--hpm-ink-soft);
+}
+.hpm-dm-grid input {
+    flex: none;
+    width: 4.5rem;
+    padding: 0.25rem 0.4rem;
+    border: 1px solid var(--hpm-line);
+    border-radius: 0.5rem;
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--hpm-ink);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+.hpm-dm-tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+}
+.hpm-dm-tile {
+    border: 1px solid var(--hpm-line);
+    border-radius: 0.85rem;
+    background: var(--hpm-sky);
+    padding: 0.7rem 0.9rem 0.6rem;
+}
+.hpm-dm-tile .k { display: block; font-size: 0.8125rem; color: var(--hpm-muted); }
+.hpm-dm-tile .v {
+    display: block;
+    font-size: 1.45rem;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: var(--hpm-ink);
+    font-variant-numeric: tabular-nums;
+}
+.hpm-dm-tile .v small { font-size: 0.8125rem; font-weight: 600; color: var(--hpm-muted); margin-left: 0.15rem; }
+.hpm-dm-tile .s { display: block; font-size: 0.75rem; color: var(--hpm-muted); margin-top: 0.1rem; }
+.hpm-dm-coldest { margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--hpm-line); }
+
 /* ---- tariff unit price histogram ---- */
 .hpm-hist { width: 100%; height: auto; display: block; }
 .hpm-hist .grid { stroke: #e7f0f6; stroke-width: 1; }
@@ -924,6 +948,7 @@ global $path;
     .hpm-seg { margin-left: 0; }
     .hpm-steps { flex-direction: column; }
     .hpm-step-nav { flex-wrap: wrap; }
+    .hpm-dm-grid { grid-template-columns: 1fr; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1459,29 +1484,26 @@ global $path;
     </section>
 
     <!-- ============ 04 · What performance can I expect? ============ -->
-    <!-- Three-step correlation walkthrough: design flow temperature (step 1,
-         weak) → measured coldest-day flow temperature (step 2, better, with a
-         live SPF predictor) → year-round heat-weighted flow minus outside
-         (step 3, strongest). Uses the same home/find_homes_like_this dataset
-         as the finder below. Background: community.openenergymonitor.org/t/29547
-         and docs.openenergymonitor.org/heatpumpmonitor/low_temperature.html -->
+    <!-- Three-step walkthrough: design flow temperature (step 1, weak
+         correlation) → measured coldest-day flow temperature (step 2, better,
+         with a live SPF predictor) → the design-parameter model (step 3, a
+         compact port of analysis/performance_prediction/design_spf_tool that
+         predicts SPF from heat loss, design flow temp and DHW share).
+         Steps 1–2 use the same home/find_homes_like_this dataset as the
+         finder below. Background: community.openenergymonitor.org/t/29547,
+         docs.openenergymonitor.org/heatpumpmonitor/low_temperature.html and
+         github.com/openenergymonitor/heatpumpmonitor.org/tree/main/analysis/performance_prediction -->
     <section class="hpm-section hpm-section-sky">
         <div class="container">
-            <div class="hpm-eyebrow"><span class="hpm-eyebrow-num">04</span> Flow temperature &amp; performance</div>
+            <div class="hpm-eyebrow"><span class="hpm-eyebrow-num">04</span> Predicting performance</div>
             <h2 class="hpm-display mb-3">What <span class="hpm-accent">performance</span> can I expect?</h2>
             <p class="hpm-lead mb-4">
-                Every installation is designed around a <strong>flow temperature</strong> &mdash; how hot
-                the radiator water should need to be on the coldest hours of the year (e.g. at
-                &minus;3&deg;C outside) &mdash; and it&rsquo;s often used to predict how efficiently a
-                system will run. The measured data tells a more interesting story. Step through three
-                ways of asking the same question and watch the predictive power &mdash; R&sup2;, the
-                share of the performance spread each measure explains &mdash; grow as we move from the
-                design sheet to what systems actually do.
+                Add description here..
             </p>
 
             <template v-if="!finderLoading && !finderError">
 
-                <div class="hpm-steps" role="group" aria-label="Three steps from design temperature to measured running temperature">
+                <div class="hpm-steps" role="group" aria-label="Three steps from design temperature to a predictive model">
                     <button v-for="s in corrSteps" :key="s.stage" type="button"
                             :class="['hpm-step', {active: corrStage === s.stage}]"
                             :aria-current="corrStage === s.stage ? 'step' : false"
@@ -1491,7 +1513,8 @@ global $path;
                             <span class="t">{{ s.title }}</span>
                             <span class="s">{{ s.sub }}</span>
                         </span>
-                        <span class="r2">R&sup2; {{ corrFits[s.key].r2.toFixed(2) }}</span>
+                        <span class="r2" v-if="s.key">R&sup2; {{ corrFits[s.key].r2.toFixed(2) }}</span>
+                        <span class="r2" v-else>Model</span>
                     </button>
                 </div>
 
@@ -1590,23 +1613,14 @@ global $path;
                     </div>
                 </template>
 
-                <!-- ---- Steps 2 & 3 · measured running temperatures ---- -->
-                <template v-else>
-                    <p class="hpm-stage-lead" v-if="corrStage === 2">
+                <!-- ---- Step 2 · measured coldest-day running temperatures ---- -->
+                <template v-else-if="corrStage === 2">
+                    <p class="hpm-stage-lead">
                         <strong>Step 2 &mdash; the coldest day, as measured.</strong> Swap the design assumption
                         for what each system actually did: the weighted mean flow temperature on its coldest
                         day of the last year. It&rsquo;s the closest measured equivalent to the design
                         condition, and the correlation strengthens considerably. Enter a coldest-day flow
                         temperature on the right to see the performance the fleet suggests.
-                    </p>
-                    <p class="hpm-stage-lead" v-else>
-                        <strong>Step 3 &mdash; how the system really ran.</strong> The strongest relationship in
-                        the whole dataset: weight every flow temperature reading across the year by the heat
-                        delivered at that moment, then subtract the outside temperature. That&rsquo;s the average
-                        lift the heat pump actually worked across when it mattered &mdash; the best
-                        characterisation we can make of the temperatures a system really ran at. It&rsquo;s not
-                        the badge on the box, it&rsquo;s how cold you run the water: as a rule of thumb, every
-                        1&deg;C lower is worth roughly <strong>2&ndash;3%</strong>.
                     </p>
                     <div class="row g-4">
                         <div class="col-lg-7 d-flex">
@@ -1628,7 +1642,7 @@ global $path;
                                     <circle v-for="d in perfDots" class="dot-a" :cx="d.x" :cy="d.y" r="4.5" @click="openSystem(d.id)">
                                         <title>{{ d.label }}</title>
                                     </circle>
-                                    <g v-if="corrStage === 2 && prediction">
+                                    <g v-if="prediction">
                                         <line class="pi-band" :x1="perfX(predictFlowT)" :y1="perfY(prediction.lo)" :x2="perfX(predictFlowT)" :y2="perfY(prediction.hi)"></line>
                                         <line class="pi-cap" :x1="perfX(predictFlowT) - 7" :y1="perfY(prediction.lo)" :x2="perfX(predictFlowT) + 7" :y2="perfY(prediction.lo)"></line>
                                         <line class="pi-cap" :x1="perfX(predictFlowT) - 7" :y1="perfY(prediction.hi)" :x2="perfX(predictFlowT) + 7" :y2="perfY(prediction.hi)"></line>
@@ -1637,13 +1651,13 @@ global $path;
                                     <text class="axis-title" x="655" y="32" text-anchor="end">&minus;{{ Math.abs(perfFit.slope).toFixed(2) }} SCOP per {{ perfMetricDef.unit === 'K' ? 'K' : '&deg;C' }}</text>
                                     <text class="axis-label" x="655" y="50" text-anchor="end">R&sup2; {{ perfFit.r2.toFixed(2) }} &middot; {{ perfFit.n }} systems</text>
                                 </svg>
-                                <div class="hpm-legend" v-if="corrStage === 2 && prediction">
+                                <div class="hpm-legend" v-if="prediction">
                                     <span><span class="hpm-swatch" style="background:#2187ba;"></span> Your prediction, with its 90% interval</span>
                                 </div>
                             </div>
                         </div>
                         <div class="col-lg-5 d-flex flex-column gap-4">
-                            <div class="hpm-chart-card flex-grow-1" v-if="corrStage === 2">
+                            <div class="hpm-chart-card flex-grow-1">
                                 <h3>What SPF should I expect?</h3>
                                 <div class="hpm-chart-sub">Live best fit across {{ corrFits.coldest.n }} air source systems</div>
                                 <label class="hpm-predict-label" for="predict-flow">Weighted mean flow temperature on the coldest day</label>
@@ -1665,65 +1679,173 @@ global $path;
                                     <p class="mb-0" style="font-size:0.9375rem;">
                                         Nine in ten systems running at &approx;{{ predictFlowT }}&deg;C on their coldest
                                         day would be expected to land in this range. Where in the range? Hot water share,
-                                        controls and commissioning decide &mdash; step 3 shows the measure that captures
-                                        how a system is really run.
+                                        controls and commissioning decide &mdash; step 3 is our attempt at predicting
+                                        all of that from the design itself.
                                     </p>
                                 </template>
                             </div>
-                            <div v-else>
-                                <div class="hpm-eyebrow mb-3">Measured, not modelled</div>
-                                <div class="row g-3">
-                                    <div class="col-6">
-                                        <div class="hpm-compare-card hpm-compare-teal">
-                                            <div class="hpm-flow">Coolest third<br>&le; {{ perfCompare.coolMax.toFixed(0) }}&deg;C flow</div>
-                                            <div class="hpm-scop">{{ perfCompare.coolMean.toFixed(2) }}</div>
-                                            <div class="hpm-lab">mean SCOP &middot; {{ perfCompare.n }} systems</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="hpm-compare-card hpm-compare-amber">
-                                            <div class="hpm-flow">Warmest third<br>&ge; {{ perfCompare.warmMin.toFixed(0) }}&deg;C flow</div>
-                                            <div class="hpm-scop">{{ perfCompare.warmMean.toFixed(2) }}</div>
-                                            <div class="hpm-lab">mean SCOP &middot; {{ perfCompare.n }} systems</div>
-                                        </div>
-                                    </div>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- ---- Step 3 · the design-parameter model ---- -->
+                <template v-else>
+                    <p class="hpm-stage-lead">
+                        <strong>Step 3 &mdash; predict the year from the design sheet.</strong>
+                    </p>
+                    <div class="row g-4">
+                        <div class="col-lg-5 d-flex">
+                            <div class="hpm-chart-card flex-grow-1">
+                                <h3>Your design</h3>
+                                <div class="hpm-chart-sub">Three numbers from the heat-loss survey and design proposal</div>
+
+                                <label class="hpm-predict-label" for="dm-heatloss">Heat loss at design temperature</label>
+                                <div class="hpm-predict-input">
+                                    <input type="range" id="dm-heatloss" min="2" max="15" step="0.1" v-model.number="dm.heatLoss">
+                                    <input type="number" min="1" max="30" step="0.1" v-model.number="dm.heatLoss"
+                                           aria-label="Heat loss in kilowatts">
+                                    <span class="unit">kW</span>
                                 </div>
-                                <p class="mt-3 mb-0" style="font-size:0.9375rem;">
-                                    Same heat, warmer water: the warmest-running third of systems uses roughly
-                                    <strong>{{ perfCompare.pct.toFixed(0) }}% more electricity</strong> for every
-                                    unit of heat than the coolest third.
+
+                                <label class="hpm-predict-label" for="dm-flow">Design flow temperature</label>
+                                <div class="hpm-predict-input">
+                                    <input type="range" id="dm-flow" min="30" max="60" step="0.5" v-model.number="dm.flowDesign">
+                                    <input type="number" min="26" max="70" step="0.5" v-model.number="dm.flowDesign"
+                                           aria-label="Design flow temperature in degrees Celsius">
+                                    <span class="unit">&deg;C</span>
+                                </div>
+
+                                <label class="hpm-predict-label" for="dm-dhw">Hot water share of annual heat</label>
+                                <div class="hpm-predict-input">
+                                    <input type="range" id="dm-dhw" min="0" max="40" step="1" v-model.number="dm.dhwShare">
+                                    <input type="number" min="0" max="60" step="1" v-model.number="dm.dhwShare"
+                                           aria-label="Hot water share of annual heat in percent">
+                                    <span class="unit">%</span>
+                                </div>
+
+                                <p class="hpm-dm-cap">
+                                    Heat pump capacity: <strong>{{ dmCapacity }} kW</strong> &mdash;
+                                    {{ dm.oversize }}&times; the heat loss, rounded up to the next kW.
+                                </p>
+
+                                <details class="hpm-dm-adv">
+                                    <summary>Advanced settings</summary>
+                                    <div class="hpm-dm-grid">
+                                        <label>Oversizing factor <input type="number" min="1" max="2.5" step="0.05" v-model.number="dm.oversize"></label>
+                                        <label>Design outside temp &deg;C <input type="number" min="-15" max="5" step="0.5" v-model.number="dm.designTemp"></label>
+                                        <label>Room temperature &deg;C <input type="number" min="16" max="24" step="0.5" v-model.number="dm.room"></label>
+                                        <label>Flow &minus; return &Delta;T K <input type="number" min="3" max="10" step="0.5" v-model.number="dm.systemDT"></label>
+                                        <label>Body heat W <input type="number" min="0" max="400" step="10" v-model.number="dm.metabolicGains"></label>
+                                        <label>Lighting &amp; appliances W <input type="number" min="0" max="800" step="10" v-model.number="dm.lacGains"></label>
+                                        <label>Solar aperture m&sup2; <input type="number" min="0" max="12" step="0.5" v-model.number="dm.solarScale"></label>
+                                        <label>Minimum modulation % <input type="number" min="0" max="60" step="1" v-model.number="dm.minMod"></label>
+                                        <label>Machine quality, % of Carnot <input type="number" min="30" max="60" step="1" v-model.number="dm.eta"></label>
+                                        <label>Peak defrost penalty % <input type="number" min="0" max="30" step="1" v-model.number="dm.defrostD"></label>
+                                        <label>Hot water target &deg;C <input type="number" min="38" max="65" step="1" v-model.number="dm.dhwTarget"></label>
+                                        <label>Condenser offset K/load <input type="number" min="0" max="8" step="0.5" v-model.number="dm.aCond"></label>
+                                        <label>Evaporator offset K/load <input type="number" min="0" max="16" step="0.5" v-model.number="dm.bEvap"></label>
+                                    </div>
+                                </details>
+                            </div>
+                        </div>
+                        <div class="col-lg-7 d-flex">
+                            <div class="hpm-chart-card flex-grow-1">
+                                <h3>A year of operation, predicted</h3>
+                                <div class="hpm-chart-sub">Physics model over a standard weather year &middot; defaults match the median monitored system</div>
+                                <template v-if="dmModel">
+                                    <div class="hpm-dft-mean-stat">
+                                        <span class="val">{{ dmModel.spf.toFixed(2) }}</span>
+                                        <span class="lab">predicted SPF &mdash; space heating &amp; hot water combined</span>
+                                    </div>
+                                    <div class="hpm-dm-tiles">
+                                        <div class="hpm-dm-tile">
+                                            <span class="k">Space heating SPF</span>
+                                            <span class="v">{{ isFinite(dmModel.spfSpace) ? dmModel.spfSpace.toFixed(2) : "—" }}</span>
+                                        </div>
+                                        <div class="hpm-dm-tile">
+                                            <span class="k">Hot water SPF</span>
+                                            <span class="v">{{ dm.dhwShare > 0 ? dmModel.spfDhw.toFixed(2) : "—" }}</span>
+                                        </div>
+                                        <div class="hpm-dm-tile">
+                                            <span class="k">Annual heat demand</span>
+                                            <span class="v">{{ fmt(dmModel.totalHeatKwh) }}<small>kWh</small></span>
+                                            <span class="s">{{ fmt(dmModel.spaceHeatKwh) }} space + {{ fmt(dmModel.dhwHeatKwh) }} hot water</span>
+                                        </div>
+                                        <div class="hpm-dm-tile">
+                                            <span class="k">Annual electricity</span>
+                                            <span class="v">{{ fmt(dmModel.elecKwh) }}<small>kWh</small></span>
+                                        </div>
+                                        <div class="hpm-dm-tile">
+                                            <span class="k">Annual running cost</span>
+                                            <span class="v">&pound;{{ fmt(dmCost) }}</span>
+                                            <span class="s">at 20.3p/kWh &mdash; the median Octopus Agile rate achieved across the fleet</span>
+                                        </div>
+                                    </div>
+                                    <div class="hpm-dm-coldest">
+                                        <svg class="hpm-thermo" viewBox="0 0 420 96" role="img"
+                                             :aria-label="'Temperature scale comparing the design flow temperature of ' + dm.flowDesign + ' degrees with the model prediction that the system actually runs at about ' + dmModel.coldestFlow.toFixed(1) + ' degrees on the coldest day.'">
+                                            <line class="track" x1="20" y1="52" x2="400" y2="52"></line>
+                                            <g v-for="t in [30, 35, 40, 45, 50, 55]">
+                                                <line class="grid" :x1="thermoX(t)" y1="48" :x2="thermoX(t)" y2="56" stroke="#d9e8f1" stroke-width="1.5"></line>
+                                                <text class="tick-label" :x="thermoX(t)" y="74" text-anchor="middle">{{ t }}&deg;</text>
+                                            </g>
+                                            <line v-if="dmColdestGap > 0.5" class="gap-arrow" :x1="thermoX(dm.flowDesign)" y1="52" :x2="thermoX(dmModel.coldestFlow) + 8" y2="52"></line>
+                                            <polygon v-if="dmColdestGap > 0.5" class="gap-head" :points="(thermoX(dmModel.coldestFlow)+8) + ',48 ' + (thermoX(dmModel.coldestFlow)+8) + ',56 ' + (thermoX(dmModel.coldestFlow)+1) + ',52'"></polygon>
+                                            <line class="design-marker" :x1="thermoX(dm.flowDesign)" y1="40" :x2="thermoX(dm.flowDesign)" y2="64"></line>
+                                            <text class="marker-label" :x="thermoX(dm.flowDesign)" y="30"
+                                                  :text-anchor="thermoX(dm.flowDesign) > 340 ? 'end' : 'middle'">designed {{ dm.flowDesign }}&deg;C</text>
+                                            <circle class="actual-marker" :cx="thermoX(dmModel.coldestFlow)" cy="52" r="6.5"></circle>
+                                            <text class="marker-label" :x="thermoX(dmModel.coldestFlow)" y="93"
+                                                  :text-anchor="thermoX(dmModel.coldestFlow) < 80 ? 'start' : 'middle'" style="fill:#1e7a6f;">predicted &approx;{{ dmModel.coldestFlow.toFixed(1) }}&deg;C</text>
+                                        </svg>
+                                        <p class="mb-0" style="font-size:0.9375rem;">
+                                            On the coldest day of the year, the model expects this system to deliver
+                                            most of its heat at <strong>&approx;{{ dmModel.coldestFlow.toFixed(1) }}&deg;C</strong>
+                                            <template v-if="dmColdestGap > 0.5"> &mdash; <strong>{{ dmColdestGap.toFixed(1) }}&deg;C below
+                                            the design flow temperature</strong>, because internal and solar gains carry part of
+                                            the load</template><template v-else> &mdash; right on design</template>.
+                                            This is a slightly smaller designed-vs-ran-at gap the measured fleet shows in step 1.
+                                        </p>
+                                    </div>
+                                </template>
+                                <p v-else class="mb-0" style="font-size:0.9375rem;">
+                                    These settings can&rsquo;t be modelled &mdash; check that every field has a value
+                                    and that the design flow temperature sits well above room temperature.
                                 </p>
                             </div>
                         </div>
                     </div>
-                    <div class="row g-4 mt-0" v-if="corrStage === 3">
+                    <!-- Rewrite this
+                    <div class="row g-4 mt-0">
                         <div class="col-md-6 d-flex">
                             <div class="hpm-note-card flex-grow-1">
-                                <div class="hpm-note-eyebrow">Relating this to a design</div>
+                                <div class="hpm-note-eyebrow">An open research effort</div>
                                 <p class="mb-2">
-                                    A heat-weighted flow-minus-outside temperature isn&rsquo;t a number you&rsquo;ll
-                                    find on a design sheet &mdash; it emerges from the emitters, the controls, the
-                                    local climate and how the home is lived in. It can be estimated ahead of an
-                                    installation though: simulation tools can run a proposed design through a full
-                                    year of weather to predict it.
+                                    This model is the latest step in an ongoing project to predict performance
+                                    before installation. On a simulated test fleet it lands within
+                                    &plusmn;0.2 SPF when the inputs are truthful &mdash; and the biggest remaining
+                                    source of error is the inputs themselves: declared heat losses and design flow
+                                    temperatures often differ a lot from how systems really run. The full analysis,
+                                    dead ends included, is written up in the open and suggestions are welcome.
                                 </p>
-                                <p class="mb-0"><a href="https://openenergymonitor.org/tools/dynamic_heatpump" target="_blank" rel="noopener" style="color:#9fd3ec;">Try our dynamic heat pump simulator <i class="bi bi-arrow-right"></i></a></p>
+                                <p class="mb-0"><a href="https://github.com/openenergymonitor/heatpumpmonitor.org/tree/main/analysis/performance_prediction" target="_blank" rel="noopener" style="color:#9fd3ec;">Read the research notes on GitHub <i class="bi bi-arrow-right"></i></a></p>
                             </div>
                         </div>
                         <div class="col-md-6 d-flex">
                             <div class="hpm-note-card flex-grow-1">
-                                <div class="hpm-note-eyebrow">For newcomers</div>
+                                <div class="hpm-note-eyebrow">Simulate a full design</div>
                                 <p class="mb-2">
-                                    Your running temperature is a choice. Larger radiators or underfloor heating
-                                    deliver the same heat with cooler water, and tuning weather compensation after
-                                    install lowers it further. Sizing emitters to run at
-                                    <strong>35&ndash;45&deg;C on the coldest day</strong> is the single most
-                                    effective efficiency decision in an installation.
+                                    This calculator is the compact, closed-form summary of a fuller physics model.
+                                    Our dynamic heat pump simulator runs a proposed design through a year of
+                                    weather step by step &mdash; heat pump sizing, emitters, cycling, hot water
+                                    runs and controls &mdash; and is the test bed we use to develop and validate
+                                    ideas before applying them to the real fleet.
                                 </p>
-                                <p class="mb-0"><a href="https://docs.openenergymonitor.org/heatpumpmonitor/low_temperature.html" target="_blank" rel="noopener" style="color:#9fd3ec;">Why low temperatures win <i class="bi bi-arrow-right"></i></a></p>
+                                <p class="mb-0"><a href="https://openenergymonitor.org/tools/dynamic_heatpump" target="_blank" rel="noopener" style="color:#9fd3ec;">Try the dynamic heat pump simulator <i class="bi bi-arrow-right"></i></a></p>
                             </div>
                         </div>
                     </div>
+                    -->
                 </template>
 
                 <div class="hpm-step-nav">
@@ -1731,20 +1853,20 @@ global $path;
                         <i class="bi bi-arrow-left"></i> Back
                     </button>
                     <button type="button" class="hpm-btn hpm-btn-primary" v-if="corrStage < 3" @click="corrStage++">
-                        {{ corrStage === 1 ? "Next: what systems actually ran at" : "Next: the strongest correlation" }} <i class="bi bi-arrow-right"></i>
+                        {{ corrStage === 1 ? "Next: what systems actually ran at" : "Next: predict from your design" }} <i class="bi bi-arrow-right"></i>
                     </button>
                 </div>
 
-                <p class="hpm-finder-footnote" v-if="corrStage > 1">
+                <p class="hpm-finder-footnote" v-if="corrStage === 2">
                     This chart shows air source systems only, and excludes systems that provide active
                     cooling &mdash; cooling energy skews the heat-weighted averages.
                     Weighted averages weight each temperature reading by the heat delivered at it, so they
-                    reflect the conditions most heat was produced under. Flow minus outside temperature is
-                    the lift the heat pump works across &mdash; the fairest comparison between mild and cold
-                    locations. Live best fit: SCOP = {{ perfFit.slope.toFixed(3) }} &times; x +
+                    reflect the conditions most heat was produced under.
+                    Live best fit: SCOP = {{ perfFit.slope.toFixed(3) }} &times; x +
                     {{ perfFit.icpt.toFixed(2) }} across {{ perfFit.n }} systems &mdash; the exact figures
                     drift a little as systems join, but the slope has stayed near 0.1 per degree for years.
                 </p>
+
             </template>
 
             <div v-else class="hpm-finder-empty">
@@ -1887,6 +2009,108 @@ global $path;
         "Uninsulated cavity": "Non-insulated cavity wall"
     };
 
+    // ---- Step 3: design-parameter SPF model ----
+    // Compact port of analysis/performance_prediction/design_spf_tool — the
+    // doc-08 closed-form model: the weather-compensation curve implied by heat
+    // loss and emitter sizing, priced over a standard weather year with a
+    // load-dependent ideal-Carnot COP, plus cycling and defrost allowances.
+    // Llanberis 2024 weather year, half-hourly, binned at 0.5 K of actual
+    // outside temperature. Each bin holds sub-groups of [sample count, mean
+    // 24h-smoothed temp, mean 24h-smoothed solar W/m2]: space demand responds
+    // to the smoothed climate (thermal mass) while the evaporator sees the
+    // actual air temperature. ref = the year's 0.4th-percentile cold, aligned
+    // to the design outside temperature.
+    var DM_WEATHER = {"ref":-1.1,"binw":0.5,"t0":-4.75,"bins":[[[1,-0.829,20.64],[1,-0.796,19.45]],[[1,-0.533,36.45],[1,-0.475,36.45]],[[1,-1.09,33.66],[1,-1.142,42.1],[1,-0.417,36.45],[1,-0.346,36.45]],[[2,-1.005,24.45],[2,-0.889,22.44],[1,-1.133,51.9],[1,-1.108,52.45]],[[3,-1.098,52.86],[3,-0.773,41.93],[3,-0.602,36.49],[3,-0.541,36.21]],[[2,-1.154,50.46],[2,-0.622,36.45],[2,-0.45,31.28],[2,-0.419,32.11]],[[3,-0.699,30.47],[3,-0.904,52.89],[3,0.433,31.93],[3,2.051,80.27]],[[8,-0.025,25.77],[8,1.74,23.13],[7,2.081,78.9],[7,2.974,146.57]],[[8,-0.353,28.88],[8,1.204,27.93],[8,1.956,55.43],[8,3.566,179.95]],[[13,0.861,28.45],[13,1.504,34.8],[12,2.437,55.58],[12,3.069,122.3]],[[19,1.023,37.01],[19,2.021,37.25],[18,2.734,80.15],[18,5.674,154.88]],[[26,0.668,36.13],[26,1.604,38.62],[25,2.25,42.93],[25,3.308,102.1]],[[42,1.305,31.8],[42,1.91,32.28],[42,3.081,62.84],[42,4.774,132.18]],[[47,1.44,32.7],[47,2.171,35.63],[46,3.83,43.89],[46,4.718,122.66]],[[46,1.391,35.59],[46,2.683,26.31],[45,3.606,46.26],[45,5.226,109.56]],[[50,1.683,31.54],[50,3.137,24.09],[49,3.654,72.67],[49,5.862,131.24]],[[59,2.472,23.93],[59,3.32,24.26],[59,3.845,64.13],[59,5.832,101.86]],[[64,2.639,25.87],[64,3.675,36.89],[64,4.893,40.15],[64,6.653,122.95]],[[66,3.209,25.75],[66,4.433,35.27],[65,5.233,56.17],[65,6.878,143.84]],[[104,3.612,36.48],[104,5.217,29.15],[104,5.578,71.89],[104,7.084,155.69]],[[90,4.463,26.73],[90,5.369,25.75],[89,5.849,42.66],[89,7.213,129.4]],[[114,4.874,25.99],[114,5.821,32.0],[113,6.613,56.61],[113,7.933,184.45]],[[130,5.151,32.4],[130,6.563,24.3],[130,6.922,70.81],[130,8.423,184.65]],[[141,5.545,26.63],[141,6.692,28.82],[140,7.011,68.48],[140,8.483,161.59]],[[145,5.958,34.88],[145,7.112,35.3],[144,7.43,70.81],[144,9.034,178.13]],[[143,6.542,35.39],[143,7.691,32.09],[143,8.224,74.43],[143,9.612,192.06]],[[145,6.978,27.95],[145,8.029,35.64],[144,8.358,96.37],[144,9.906,194.61]],[[171,7.654,34.04],[171,8.663,37.34],[170,8.931,87.54],[170,10.503,205.8]],[[186,8.175,34.94],[186,9.084,42.54],[186,9.511,75.06],[186,10.376,195.65]],[[223,8.666,28.19],[223,9.688,41.66],[222,9.83,101.35],[222,11.614,199.73]],[[227,8.72,31.83],[227,10.073,38.7],[226,10.118,106.88],[226,12.294,200.8]],[[215,9.607,27.72],[215,10.312,45.41],[215,10.701,90.78],[214,12.468,206.12]],[[184,9.847,41.44],[184,10.68,71.79],[184,11.604,111.09],[184,12.81,230.26]],[[194,10.279,42.1],[194,11.485,74.6],[194,12.178,115.85],[194,13.06,227.6]],[[162,10.914,46.69],[162,12.089,70.01],[162,12.594,143.96],[162,13.864,247.56]],[[176,11.568,46.9],[176,12.396,94.21],[176,12.693,156.45],[176,14.007,234.15]],[[145,11.89,37.75],[145,12.725,85.8],[145,13.208,178.98],[145,14.787,233.08]],[[144,12.047,60.03],[144,13.193,105.41],[144,13.624,187.98],[144,15.117,253.84]],[[156,12.716,55.39],[156,13.292,122.36],[156,14.26,163.69],[156,15.594,242.91]],[[139,13.199,58.06],[139,13.765,125.16],[139,14.626,164.02],[139,15.637,257.43]],[[116,13.479,106.1],[116,14.72,134.77],[116,14.573,205.38],[116,15.914,267.62]],[[95,13.971,92.29],[95,14.802,137.39],[94,14.993,182.4],[94,15.993,264.03]],[[85,14.402,93.4],[85,15.163,125.35],[85,14.552,215.87],[85,16.328,252.71]],[[71,14.235,120.48],[71,15.021,158.74],[70,15.589,181.2],[70,16.439,253.45]],[[54,14.566,131.24],[54,15.23,164.94],[54,15.129,252.42],[54,17.004,271.24]],[[34,13.908,161.68],[34,15.445,170.16],[34,15.278,253.27],[34,16.951,267.13]],[[35,14.924,146.91],[35,15.268,185.61],[35,15.071,265.57],[35,17.12,265.0]],[[27,14.734,167.79],[27,15.287,248.21],[27,16.332,242.91],[27,17.029,285.02]],[[21,15.154,226.02],[21,16.489,227.4],[20,16.685,243.49],[20,17.251,300.73]],[[16,15.304,221.03],[16,16.076,258.2],[15,16.804,275.39],[15,18.08,277.58]],[[13,15.213,242.76],[13,16.418,239.08],[12,15.978,321.17],[12,18.627,271.13]],[[10,15.872,250.45],[10,16.612,270.6],[10,17.415,288.61],[10,18.471,295.54]],[[10,16.49,261.56],[10,18.046,262.98],[10,19.041,250.31],[10,21.096,207.95]],[[6,16.294,266.15],[6,17.309,292.88],[5,18.532,266.25],[5,20.213,257.58]],[[8,17.008,298.83],[8,17.57,287.53],[8,18.443,262.02],[8,18.818,286.92]],[[4,17.134,298.15],[4,18.654,251.52],[4,18.346,281.4],[4,18.434,328.6]],[[3,18.268,277.5],[3,18.783,303.81],[2,18.47,328.6],[2,21.193,254.5]],[[3,19.357,279.01],[3,18.465,328.6],[2,20.264,254.21],[2,20.739,254.21]]]};
+    var DM_RAD_EXP = 1.3;
+    var DM_DHW_APPROACH = 4.0, DM_DHW_LOAD = 0.9;
+    // Median achieved Octopus Agile unit rate across the monitored fleet, p/kWh
+    var DM_AGILE_RATE = 20.3;
+
+    // Frosting-band weight for the defrost penalty: 1 between -2 and +2 C,
+    // fading to 0 by +6 C, tapering below -2 C as the air dries.
+    function dmFrostW(t) {
+        if (t >= 6) return 0;
+        if (t > 2) return (6 - t) / 4;
+        if (t >= -2) return 1;
+        return Math.max(0.4, 1 - (-2 - t) * 0.075);
+    }
+
+    // Space demand per weather sample group: U*(room - smoothedT) - internal
+    // gains - smoothed solar * aperture * 0.9, clipped to [0, capacity]. The
+    // flow temperature each load needs comes from inverting the radiator
+    // equation; COP is eta * ideal Carnot with load-dependent offsets, with a
+    // cycling floor below minimum modulation and a defrost derating in the
+    // frosting band.
+    function dmComputeModel(p) {
+        var hlW = p.heatLoss * 1000, capW = p.capacity * 1000;
+        var u = hlW / (p.room - p.designTemp);                       // W/K
+        var mwtDesign = p.flowDesign - p.systemDT / 2;
+        var rad50 = hlW / Math.pow((mwtDesign - p.room) / 50, DM_RAD_EXP);
+        var shift = p.designTemp - DM_WEATHER.ref;
+        var minModW = (p.minMod / 100) * capW;
+        var gainsW = p.metabolicGains + p.lacGains;
+        var share = Math.min(Math.max(p.dhwShare / 100, 0), 0.6);
+        var eta = p.eta / 100;
+        var D = p.defrostD / 100;
+
+        var spaceH = 0, spaceIEd = 0, totalHours = 0, sumInvCdD = 0;
+        var coldestFlow = NaN, coldestDist = Infinity;
+        for (var i = 0; i < DM_WEATHER.bins.length; i++) {
+            var groups = DM_WEATHER.bins[i];
+            if (!groups) continue;
+            var t = DM_WEATHER.t0 + i * DM_WEATHER.binw + shift;
+            var fw = dmFrostW(t);
+
+            // DHW ideal COP at this temperature (constant year-round demand)
+            var tcD = p.dhwTarget + DM_DHW_APPROACH + p.aCond * DM_DHW_LOAD;
+            var teD = t - p.bEvap * DM_DHW_LOAD;
+            var carnotDhw = (tcD + 273.15) / (tcD - teD);
+
+            var hours = 0, binH = 0, binIEd = 0, binFlow = 0;
+            for (var j = 0; j < groups.length; j++) {
+                var cnt = groups[j][0], tSm = groups[j][1], sSm = groups[j][2];
+                var h = cnt * 0.5;
+                hours += h;
+                var q = u * (p.room - (tSm + shift)) - gainsW - sSm * p.solarScale * 0.9;
+                q = Math.min(Math.max(q, 0), capW);
+                if (q <= 0) continue;
+                var mwt = p.room + 50 * Math.pow(q / rad50, 1 / DM_RAD_EXP);
+                var flow = mwt + p.systemDT / 2;
+                var r = Math.max(q, minModW) / capW;
+                var tc = flow + p.aCond * r, te = t - p.bEvap * r;
+                var carnot = (tc + 273.15) / (tc - te);
+                binH += q * h;
+                binIEd += (q / (carnot * (1 - D * fw))) * h;
+                binFlow += q * h * flow;
+            }
+            totalHours += hours;
+            sumInvCdD += hours / (carnotDhw * (1 - D * fw));
+            spaceH += binH;
+            spaceIEd += binIEd;
+            // heat-weighted mean operating flow at the design condition — the
+            // model's coldest-day running temperature
+            if (binH > 0 && Math.abs(t - p.designTemp) < coldestDist) {
+                coldestDist = Math.abs(t - p.designTemp);
+                coldestFlow = binFlow / binH;
+            }
+        }
+
+        var dhwH = spaceH * share / (1 - share);
+        var dhwIEd = dhwH * (sumInvCdD / totalHours);
+        var heat = spaceH + dhwH;
+        var elec = (spaceIEd + dhwIEd) / eta;
+        return {
+            spf: heat / elec,
+            spfSpace: spaceIEd > 0 ? eta * spaceH / spaceIEd : NaN,
+            spfDhw: eta * (totalHours / sumInvCdD),
+            spaceHeatKwh: spaceH / 1000,
+            dhwHeatKwh: dhwH / 1000,
+            totalHeatKwh: heat / 1000,
+            elecKwh: elec / 1000,
+            coldestFlow: coldestFlow
+        };
+    }
+
     var app = new Vue({
         el: '#app',
         data: {
@@ -1918,12 +2142,12 @@ global $path;
                 hp: ["Any", "Air Source", "Ground Source"]
             },
 
-            // Correlation walkthrough: design temp → coldest-day temp → lift
+            // Correlation walkthrough: design temp → coldest-day temp → model
             corrStage: 1,
             corrSteps: [
                 { stage: 1, key: "design", title: "Design flow temperature", sub: "The number on the design sheet" },
                 { stage: 2, key: "coldest", title: "Coldest-day flow temperature", sub: "Measured at the design condition" },
-                { stage: 3, key: "lift", title: "Flow − outside, heat-weighted", sub: "What the system actually ran at" }
+                { stage: 3, key: null, title: "Design-parameter model", sub: "Predict a year before installation" }
             ],
             // Coldest-day flow temperature driving the step 2 SPF predictor
             predictFlowT: 45,
@@ -1932,21 +2156,28 @@ global $path;
             designTemp: 50,
             designTemps: [35, 40, 45, 50, 55],
 
-            // Scatter metric definitions for steps 2 and 3
+            // Scatter metric definition for step 2
             perfMetrics: [
                 {
                     key: "coldest", name: "Coldest day", unit: "°C",
                     title: "SCOP vs coldest-day flow temperature",
                     sub: "Weighted mean flow temperature on each system's coldest day — the closest measure to the design condition",
                     axis: "Weighted mean flow temperature on the coldest day (°C)"
-                },
-                {
-                    key: "lift", name: "Flow − outside", unit: "K",
-                    title: "SCOP vs temperature lift",
-                    sub: "Year-round flow minus outside temperature, weighted by heat delivered — the lift the heat pump works across",
-                    axis: "Weighted average flow minus outside temperature (K)"
                 }
             ],
+
+            // Step 3: design-parameter model inputs. Defaults are calibrated
+            // to the median observed system in the fleet (see doc 08): annual
+            // heat matches the fleet median and the operating curve passes
+            // through the median coldest-day observation (37.3°C at −1.8°C).
+            dm: {
+                heatLoss: 4.2, flowDesign: 41, dhwShare: 14,
+                oversize: 1.3,
+                designTemp: -1.5, room: 20,
+                metabolicGains: 120, lacGains: 240, solarScale: 4,
+                systemDT: 5, minMod: 35, eta: 47, defrostD: 13,
+                dhwTarget: 48, aCond: 3, bEvap: 8
+            },
 
             // Smart tariffs: unit price histogram
             // Electricity price cap flat unit rate, p/kWh (July 2026)
@@ -2124,10 +2355,8 @@ global $path;
                 return ticks;
             },
             // ---- Correlation walkthrough: SCOP vs running temperature ----
-            // The scatter metric follows the active step: coldest-day flow
-            // temperature on step 2, flow minus outside on step 3
             perfMetric: function() {
-                return this.corrStage === 3 ? "lift" : "coldest";
+                return "coldest";
             },
             perfMetricDef: function() {
                 var key = this.perfMetric;
@@ -2140,16 +2369,15 @@ global $path;
                     return h.hp === "Air Source" && (h.cooling === null || h.cooling < 1);
                 });
             },
-            // One fit per step over the same population, so the stepper's R²
-            // values are directly comparable
+            // One fit per measured step over the same population, so the
+            // stepper's R² values are directly comparable
             corrFits: function() {
                 var fit = this.linfit;
                 return {
                     design: fit(this.perfHomes
                         .filter(function(h) { return h.design !== null && h.design > 20; })
                         .map(function(h) { return { x: h.design, y: h.cop }; })),
-                    coldest: fit(this.metricPoints("coldest")),
-                    lift: fit(this.metricPoints("lift"))
+                    coldest: fit(this.metricPoints("coldest"))
                 };
             },
             perfPoints: function() {
@@ -2225,26 +2453,38 @@ global $path;
                 var yAt = function(x) { return Math.min(Math.max(fit.slope * x + fit.icpt, d.lo), d.hi); };
                 return { x1: this.perfX(lo), y1: this.perfY(yAt(lo)), x2: this.perfX(hi), y2: this.perfY(yAt(hi)) };
             },
-            // Coolest vs warmest running third, always by weighted average flowT
-            perfCompare: function() {
-                var g = this.perfHomes.filter(function(h) { return h.flowT !== null && h.flowT > 5; })
-                    .sort(function(a, b) { return a.flowT - b.flowT; });
-                var n = Math.floor(g.length / 3);
-                if (!n) return { n: 0, coolMean: 0, warmMean: 0, coolMax: 0, warmMin: 0, pct: 0 };
-                var cool = g.slice(0, n);
-                var warm = g.slice(g.length - n);
-                var mean = function(list) {
-                    return list.reduce(function(s, h) { return s + h.cop; }, 0) / list.length;
-                };
-                var coolMean = mean(cool), warmMean = mean(warm);
-                return {
-                    n: n,
-                    coolMean: coolMean,
-                    warmMean: warmMean,
-                    coolMax: cool[n - 1].flowT,
-                    warmMin: warm[0].flowT,
-                    pct: warmMean > 0 ? (coolMean / warmMean - 1) * 100 : 0
-                };
+            // ---- Step 3: design-parameter model ----
+            // Rated capacity follows the heat loss: oversizing factor × heat
+            // loss, rounded up to the next whole kW
+            dmCapacity: function() {
+                var d = this.dm;
+                if (typeof d.heatLoss !== "number" || !isFinite(d.heatLoss) || d.heatLoss <= 0) return 0;
+                if (typeof d.oversize !== "number" || !isFinite(d.oversize) || d.oversize <= 0) return 0;
+                return Math.ceil(d.heatLoss * d.oversize);
+            },
+            dmModel: function() {
+                var d = this.dm;
+                var keys = ["heatLoss", "flowDesign", "dhwShare", "oversize", "designTemp",
+                            "room", "metabolicGains", "lacGains", "solarScale", "systemDT",
+                            "minMod", "eta", "defrostD", "dhwTarget", "aCond", "bEvap"];
+                for (var i = 0; i < keys.length; i++) {
+                    if (typeof d[keys[i]] !== "number" || !isFinite(d[keys[i]])) return null;
+                }
+                if (d.heatLoss <= 0 || d.eta <= 0 || d.room <= d.designTemp || this.dmCapacity <= 0) return null;
+                // the radiator equation cannot be inverted if the design flow
+                // temperature sits too close to room temperature
+                if (d.flowDesign - d.systemDT / 2 <= d.room + 2) return null;
+                var m = dmComputeModel(Object.assign({}, d, { capacity: this.dmCapacity }));
+                return isFinite(m.spf) && isFinite(m.coldestFlow) ? m : null;
+            },
+            // How far below the design flow temperature the model expects the
+            // system to actually run on the coldest day
+            dmColdestGap: function() {
+                return this.dmModel ? this.dm.flowDesign - this.dmModel.coldestFlow : 0;
+            },
+            // Annual running cost at the fleet-median Octopus Agile unit rate
+            dmCost: function() {
+                return this.dmModel ? this.dmModel.elecKwh * DM_AGILE_RATE / 100 : 0;
             },
 
             // ---- Smart tariffs: unit price histogram ----
