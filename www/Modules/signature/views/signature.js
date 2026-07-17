@@ -9,6 +9,12 @@
 var user_mode = false;
 var systemid_map = {};   // system id -> index into app.system_list
 
+// Chart canvas colours. The canvas can't use CSS classes, so the few colours
+// it needs are defined here rather than read back out of the stylesheet.
+var INK = "#6b6a64";              // axis titles, ticks
+var GRID = "rgba(0,0,0,.08)";    // gridlines
+var TREND = "#eb6834";           // median-COP trend line
+
 // ---- Field definitions -------------------------------------------------
 // F:     variable key -> long axis label
 // SHORT: variable key -> short label used in tooltips and correlation chips
@@ -83,11 +89,6 @@ function fmt(k, v) {
     return v.toFixed(k === "cop" || k === "dt" ? 2 : 1);
 }
 
-// Read a CSS custom property (e.g. "--muted") off the module root.
-function css(n) {
-    return getComputedStyle(document.getElementById("signature")).getPropertyValue(n).trim();
-}
-
 // Median of a numeric array.
 function median(a) {
     var s = a.slice().sort(function (x, y) { return x - y; });
@@ -135,18 +136,18 @@ var chart;           // Chart.js instance (created lazily)
 var filters = [];    // active constraints: { prop, center, tol }
 
 // ---- Constraints (hold a property within ± tolerance of a centre) ------
-// Build the HTML for one constraint row.
+// Build the HTML for one constraint row (Bootstrap grid).
 function frowHTML(f, i) {
     var opts = KEYS.map(function (k) {
         return '<option value="' + k + '"' + (k === f.prop ? " selected" : "") + ">" + F[k] + "</option>";
     }).join("");
-    return '<div class="frow" data-i="' + i + '">' +
-        '<select class="fp">' + opts + '</select>' +
-        '<span class="lbl">within</span>' +
-        '<input type="number" class="ft" step="0.1" value="' + f.tol + '">' +
-        '<span class="pm">of</span>' +
-        '<input type="number" class="fc" step="0.1" value="' + f.center + '">' +
-        '<button class="xbtn" title="remove">&times;</button>' +
+    return '<div class="row g-2 align-items-center mb-2" data-i="' + i + '">' +
+        '<div class="col"><select class="form-select form-select-sm fp">' + opts + '</select></div>' +
+        '<div class="col-auto text-muted small">within</div>' +
+        '<div class="col"><input type="number" class="form-control form-control-sm ft" step="0.1" value="' + f.tol + '"></div>' +
+        '<div class="col-auto text-muted small">of</div>' +
+        '<div class="col"><input type="number" class="form-control form-control-sm fc" step="0.1" value="' + f.center + '"></div>' +
+        '<div class="col-auto"><button class="btn btn-outline-secondary btn-sm xbtn" title="remove">&times;</button></div>' +
         '</div>';
 }
 
@@ -154,7 +155,7 @@ function frowHTML(f, i) {
 function renderFilters() {
     var box = document.getElementById("frows");
     box.innerHTML = filters.map(frowHTML).join("");
-    box.querySelectorAll(".frow").forEach(function (row) {
+    box.querySelectorAll("[data-i]").forEach(function (row) {
         var i = +row.dataset.i;
         row.querySelector(".fp").addEventListener("change", function (e) { filters[i].prop = e.target.value; refresh(); });
         row.querySelector(".fc").addEventListener("input", function (e) { filters[i].center = parseFloat(e.target.value); refresh(); });
@@ -197,7 +198,11 @@ function cards() {
         ["Near min-mod", Math.round(100 * lm / n) + "%"]
     ];
     box.innerHTML = c.map(function (x) {
-        return '<div class="statcard"><div class="l">' + x[0] + '</div><div class="v">' + x[1] + '</div></div>';
+        return '<div class="col-6 col-md-3">' +
+            '<div class="card h-100"><div class="card-body py-2 px-3">' +
+            '<div class="text-muted small">' + x[0] + '</div>' +
+            '<div class="fs-4">' + x[1] + '</div>' +
+            '</div></div></div>';
     }).join("");
 }
 
@@ -235,10 +240,11 @@ function correlations() {
     head.textContent = "How " + SHORT[yk] + " correlates with each property, over " + VIEW.length + " shown episodes (Pearson r):";
     chips.innerHTML = list.map(function (o) {
         var sign = o.r >= 0 ? "+" : "−";
-        var col = o.r >= 0 ? "var(--pos)" : "var(--neg)";
+        var col = o.r >= 0 ? "var(--bs-success)" : "var(--bs-danger)";
         var w = Math.round(Math.abs(o.r) * 46) + 2;
-        return '<span class="chip' + (o.k === xk ? " cur" : "") + '">' +
-            '<span class="bar" style="background:' + col + ';width:' + w + 'px"></span>' +
+        var cur = o.k === xk ? " border-primary" : "";
+        return '<span class="d-inline-flex align-items-center gap-1 px-2 py-1 rounded-pill bg-light border small' + cur + '">' +
+            '<span style="display:inline-block;height:6px;border-radius:3px;min-width:2px;background:' + col + ';width:' + w + 'px"></span>' +
             SHORT[o.k] + " <b>" + sign + Math.abs(o.r).toFixed(2) + "</b></span>";
     }).join("");
 }
@@ -278,11 +284,9 @@ function build() {
     }];
     // Overlay the median-COP trend line only on the outside-temp vs COP view.
     if (xk === "ot" && yk === "cop") {
-        ds.push({ type: "line", data: trend(), borderColor: css("--trend"), borderWidth: 2, pointRadius: 0, tension: 0.3, order: 1 });
+        ds.push({ type: "line", data: trend(), borderColor: TREND, borderWidth: 2, pointRadius: 0, tension: 0.3, order: 1 });
     }
 
-    var ink = css("--muted");
-    var grid = "rgba(140,135,129,.18)";
     var cfg = {
         data: { datasets: ds },
         options: {
@@ -302,8 +306,8 @@ function build() {
                 e.native.target.style.cursor = over ? "pointer" : "default";
             },
             scales: {
-                x: { title: { display: true, text: F[xk], color: ink }, grid: { color: grid }, ticks: { color: ink } },
-                y: { title: { display: true, text: F[yk], color: ink }, grid: { color: grid }, ticks: { color: ink } }
+                x: { title: { display: true, text: F[xk], color: INK }, grid: { color: GRID }, ticks: { color: INK } },
+                y: { title: { display: true, text: F[yk], color: INK }, grid: { color: GRID }, ticks: { color: INK } }
             },
             plugins: {
                 legend: { display: false },
