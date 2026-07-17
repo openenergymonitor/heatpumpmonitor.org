@@ -3,7 +3,9 @@
 An outline and plan of action for exploring ML on the HeatpumpMonitor.org
 dataset, informed by the analysis work of July 2026 (baseline replication,
 residual analysis, power-histogram features, and the dynamic_heatpump simulator
-sweep — see `05_harmonic_carnot_metric.md` for the physics route this complements).
+sweep — see `05_harmonic_carnot_metric.md` for the physics-metric route this
+complements; its raw-feed fleet test came back negative
+(`09_hstar_fleet_results.md`), leaving weighted dT as the physics baseline).
 
 ## Context: what we already know
 
@@ -30,7 +32,12 @@ Any ML effort here starts from three established facts:
    machine — it is operating-pattern information (load ratio, DHW share,
    runtime, temperatures over time) that annual aggregates destroy. Any ML
    approach that only sees annual aggregates is denied exactly the information
-   that matters.
+   that matters. (Doc 09 revised this downward for the real fleet: the
+   load-pattern component nets out to ≈ 0 in annual SPF because machine
+   quality rises with load factor, so the residual beyond temperatures is
+   more machine/install quality than the simulator suggested — information
+   ML has to get from metadata or daily dynamics, not from load-weighted
+   temperature metrics.)
 
 Leakage rules learned the hard way, which apply to every experiment below:
 
@@ -47,7 +54,9 @@ Leakage rules learned the hard way, which apply to every experiment below:
 ### Direction 1 — Residual learning on top of physics (cheapest, immediate)
 
 Don't ask ML to rediscover thermodynamics from 225 examples. Give it the
-physics prediction — today the dT fit, later η·H\* — and train a small
+physics prediction — the dT fit (η·H\* was tested on raw feeds and predicts
+worse, doc 09; `η·H*_design` remains a candidate where design data exists,
+doc 08) — and train a small
 regularised model **only on the residual**, i.e. the part physics doesn't
 explain. The model then only needs to find corrections (manufacturer effects,
 oversizing penalties, standby drag, climate/defrost effects), not the main
@@ -115,8 +124,9 @@ The dynamic_heatpump simulator demonstrably reproduces the fleet's structure
    features. Apply the leakage rules.
 3. Train GBM with grouped CV (hold out systems). SHAP for what drives daily
    COP. Roll up to annual SPF on held-out systems.
-4. Benchmark against: dT baseline (±0.50), the best aggregate model (±0.45),
-   and — once computable — η·H\*.
+4. Benchmark against: dT baseline (±0.50) and the best aggregate model
+   (±0.45). (η·H\* has since been computed from raw feeds and landed at
+   ±0.58 — doc 09 — so dT remains the physics benchmark to beat.)
 
 **Phase 2 — system embeddings**
 5. Add per-system embeddings (start with a random-intercept mixed model, then
@@ -127,7 +137,8 @@ The dynamic_heatpump simulator demonstrably reproduces the fleet's structure
 6. Extend the sweep to vary % carnot, standby, weather files; pre-train on
    simulated system-days; fine-tune on real.
 7. Prototype per-home calibration on a handful of well-monitored systems;
-   compare fitted % carnot against `SPF / H*`.
+   compare fitted % carnot against `SPF / H*` (now available per system in
+   `hstar_fleet.csv`, doc 09).
 
 **Success criterion throughout**: 90% prediction interval on *held-out
 systems'* annual SPF. Anything approaching ±0.25 is a genuinely strong result
@@ -143,6 +154,9 @@ are automatically suspect.
   capture most of the usable signal at 1/10,000th the data volume, and 225
   homes cannot support learning low-level representations from scratch
   (the simulator pre-training route is the honest way to attempt that later).
-- ML will not *replace* the physics route (H\*): the strongest likely outcome
-  is physics prediction + learned residual + per-system embedding, each doing
-  the job it is best at.
+- ML will not *replace* the physics route: the strongest likely outcome
+  is physics prediction (dT, or H\*_design where design data exists — H\*
+  itself fell to the fleet test, doc 09) + learned residual + per-system
+  embedding, each doing the job it is best at. Doc 09's finding that quality
+  rises with load factor is itself a target for the residual model — a
+  two-stage SPF ≈ η(model, sizing) × H fit.

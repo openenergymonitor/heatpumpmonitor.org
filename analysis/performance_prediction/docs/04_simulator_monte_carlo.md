@@ -60,4 +60,11 @@ ratio and sizing contribute ≈ nothing *once ΔT is given* (they act through
 
 If physics with an identical machine produces ±0.32, the search for better
 prediction should target the *operating-pattern information* that ΔT throws
-away — which led to the metric search and H\* (doc 05).
+away — which led to the metric search and H\* (doc 05). The raw-feed fleet
+test (doc 09) subsequently closed that line: the gain did not survive
+contact with real data, for two reasons rooted in this sweep's design. The
+identical-machine assumption is exactly what fails in the fleet — achieved
+quality rises with load factor, cancelling the thermodynamic load penalty —
+and the randomised designs span sizing/load-factor space far more widely
+than real installs do (fleet load-factor IQR 0.43–0.59), overstating the
+load term's importance.

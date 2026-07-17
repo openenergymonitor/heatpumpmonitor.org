@@ -1,7 +1,8 @@
 # A design-parameter model: predicting SPF before the system exists
 
-The metrics that predict SPF best so far — weighted ΔT and H\* — are computed
-*from a year of monitoring*. What a designer actually needs is the inverse: a
+The metrics that predict SPF best on the simulator testbed — weighted ΔT and
+H\* (the latter since tested on real fleet feeds and not adopted: doc 09) —
+are computed *from a year of monitoring*. What a designer actually needs is the inverse: a
 prediction from standard design parameters (heat loss, design flow temperature,
 emitter sizing, DHW share and target temperature), before installation. This doc
 asks whether a **simple closed-form model** built from those parameters can
@@ -185,8 +186,9 @@ variation (real `SPF/H*_design` η sd 0.059 vs 0.016 in the sim) adds more.
 
 - *In a world where systems run as designed* — yes, nearly: ±0.21 from the
   design sheet alone, vs ±0.34 for a year of measured ΔT and ±0.16 for
-  measured H\*. And the *simple* closed-form model is enough; full dynamic
-  simulation adds little for annual prediction.
+  measured H\* (all sim-testbed figures; on the real fleet measured H\*
+  itself under-performs ΔT — doc 09). And the *simple* closed-form model is
+  enough; full dynamic simulation adds little for annual prediction.
 - *On today's fleet metadata* — no: ±0.62–0.74, worse than measured ΔT
   (±0.50). Not because the model is too simple, but because declared design
   parameters describe intent, not operation (r = 0.33 on flow temp).
@@ -202,7 +204,11 @@ no monitoring at all.
 
 - Global constants were tuned (coarsely) on the simulator; the sim's COP model
   shares its functional form with H\*, flattering Result 1 (same caveat as
-  doc 05). The honest in-principle range is between the noise-free and
+  doc 05 — a caveat doc 09 subsequently showed to be decisive for measured
+  H\*, whose sim gain did not transfer to the fleet; the fleet grid search
+  also found the optimal *load* coefficient is zero, so the +3r/−8r terms
+  in the closed form carry no demonstrated fleet signal beyond the fixed
+  offsets). The honest in-principle range is between the noise-free and
   fleet-noise rows.
 - One standard weather year (Llanberis 2024), shifted per-system to the design
   outside temperature, stands in for local climate; a proper degree-day

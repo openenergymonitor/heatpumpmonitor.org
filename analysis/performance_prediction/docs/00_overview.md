@@ -66,12 +66,12 @@ to 0.90 and halves the PI (±0.32 → ±0.16); fixed-offset harmonic averaging
 alone gains almost nothing (confirmed on real data: R² 0.598 via
 `combined_cop / combined_prc_carnot`). H\* is electricity-free, one-pass
 computable from raw feeds (flowT, outsideT, heat power + rated capacity), and
-`SPF / H*` yields a modulation-corrected % of Carnot as a fairer quality
-score. Not computable from currently published aggregates — needs a raw-feed
-pass / new pipeline stat. Tested on the sim testbed: the current fixed-offset
+`SPF / H*` was intended as a modulation-corrected % of Carnot — a fairer
+quality score. Side result on the sim testbed: the current fixed-offset
 `prc_carnot` reads ~3 points high and flatters low-load-factor (oversized)
 systems by up to ~5 points for identical machines, masking the genuine
-oversizing penalty in the real fleet.
+oversizing penalty in the real fleet. **Outcome: tested against raw fleet
+feeds and not adopted — see item 9 / doc 09.**
 
 **6. Metering floor, revisited** (doc 06). The EN 1434 class-2 worst case at
 the fleet's operating points is ±0.29 SPF at SPF 4 — but BEIS lab results,
@@ -102,6 +102,23 @@ heat loss runs ~24% high. Injecting exactly those input errors into the sim
 reproduces the collapse — **input fidelity, not model sophistication, is the
 bottleneck**; the leverage is recording as-commissioned WC settings.
 
+**9. H\* on the real fleet** (doc 09). The raw-feed test closed the
+metric-search line: on 229 validation-clean air-source systems
+(`scripts/feed_scan/`), H\* predicts SPF *worse* than weighted ΔT (cv R²
+0.48 vs 0.60, PI ±0.58 vs ±0.51), and a 1092-combination offset grid search
+over the entire fixed + load-dependent family finds the optimal load
+coefficient is exactly zero — no coefficients rescue it, under either badge
+or empirically-normalised capacity. The within-machine load penalty is real
+(manufacturer compressor maps confirm it), but in the fleet it is almost
+exactly cancelled by an opposing **while-running** effect: achieved quality
+rises with load factor (better-sized systems run compressors nearer their
+design point), so the net load signal in annual SPF is ≈ 0. The simulator
+only saw the gain because its machines were identical by construction.
+`SPF/H*` is not a tighter quality score either (sd 0.041 vs 0.037), though
+it *exposes* the sizing/load effect the fixed convention hides (corr with
+load factor +0.48 vs +0.07) — a useful diagnostic axis, not a fairer
+ranking. Weighted ΔT stands as the best feeds-only annual predictor.
+
 ## Where we stand
 
 | Predictor | 90% PI (held-out) | Status |
@@ -110,16 +127,22 @@ bottleneck**; the leverage is recording as-commissioned WC settings.
 | + all safe published aggregates | ±0.45 | ceiling reached |
 | + histogram low-load share | ±0.46 (R² 0.65) | done |
 | physics-only spread (sim, identical machine) | ±0.32 | measured |
-| H\* metric (sim testbed) | ±0.16 | **awaiting raw-feed validation** |
+| H\* metric (sim testbed) | ±0.16 | sim-only — did not transfer to fleet |
+| H\* metric (real fleet raw feeds) | ±0.58 | **tested, not adopted (doc 09)** |
 | H\*_design, truthful design params (sim testbed) | ±0.21 | done (doc 08) |
 | H\*_design, real-fleet declared params | ±0.74 | input-limited (doc 08) |
 | metering floor (realistic) | ±0.10 | established |
 
 ## Open next steps
 
-1. **Validate H\*** on real raw feeds for a subset; test whether `SPF/H*` is
-   tighter than `combined_prc_carnot`; if so, add
-   `weighted_average_variable_carnot` to the stats pipeline. (Highest value.)
+1. ~~Validate H\* on real raw feeds~~ — **done, negative** (doc 09): H\*
+   predicts SPF worse than ΔT and `SPF/H*` is not tighter than
+   `combined_prc_carnot`, so nothing is added to the stats pipeline. The
+   surviving thread is *understanding*, not fleet prediction: per-machine
+   stable-episode analysis (COP vs load ratio at fixed temperatures,
+   compared against manufacturer compressor maps) to separate real offset
+   physics from the quality-rises-with-load-factor gradient, feeding a
+   two-stage model SPF ≈ η(model, sizing) × H.
 2. ML Phase 1: pooled daily-COP model (doc 07).
 3. Re-run the simulator sweep with % carnot also varied to close the
    spread decomposition; match sampled design ranges to the fleet.
@@ -144,4 +167,6 @@ histograms/             cached per-system power histograms (JSON)
 heatpumpmonitor_*.csv   fleet dataset export
 sim_results.csv         Monte Carlo sweep output (with H* metrics)
 modulation_features.csv histogram-derived features + residuals
+hstar_fleet.csv         raw-feed fleet scan results (doc 09; scanners live
+                        in repo-root scripts/feed_scan/)
 ```

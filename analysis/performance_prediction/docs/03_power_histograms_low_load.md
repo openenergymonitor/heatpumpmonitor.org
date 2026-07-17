@@ -52,7 +52,13 @@ Interpretation: the annual 1-D histogram marginalises over weather — high
 power is mostly cold-weather energy whose COP penalty ΔT already captures.
 The modulation effect operates *at fixed temperature*, which a 1-D histogram
 cannot see. This pointed directly at the simulator work (doc 04) and the H\*
-metric (doc 05).
+metric (doc 05). The raw-feed fleet test (doc 09) later settled what the
+low-load penalty *is*: a **quality/sizing effect** (which machine and sizing
+you bought, with compressor efficiency poorest at minimum modulation), not
+an operating-temperature effect — so it is invisible to any metric built
+from temperatures and load alone, and partially self-cancelling in annual
+SPF. The effect found here is real, but modelling it as extra thermodynamic
+lift (H\*) made prediction worse, not better.
 
 ## Code / data
 
