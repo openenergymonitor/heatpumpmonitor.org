@@ -32,4 +32,10 @@ function signature_controller() {
 
         return $signature_model->get_episodes($system_id);
     }
+
+    // List all systems with a count of signatures for each
+    if ($route->action == "systems") {
+        $route->format = "json";
+        return $signature_model->get_system_counts();
+    }
 }

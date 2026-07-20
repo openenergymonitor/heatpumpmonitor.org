@@ -5,6 +5,10 @@
 //     path      base URL path for API/asset requests
 //     admin     1 if the current user is an admin, else 0
 //     systemid  system id to open on load (0 = default to first system)
+//
+// The explorer can hold several systems at once. With a single system, points
+// are coloured by a chosen property (gradient). With two or more, points are
+// coloured by system so episodes can be compared across systems.
 
 var user_mode = false;
 var systemid_map = {};   // system id -> index into app.system_list
@@ -15,6 +19,23 @@ var INK = "#6b6a64";              // axis titles, ticks
 var GRID = "rgba(0,0,0,.08)";    // gridlines
 var TREND = "#eb6834";           // median-COP trend line
 
+// Categorical palette for multi-system mode. Colourblind-friendly (Okabe-Ito
+// derived) and readable as filled bubbles on a white chart. Systems are
+// assigned the first free colour when added, so colours stay stable as other
+// systems are added or removed.
+var SYS_COLORS = [
+    "#0072B2", // blue
+    "#D55E00", // vermilion
+    "#009E73", // green
+    "#CC79A7", // pink
+    "#E69F00", // orange
+    "#56B4E9", // sky
+    "#8B4513", // brown
+    "#5D3FD3", // purple
+    "#000000", // black
+    "#17A398"  // teal
+];
+
 // ---- Field definitions -------------------------------------------------
 // F:     variable key -> long axis label
 // SHORT: variable key -> short label used in tooltips and correlation chips
@@ -23,33 +44,39 @@ var F = {
     ft:   "Flow temp (°C)",
     lift: "Lift, flow − outside (°C)",
     el:   "Electrical power (W)",
+    heat: "Heat output (W)",
     dt:   "ΔT (°C)",
     cop:  "COP",
     dur:  "Duration (min)"
 };
-var SHORT = { ot: "outT", ft: "flowT", lift: "lift", el: "elec", dt: "ΔT", cop: "COP", dur: "dur" };
+var SHORT = { ot: "outT", ft: "flowT", lift: "lift", el: "elec", heat: "heat", dt: "ΔT", cop: "COP", dur: "dur" };
 var KEYS = Object.keys(F);
 
 // Map a signature_episodes row (from signature/list) to a chart point.
 // Optional feeds (outsideT, dT, cop) arrive as null and become NaN so the
-// chart simply skips them rather than plotting a misleading zero.
-function transform(rows) {
+// chart simply skips them rather than plotting a misleading zero. sysid tags
+// the point with the system it came from (used for colour and tooltips).
+function transform(rows, sysid) {
     return rows.map(function (r) {
         var start = +r.start_time, end = +r.end_time;
         var ft = +r.flowT;
         var ot = (r.outsideT === null || r.outsideT === undefined) ? NaN : +r.outsideT;
+        var el = Math.round(+r.elec);
+        var cop = (r.cop === null || r.cop === undefined) ? NaN : +r.cop;
         return {
+            sysid: sysid,
             t:     fmtDate(start),
             start: start,
             end:   end,
             dur:   Math.round((+r.duration) / 60),                 // seconds -> minutes
             ft:    ft,
             dt:    (r.dT === null || r.dT === undefined) ? NaN : +r.dT,
-            el:    Math.round(+r.elec),
+            el:    el,
+            heat:  isNaN(cop) ? NaN : Math.round(el * cop),        // heat output = elec power × COP
             ot:    ot,
-            cop:   (r.cop === null || r.cop === undefined) ? NaN : +r.cop,
+            cop:   cop,
             lift:  Math.round((ft - ot) * 10) / 10,                // flow minus outside temperature
-            u:     path + "dashboard?id=" + app.systemid + "&mode=power&start=" + start + "&end=" + end
+            u:     path + "dashboard?id=" + sysid + "&mode=power&start=" + start + "&end=" + end
         };
     });
 }
@@ -85,7 +112,7 @@ function ramp(t) {
 // ---- Small helpers -----------------------------------------------------
 // Display formatting: power and duration as integers, COP/ΔT to 2dp, else 1dp.
 function fmt(k, v) {
-    if (k === "el" || k === "dur") return Math.round(v);
+    if (k === "el" || k === "heat" || k === "dur") return Math.round(v);
     return v.toFixed(k === "cop" || k === "dt" ? 2 : 1);
 }
 
@@ -130,10 +157,40 @@ opt(document.getElementById("ys"), "cop");
 opt(document.getElementById("cs"), "el");
 
 // ---- State -------------------------------------------------------------
-var DATA = [];       // all episodes for the selected system (as chart points)
-var VIEW = [];       // DATA after the active constraints are applied
+// Episodes are stored per system in dataById (heavy arrays, kept out of Vue
+// for performance). The order and colour of systems live in app.selected.
+var dataById = {};   // system id -> array of chart points
+var VIEW = [];       // all shown episodes after constraints are applied
 var chart;           // Chart.js instance (created lazily)
 var filters = [];    // active constraints: { prop, center, tol }
+
+// True when comparing more than one system (switches colour mode).
+function isMulti() { return app.selected.length > 1; }
+
+// All episodes across the selected systems, in system order.
+function allPoints() {
+    var out = [];
+    app.selected.forEach(function (s) {
+        var d = dataById[s.id];
+        if (d) out = out.concat(d);
+    });
+    return out;
+}
+
+// system id -> assigned colour, from the current selection.
+function colorById() {
+    var m = {};
+    app.selected.forEach(function (s) { m[s.id] = s.color; });
+    return m;
+}
+
+// system id -> display label, from the current selection.
+function labelById(id) {
+    for (var i = 0; i < app.selected.length; i++) {
+        if (app.selected[i].id === id) return app.label(app.selected[i]);
+    }
+    return "System " + id;
+}
 
 // ---- Constraints (hold a property within ± tolerance of a centre) ------
 // Build the HTML for one constraint row (Bootstrap grid).
@@ -167,7 +224,8 @@ function renderFilters() {
 // Add a new constraint, defaulting to flow temp centred on the median.
 function addFilter() {
     var prop = "ft";
-    var c = DATA.length ? median(DATA.map(function (d) { return d[prop]; })) : 34;
+    var all = allPoints();
+    var c = all.length ? median(all.map(function (d) { return d[prop]; })) : 34;
     filters.push({ prop: prop, center: Math.round(c * 10) / 10, tol: 0.1 });
     renderFilters();
     refresh();
@@ -207,9 +265,11 @@ function cards() {
 }
 
 // Median COP per 2°C outside-temperature band, used for the trend line.
-function trend() {
+// Computed over whichever episodes are currently shown.
+function trend(rows) {
     var b = {};
-    VIEW.forEach(function (d) {
+    rows.forEach(function (d) {
+        if (isNaN(d.ot) || isNaN(d.cop)) return;
         var k = Math.floor(d.ot / 2) * 2;
         (b[k] = b[k] || []).push(d.cop);
     });
@@ -249,31 +309,71 @@ function correlations() {
     }).join("");
 }
 
+// Add an alpha channel to an rgb()/#rrggbb colour, so bubbles read as
+// semi-transparent and overlapping points remain visible.
+function withAlpha(color, a) {
+    if (color.charAt(0) === "#") {
+        var r = parseInt(color.substr(1, 2), 16);
+        var g = parseInt(color.substr(3, 2), 16);
+        var b = parseInt(color.substr(5, 2), 16);
+        return "rgba(" + r + "," + g + "," + b + "," + a + ")";
+    }
+    return color.replace(/^rgb\(/, "rgba(").replace(/\)$/, "," + a + ")");
+}
+
+// Small inline colour swatch used in the multi-system legend.
+function swatchHtml(color) {
+    return '<span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:' + color + '"></span>';
+}
+
 // ---- Chart -------------------------------------------------------------
 // Build (or update) the bubble chart for the current axis/colour selection.
 function build() {
+    var cbar = document.getElementById("cbar");
+    var colwrap = document.getElementById("colwrap");
     if (!VIEW.length) {
         if (chart) { chart.data = { datasets: [] }; chart.update(); }
+        cbar.innerHTML = "";
         return;
     }
     var xk = document.getElementById("xs").value;
     var yk = document.getElementById("ys").value;
     var ck = document.getElementById("cs").value;
+    var multi = isMulti();
 
-    // Colour is normalised across the shown range; bubble radius scales with
-    // the sqrt of duration so that area (not radius) tracks time.
-    var cv = VIEW.map(function (d) { return d[ck]; });
-    var cmin = Math.min.apply(null, cv), cmax = Math.max.apply(null, cv);
+    // The colour selector only applies in single-system (gradient) mode; hide
+    // it while comparing systems, where colour encodes the system instead.
+    if (colwrap) colwrap.style.display = multi ? "none" : "";
+
+    // Bubble radius scales with the sqrt of duration so that area (not radius)
+    // tracks time.
     var dmax = Math.max.apply(null, VIEW.map(function (d) { return d.dur; }));
-    var pts = VIEW.map(function (d) {
-        return {
-            x: d[xk],
-            y: d[yk],
-            r: 3 + Math.sqrt(d.dur / dmax) * 8,
-            _d: d,
-            _c: ramp((d[ck] - cmin) / (cmax - cmin || 1))
-        };
-    });
+
+    var pts, cmin, cmax;
+    if (multi) {
+        // Colour by system.
+        var cmap = colorById();
+        pts = VIEW.map(function (d) {
+            return {
+                x: d[xk], y: d[yk],
+                r: 2 + Math.sqrt(d.dur / dmax) * 6,
+                _d: d,
+                _c: withAlpha(cmap[d.sysid] || "#888", 0.6)
+            };
+        });
+    } else {
+        // Colour by the chosen property, normalised across the shown range.
+        var cv = VIEW.map(function (d) { return d[ck]; });
+        cmin = Math.min.apply(null, cv); cmax = Math.max.apply(null, cv);
+        pts = VIEW.map(function (d) {
+            return {
+                x: d[xk], y: d[yk],
+                r: 2 + Math.sqrt(d.dur / dmax) * 6,
+                _d: d,
+                _c: ramp((d[ck] - cmin) / (cmax - cmin || 1))
+            };
+        });
+    }
 
     var ds = [{
         type: "bubble",
@@ -282,9 +382,10 @@ function build() {
         borderWidth: 0,
         order: 2
     }];
-    // Overlay the median-COP trend line only on the outside-temp vs COP view.
-    if (xk === "ot" && yk === "cop") {
-        ds.push({ type: "line", data: trend(), borderColor: TREND, borderWidth: 2, pointRadius: 0, tension: 0.3, order: 1 });
+    // Overlay the median-COP trend line only on a single system's outside-temp
+    // vs COP view (a combined line across systems would be misleading).
+    if (!multi && xk === "ot" && yk === "cop") {
+        ds.push({ type: "line", data: trend(VIEW), borderColor: TREND, borderWidth: 2, pointRadius: 0, tension: 0.3, order: 1 });
     }
 
     var cfg = {
@@ -317,10 +418,10 @@ function build() {
                         title: function (i) { return i[0].raw._d.t || ""; },
                         label: function (i) {
                             var d = i.raw._d;
-                            var a = [
-                                "COP " + d.cop.toFixed(2) + "   " + d.el + " W   " + d.dur + " min",
-                                "flow " + d.ft + "°C   out " + d.ot + "°C   lift " + d.lift + "°C   ΔT " + d.dt + "°C"
-                            ];
+                            var a = [];
+                            if (multi) a.push(labelById(d.sysid));
+                            a.push("COP " + d.cop.toFixed(2) + "   " + d.el + " W in   " + (isNaN(d.heat) ? "–" : d.heat + " W out") + "   " + d.dur + " min");
+                            a.push("flow " + d.ft + "°C   out " + d.ot + "°C   lift " + d.lift + "°C   ΔT " + d.dt + "°C");
                             if (d.u) a.push("click to open episode ↗");
                             return a;
                         }
@@ -338,19 +439,41 @@ function build() {
         chart = new Chart(document.getElementById("sc"), cfg);
     }
 
-    // Colour legend bar spanning the shown range of the colour variable.
-    document.getElementById("cbar").innerHTML =
-        "<span>" + F[ck] + "</span>" +
-        '<span style="flex:1;max-width:200px;height:12px;border-radius:6px;background:linear-gradient(90deg,' +
-        ramp(0) + "," + ramp(0.25) + "," + ramp(0.5) + "," + ramp(0.75) + "," + ramp(1) + ')"></span>' +
-        "<span>" + fmt(ck, cmin) + " → " + fmt(ck, cmax) + "</span>";
+    // Legend: a per-system swatch list (multi) or the colour gradient (single).
+    if (multi) {
+        cbar.innerHTML = app.selected.map(function (s) {
+            return '<span class="d-inline-flex align-items-center gap-1">' +
+                swatchHtml(s.color) + "<span>" + app.label(s) + "</span></span>";
+        }).join("");
+    } else {
+        cbar.innerHTML =
+            "<span>" + F[ck] + "</span>" +
+            '<span style="flex:1;max-width:200px;height:12px;border-radius:6px;background:linear-gradient(90deg,' +
+            ramp(0) + "," + ramp(0.25) + "," + ramp(0.5) + "," + ramp(0.75) + "," + ramp(1) + ')"></span>' +
+            "<span>" + fmt(ck, cmin) + " → " + fmt(ck, cmax) + "</span>";
+    }
 }
 
 // Recompute the view from the constraints and refresh every panel.
 function refresh() {
-    VIEW = applyFilters(DATA);
-    var n = DATA.length, m = VIEW.length;
-    document.getElementById("count").textContent = filters.length ? (m + " of " + n + " episodes shown") : (n + " episodes");
+    var all = allPoints();
+    VIEW = applyFilters(all);
+    var n = all.length, m = VIEW.length;
+    var msg = filters.length ? (m + " of " + n + " episodes shown") : (n + " episodes");
+    if (isMulti()) msg += " across " + app.selected.length + " systems";
+    document.getElementById("count").textContent = app.selected.length ? msg : "No systems selected";
+
+    // "Back to System" only makes sense for a single system.
+    var back = document.getElementById("backbtn");
+    if (back) {
+        if (app.selected.length === 1) {
+            back.style.display = "";
+            back.href = path + "system/view?id=" + app.selected[0].id;
+        } else {
+            back.style.display = "none";
+        }
+    }
+
     cards();
     build();
     correlations();
@@ -364,44 +487,44 @@ function refresh() {
 document.getElementById("addf").addEventListener("click", addFilter);
 document.getElementById("clearf").addEventListener("click", function () { filters = []; renderFilters(); refresh(); });
 
-// ---- Load episodes for the selected system -----------------------------
-function loadSystem() {
+// ---- Load / unload a system's episodes ---------------------------------
+function loadSystemData(id) {
     document.getElementById("err").textContent = "";
     document.getElementById("count").textContent = "Loading…";
-
-    // Point the "Back to System" link at the current system (it sits outside
-    // the Vue root, so its href is set here rather than via a binding).
-    var back = document.getElementById("backbtn");
-    if (back) back.href = path + "system/view?id=" + app.systemid;
     $.ajax({
         type: "GET",
         url: path + "signature/list",
-        data: { id: app.systemid },
+        data: { id: id },
         dataType: "json",
         success: function (rows) {
             if (!rows || rows.error) {
                 document.getElementById("err").textContent = (rows && rows.error) ? rows.error : "No data";
-                DATA = [];
-                refresh();
-                return;
+                dataById[id] = [];
+            } else {
+                dataById[id] = transform(rows, id);
             }
-            DATA = transform(rows);
             refresh();
         },
         error: function () {
             document.getElementById("err").textContent = "Failed to load episodes";
-            DATA = [];
+            dataById[id] = [];
             refresh();
         }
     });
 }
 
-// ---- Vue: system selector ----------------------------------------------
+function removeSystemData(id) {
+    delete dataById[id];
+    refresh();
+}
+
+// ---- Vue: system control panel -----------------------------------------
 var app = new Vue({
     el: '#app',
     data: {
         path: path,
-        systemid: systemid,
+        candidate: null,     // system id currently chosen in the Add dropdown
+        selected: [],        // systems being compared: system rows + { color }
         system_list: [],
         query: ""            // free-text search terms
     },
@@ -410,7 +533,7 @@ var app = new Vue({
         // form "<number>kw" (e.g. "7kw", "8.5kw") is an exact badge-capacity
         // (hp_output) filter; every other term is a substring match across system
         // id, location, manufacturer, model and kW. Empty search = full list.
-        // Drives both the dropdown options and the prev/next stepping.
+        // Drives both the Add dropdown and the prev/next stepping.
         filtered: function () {
             var q = (this.query || "").trim().toLowerCase();
             if (!q) return this.system_list;
@@ -431,40 +554,78 @@ var app = new Vue({
         label: function (s) {
             return s.location + ", " + s.hp_manufacturer + " " + s.hp_model + ", " + s.hp_output + " kW";
         },
-        // Dropdown selection changed (v-model has already set systemid).
-        onSelect: function () {
-            updateUrl();
-            loadSystem();
+        // Pick the first palette colour not already in use.
+        pickColor: function () {
+            var used = this.selected.map(function (s) { return s.color; });
+            for (var i = 0; i < SYS_COLORS.length; i++) {
+                if (used.indexOf(SYS_COLORS[i]) === -1) return SYS_COLORS[i];
+            }
+            return SYS_COLORS[this.selected.length % SYS_COLORS.length];
         },
-        // Step to the previous/next system within the filtered list. If the
-        // current system isn't in the filtered list (e.g. just after typing a
-        // new search), start at the first/last match.
+        // Add a system by id (ignored if unknown or already selected).
+        addById: function (id) {
+            if (id === null || id === undefined) return;
+            if (this.selected.some(function (s) { return s.id === id; })) return;
+            var sys = null;
+            for (var i = 0; i < this.system_list.length; i++) {
+                if (this.system_list[i].id === id) { sys = this.system_list[i]; break; }
+            }
+            if (!sys) return;
+            var item = {};
+            for (var k in sys) item[k] = sys[k];
+            item.color = this.pickColor();
+            this.selected.push(item);
+            updateUrl();
+            loadSystemData(id);
+        },
+        // Add the system chosen in the dropdown.
+        addCurrent: function () {
+            this.addById(this.candidate);
+        },
+        // Remove a system from the comparison.
+        remove: function (id) {
+            this.selected = this.selected.filter(function (s) { return s.id !== id; });
+            updateUrl();
+            removeSystemData(id);
+        },
+        // Step the dropdown candidate through the filtered list. With exactly one
+        // system selected this doubles as quick single-system browsing: it
+        // replaces that system so you can flip through systems one at a time.
         step: function (direction) {
             var list = this.filtered;
             if (!list.length) return;
             var idx = -1;
             for (var i = 0; i < list.length; i++) {
-                if (list[i].id === this.systemid) { idx = i; break; }
+                if (list[i].id === this.candidate) { idx = i; break; }
             }
             idx = (idx === -1) ? (direction > 0 ? 0 : list.length - 1) : idx + direction;
             if (idx < 0) idx = 0;
             if (idx >= list.length) idx = list.length - 1;
-            this.systemid = list[idx].id;
-            updateUrl();
-            loadSystem();
+            this.candidate = list[idx].id;
+
+            if (this.selected.length === 1 && this.selected[0].id !== this.candidate) {
+                var old = this.selected[0].id;
+                this.remove(old);
+                this.addCurrent();
+            }
         }
     }
 });
 
-// Serialise the whole view (system, axes/colour, constraints) into the URL so
+// Serialise the whole view (systems, axes/colour, constraints) into the URL so
 // the page can be shared or bookmarked. replaceState (not pushState) keeps the
 // URL current without flooding history as constraint values are edited.
-//   id = system id, x/y/c = axis & colour keys, f = constraints as
-//   "prop:center:tol" joined by commas.
+//   ids = comma-separated system ids, x/y/c = axis & colour keys,
+//   f = constraints as "prop:center:tol" joined by commas.
 function updateUrl() {
     var url = new URL(window.location.href);
     var p = url.searchParams;
-    p.set('id', app.systemid);
+    p.delete('id');
+    if (app.selected.length) {
+        p.set('ids', app.selected.map(function (s) { return s.id; }).join(','));
+    } else {
+        p.delete('ids');
+    }
     p.set('x', document.getElementById('xs').value);
     p.set('y', document.getElementById('ys').value);
     p.set('c', document.getElementById('cs').value);
@@ -478,9 +639,18 @@ function updateUrl() {
     window.history.replaceState({}, '', url);
 }
 
-// Restore axes/colour and constraints from the URL (system id comes via PHP as
-// the initial systemid). Called once before the first load so a shared link
-// opens in the same view. Invalid params are ignored.
+// System ids to open on load, from ?ids= (comma list) or ?id= (single), falling
+// back to the PHP-provided default. Invalid ids are dropped.
+function urlIds() {
+    var p = new URL(window.location.href).searchParams;
+    var raw = p.get('ids') || p.get('id') || (systemid ? String(systemid) : '');
+    if (!raw) return [];
+    return raw.split(',').map(function (x) { return parseInt(x, 10); })
+        .filter(function (n) { return !isNaN(n); });
+}
+
+// Restore axes/colour and constraints from the URL. Called once before the
+// first load so a shared link opens in the same view. Invalid params are ignored.
 function readUrlState() {
     var p = new URL(window.location.href).searchParams;
     var setSel = function (id, key) {
@@ -503,7 +673,10 @@ function readUrlState() {
     }
 }
 
-// Load the system list (public / user / admin), then the first system's data.
+// Load the system list (public / user / admin), then open the requested
+// systems (from the URL) or fall back to the first system. Only systems that
+// actually have signature episodes are kept, using signature/systems (which
+// returns a per-system episode count).
 function load_system_list() {
     var system_list_url = path + "system/list/public.json";
     if (user_mode) system_list_url = path + "system/list/user.json";
@@ -511,9 +684,35 @@ function load_system_list() {
 
     $.ajax({
         type: "GET",
+        url: path + "signature/systems.json",
+        dataType: "json",
+        success: function (systems) {
+            // Build system id -> episode count from the endpoint.
+            var counts = {};
+            if (Array.isArray(systems)) {
+                systems.forEach(function (s) { counts[s.system_id] = s.count; });
+            }
+            load_filtered_system_list(system_list_url, counts);
+        },
+        error: function () {
+            // If the count lookup fails, fall back to the full list.
+            load_filtered_system_list(system_list_url, null);
+        }
+    });
+}
+
+// Fetch the system list and (when counts are available) drop systems with no
+// signature episodes, then open the requested systems.
+function load_filtered_system_list(system_list_url, counts) {
+    $.ajax({
+        type: "GET",
         url: system_list_url,
         dataType: "json",
         success: function (result) {
+            // Keep only systems that have episodes (skip when counts is null).
+            if (counts) {
+                result = result.filter(function (s) { return counts[s.id] > 0; });
+            }
             result.sort(function (a, b) {
                 if (a.location < b.location) return -1;
                 if (a.location > b.location) return 1;
@@ -523,14 +722,13 @@ function load_system_list() {
             systemid_map = {};
             for (var z in result) systemid_map[result[z].id] = z;
 
-            // Default to the first system if none selected or not in the list.
-            if (!app.systemid || systemid_map[app.systemid] === undefined) {
-                if (result.length) {
-                    app.systemid = result[0].id;
-                    updateUrl();
-                }
-            }
-            loadSystem();
+            // Resolve the systems to open, keeping only ones in the list.
+            var ids = urlIds().filter(function (id) { return systemid_map[id] !== undefined; });
+            if (!ids.length && result.length) ids = [result[0].id];
+
+            app.candidate = result.length ? result[0].id : null;
+            ids.forEach(function (id) { app.addById(id); });
+            refresh();
         }
     });
 }

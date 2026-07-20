@@ -25,4 +25,19 @@ class Signature
         }
         return $episodes;
     }
+
+    /*
+     * Get a list of system ids with a count of signatures (episodes) for each
+     * @return array of objects with system_id and count
+     */
+    public function get_system_counts() {
+        $result = $this->mysqli->query("SELECT system_id, COUNT(*) AS count FROM signature_episodes GROUP BY system_id ORDER BY system_id");
+        $systems = array();
+        while ($row = $result->fetch_object()) {
+            $row->system_id = (int) $row->system_id;
+            $row->count = (int) $row->count;
+            $systems[] = $row;
+        }
+        return $systems;
+    }
 }
