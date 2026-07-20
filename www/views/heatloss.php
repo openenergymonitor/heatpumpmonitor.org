@@ -8,9 +8,7 @@ if (isset($session['admin']) && $session['admin']) {
 ?>
 <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
 <script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/flot/0.8.3/jquery.flot.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/flot/0.8.3/jquery.flot.time.min.js"></script>
-<script src="Lib/jquery.flot.axislabels.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 
 <div id="app">
     <div style=" background-color:#f0f0f0; padding-top:20px; padding-bottom:10px">
@@ -57,7 +55,32 @@ if (isset($session['admin']) && $session['admin']) {
         </div>
 
         <div class="row" style="margin-right:-5px">
-            <div id="placeholder" style="width:100%;height:600px; margin-bottom:20px"></div>
+            <div id="chart_wrap" style="width:100%;height:600px; margin-bottom:20px; position:relative">
+                <canvas id="placeholder"></canvas>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-lg-4 col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text">Colour points by</span>
+                    <select class="form-control" v-model="colour_by" @change="update_fit">
+                        <option value="">None</option>
+                        <option value="running_flowT_mean">Flow temperature</option>
+                        <option value="running_returnT_mean">Return temperature</option>
+                        <option value="outsideT">Outside temperature</option>
+                        <option value="roomT">Room temperature</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-lg-8 col-md-6" v-show="colour_by">
+                <div style="display:flex; align-items:center; gap:8px; height:100%">
+                    <span style="white-space:nowrap; color:#666">{{ colour_label }}</span>
+                    <span style="white-space:nowrap">{{ colour_min | toFixed(1) }}°C</span>
+                    <div id="colour_scale_bar" style="flex:1; height:16px; border:1px solid #ccc; border-radius:3px"></div>
+                    <span style="white-space:nowrap">{{ colour_max | toFixed(1) }}°C</span>
+                </div>
+            </div>
         </div>
 
         <div class="row">
@@ -96,8 +119,8 @@ if (isset($session['admin']) && $session['admin']) {
 
             <div class="col-lg-3 col-md-6">
                 <div class="input-group">
-                    <span class="input-group-text">&plusmn;</span>
-                    <input type="text" class="form-control" v-model.number="measured_heatloss_range" @change="update_fit">
+                    <span class="input-group-text" title="Automated 80% prediction interval, evaluated at design DT">&plusmn; 80% PI</span>
+                    <input type="text" class="form-control" :value="measured_heatloss_range | toFixed(2)" disabled>
                     <span class="input-group-text">kW</span>
                     <button class="btn btn-primary" @click="save_heat_loss" v-if="enable_save">Save</button>
                 </div>
@@ -206,8 +229,22 @@ if (isset($session['admin']) && $session['admin']) {
             measured_hp_max: '',
             fixed_room_tmp_enable: 0,
             fixed_room_tmp: 20,
-            room_temp_alert: ""
+            room_temp_alert: "",
+            colour_by: "",
+            colour_min: 0,
+            colour_max: 0
 
+        },
+        computed: {
+            colour_label: function() {
+                var labels = {
+                    'running_flowT_mean': 'Flow temperature (°C)',
+                    'running_returnT_mean': 'Return temperature (°C)',
+                    'outsideT': 'Outside temperature (°C)',
+                    'roomT': 'Room temperature (°C)'
+                };
+                return labels[this.colour_by] || '';
+            }
         },
         methods: {
             change_system: function() {
@@ -295,7 +332,6 @@ if (isset($session['admin']) && $session['admin']) {
             auto_fit: function() {
                 var fit = calculateLineOfBestFit(data['heat_vs_dt'],app.auto_min_DT);
 
-                app.design_DT = 23;
                 app.measured_heatloss = (fit.m * app.design_DT) + fit.b;
                 app.measured_heatloss = app.measured_heatloss.toFixed(2)*1;
 
@@ -494,6 +530,13 @@ if (isset($session['admin']) && $session['admin']) {
                 data['cool_vs_dt'] = [];
                 for (var i = 0; i < data[mode + '_heat_mean'].length; i++) {
                     if (data[mode + '_roomT_mean'][i][1] > 0 && data[mode + '_data_length'][i][1] > 64800) {
+
+                        // Filter out invalid points where the heat pump wasn't running:
+                        // flow and return temperature both zero (heat output is spurious ~0)
+                        if (data['running_flowT_mean'][i][1] == 0 && data['running_returnT_mean'][i][1] == 0) {
+                            continue;
+                        }
+
                         var x = data[mode + '_roomT_mean'][i][1] - data[mode + '_outsideT_mean'][i][1];
                         //if (x > 0) {
                             // Convert heat from W to kW
@@ -530,9 +573,102 @@ if (isset($session['admin']) && $session['admin']) {
         });
     }
 
-    function draw() {
+    var chart = null;
 
-        console.log("Draw")
+    // Map a colour-by token to the underlying data field name
+    function colour_field_name(token) {
+        if (token === 'outsideT') return mode + '_outsideT_mean';
+        if (token === 'roomT') return mode + '_roomT_mean';
+        return token; // running_flowT_mean, running_returnT_mean
+    }
+
+    // Map a normalised value t in [0,1] to a colour (blue = low, red = high)
+    function colour_scale(t) {
+        if (t < 0) t = 0;
+        if (t > 1) t = 1;
+        var hue = 240 * (1 - t); // 240 = blue, 0 = red
+        return 'hsl(' + hue + ', 70%, 50%)';
+    }
+
+    // CSS gradient string matching colour_scale, for the legend bar
+    function colour_scale_css() {
+        var stops = [];
+        for (var s = 0; s <= 10; s++) {
+            stops.push(colour_scale(s / 10) + ' ' + (s * 10) + '%');
+        }
+        return 'linear-gradient(to right, ' + stops.join(', ') + ')';
+    }
+
+    // Reference-line labels, drawn by the custom plugin below
+    var ref_labels = [];
+
+    // Custom plugin: draw text labels next to the reference lines
+    var refLabelPlugin = {
+        id: 'reflabels',
+        afterDatasetsDraw: function(c) {
+            var ctx = c.ctx;
+            var xs = c.scales.x, ys = c.scales.y;
+            ctx.save();
+            ctx.fillStyle = '#666';
+            ctx.font = '13px sans-serif';
+            ctx.textBaseline = 'bottom';
+            for (var k = 0; k < ref_labels.length; k++) {
+                var L = ref_labels[k];
+                ctx.fillText(L.text, xs.getPixelForValue(L.x) + 4, ys.getPixelForValue(L.y) + (L.dy || 0));
+            }
+            ctx.restore();
+        }
+    };
+
+    // Build a horizontal reference-line dataset
+    function ref_line(min_dt, y, color, width) {
+        return {
+            data: [{ x: min_dt, y: y }, { x: app.design_DT, y: y }],
+            borderColor: color,
+            borderWidth: width || 1,
+            pointRadius: 0,
+            pointHitRadius: 0,
+            showLine: true,
+            fill: false,
+            series_type: 'line'
+        };
+    }
+
+    // Soft drop shadow under the reference/fit lines (matches the Flot look)
+    var lineShadowPlugin = {
+        id: 'lineshadow',
+        beforeDatasetDraw: function(c, args) {
+            var ds = c.data.datasets[args.index];
+            if (ds && ds.series_type === 'line') {
+                c.ctx.save();
+                c.ctx.shadowColor = 'rgba(0,0,0,0.25)';
+                c.ctx.shadowBlur = 2;
+                c.ctx.shadowOffsetX = 0;
+                c.ctx.shadowOffsetY = 2;
+            }
+        },
+        afterDatasetDraw: function(c, args) {
+            var ds = c.data.datasets[args.index];
+            if (ds && ds.series_type === 'line') {
+                c.ctx.restore();
+            }
+        }
+    };
+
+    // Full bounding box around the plot area (matches the Flot look)
+    var boxPlugin = {
+        id: 'chartbox',
+        afterDraw: function(c) {
+            var a = c.chartArea, ctx = c.ctx;
+            ctx.save();
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(a.left, a.top, a.right - a.left, a.bottom - a.top);
+            ctx.restore();
+        }
+    };
+
+    function draw() {
 
         // Left hand edge of chart: minimum DT in the data (can be negative when cooling), capped at 0
         var min_dt = 0;
@@ -540,306 +676,258 @@ if (isset($session['admin']) && $session['admin']) {
             if (data['heat_vs_dt'][i][0] < min_dt) min_dt = data['heat_vs_dt'][i][0];
         }
 
-        // Flot options
+        // Heat scatter points ({x, y, i} where i is the original data index)
+        var heat_points = [];
+        for (var i = 0; i < data['heat_vs_dt'].length; i++) {
+            var p = data['heat_vs_dt'][i];
+            heat_points.push({ x: p[0], y: p[1], i: p[2] });
+        }
+
+        // Optionally colour the heat points by a selected field
+        var heat_colour = 'blue';
+        if (app.colour_by) {
+            var cf = colour_field_name(app.colour_by);
+
+            var vmin = Infinity, vmax = -Infinity;
+            for (var i = 0; i < heat_points.length; i++) {
+                var v = (data[cf] && data[cf][heat_points[i].i]) ? data[cf][heat_points[i].i][1] : NaN;
+                if (!isNaN(v)) {
+                    if (v < vmin) vmin = v;
+                    if (v > vmax) vmax = v;
+                }
+            }
+            if (vmin === Infinity) { vmin = 0; vmax = 1; }
+            if (vmax === vmin) vmax = vmin + 1;
+            app.colour_min = vmin;
+            app.colour_max = vmax;
+
+            heat_colour = [];
+            for (var i = 0; i < heat_points.length; i++) {
+                var v = (data[cf] && data[cf][heat_points[i].i]) ? data[cf][heat_points[i].i][1] : NaN;
+                heat_colour.push(isNaN(v) ? '#cccccc' : colour_scale((v - vmin) / (vmax - vmin)));
+            }
+
+            $('#colour_scale_bar').css('background', colour_scale_css());
+        }
+
+        // Cooling scatter points
+        var cool_points = [];
+        for (var i = 0; i < data['cool_vs_dt'].length; i++) {
+            var p = data['cool_vs_dt'][i];
+            if (p[1] === null) continue;
+            cool_points.push({ x: p[0], y: p[1], i: p[2] });
+        }
+
+        // Point styling: open rings (Flot look) when uncoloured, filled circles when colour-scaled
+        var heat_bg = app.colour_by ? heat_colour : 'white';
+        var heat_border = app.colour_by ? heat_colour : 'blue';
+        var heat_bw = app.colour_by ? 0.5 : 2;
+        var heat_radius = app.colour_by ? 4 : 2;
+
+        var datasets = [{
+            data: heat_points,
+            pointBackgroundColor: heat_bg,
+            pointBorderColor: heat_border,
+            pointBorderWidth: heat_bw,
+            pointRadius: heat_radius,
+            pointHoverRadius: heat_radius + 1.5,
+            showLine: false,
+            series_type: 'heat'
+        }, {
+            data: cool_points,
+            pointBackgroundColor: 'white',
+            pointBorderColor: 'purple',
+            pointBorderWidth: 2,
+            pointRadius: 2,
+            pointHoverRadius: 4,
+            showLine: false,
+            series_type: 'cooling'
+        }];
+
+        // Reference lines and their labels
+        ref_labels = [];
+
+        datasets.push(ref_line(min_dt, app.calculated_heatloss, '#808080', 2));
+        if (app.calculated_heatloss > 0) ref_labels.push({ x: min_dt, y: app.calculated_heatloss, text: 'Heat loss value on form', dy: -4 });
+
+        datasets.push(ref_line(min_dt, hp_output, '#000000', 2));
+        if (hp_output > 0) ref_labels.push({ x: min_dt, y: hp_output, text: 'Heatpump badge capacity', dy: -4 });
+
+        if (app.datasheet_hp_max > 0) {
+            datasets.push(ref_line(min_dt, app.datasheet_hp_max, '#aa0000', 2));
+            var dy = ((hp_output - app.datasheet_hp_max) < 0.5) ? 14 : -4;
+            ref_labels.push({ x: min_dt, y: app.datasheet_hp_max, text: 'Heatpump datasheet capacity', dy: dy });
+        }
+
+        if (app.measured_hp_max > 0) {
+            datasets.push(ref_line(min_dt, app.measured_hp_max, '#cc8888', 2));
+            ref_labels.push({ x: min_dt, y: app.measured_hp_max, text: 'Max capacity test result', dy: -4 });
+        }
+
+        // Measured heat loss sloped line with automated 80% prediction interval band
+        if (app.measured_heatloss > 0) {
+
+            datasets.push({
+                data: [{ x: app.base_DT, y: 0 }, { x: app.design_DT, y: app.measured_heatloss }],
+                borderColor: '#888', borderWidth: 2, pointRadius: 0, pointHitRadius: 0,
+                showLine: true, fill: false, series_type: 'line'
+            });
+
+            // 80% prediction interval about the measured heat loss line
+            if (app.design_DT > app.base_DT) {
+                var pi_m = app.measured_heatloss / (app.design_DT - app.base_DT);
+                var pi_b = -pi_m * app.base_DT;
+                var pi = calculatePIStats(data['heat_vs_dt'], pi_m, pi_b, app.auto_min_DT);
+
+                if (pi) {
+                    var TCRIT = 1.2816; // z for an 80% two-sided interval (normal approx.)
+
+                    // Report the PI half-width at design DT as the ± range figure
+                    app.measured_heatloss_range = piHalfWidth(pi, app.design_DT, TCRIT).toFixed(2) * 1;
+
+                    // The interval widens away from the mean DT, so sample it as a curve
+                    var pi_upper = [], pi_lower = [];
+                    var PI_STEPS = 40;
+                    for (var s2 = 0; s2 <= PI_STEPS; s2++) {
+                        var xx = app.base_DT + (app.design_DT - app.base_DT) * (s2 / PI_STEPS);
+                        var yy = pi_m * xx + pi_b;
+                        var hw = piHalfWidth(pi, xx, TCRIT);
+                        pi_upper.push({ x: xx, y: yy + hw });
+                        pi_lower.push({ x: xx, y: yy - hw });
+                    }
+                    datasets.push({
+                        data: pi_upper, borderColor: '#c4c4c4', borderWidth: 1.5,
+                        pointRadius: 0, pointHitRadius: 0, showLine: true, fill: false, tension: 0, series_type: 'line'
+                    });
+                    datasets.push({
+                        data: pi_lower, borderColor: '#c4c4c4', borderWidth: 1.5,
+                        pointRadius: 0, pointHitRadius: 0, showLine: true, fill: false, tension: 0, series_type: 'line'
+                    });
+                }
+            }
+        }
+
         var options = {
-            series: {},
-            xaxis: {
-                axisLabel: 'Room - Outside Temperature',
-                min: min_dt,
-                max: app.design_DT
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            parsing: false,
+            scales: {
+                x: {
+                    type: 'linear',
+                    min: min_dt,
+                    max: app.design_DT,
+                    title: { display: true, text: 'Room - Outside Temperature', color: '#333', font: { size: 14 } },
+                    border: { display: false },
+                    grid: { color: '#e6e6e6', tickColor: '#e6e6e6' },
+                    ticks: {
+                        stepSize: 2.5,
+                        color: '#333',
+                        font: { size: 13 },
+                        // Hide the forced min/max endpoint labels, keep the nice 2.5 steps
+                        callback: function(v) { var r = v / 2.5; return Math.abs(r - Math.round(r)) < 1e-6 ? v : ''; }
+                    }
+                },
+                y: {
+                    min: 0,
+                    max: max_heat * 1.1,
+                    title: { display: true, text: 'Heatpump heat output (kW)', color: '#333', font: { size: 14 } },
+                    border: { display: false },
+                    grid: { color: '#e6e6e6', tickColor: '#e6e6e6' },
+                    ticks: {
+                        stepSize: 1,
+                        color: '#333',
+                        font: { size: 13 },
+                        // Hide the fractional max endpoint label
+                        callback: function(v) { return Math.abs(v - Math.round(v)) < 1e-6 ? v : ''; }
+                    }
+                }
             },
-            yaxis: {
-                min: 0,
-                max: max_heat * 1.1,
-                axisLabel: 'Heatpump heat output (kW)'
+            interaction: { mode: 'nearest', intersect: true },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    filter: function(item) {
+                        return item.dataset.series_type === 'heat' || item.dataset.series_type === 'cooling';
+                    },
+                    callbacks: {
+                        title: function() { return ''; },
+                        label: function(ctx) {
+                            var oi = ctx.raw.i;
+                            var heat_label = ctx.dataset.series_type === 'cooling' ? 'Cooling' : 'Heat';
+                            var lines = [];
+                            lines.push(heat_label + ': ' + ctx.raw.y.toFixed(3) + ' kW');
+                            lines.push('DT: ' + ctx.raw.x.toFixed(1) + ' °K');
+                            lines.push('Room: ' + data[mode + '_roomT_mean'][oi][1].toFixed(1) + ' °C');
+                            lines.push('Outside: ' + data[mode + '_outsideT_mean'][oi][1].toFixed(1) + ' °C');
+                            lines.push('FlowT: ' + data['running_flowT_mean'][oi][1].toFixed(1) + ' °C');
+                            lines.push('ReturnT: ' + data['running_returnT_mean'][oi][1].toFixed(1) + ' °C');
+                            var d = new Date(data[mode + '_heat_mean'][oi][0]);
+                            lines.push(d.getDate() + ' ' + d.toLocaleString('default', { month: 'short' }) + ' ' + d.getFullYear());
+                            return lines;
+                        }
+                    }
+                }
             },
-            grid: {
-                hoverable: true,
-                clickable: true
+            onClick: function(e, elements, c) {
+                var hit = c.getElementsAtEventForMode(e, 'nearest', { intersect: true }, false);
+                for (var k = 0; k < hit.length; k++) {
+                    var ds = c.data.datasets[hit[k].datasetIndex];
+                    if (ds.series_type === 'heat' || ds.series_type === 'cooling') {
+                        var oi = ds.data[hit[k].index].i;
+                        var start = data[mode + '_heat_mean'][oi][0] / 1000;
+                        var end = start + 86400;
+                        window.open(path + "dashboard?id=" + app.systemid + "&mode=power&start=" + start + "&end=" + end);
+                        return;
+                    }
+                }
             },
-            axisLabels: {
-                show: true
+            onHover: function(e, elements, c) {
+                var hit = elements.filter(function(el) {
+                    var ds = c.data.datasets[el.datasetIndex];
+                    return ds.series_type === 'heat' || ds.series_type === 'cooling';
+                });
+                c.canvas.style.cursor = hit.length ? 'pointer' : 'default';
             }
         };
 
-        var series = [{
-            data: data['heat_vs_dt'],
-
-            color: 'blue',
-            lines: {
-                show: false,
-                fill: false
-            },
-            points: {
-                show: true,
-                radius: 2
-            }
-        }];
-
-        // Add cooling data series
-        series.push({
-            data: data['cool_vs_dt'],
-            color: 'purple',
-            lines: {
-                show: false,
-                fill: false
-            },
-            points: {
-                show: true,
-                radius: 2
-            }
+        if (chart) chart.destroy();
+        chart = new Chart(document.getElementById('placeholder'), {
+            type: 'scatter',
+            data: { datasets: datasets },
+            options: options,
+            plugins: [lineShadowPlugin, refLabelPlugin, boxPlugin]
         });
-
-        // Add horizontal line for heat loss
-        series.push({
-            data: [
-                [min_dt, app.calculated_heatloss],
-                [app.design_DT, app.calculated_heatloss]
-            ],
-            color: 'grey',
-            lines: {
-                show: true,
-                fill: false
-            },
-            points: {
-                show: false
-            }
-        });
-
-        // Add horizontal line for heatpump output
-        series.push({
-            data: [
-                [min_dt, hp_output],
-                [app.design_DT, hp_output]
-            ],
-            color: 'black',
-            lines: {
-                show: true,
-                fill: false
-            },
-            points: {
-                show: false
-            }
-        });
-
-        // Add horizontal line for heatpump output
-        if (app.datasheet_hp_max > 0) {
-            series.push({
-                data: [
-                    [min_dt, app.datasheet_hp_max],
-                    [app.design_DT, app.datasheet_hp_max]
-                ],
-                color: '#aa0000',
-                lines: {
-                    show: true,
-                    fill: false
-                },
-                points: {
-                    show: false
-                }
-            });
-        }
-
-        // Add horizontal line for heatpump output
-        if (app.measured_hp_max > 0) {
-            series.push({
-                data: [
-                    [min_dt, app.measured_hp_max],
-                    [app.design_DT, app.measured_hp_max]
-                ],
-                color: '#ddaaaa',
-                lines: {
-                    show: true,
-                    fill: false
-                },
-                points: {
-                    show: false
-                }
-            });
-        }
-
-        // Add measured heat loss line
-        if (app.measured_heatloss > 0) {
-            series.push({
-                data: [
-                    [app.base_DT, 0],
-                    [app.design_DT, app.measured_heatloss]
-                ],
-                color: '#aaa',
-                lines: {
-                    show: true,
-                    fill: false
-                },
-                points: {
-                    show: false
-                }
-            });
-
-            app.measured_heatloss_range = app.measured_heatloss_range*1;
-
-
-            
-            series.push({
-                data: [
-                    [app.base_DT, app.measured_heatloss_range],
-                    [app.design_DT, app.measured_heatloss + app.measured_heatloss_range]
-                ],
-                color: '#ddd',
-                lines: {
-                    show: true,
-                    fill: false
-                },
-                points: {
-                    show: false
-                }
-            });
-
-            series.push({
-                data: [
-                    [app.base_DT, -app.measured_heatloss_range],
-                    [app.design_DT, app.measured_heatloss - app.measured_heatloss_range]
-                ],
-                color: '#ddd',
-                lines: {
-                    show: true,
-                    fill: false
-                },
-                points: {
-                    show: false
-                }
-            });
-        }
-
-        var chart = $.plot("#placeholder", series, options);
-
-        var placeholder = $("#placeholder");
-        var o = false;
-
-        if (hp_output>0) {
-            o = chart.pointOffset({ x: min_dt, y: hp_output });
-            placeholder.append("<div style='position:absolute;left:" + (o.left + 4) + "px;top:" + (o.top - 23) + "px;color:#666;font-size:smaller'>Heatpump badge capacity</div>");
-        }
-        if (app.datasheet_hp_max > 0) {
-            o = chart.pointOffset({ x: min_dt, y: app.datasheet_hp_max });
-            let offset = -23;
-            if ((hp_output - app.datasheet_hp_max)<0.5) offset = 5;
-            console.log(hp_output - app.datasheet_hp_max);
-            placeholder.append("<div style='position:absolute;left:" + (o.left + 4) + "px;top:" + (o.top + offset) + "px;color:#666;font-size:smaller'>Heatpump datasheet capacity</div>");
-        }
-        if (app.measured_hp_max > 0) {
-            o = chart.pointOffset({ x: min_dt, y: app.measured_hp_max });
-            placeholder.append("<div style='position:absolute;left:" + (o.left + 4) + "px;top:" + (o.top - 23) + "px;color:#666;font-size:smaller'>Max capacity test result</div>");
-        }
-        if (app.calculated_heatloss>0) {
-            o = chart.pointOffset({ x: min_dt, y: app.calculated_heatloss });
-            placeholder.append("<div style='position:absolute;left:" + (o.left + 4) + "px;top:" + (o.top - 23) + "px;color:#666;font-size:smaller'>Heat loss value on form</div>");
-        }
     }
-
-    // Flot tooltip
-    var previousPoint = null;
-    $("#placeholder").bind("plothover", function(event, pos, item) {
-        if (item) {
-            if (previousPoint != item.datapoint) {
-                previousPoint = item.datapoint;
-
-                $("#tooltip").remove();
-                var DT = item.datapoint[0];
-                var HEAT = item.datapoint[1];
-                var heat_label = item.seriesIndex === 1 ? "Cooling" : "Heat";
-
-                var str = "";
-                str += heat_label + ": " + HEAT.toFixed(3) + " kW<br>";
-                str += "DT: " + DT.toFixed(1) + " °K<br>";
-
-                var original_index = data['heat_vs_dt'][item.dataIndex][2];
-
-                str += "Room: " + data[mode + '_roomT_mean'][original_index][1].toFixed(1) + " °C<br>";
-                str += "Outside: " + data[mode + '_outsideT_mean'][original_index][1].toFixed(1) + " °C<br>";
-                str += "FlowT: " + data['running_flowT_mean'][original_index][1].toFixed(1) + " °C<br>";
-                str += "ReturnT: " + data['running_returnT_mean'][original_index][1].toFixed(1) + " °C<br>";
-
-                var d = new Date(data[mode + '_heat_mean'][original_index][0]);
-                str += d.getDate() + " " + d.toLocaleString('default', {
-                    month: 'short'
-                }) + " " + d.getFullYear() + "<br>";
-
-                tooltip(item.pageX, item.pageY, str, "#fff", "#000");
-            }
-        } else {
-            $("#tooltip").remove();
-            previousPoint = null;
-        }
-        $("#placeholder").css('cursor', item && item.seriesIndex < 2 ? 'pointer' : 'default');
-    });
-
-    // Open dashboard for the day of the clicked data point
-    $("#placeholder").bind("plotclick", function(event, pos, item) {
-        // Only the heat (0) and cooling (1) series carry the original data index
-        if (item && item.seriesIndex < 2) {
-            var original_index = item.series.data[item.dataIndex][2];
-            var start = data[mode + '_heat_mean'][original_index][0] / 1000;
-            var end = start + 86400;
-            window.open(path + "dashboard?id=" + app.systemid + "&mode=power&start=" + start + "&end=" + end);
-        }
-    });
 
     // Window resize
     $(window).resize(function() {
         resize();
     });
-    
+
     function resize() {
-        var width = $("#placeholder").width();
-        var height = width*1.2;
-        if (height>600) height = 600;
-        $("#placeholder").height(height);
-        draw();   
-    }
-
-    // Creates a tooltip for use with flot graphs
-    function tooltip(x, y, contents, bgColour, borderColour = "rgb(255, 221, 221)") {
-        var offset = 10; // use higher values for a little spacing between `x,y` and tooltip
-        var elem = $('<div id="tooltip">' + contents + '</div>').css({
-            position: 'absolute',
-            color: "#000",
-            display: 'none',
-            'font-weight': 'bold',
-            border: '1px solid ' + borderColour,
-            padding: '2px',
-            'background-color': bgColour,
-            opacity: '0.8',
-            'text-align': 'left'
-        }).appendTo("body").fadeIn(200);
-
-        var elemY = y - elem.height() - offset;
-        var elemX = x - elem.width() - offset;
-        if (elemY < 0) {
-            elemY = 0;
-        }
-        if (elemX < 0) {
-            elemX = 0;
-        }
-        elem.css({
-            top: elemY,
-            left: elemX
-        });
+        var width = $("#chart_wrap").width();
+        var height = width * 1.2;
+        if (height > 600) height = 600;
+        $("#chart_wrap").height(height);
+        if (chart) chart.resize();
     }
 
     function calculateLineOfBestFit(dataPoints, min_x) {
         let xSum = 0,
             ySum = 0,
             xySum = 0,
-            xxSum = 0;
-        const n = dataPoints.length;
+            xxSum = 0,
+            n = 0;
 
-        // Calculate sums
+        // Calculate sums over the included points only (x >= min_x)
         for (const [x, y] of dataPoints) {
             if (x >= min_x) {
                 xSum += x;
                 ySum += y;
                 xxSum += x * x;
                 xySum += x * y;
+                n++;
             }
         }
 
@@ -867,5 +955,35 @@ if (isset($session['admin']) && $session['admin']) {
         const m = xySum / xxSum;
 
         return m; // intercept (b) is implicitly 0
+    }
+
+    // Statistics for a prediction interval about the line y = m*x + b,
+    // using heating points with x >= minx. Returns null if too few points.
+    function calculatePIStats(dataPoints, m, b, minx) {
+        var n = 0, xSum = 0;
+        for (var k = 0; k < dataPoints.length; k++) {
+            if (dataPoints[k][0] < minx) continue;
+            n++;
+            xSum += dataPoints[k][0];
+        }
+        if (n < 3) return null;
+
+        var xbar = xSum / n;
+        var Sxx = 0, sse = 0;
+        for (var k = 0; k < dataPoints.length; k++) {
+            var x = dataPoints[k][0];
+            if (x < minx) continue;
+            var resid = dataPoints[k][1] - (m * x + b);
+            Sxx += (x - xbar) * (x - xbar);
+            sse += resid * resid;
+        }
+        if (Sxx <= 0) return null;
+
+        return { n: n, xbar: xbar, Sxx: Sxx, s: Math.sqrt(sse / (n - 2)) };
+    }
+
+    // Prediction-interval half-width at x0 (tcrit = critical value for the desired level)
+    function piHalfWidth(stats, x0, tcrit) {
+        return tcrit * stats.s * Math.sqrt(1 + 1 / stats.n + (x0 - stats.xbar) * (x0 - stats.xbar) / stats.Sxx);
     }
 </script>
