@@ -7,12 +7,13 @@
  * fit changes can be tested and tuned headlessly without screenshots.
  *
  * Usage:
- *   php scripts/heatloss_harness.php <id[,id,...] | all> [--design=23] [--minDT=0] [--dump]
+ *   php scripts/heatloss_harness.php <id[,id,...] | all> [--design=23] [--minDT=0] [--dump] [--save]
  *
  * Examples:
  *   php scripts/heatloss_harness.php 123
  *   php scripts/heatloss_harness.php 123,456,789
  *   php scripts/heatloss_harness.php all --minDT=2
+ *   php scripts/heatloss_harness.php all --save     # write fit results to system_meta
  *
  * The PHP fit functions below MIRROR the JS in heatloss.php 1:1. When the JS
  * algorithm changes, mirror the change here (and vice versa) so results match.
@@ -113,6 +114,20 @@ function weightedOLS($pts) {
     return array('m' => $m, 'b' => $b);
 }
 
+// Weighted OLS with the slope clamped to >= 0. A negative weather-compensation
+// slope (flow temperature falling as it gets colder) is physically implausible
+// and usually an artifact of residual DHW contamination, so fall back to the
+// horizontal weighted-mean line instead.
+function clampedWeightedOLS($pts) {
+    $fit = weightedOLS($pts);
+    if ($fit['m'] < 0) {
+        $Sw = 0; $Swy = 0;
+        foreach ($pts as $p) { $Sw += $p['w']; $Swy += $p['w'] * $p['y']; }
+        $fit = array('m' => 0, 'b' => $Sw > 0 ? $Swy / $Sw : 0);
+    }
+    return $fit;
+}
+
 function weightedResidStd($pts, $fit) {
     $sw = 0; $swr2 = 0;
     foreach ($pts as $p) {
@@ -136,7 +151,7 @@ function calculateWeightedFlowFit($points, $min_x, $base_DT, $maxIter, $kHigh = 
     if (count($all) < 3) return null;
 
     $pts = $all;
-    $fit = weightedOLS($pts);
+    $fit = clampedWeightedOLS($pts);
     $s = 0;
 
     for ($iter = 0; $iter < $maxIter; $iter++) {
@@ -149,7 +164,7 @@ function calculateWeightedFlowFit($points, $min_x, $base_DT, $maxIter, $kHigh = 
         }
         if (count($kept) === count($pts) || count($kept) < 3) break;
         $pts = $kept;
-        $fit = weightedOLS($pts);
+        $fit = clampedWeightedOLS($pts);
     }
 
     if ($s > 0) {
@@ -157,7 +172,7 @@ function calculateWeightedFlowFit($points, $min_x, $base_DT, $maxIter, $kHigh = 
         foreach ($all as $p) {
             if (abs($p['y'] - ($fit['m'] * $p['x'] + $fit['b'])) <= $kBand * $s) $band[] = $p;
         }
-        if (count($band) >= 3) { $pts = $band; $fit = weightedOLS($pts); }
+        if (count($band) >= 3) { $pts = $band; $fit = clampedWeightedOLS($pts); }
     }
 
     return array('m' => $fit['m'], 'b' => $fit['b'], 'inliers' => $pts);
@@ -194,6 +209,7 @@ $design_DT_override = null;
 $min_DT = 0;
 $dump = false;
 $sweep = false;
+$save = false;
 $kHigh = 1.25; $kLow = 3.0; $kBand = 2.0;
 foreach ($args as $a) {
     if (strpos($a, '--design=') === 0) $design_DT_override = (float) substr($a, 9);
@@ -204,6 +220,7 @@ foreach ($args as $a) {
     else if ($a === '--sweep') $sweep = true;
     else if ($a === '--profile') $profile = true;
     else if ($a === '--dump') $dump = true;
+    else if ($a === '--save') $save = true;
     else if ($idarg === null) $idarg = $a;
 }
 if (!isset($profile)) $profile = false;
@@ -251,12 +268,20 @@ $summary = array();
 
 foreach ($ids as $systemid) {
 
-    // Meta (location, saved design DT)
-    $meta_res = $mysqli->query("SELECT location, measured_design_DT, hp_output, heat_loss FROM system_meta WHERE id=$systemid LIMIT 1");
+    // Meta (location, saved design DT, outside design temperature)
+    $meta_res = $mysqli->query("SELECT location, measured_design_DT, design_temp, hp_output, heat_loss FROM system_meta WHERE id=$systemid LIMIT 1");
     $meta = $meta_res ? $meta_res->fetch_object() : null;
     $location = $meta ? $meta->location : '';
-    $design_DT = $design_DT_override !== null ? $design_DT_override
-               : (($meta && $meta->measured_design_DT > 0) ? (float) $meta->measured_design_DT : 23);
+
+    // Design DT resolution (mirrors heatloss.php load): start from the saved
+    // measured_design_DT (default 23), then prefer the system's outside design
+    // temperature with the default 20C target room temperature when on record.
+    $target_roomT = 20;
+    $design_DT = ($meta && $meta->measured_design_DT > 0) ? (float) $meta->measured_design_DT : 23;
+    if ($meta && $meta->design_temp !== null && $meta->design_temp !== '' && is_numeric($meta->design_temp)) {
+        $design_DT = round(($target_roomT - (float) $meta->design_temp) * 10) / 10;
+    }
+    if ($design_DT_override !== null) $design_DT = $design_DT_override;
 
     // Fetch daily stats via the same code path as the browser tool
     $csv = $system_stats->get_daily($systemid, false, false, $fields);
@@ -299,24 +324,29 @@ foreach ($ids as $systemid) {
 
     if (count($heat_vs_dt) < 3) { echo "System $systemid ($location): only " . count($heat_vs_dt) . " valid points\n\n"; continue; }
 
-    // Heat fit: iterated floor exclusion (mirrors auto_fit in heatloss.php)
+    // Heat fit: iterated floor exclusion (mirrors auto_fit in heatloss.php,
+    // including its toFixed roundings which feed the downstream fits)
     $hd = calculateHeatDemandFit($heat_vs_dt, $min_DT);
     $hfit = array('m' => $hd['m'], 'b' => $hd['b']);
-    $measured_heatloss = $hd['m'] * $design_DT + $hd['b'];
-    $base_DT = $hd['base_DT'];
+    $base_DT = round($hd['base_DT'], 1);
+    $measured_heatloss = round($hd['m'] * $design_DT + $hd['b'], 2);
     if ($base_DT < 0) {
         $slope0 = calculateSlopeWithZeroIntercept($heat_vs_dt);
         $base_DT = 0;
-        $measured_heatloss = $slope0 * $design_DT;
+        $measured_heatloss = round($slope0 * $design_DT, 2);
     }
 
     // Heat loss PI (about the base_DT -> design line)
     $heat_pi_txt = 'n/a';
+    $measured_heatloss_range = null;
     if ($design_DT > $base_DT) {
         $pm = $measured_heatloss / ($design_DT - $base_DT);
         $pb = -$pm * $base_DT;
         $pi = calculatePIStats($heat_vs_dt, $pm, $pb, $min_DT);
-        if ($pi) $heat_pi_txt = '+/-' . number_format(piHalfWidth($pi, $design_DT, $PI_Z), 2);
+        if ($pi) {
+            $measured_heatloss_range = round(piHalfWidth($pi, $design_DT, $PI_Z), 2);
+            $heat_pi_txt = '+/-' . number_format($measured_heatloss_range, 2);
+        }
     }
 
     // Contamination-free reference: median flow temp of the coldest 10% of days
@@ -337,15 +367,19 @@ foreach ($ids as $systemid) {
     // Flow fit (demand-weighted + asymmetric trimming)
     $ffit = calculateWeightedFlowFit($flow_vs_dt, $min_DT, $base_DT, 5, $kHigh, $kLow, $kBand);
     $design_flowT = null; $flow_pi_txt = 'n/a'; $flow_slope = null;
+    $design_flowT_range = null;
     $n_inliers = $ffit ? count($ffit['inliers']) : 0;
 
     if ($ffit && $design_DT > $base_DT) {
-        $design_flowT = $ffit['m'] * $design_DT + $ffit['b'];
+        $design_flowT = round($ffit['m'] * $design_DT + $ffit['b'], 1);
         $flow_slope = $ffit['m'];
         $inl = array();
         foreach ($ffit['inliers'] as $p) $inl[] = array($p['x'], $p['y']);
         $fpi = calculatePIStats($inl, $ffit['m'], $ffit['b'], -INF);
-        if ($fpi) $flow_pi_txt = '+/-' . number_format(piHalfWidth($fpi, $design_DT, $PI_Z), 1);
+        if ($fpi) {
+            $design_flowT_range = round(piHalfWidth($fpi, $design_DT, $PI_Z), 1);
+            $flow_pi_txt = '+/-' . number_format($design_flowT_range, 1);
+        }
     }
 
     // Report
@@ -361,6 +395,30 @@ foreach ($ids as $systemid) {
             $design_flowT, $flow_pi_txt, $flow_slope, $n_inliers, $n_above_balance, $n_above_balance - $n_inliers, $kHigh);
     } else {
         printf("  flow:   no fit (%d points above balance point)\n", $n_above_balance);
+    }
+
+    // Persist the fit to system_meta (same fields the frontend Save button writes)
+    if ($save) {
+        $sv_base_DT = (float) $base_DT;
+        $sv_design_DT = (float) $design_DT;
+        $sv_heatloss = (float) $measured_heatloss;
+        $sv_heatloss_range = $measured_heatloss_range !== null ? (float) $measured_heatloss_range : 0.0;
+        $sv_flowT = $design_flowT !== null ? (float) $design_flowT : 0.0;
+        $sv_flowT_range = $design_flowT_range !== null ? (float) $design_flowT_range : 0.0;
+
+        $stmt = $mysqli->prepare(
+            "UPDATE system_meta SET measured_base_DT=?, measured_design_DT=?, measured_heat_loss=?, " .
+            "measured_heat_loss_range=?, measured_design_flowT=?, measured_design_flowT_range=? WHERE id=?"
+        );
+        $stmt->bind_param("ddddddi", $sv_base_DT, $sv_design_DT, $sv_heatloss,
+            $sv_heatloss_range, $sv_flowT, $sv_flowT_range, $systemid);
+        if ($stmt->execute()) {
+            printf("  saved:  base_DT=%.1f design_DT=%.1f heat_loss=%.2f (+/-%.2f) design_flowT=%.1f (+/-%.1f)\n",
+                $sv_base_DT, $sv_design_DT, $sv_heatloss, $sv_heatloss_range, $sv_flowT, $sv_flowT_range);
+        } else {
+            printf("  saved:  FAILED (%s)\n", $stmt->error);
+        }
+        $stmt->close();
     }
 
     // DT-binned profile: p25 is DHW-resistant (DHW is always the UPPER contamination),

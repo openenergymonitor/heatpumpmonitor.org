@@ -762,6 +762,28 @@ $schema['system_meta'] = array(
         'unit' => 'kW'
     ),
 
+    'measured_design_flowT' => array(
+        'type' => 'float',
+        'editable' => true,
+        'optional' => true,
+        'show' => false,
+        'name' => 'Measured design flow temperature',
+        'group' => 'Measurements',
+        'helper' => 'Flow temperature at design DT from the heat loss tool flow temperature fit',
+        'unit' => '°C'
+    ),
+
+    'measured_design_flowT_range' => array(
+        'type' => 'float',
+        'editable' => true,
+        'optional' => true,
+        'show' => false,
+        'name' => 'Measured design flow temperature range',
+        'group' => 'Measurements',
+        'helper' => 'Flow temperature at design DT from the heat loss tool flow temperature fit',
+        'unit' => '°C'
+    ),
+
     'measured_mean_flow_temp_coldest_day' => array(
         'type' => 'float', 
         'editable' => true, 

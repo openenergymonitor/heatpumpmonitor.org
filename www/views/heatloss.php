@@ -321,6 +321,8 @@ if (isset($session['admin']) && $session['admin']) {
                 app.system_list[z].measured_design_DT = app.design_DT;
                 app.system_list[z].measured_heat_loss = app.measured_heatloss;
                 app.system_list[z].measured_heat_loss_range = app.measured_heatloss_range;
+                app.system_list[z].measured_design_flowT = app.design_flowT;
+                app.system_list[z].measured_design_flowT_range = app.design_flowT_range;
 
                 var data_to_save =  {
                     id: app.systemid,
@@ -328,7 +330,9 @@ if (isset($session['admin']) && $session['admin']) {
                         measured_base_DT: app.base_DT,
                         measured_design_DT: app.design_DT,
                         measured_heat_loss: app.measured_heatloss,
-                        measured_heat_loss_range: app.measured_heatloss_range
+                        measured_heat_loss_range: app.measured_heatloss_range,
+                        measured_design_flowT: app.design_flowT,
+                        measured_design_flowT_range: app.design_flowT_range
                     }
                 };
 
@@ -1280,6 +1284,20 @@ if (isset($session['admin']) && $session['admin']) {
         return { m: m, b: b };
     }
 
+    // Weighted OLS with the slope clamped to >= 0. A negative weather-compensation
+    // slope (flow temperature falling as it gets colder) is physically implausible
+    // and usually an artifact of residual DHW contamination, so fall back to the
+    // horizontal weighted-mean line instead.
+    function clampedWeightedOLS(pts) {
+        var fit = weightedOLS(pts);
+        if (fit.m < 0) {
+            var Sw = 0, Swy = 0;
+            for (var i = 0; i < pts.length; i++) { Sw += pts[i].w; Swy += pts[i].w * pts[i].y; }
+            fit = { m: 0, b: Sw > 0 ? Swy / Sw : 0 };
+        }
+        return fit;
+    }
+
     // Weighted residual standard deviation of points [{x,y,w}] about a line fit {m,b}
     function weightedResidStd(pts, fit) {
         var sw = 0, swr2 = 0;
@@ -1314,7 +1332,7 @@ if (isset($session['admin']) && $session['admin']) {
         if (all.length < 3) return null;
 
         var pts = all.slice();
-        var fit = weightedOLS(pts);
+        var fit = clampedWeightedOLS(pts);
         var s = 0;
 
         // Asymmetric trimming toward the lower (space-heating) envelope.
@@ -1332,7 +1350,7 @@ if (isset($session['admin']) && $session['admin']) {
             if (kept.length === pts.length || kept.length < 3) break;
 
             pts = kept;
-            fit = weightedOLS(pts);
+            fit = clampedWeightedOLS(pts);
         }
 
         // Final symmetric pass: re-admit legitimate band scatter within kBand of the
@@ -1344,7 +1362,7 @@ if (isset($session['admin']) && $session['admin']) {
             });
             if (band.length >= 3) {
                 pts = band;
-                fit = weightedOLS(pts);
+                fit = clampedWeightedOLS(pts);
             }
         }
 
