@@ -181,6 +181,79 @@ function home_controller() {
 
 
 
+    // Latest topics in the forum's heat pump category, proxied server-side
+    // (the Discourse API sends no CORS headers) and cached for 10 minutes.
+    if ($route->action == "forum_topics") {
+        $route->format = "json";
+
+        $cache_file = sys_get_temp_dir()."/hpmon_home_forum_topics.json";
+        if (file_exists($cache_file) && (time() - filemtime($cache_file)) < 600) {
+            $cached = json_decode(file_get_contents($cache_file));
+            if ($cached !== null) return $cached;
+        }
+
+        $context = stream_context_create(array("http" => array(
+            "timeout" => 5,
+            "user_agent" => "HeatpumpMonitor.org home page"
+        )));
+        $response = @file_get_contents("https://community.openenergymonitor.org/c/hardware/heatpump/47/l/latest.json", false, $context);
+        $data = $response !== false ? json_decode($response) : null;
+
+        if ($data === null || !isset($data->topic_list->topics)) {
+            // Forum unreachable: serve the stale cache if there is one
+            if (file_exists($cache_file)) {
+                $cached = json_decode(file_get_contents($cache_file));
+                if ($cached !== null) return $cached;
+            }
+            return array();
+        }
+
+        // The topic list references posters by user id; avatars live in a
+        // separate users array
+        $users = array();
+        foreach ($data->users as $user) {
+            $avatar = str_replace("{size}", "96", $user->avatar_template);
+            if (substr($avatar, 0, 1) == "/") $avatar = "https://community.openenergymonitor.org".$avatar;
+            $users[$user->id] = array("username" => $user->username, "avatar" => $avatar);
+        }
+
+        $topics = array();
+        foreach ($data->topic_list->topics as $topic) {
+            // Skip the pinned "About this category" style topics
+            if (!empty($topic->pinned)) continue;
+
+            // Only show established discussions
+            if ($topic->posts_count <= 10) continue;
+
+            $posters = array();
+            foreach ($topic->posters as $poster) {
+                if (isset($users[$poster->user_id])) $posters[] = $users[$poster->user_id];
+            }
+
+            $tags = array();
+            if (isset($topic->tags)) {
+                foreach ($topic->tags as $tag) $tags[] = is_object($tag) ? $tag->name : $tag;
+            }
+
+            $topics[] = array(
+                "id" => (int) $topic->id,
+                "title" => $topic->title,
+                "url" => "https://community.openenergymonitor.org/t/".$topic->slug."/".$topic->id,
+                "replies" => max(0, (int) $topic->posts_count - 1),
+                "views" => (int) $topic->views,
+                "likes" => (int) $topic->like_count,
+                "bumped_at" => $topic->bumped_at,
+                "solved" => !empty($topic->has_accepted_answer),
+                "tags" => $tags,
+                "posters" => $posters
+            );
+            if (count($topics) >= 5) break;
+        }
+
+        @file_put_contents($cache_file, json_encode($topics));
+        return $topics;
+    }
+
     return false;
 }
 

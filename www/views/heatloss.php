@@ -65,17 +65,36 @@ if (isset($session['admin']) && $session['admin']) {
                 <div class="card h-100 shadow-sm border-top border-3 border-primary">
                     <div class="card-body text-center">
                         <div class="text-secondary text-uppercase small mb-2">Heat demand*</div>
-                        <div class="fs-2 fw-bold">{{ measured_heatloss | toFixed(2) }} <span class="fs-5 fw-normal text-muted">kW</span></div>
-                        <div class="text-muted small mt-1">&plusmn; {{ measured_heatloss_range | toFixed(2) }} kW &middot; 80% PI</div>
+                        <div class="fs-2 fw-bold" v-if="heatloss_mode != 'manual'">{{ measured_heatloss | toFixed(2) }} <span class="fs-5 fw-normal text-muted">kW</span></div>
+                        <div class="input-group justify-content-center mx-auto" style="max-width:200px" v-else>
+                            <input type="text" class="form-control text-center fw-bold" v-model.number="measured_heatloss" @change="update_fit">
+                            <span class="input-group-text">kW</span>
+                        </div>
+                        <div class="input-group input-group-sm justify-content-center mx-auto mt-2" style="max-width:200px" v-if="heatloss_mode == 'manual'">
+                            <span class="input-group-text">Base DT</span>
+                            <input type="text" class="form-control text-center" v-model.number="base_DT" @change="update_fit">
+                            <span class="input-group-text">°K</span>
+                        </div>
+                        <div class="text-muted small mt-1">&plusmn; {{ measured_heatloss_range | toFixed(2) }} kW<span v-if="heatloss_mode != 'manual'"> (Base DT: {{ base_DT | toFixed(1) }}K)</span></div>
+                        <div class="mt-2">
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button class="btn" :class="heatloss_mode == 'manual' ? 'btn-outline-primary' : 'btn-primary'" @click="set_heatloss_mode('auto')">Auto fit</button>
+                                <button class="btn" :class="heatloss_mode == 'manual' ? 'btn-primary' : 'btn-outline-primary'" @click="set_heatloss_mode('manual')">Manual</button>
+                            </div>
+                            <button class="btn btn-success btn-sm ms-2" v-if="enable_save" @click="save_heat_loss">Save</button>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-4" v-show="show_flowT">
+            <div class="col-md-4">
                 <div class="card h-100 shadow-sm border-top border-3 border-danger">
                     <div class="card-body text-center">
                         <div class="text-secondary text-uppercase small mb-2">Coldest day flow temperature*</div>
                         <div class="fs-2 fw-bold">{{ design_flowT | toFixed(1) }} <span class="fs-5 fw-normal text-muted">°C</span></div>
-                        <div class="text-muted small mt-1">&plusmn; {{ design_flowT_range | toFixed(1) }} °C &middot; 80% PI</div>
+                        <div class="text-muted small mt-1">&plusmn; {{ design_flowT_range | toFixed(1) }} °C</div>
+                        <button class="btn btn-sm mt-2" :class="show_flowT ? 'btn-danger' : 'btn-outline-danger'" @click="toggle_flowT">
+                            {{ show_flowT ? 'Hide on chart' : 'Show on chart' }}
+                        </button>
                     </div>
                 </div>
             </div>
@@ -103,13 +122,7 @@ if (isset($session['admin']) && $session['admin']) {
                     </select>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-6">
-                <div class="input-group">
-                    <span class="input-group-text">Show flow temperature</span>
-                    <span class="input-group-text"><input type="checkbox" v-model="show_flowT" @change="update_fit"></span>
-                </div>
-            </div>
-            <div class="col-lg-5 col-md-12 d-flex align-items-center gap-2" v-show="colour_by">
+            <div class="col-lg-5 col-md-12 align-items-center gap-2" :style="{display: colour_by ? 'flex' : 'none'}">
                 <span class="text-muted text-nowrap">{{ colour_label }}</span>
                 <span class="text-nowrap">{{ colour_min | toFixed(1) }}°C</span>
                 <div id="colour_scale_bar" class="flex-grow-1 border rounded" style="height:16px"></div>
@@ -133,38 +146,17 @@ if (isset($session['admin']) && $session['admin']) {
                 </div>
             </div>
 
-            <div class="col-lg-3 col-md-6">
+            <div class="col-lg-5 col-md-6">
                 <div class="input-group mb-3">
-                    <span class="input-group-text">Target room T</span>
-                    <input type="text" class="form-control" v-model.number="target_roomT" @change="update_design_DT">
+                    <span class="input-group-text" title="Used to calculate the design &Delta;T">Target room T</span>
+                    <input type="text" class="form-control" v-model.number="target_roomT" @change="update_target_roomT">
                     <span class="input-group-text">°C</span>
+                    <button class="btn" :class="fixed_room_tmp_enable ? 'btn-primary' : 'btn-outline-primary'"
+                        @click="toggle_fixed_room_tmp"
+                        title="Use this fixed room temperature in place of monitored room temperature data">
+                        {{ fixed_room_tmp_enable ? 'Using as room T' : 'Use as room T' }}
+                    </button>
                 </div>
-            </div>
-        </div>
-
-        <div class="row mb-3">
-
-            <div class="col-lg-3 col-md-6">
-                <div class="input-group mb-3">
-                    <span class="input-group-text">Base DT</span>
-                    <input type="text" class="form-control" v-model.number="base_DT" @change="update_fit">
-                    <span class="input-group-text">°K</span>
-                </div>
-            </div>
-
-            <div class="col-lg-4 col-md-6">
-                <div class="input-group mb-3">
-                    <span class="input-group-text">Heat demand</span>
-                    <input type="text" class="form-control" v-model.number="measured_heatloss" @change="update_fit">
-                    <span class="input-group-text">kW</span>
-                    <button class="btn btn-primary" @click="save_heat_loss" v-if="enable_save">Save</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="row mb-3">
-            <div class="col">
-                <button class="btn btn-primary" @click="auto_fit">Auto fit</button>
             </div>
         </div>
 
@@ -174,35 +166,27 @@ if (isset($session['admin']) && $session['admin']) {
                     <span class="input-group-text">Calculated heat loss</span>
                     <input type="text" class="form-control" v-model.number="calculated_heatloss" :disabled="!enable_save" @change="update_fit">
                     <span class="input-group-text">kW</span>
+                    <button class="btn btn-primary" @click="save_calculated_heat_loss" v-if="enable_save">Save</button>
                 </div>
             </div>
-            <div class="col-lg-4 col-md-6">
+            <div class="col-lg-5 col-md-6" v-if="hp_max_test_count > 0">
                 <div class="input-group mb-3">
-                    <span class="input-group-text">Heat pump datasheet capacity</span>
-                    <input type="text" class="form-control" v-model.number="datasheet_hp_max" :disabled="!enable_save" @change="update_fit">
-                    <span class="input-group-text">kW</span>
+                    <span class="input-group-text">Max output test</span>
+                    <input type="text" class="form-control" :value="hp_max_test_text" disabled>
+                    <a class="btn btn-primary" :href="heatpump_url" v-if="heatpump_url" title="View heat pump database entry"><i class="fas fa-database"></i></a>
                 </div>
             </div>
-            <div class="col-lg-4 col-md-6">
+            <div class="col-lg-5 col-md-6" v-else>
                 <div class="input-group mb-3">
-                    <span class="input-group-text">Max capacity test result</span>
-                    <input type="text" class="form-control" v-model.number="measured_hp_max" :disabled="!enable_save" @change="update_fit">
+                    <span class="input-group-text">Badge capacity</span>
+                    <input type="text" class="form-control" :value="badge_capacity" disabled>
                     <span class="input-group-text">kW</span>
-                    <button class="btn btn-primary" @click="save_capacity_figures" v-if="enable_save">Save</button>
+                    <span class="input-group-text">No max output test available</span>
+                    <a class="btn btn-primary" :href="heatpump_url" v-if="heatpump_url" title="View heat pump database entry"><i class="fas fa-database"></i></a>
                 </div>
             </div>
         </div>
 
-        <div class="row mb-3">
-            <div class="col-lg-4 col-md-6">
-                <div class="input-group mb-3">
-                    <span class="input-group-text">Fixed room temperature</span>
-                    <span class="input-group-text"><input type="checkbox" v-model="fixed_room_tmp_enable" @change="load" /></span>
-                    <input type="text" class="form-control" v-model.number="fixed_room_tmp" @change="load">
-                    <span class="input-group-text">°C</span>
-                </div>
-            </div>
-        </div>
 
         <div class="row">
 
@@ -211,13 +195,12 @@ if (isset($session['admin']) && $session['admin']) {
 
             <p><b>Heat demand:</b> The measured heat output shown here is the combined heat output of space heating and hot water.
                 While it doesnt compare directly to the heat loss of the building, it is a good indicator of the heat demand from the heat pump.
-                Technically the space heating demand from a heat pump should be the calculated heat loss of the building minus gains. These gains
-                are not taken into account in the sizing of heat pumps when following the BS EN 12831:2003 simplified calculation method that most
-                heat loss tools use but are at least in a typical 100m2 house not that different from the average heat demand for hot water and
-                so could be viewed as cancelling out.
+                For a typical 100m2 house the extra head demand for hot water is similar to the reduction in heat demand from internal gains, so the measured heat output is often a good approximation of the heat loss of the building.
             </p>
 
-            <p><b>Flow temperature:</b> The flow temperature at design &Delta;T shown above will often be ~5K lower than the design flow temperature calculated via a heat loss calculation tool - even with an accurate heat loss. This is because heat loss calculation tools do not subtract internal gains or take into account the way thermal mass can help a building ride out low temperature extremes.
+            <p><b>Flow temperature:</b> The flow temperature at design &Delta;T shown above will often be lower than the design flow temperature calculated via a heat loss calculation tool - even with an accurate heat loss. This is because heat loss calculation tools do not subtract internal gains or take into account the way thermal mass can help a building ride out low temperature extremes.
+
+            <p><b>&plusmn; Uncertainty:</b> Linear regression 80% prediction interval. 8 out of 10 data points are expected to fall within this range.</p>
         </div>
         <div style="text-align:center; padding:20px 0">
           <a href="<?php echo $path; ?>system/view?id=<?php echo $systemid; ?>" class="btn btn-primary">Back to System</a>
@@ -234,7 +217,6 @@ if (isset($session['admin']) && $session['admin']) {
 
     var hp_output = 0;
     var heat_loss = 0;
-    var hp_max = 0;
     var data = [];
     var series = [];
     var systemid_map = {};
@@ -257,16 +239,20 @@ if (isset($session['admin']) && $session['admin']) {
             target_roomT: 20,
             measured_heatloss: 0,
             measured_heatloss_range: 500,
+            heatloss_mode: 'auto',
             calculated_heatloss: 0,
-            datasheet_hp_max: 0,
-            measured_hp_max: '',
+            badge_capacity: 0,
+            heatpump_url: '',
+            hp_max_test_count: 0,
+            hp_max_test_mean: 0,
+            hp_max_test_min: 0,
+            hp_max_test_max: 0,
             fixed_room_tmp_enable: 0,
-            fixed_room_tmp: 20,
             room_temp_alert: "",
             colour_by: "",
             colour_min: 0,
             colour_max: 0,
-            show_flowT: true,
+            show_flowT: false,
             design_flowT: 0,
             design_flowT_range: 0
 
@@ -280,11 +266,18 @@ if (isset($session['admin']) && $session['admin']) {
                     'roomT': 'Room temperature (°C)'
                 };
                 return labels[this.colour_by] || '';
+            },
+            hp_max_test_text: function() {
+                if (this.hp_max_test_count == 1) {
+                    return this.hp_max_test_mean.toFixed(1) + " kW (1 test)";
+                }
+                return this.hp_max_test_mean.toFixed(1) + " kW mean, " + this.hp_max_test_min.toFixed(1) + "–" + this.hp_max_test_max.toFixed(1) + " kW range (" + this.hp_max_test_count + " tests)";
             }
         },
         methods: {
             change_system: function() {
                 app.fixed_room_tmp_enable = 0;
+                app.target_roomT = 20;
                 load();
             },
             load: function() {
@@ -293,10 +286,33 @@ if (isset($session['admin']) && $session['admin']) {
             update_fit: function() {
                 draw();
             },
+            toggle_flowT: function() {
+                this.show_flowT = !this.show_flowT;
+                draw();
+            },
+            set_heatloss_mode: function(mode) {
+                this.heatloss_mode = mode;
+                if (mode == 'auto') {
+                    this.auto_fit();
+                }
+            },
             update_design_DT: function() {
                 // Design DT is derived from the target room and design outside temperatures
                 app.design_DT = Math.round((app.target_roomT - app.design_outsideT) * 10) / 10;
                 draw();
+            },
+            update_target_roomT: function() {
+                app.design_DT = Math.round((app.target_roomT - app.design_outsideT) * 10) / 10;
+                // When used as a fixed room temperature, reload to re-apply it to the data
+                if (app.fixed_room_tmp_enable) {
+                    load();
+                } else {
+                    draw();
+                }
+            },
+            toggle_fixed_room_tmp: function() {
+                app.fixed_room_tmp_enable = app.fixed_room_tmp_enable ? 0 : 1;
+                load();
             },
             save_heat_loss: function() {
 
@@ -327,19 +343,15 @@ if (isset($session['admin']) && $session['admin']) {
                     }
                 });
             },
-            save_capacity_figures: function () {
+            save_calculated_heat_loss: function () {
 
                 var z = systemid_map[app.systemid];
-                app.system_list[z].hp_max_output = app.datasheet_hp_max;
                 app.system_list[z].heat_loss = app.calculated_heatloss;
-                app.system_list[z].hp_max_output_test = app.measured_hp_max;
-                
+
                 var data_to_save = {
                     id: app.systemid,
                     data: {
-                        hp_max_output: app.datasheet_hp_max,
-                        heat_loss: app.calculated_heatloss,
-                        hp_max_output_test: app.measured_hp_max
+                        heat_loss: app.calculated_heatloss
                     }
                 };
 
@@ -356,6 +368,7 @@ if (isset($session['admin']) && $session['admin']) {
             },
             next_system: function(direction) {
                 app.fixed_room_tmp_enable = 0;
+                app.target_roomT = 20;
                 var z = systemid_map[app.systemid] * 1;
                 z += direction;
                 if (z >= 0 && z < app.system_list.length) {
@@ -461,13 +474,16 @@ if (isset($session['admin']) && $session['admin']) {
 
         hp_output = app.system_list[z].hp_output;
         heat_loss = app.system_list[z].heat_loss;
-        hp_max = app.system_list[z].hp_max_output;
+        app.badge_capacity = hp_output;
+        app.heatpump_url = app.system_list[z].heatpump_url || '';
 
         app.measured_heatloss = app.system_list[z].measured_heat_loss;
         app.measured_heatloss_range = app.system_list[z].measured_heat_loss_range;
         app.calculated_heatloss = app.system_list[z].heat_loss;
-        app.datasheet_hp_max = app.system_list[z].hp_max_output;
-        app.measured_hp_max = app.system_list[z].hp_max_output_test;
+
+        // Max output test results from the heat pump database, matched via the
+        // system's make & model (heatpump_model_id resolved server side)
+        load_max_cap_tests(app.system_list[z].heatpump_model_id);
 
         app.base_DT = app.system_list[z].measured_base_DT;
         app.design_DT = app.system_list[z].measured_design_DT;
@@ -479,9 +495,12 @@ if (isset($session['admin']) && $session['admin']) {
             app.measured_heatloss_range = 0.5;
         }
 
+        // No saved heat demand fit for this system: fit automatically once the daily data has loaded
+        var auto_fit_needed = !(app.measured_heatloss > 0);
+
         // Design condition: prefer the system's Outside design temperature (from meta) with
-        // a target room temperature (default 20), from which the design DT is derived.
-        app.target_roomT = 20;
+        // the target room temperature (reset to 20 on system change), from which the
+        // design DT is derived.
         var design_temp = app.system_list[z].design_temp;
         if (design_temp !== null && design_temp !== "" && !isNaN(design_temp)) {
             app.design_outsideT = design_temp * 1;
@@ -554,22 +573,22 @@ if (isset($session['admin']) && $session['admin']) {
                 // auto enable fixed room temp if no room temp data
                 if (valid_room_temp == 0) {
                     app.fixed_room_tmp_enable = 1;
-                    app.room_temp_alert = "No room temperature data found, fixed room temperature enabled\nSet fixed room temperature in the box below (default 20°C)";
+                    app.room_temp_alert = "No room temperature data found, using the target room temperature as a fixed room temperature (default 20°C)";
                 } else {
                     app.room_temp_alert = "";
                 }
 
-                // Apply fixed room temperature
+                // Apply the target room temperature as a fixed room temperature
                 if (app.fixed_room_tmp_enable) {
                     for (var i = 0; i < data[mode + '_roomT_mean'].length; i++) {
-                        data[mode + '_roomT_mean'][i][1] = app.fixed_room_tmp;
+                        data[mode + '_roomT_mean'][i][1] = app.target_roomT;
                     }
                 }
 
                 // Create series with room - outside x-axis and heatpump heat output y-axis
-                max_heat = app.calculated_heatloss;
-                if (max_heat < hp_output) max_heat = hp_output;
-                if (max_heat < hp_max) max_heat = hp_max;
+                // (max_heat tracks the data only; reference lines are folded into the
+                // y-axis scale in draw, where async-loaded test results are available)
+                max_heat = 0;
 
                 var total_elec_kwh = 0;
                 var total_heat_kwh = 0;
@@ -617,6 +636,49 @@ if (isset($session['admin']) && $session['admin']) {
                 app.total_cool_kwh = total_cool_kwh;
                 app.total_cop = total_heat_kwh / total_elec_kwh;
 
+                if (auto_fit_needed && data['heat_vs_dt'].length >= 3) {
+                    app.auto_fit();
+                } else {
+                    draw();
+                }
+            }
+        });
+    }
+
+    // Load approved max output test results for the system's heat pump model from
+    // the heat pump database and compute mean, min & max heat output in kW
+    function load_max_cap_tests(model_id) {
+        app.hp_max_test_count = 0;
+        app.hp_max_test_mean = 0;
+        app.hp_max_test_min = 0;
+        app.hp_max_test_max = 0;
+
+        if (!model_id) {
+            draw();
+            return;
+        }
+
+        $.ajax({
+            type: "GET",
+            url: path + "heatpump/max_cap_test/list",
+            data: { 'id': model_id },
+            dataType: "json",
+            success: function(tests) {
+                var count = 0, sum = 0, min = null, max = null;
+                for (var i = 0; i < tests.length; i++) {
+                    if (tests[i].review_status != 1) continue;
+                    var heat_kw = tests[i].heat * 0.001;
+                    sum += heat_kw;
+                    if (min === null || heat_kw < min) min = heat_kw;
+                    if (max === null || heat_kw > max) max = heat_kw;
+                    count++;
+                }
+                if (count > 0) {
+                    app.hp_max_test_count = count;
+                    app.hp_max_test_mean = sum / count;
+                    app.hp_max_test_min = min;
+                    app.hp_max_test_max = max;
+                }
                 draw();
             }
         });
@@ -651,19 +713,47 @@ if (isset($session['admin']) && $session['admin']) {
     // Reference-line labels, drawn by the custom plugin below
     var ref_labels = [];
 
-    // Custom plugin: draw text labels next to the reference lines
+    // Custom plugin: draw text labels next to the reference lines.
+    // Labels that would overlap (reference lines close together) are pushed apart
+    // vertically, and each label gets a white halo so it stays legible when it
+    // crosses a line or the max output test band.
     var refLabelPlugin = {
         id: 'reflabels',
         afterDatasetsDraw: function(c) {
             var ctx = c.ctx;
             var xs = c.scales.x, ys = c.scales.y;
-            ctx.save();
-            ctx.fillStyle = '#666';
-            ctx.font = '13px sans-serif';
-            ctx.textBaseline = 'bottom';
+            var lineH = 16; // minimum vertical spacing between labels in px
+
+            // Desired positions (y is the text bottom edge, textBaseline 'bottom')
+            var items = [];
             for (var k = 0; k < ref_labels.length; k++) {
                 var L = ref_labels[k];
-                ctx.fillText(L.text, xs.getPixelForValue(L.x) + 4, ys.getPixelForValue(L.y) + (L.dy || 0));
+                items.push({
+                    text: L.text,
+                    x: xs.getPixelForValue(L.x) + 4,
+                    y: ys.getPixelForValue(L.y) + (L.dy || 0)
+                });
+            }
+
+            // Resolve collisions: top-to-bottom, push each label below the one above
+            items.sort(function(a, b) { return a.y - b.y; });
+            var min_y = c.chartArea.top + lineH;
+            for (var k = 0; k < items.length; k++) {
+                if (items[k].y < min_y) items[k].y = min_y;
+                if (k > 0 && items[k].y - items[k - 1].y < lineH) {
+                    items[k].y = items[k - 1].y + lineH;
+                }
+            }
+
+            ctx.save();
+            ctx.font = '13px sans-serif';
+            ctx.textBaseline = 'bottom';
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+            ctx.fillStyle = '#666';
+            for (var k = 0; k < items.length; k++) {
+                ctx.strokeText(items[k].text, items[k].x, items[k].y);
+                ctx.fillText(items[k].text, items[k].x, items[k].y);
             }
             ctx.restore();
         }
@@ -718,6 +808,9 @@ if (isset($session['admin']) && $session['admin']) {
     };
 
     function draw() {
+
+        // Daily stats and max output tests load asynchronously; wait for the stats
+        if (!data['heat_vs_dt']) return;
 
         // Left hand edge of chart: minimum DT in the data (can be negative when cooling), capped at 0
         var min_dt = 0;
@@ -802,18 +895,29 @@ if (isset($session['admin']) && $session['admin']) {
         datasets.push(ref_line(min_dt, app.calculated_heatloss, '#808080', 2));
         if (app.calculated_heatloss > 0) ref_labels.push({ x: min_dt, y: app.calculated_heatloss, text: 'Heat loss value on form', dy: -4 });
 
-        datasets.push(ref_line(min_dt, hp_output, '#000000', 2));
-        if (hp_output > 0) ref_labels.push({ x: min_dt, y: hp_output, text: 'Heatpump badge capacity', dy: -4 });
-
-        if (app.datasheet_hp_max > 0) {
-            datasets.push(ref_line(min_dt, app.datasheet_hp_max, '#aa0000', 2));
-            var dy = ((hp_output - app.datasheet_hp_max) < 0.5) ? 14 : -4;
-            ref_labels.push({ x: min_dt, y: app.datasheet_hp_max, text: 'Heatpump datasheet capacity', dy: dy });
+        // Hide the badge capacity line once a max output test is available
+        if (app.hp_max_test_count == 0) {
+            datasets.push(ref_line(min_dt, hp_output, '#000000', 2));
+            if (hp_output > 0) ref_labels.push({ x: min_dt, y: hp_output, text: 'Heatpump badge capacity', dy: -4 });
         }
 
-        if (app.measured_hp_max > 0) {
-            datasets.push(ref_line(min_dt, app.measured_hp_max, '#cc8888', 2));
-            ref_labels.push({ x: min_dt, y: app.measured_hp_max, text: 'Max capacity test result', dy: -4 });
+        // Max output test results from the heat pump database: a shaded min-max band
+        // showing the range across tests of this heat pump model, labelled at its edges
+        if (app.hp_max_test_count > 0) {
+            if (app.hp_max_test_count > 1 && app.hp_max_test_max > app.hp_max_test_min) {
+                var band_top = ref_line(min_dt, app.hp_max_test_max, 'rgba(0,0,0,0)', 0);
+                band_top.series_type = 'band'; // no line shadow
+                datasets.push(band_top);
+                var band_bottom = ref_line(min_dt, app.hp_max_test_min, 'rgba(0,0,0,0)', 0);
+                band_bottom.series_type = 'band';
+                band_bottom.fill = '-1';
+                band_bottom.backgroundColor = 'rgba(204,136,136,0.2)';
+                datasets.push(band_bottom);
+                /*ref_labels.push({ x: min_dt, y: app.hp_max_test_max, text: 'Max output test', dy: -4 });*/
+                ref_labels.push({ x: min_dt, y: app.hp_max_test_min, text: 'Max output test range', dy: -4 });
+            } else {
+                ref_labels.push({ x: min_dt, y: app.hp_max_test_mean, text: 'Max output test result', dy: -4 });
+            }
         }
 
         // Measured heat loss sloped line with automated 80% prediction interval band
@@ -865,22 +969,24 @@ if (isset($session['admin']) && $session['admin']) {
         // inverts the weather-compensation slope. To recover the space-heating line we
         // weight each day by its modelled space-heating demand, w = max(0, DT - base_DT):
         // summer/DHW-only days (below the balance point) drop out, cold days dominate.
+        // The fit always runs so the coldest day flow temperature card is always
+        // populated; the checkbox only toggles the flow series on the chart.
+        var flow_points = [];
+        for (var i = 0; i < data['heat_vs_dt'].length; i++) {
+            var oi = data['heat_vs_dt'][i][2];
+            var ft = data['weighted_flowT'][oi][1];
+            if (ft > 0) flow_points.push([data['heat_vs_dt'][i][0], ft, oi]);
+        }
+
+        var ffit = calculateWeightedFlowFit(flow_points, 0, app.base_DT, 5);
+
+        // Mark which points the fit actually used (space-heating regime), to shade the rest
+        var flow_inlier = {};
+        if (ffit) {
+            for (var q = 0; q < ffit.inliers.length; q++) flow_inlier[ffit.inliers[q].i] = true;
+        }
+
         if (app.show_flowT) {
-            var flow_points = [];
-            for (var i = 0; i < data['heat_vs_dt'].length; i++) {
-                var oi = data['heat_vs_dt'][i][2];
-                var ft = data['weighted_flowT'][oi][1];
-                if (ft > 0) flow_points.push([data['heat_vs_dt'][i][0], ft, oi]);
-            }
-
-            var ffit = calculateWeightedFlowFit(flow_points, 0, app.base_DT, 5);
-
-            // Mark which points the fit actually used (space-heating regime), to shade the rest
-            var flow_inlier = {};
-            if (ffit) {
-                for (var q = 0; q < ffit.inliers.length; q++) flow_inlier[ffit.inliers[q].i] = true;
-            }
-
             var flow_scatter = [], flow_colour = [];
             for (var i = 0; i < flow_points.length; i++) {
                 flow_scatter.push({ x: flow_points[i][0], y: flow_points[i][1], i: flow_points[i][2] });
@@ -899,24 +1005,28 @@ if (isset($session['admin']) && $session['admin']) {
                 showLine: false,
                 series_type: 'flow'
             });
+        }
 
-            if (ffit && app.design_DT > app.base_DT) {
-                app.design_flowT = (ffit.m * app.design_DT + ffit.b).toFixed(1) * 1;
+        if (ffit && app.design_DT > app.base_DT) {
+            app.design_flowT = (ffit.m * app.design_DT + ffit.b).toFixed(1) * 1;
 
-                // Fit line
+            // Fit line
+            if (app.show_flowT) {
                 datasets.push({
                     data: [{ x: min_dt, y: ffit.m * min_dt + ffit.b }, { x: app.design_DT, y: ffit.m * app.design_DT + ffit.b }],
                     yAxisID: 'y1', borderColor: '#d9534f', borderWidth: 2,
                     pointRadius: 0, pointHitRadius: 0, showLine: true, fill: false, tension: 0, series_type: 'line'
                 });
+            }
 
-                // 80% prediction interval about the flow temperature line, from the
-                // space-heating points the fit retained
-                var flow_inliers = ffit.inliers.map(function(p) { return [p.x, p.y]; });
-                var fpi = calculatePIStats(flow_inliers, ffit.m, ffit.b, -Infinity);
-                if (fpi) {
-                    app.design_flowT_range = piHalfWidth(fpi, app.design_DT, PI_Z).toFixed(1) * 1;
+            // 80% prediction interval about the flow temperature line, from the
+            // space-heating points the fit retained
+            var flow_inliers = ffit.inliers.map(function(p) { return [p.x, p.y]; });
+            var fpi = calculatePIStats(flow_inliers, ffit.m, ffit.b, -Infinity);
+            if (fpi) {
+                app.design_flowT_range = piHalfWidth(fpi, app.design_DT, PI_Z).toFixed(1) * 1;
 
+                if (app.show_flowT) {
                     var f_upper = [], f_lower = [];
                     var F_STEPS = 40;
                     for (var s3 = 0; s3 <= F_STEPS; s3++) {
@@ -935,11 +1045,17 @@ if (isset($session['admin']) && $session['admin']) {
                         pointRadius: 0, pointHitRadius: 0, showLine: true, fill: false, tension: 0, series_type: 'line'
                     });
                 }
-            } else {
-                app.design_flowT = 0;
-                app.design_flowT_range = 0;
             }
+        } else {
+            app.design_flowT = 0;
+            app.design_flowT_range = 0;
         }
+
+        // Y-axis scale: data maximum extended to include the reference lines
+        var y_max = max_heat;
+        if (app.calculated_heatloss > y_max) y_max = app.calculated_heatloss;
+        if (hp_output > y_max) y_max = hp_output;
+        if (app.hp_max_test_max > y_max) y_max = app.hp_max_test_max;
 
         var options = {
             responsive: true,
@@ -964,7 +1080,7 @@ if (isset($session['admin']) && $session['admin']) {
                 },
                 y: {
                     min: 0,
-                    max: max_heat * 1.1,
+                    max: y_max * 1.1,
                     title: { display: true, text: 'Heatpump heat output (kW)', color: '#333', font: { size: 14 } },
                     border: { display: false },
                     grid: { color: '#e6e6e6', tickColor: '#e6e6e6' },

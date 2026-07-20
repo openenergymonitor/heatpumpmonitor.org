@@ -939,6 +939,90 @@ global $path;
 .hpm-installer-chip .dot { width: 0.65rem; height: 0.65rem; border-radius: 50%; flex: none; }
 .hpm-installer-chip .count { color: var(--hpm-muted); font-weight: 500; }
 
+/* ---- forum topics: Discourse-style snapshot card ---- */
+.hpm-forum-card {
+    background: var(--hpm-card);
+    border: 1px solid var(--hpm-line);
+    border-radius: 1rem;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(20, 52, 74, 0.05);
+}
+.hpm-forum-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem 1rem;
+    padding: 1rem 1.4rem;
+    border-bottom: 1px solid var(--hpm-line);
+}
+.hpm-forum-head h3 { font-size: 1.0625rem; font-weight: 700; margin: 0; }
+.hpm-forum-src {
+    font-size: 0.8125rem;
+    color: var(--hpm-muted);
+    white-space: nowrap;
+}
+.hpm-forum-cols,
+.hpm-forum-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 7.6rem 3.4rem 3.4rem 4.2rem;
+    gap: 1rem;
+    align-items: center;
+    padding: 0.85rem 1.4rem;
+}
+.hpm-forum-cols {
+    padding-top: 0.55rem;
+    padding-bottom: 0.55rem;
+    border-bottom: 1px solid var(--hpm-line);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--hpm-muted);
+}
+.hpm-forum-cols span:not(:first-child) { text-align: center; }
+.hpm-forum-list { list-style: none; margin: 0; padding: 0; }
+.hpm-forum-list li + li { border-top: 1px solid var(--hpm-sky); }
+.hpm-forum-row {
+    text-decoration: none;
+    color: inherit;
+    transition: background-color 0.12s ease;
+}
+.hpm-forum-row:hover { background: var(--hpm-sky); color: inherit; }
+.hpm-forum-title {
+    display: block;
+    font-weight: 600;
+    font-size: 1.0313rem;
+    color: var(--hpm-ink);
+    line-height: 1.35;
+}
+.hpm-forum-row:hover .hpm-forum-title { color: var(--hpm-blue-deep); }
+.hpm-forum-title .bi-check-square-fill { color: var(--hpm-teal); font-size: 0.9em; }
+.hpm-forum-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.3rem; }
+.hpm-forum-tag {
+    display: inline-block;
+    padding: 0.05rem 0.5rem;
+    border-radius: 0.35rem;
+    background: var(--hpm-sky);
+    color: var(--hpm-muted);
+    font-size: 0.78125rem;
+    font-weight: 600;
+}
+.hpm-forum-posters { display: flex; gap: 0.3rem; }
+.hpm-forum-posters img {
+    width: 1.7rem;
+    height: 1.7rem;
+    border-radius: 50%;
+    flex: none;
+}
+.hpm-forum-num {
+    text-align: center;
+    font-size: 0.9375rem;
+    color: var(--hpm-muted);
+    font-variant-numeric: tabular-nums;
+}
+.hpm-forum-num.hpm-forum-replies { color: var(--hpm-ink-soft); font-weight: 600; }
+
 @media (max-width: 767.98px) {
     .hpm-section { padding: 3rem 0; }
     .hpm-hero { padding: 3.5rem 0 3rem; }
@@ -950,6 +1034,9 @@ global $path;
     .hpm-step-nav { flex-wrap: wrap; }
     .hpm-map-canvas { height: 21rem; }
     .hpm-map-cta { padding: 1.25rem; }
+    .hpm-forum-cols { display: none; }
+    .hpm-forum-row { grid-template-columns: minmax(0, 1fr) auto auto; gap: 0.75rem; }
+    .hpm-forum-posters, .hpm-forum-views { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1753,16 +1840,14 @@ global $path;
             <div class="hpm-eyebrow"><span class="hpm-eyebrow-num">05</span> Explore the data</div>
             <h2 class="hpm-display mb-3">Dig as deep as <span class="hpm-accent">you like</span>.</h2>
             <p class="hpm-lead mb-5">
-                Start with the league table of measured SCOP figures, then drill into any system
-                that interests you &mdash; electricity input, heat output, flow and return
-                temperatures, minute by minute. It&rsquo;s all open.
+                Start with the system list, explore performance, fabric and cost views. Click through to any system see the system dashboard and explore in more detail the context for each system.
             </p>
             <div class="row g-4">
                 <div class="col-md-6 col-xl-3">
                     <a class="hpm-explore-card" href="<?php echo $path; ?>system/list">
                         <span class="hpm-explore-icon"><i class="bi bi-trophy"></i></span>
-                        <h3>System league table</h3>
-                        <p>All 383 systems ranked by measured SCOP &mdash; filter by make, output, emitter type and flow temperature.</p>
+                        <h3>System list</h3>
+                        <p>All systems ranked by measured SPF &mdash; filter by make, output, emitter type and flow temperature.</p>
                         <span class="hpm-go">Browse systems <i class="bi bi-arrow-right"></i></span>
                     </a>
                 </div>
@@ -1794,11 +1879,69 @@ global $path;
         </div>
     </section>
 
-    <!-- ============ 06 · Add your system ============ -->
-    
+    <!-- ============ 06 · From the forum ============ -->
+    <!-- Latest topics in the heat pump category on the community forum,
+         fetched via home/forum_topics (a cached server-side proxy — the
+         Discourse API sends no CORS headers). -->
+
     <section class="hpm-section hpm-section-sky">
         <div class="container">
-            <div class="hpm-eyebrow"><span class="hpm-eyebrow-num">06</span> Join in</div>
+            <div class="hpm-eyebrow"><span class="hpm-eyebrow-num">06</span> Community</div>
+            <h2 class="hpm-display mb-3">Join the <span class="hpm-accent">forum</span>.</h2>
+            <p class="hpm-lead mb-5">
+                The data is only half the story. On the OpenEnergyMonitor community forum, owners, installers and researchers
+                compare notes on design, commissioning and tuning &mdash; here&rsquo;s what&rsquo;s being discussed right now.
+            </p>
+
+            <div class="hpm-forum-card" v-if="forum.length">
+                <div class="hpm-forum-head">
+                    <h3><i class="bi bi-chat-square-text" style="color:var(--hpm-blue-deep);"></i> Latest heat pump topics</h3>
+                    <span class="hpm-forum-src">community.openenergymonitor.org</span>
+                </div>
+                <div class="hpm-forum-cols" aria-hidden="true">
+                    <span>Topic</span><span>Posters</span><span>Replies</span><span>Views</span><span>Activity</span>
+                </div>
+                <ol class="hpm-forum-list">
+                    <li v-for="t in forum" :key="t.id">
+                        <a class="hpm-forum-row" :href="t.url" target="_blank" rel="noopener">
+                            <span>
+                                <span class="hpm-forum-title"><i v-if="t.solved" class="bi bi-check-square-fill" title="Solved"></i> {{ t.title }}</span>
+                                <span class="hpm-forum-tags" v-if="t.tags.length">
+                                    <span class="hpm-forum-tag" v-for="tag in t.tags">{{ tag }}</span>
+                                </span>
+                            </span>
+                            <span class="hpm-forum-posters">
+                                <img v-for="p in t.posters.slice(0, 4)" :src="p.avatar" :alt="p.username" :title="p.username" loading="lazy">
+                            </span>
+                            <span class="hpm-forum-num hpm-forum-replies">{{ t.replies }}</span>
+                            <span class="hpm-forum-num hpm-forum-views">{{ fmtViews(t.views) }}</span>
+                            <span class="hpm-forum-num">{{ forumAgo(t.bumped_at) }}</span>
+                        </a>
+                    </li>
+                </ol>
+                <a class="hpm-leaderboard-foot" href="https://community.openenergymonitor.org/c/hardware/heatpump/47" target="_blank" rel="noopener">
+                    Browse the heat pump category on the forum <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+
+            <div v-else-if="forumError" class="hpm-finder-empty">
+                <p class="mb-0">
+                    Couldn&rsquo;t load the latest forum topics right now &mdash;
+                    <a href="https://community.openenergymonitor.org/c/hardware/heatpump/47" target="_blank" rel="noopener">visit the forum directly</a>.
+                </p>
+            </div>
+
+            <div v-else class="hpm-finder-empty">
+                <p class="mb-0">Loading the latest forum topics&hellip;</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ 07 · Add your system ============ -->
+
+    <section class="hpm-section">
+        <div class="container">
+            <div class="hpm-eyebrow"><span class="hpm-eyebrow-num">07</span> Join in</div>
             <h2 class="hpm-display mb-3">Got a heat pump? <span class="hpm-accent">Put it on the map.</span></h2>
             <p class="hpm-lead mb-5">
                 Every shared system adds another measured data point &mdash; for the homeowner next
@@ -1892,6 +2035,9 @@ global $path;
             // Featured story: systems actively cooling over the last 7 days
             cooling: [],
             coolingError: false,
+            // Latest heat pump topics from the community forum
+            forum: [],
+            forumError: false,
             finder: Object.assign({}, FINDER_DEFAULTS),
             showCheapest: true,
             costTariff: "agile",
@@ -2007,6 +2153,20 @@ global $path;
                 .catch(function(error) {
                     console.error("cooling_systems:", error);
                     self.coolingError = true;
+                });
+
+            fetch(path + "home/forum_topics")
+                .then(function(response) {
+                    if (!response.ok) throw new Error("HTTP " + response.status);
+                    return response.json();
+                })
+                .then(function(data) {
+                    self.forum = data.slice(0, 5);
+                    if (!data.length) self.forumError = true;
+                })
+                .catch(function(error) {
+                    console.error("forum_topics:", error);
+                    self.forumError = true;
                 });
         },
         computed: {
@@ -2691,7 +2851,21 @@ global $path;
                 var mid = Math.floor(sorted.length / 2);
                 return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
             },
-            fmt: function(n) { return Math.round(n).toLocaleString(); }
+            fmt: function(n) { return Math.round(n).toLocaleString(); },
+            // Discourse-style compact relative time: 12m, 5h, 3d, 2mo
+            forumAgo: function(iso) {
+                var s = (Date.now() - new Date(iso).getTime()) / 1000;
+                if (s < 60) return "now";
+                if (s < 3600) return Math.round(s / 60) + "m";
+                if (s < 86400) return Math.round(s / 3600) + "h";
+                if (s < 2592000) return Math.round(s / 86400) + "d";
+                if (s < 31536000) return Math.round(s / 2592000) + "mo";
+                return Math.round(s / 31536000) + "y";
+            },
+            // Discourse-style view counts: 850, 1.2k
+            fmtViews: function(n) {
+                return n >= 1000 ? (n / 1000).toFixed(1).replace(/\.0$/, "") + "k" : "" + n;
+            }
         }
     });
 </script>
