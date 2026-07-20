@@ -7,7 +7,7 @@
  * fit changes can be tested and tuned headlessly without screenshots.
  *
  * Usage:
- *   php scripts/heatloss_harness.php <id[,id,...] | all> [--design=23] [--minDT=0] [--dump] [--save]
+ *   php scripts/heatloss_harness.php <id[,id,...] | all> [--design=23] [--minDT=0] [--flowdays=365] [--dump] [--save]
  *
  * Examples:
  *   php scripts/heatloss_harness.php 123
@@ -211,9 +211,11 @@ $dump = false;
 $sweep = false;
 $save = false;
 $kHigh = 1.25; $kLow = 3.0; $kBand = 2.0;
+$flow_days = 365;
 foreach ($args as $a) {
     if (strpos($a, '--design=') === 0) $design_DT_override = (float) substr($a, 9);
     else if (strpos($a, '--minDT=') === 0) $min_DT = (float) substr($a, 8);
+    else if (strpos($a, '--flowdays=') === 0) $flow_days = (float) substr($a, 11);
     else if (strpos($a, '--kHigh=') === 0) $kHigh = (float) substr($a, 8);
     else if (strpos($a, '--kLow=') === 0) $kLow = (float) substr($a, 7);
     else if (strpos($a, '--kBand=') === 0) $kBand = (float) substr($a, 8);
@@ -267,6 +269,7 @@ $fields = "timestamp,combined_heat_mean,combined_roomT_mean,combined_outsideT_me
 $summary = array();
 
 foreach ($ids as $systemid) {
+    $systemid = (int) $systemid;
 
     // Meta (location, saved design DT, outside design temperature)
     $meta_res = $mysqli->query("SELECT location, measured_design_DT, design_temp, hp_output, heat_loss FROM system_meta WHERE id=$systemid LIMIT 1");
@@ -294,16 +297,24 @@ foreach ($ids as $systemid) {
     // Detect valid room temperature; fall back to fixed 20 like the tool
     $rows = array();
     $valid_room = false;
+    $max_ts = 0;
     foreach ($lines as $line) {
         $parts = explode(",", $line);
         if (count($parts) != count($header)) continue;
         $rows[] = $parts;
         if ((float) $parts[$col['combined_roomT_mean']] > 0) $valid_room = true;
+        if ((int) $parts[$col['timestamp']] > $max_ts) $max_ts = (int) $parts[$col['timestamp']];
     }
+
+    // Flow temperature reflects the system's current weather-comp settings, which
+    // can change between seasons — so the flow fit only uses the most recent
+    // $flow_days of data. Heat demand is a property of the building: all data.
+    $flow_cutoff = $flow_days > 0 ? $max_ts - $flow_days * 86400 : -INF;
 
     // Build heat_vs_dt (mirrors the tool's filtering)
     $heat_vs_dt = array();
-    $flow_vs_dt = array();
+    $flow_vs_dt = array();      // all valid flow points (diagnostic profile)
+    $flow_fit_pts = array();    // recent window only: input to the flow fit
     foreach ($rows as $i => $parts) {
         $roomT = $valid_room ? (float) $parts[$col['combined_roomT_mean']] : 20;
         $data_length = (float) $parts[$col['combined_data_length']];
@@ -319,7 +330,10 @@ foreach ($ids as $systemid) {
         if ($cooling_kwh > 0) $y -= $cooling_kwh / 24.0;
 
         $heat_vs_dt[] = array($x, $y, $i);
-        if ($flowT > 0) $flow_vs_dt[] = array($x, $flowT, $i);
+        if ($flowT > 0) {
+            $flow_vs_dt[] = array($x, $flowT, $i);
+            if ((int) $parts[$col['timestamp']] >= $flow_cutoff) $flow_fit_pts[] = array($x, $flowT, $i);
+        }
     }
 
     if (count($heat_vs_dt) < 3) { echo "System $systemid ($location): only " . count($heat_vs_dt) . " valid points\n\n"; continue; }
@@ -350,10 +364,10 @@ foreach ($ids as $systemid) {
     }
 
     // Contamination-free reference: median flow temp of the coldest 10% of days
-    // (space-heating dominated, so a robust anchor for where design_flowT should sit)
+    // in the fit window (space-heating dominated, a robust anchor for design_flowT)
     $n_above_balance = 0;
-    foreach ($flow_vs_dt as $p) if ($p[0] - $base_DT > 0) $n_above_balance++;
-    $sorted_by_dt = $flow_vs_dt;
+    foreach ($flow_fit_pts as $p) if ($p[0] - $base_DT > 0) $n_above_balance++;
+    $sorted_by_dt = $flow_fit_pts;
     usort($sorted_by_dt, function($a, $b) { return $b[0] <=> $a[0]; });
     $decile = max(3, (int) ceil(count($sorted_by_dt) * 0.10));
     $cold_flow = array(); $cold_dt = array();
@@ -364,8 +378,8 @@ foreach ($ids as $systemid) {
     $cold_median = median_of($cold_flow);
     $cold_dt_min = count($cold_dt) ? min($cold_dt) : 0;
 
-    // Flow fit (demand-weighted + asymmetric trimming)
-    $ffit = calculateWeightedFlowFit($flow_vs_dt, $min_DT, $base_DT, 5, $kHigh, $kLow, $kBand);
+    // Flow fit (demand-weighted + asymmetric trimming) over the recent window
+    $ffit = calculateWeightedFlowFit($flow_fit_pts, $min_DT, $base_DT, 5, $kHigh, $kLow, $kBand);
     $design_flowT = null; $flow_pi_txt = 'n/a'; $flow_slope = null;
     $design_flowT_range = null;
     $n_inliers = $ffit ? count($ffit['inliers']) : 0;
@@ -390,11 +404,12 @@ foreach ($ids as $systemid) {
 
     printf("  ref:    coldest %d days (DT>=%.1f) median flowT=%.1f C  <-- design_flowT should be near/above this\n",
         $decile, $cold_dt_min, $cold_median);
+    $window_txt = $flow_days > 0 ? sprintf("last %.0fd: %d/%d pts", $flow_days, count($flow_fit_pts), count($flow_vs_dt)) : "all data";
     if ($design_flowT !== null) {
-        printf("  flow:   design_flowT=%.1f C  PI=%s  slope=%.3f C/K  inliers=%d/%d above-balance (excluded DHW=%d)  [kHigh=%.2f]\n",
-            $design_flowT, $flow_pi_txt, $flow_slope, $n_inliers, $n_above_balance, $n_above_balance - $n_inliers, $kHigh);
+        printf("  flow:   design_flowT=%.1f C  PI=%s  slope=%.3f C/K  inliers=%d/%d above-balance (excluded DHW=%d)  [kHigh=%.2f, %s]\n",
+            $design_flowT, $flow_pi_txt, $flow_slope, $n_inliers, $n_above_balance, $n_above_balance - $n_inliers, $kHigh, $window_txt);
     } else {
-        printf("  flow:   no fit (%d points above balance point)\n", $n_above_balance);
+        printf("  flow:   no fit (%d points above balance point, %s)\n", $n_above_balance, $window_txt);
     }
 
     // Persist the fit to system_meta (same fields the frontend Save button writes)
@@ -464,7 +479,7 @@ foreach ($ids as $systemid) {
     if ($sweep && $design_DT > $base_DT) {
         echo "  sweep kHigh -> design_flowT (slope, inliers):\n";
         foreach (array(2.0, 1.5, 1.25, 1.0, 0.75, 0.5) as $kh) {
-            $f = calculateWeightedFlowFit($flow_vs_dt, $min_DT, $base_DT, 8, $kh, $kLow, $kBand);
+            $f = calculateWeightedFlowFit($flow_fit_pts, $min_DT, $base_DT, 8, $kh, $kLow, $kBand);
             if ($f) {
                 printf("    kHigh=%.2f  flowT=%.1f C  slope=%+.3f C/K  inliers=%d\n",
                     $kh, $f['m'] * $design_DT + $f['b'], $f['m'], count($f['inliers']));

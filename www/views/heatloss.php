@@ -89,7 +89,7 @@ if (isset($session['admin']) && $session['admin']) {
             <div class="col-md-4">
                 <div class="card h-100 shadow-sm border-top border-3 border-danger">
                     <div class="card-body text-center">
-                        <div class="text-secondary text-uppercase small mb-2">Coldest day flow temperature*</div>
+                        <div class="text-secondary text-uppercase small mb-2">Design flow temperature*</div>
                         <div class="fs-2 fw-bold">{{ design_flowT | toFixed(1) }} <span class="fs-5 fw-normal text-muted">°C</span></div>
                         <div class="text-muted small mt-1">&plusmn; {{ design_flowT_range | toFixed(1) }} °C</div>
                         <button class="btn btn-sm mt-2" :class="show_flowT ? 'btn-danger' : 'btn-outline-danger'" @click="toggle_flowT">
@@ -198,7 +198,7 @@ if (isset($session['admin']) && $session['admin']) {
                 For a typical 100m2 house the extra head demand for hot water is similar to the reduction in heat demand from internal gains, so the measured heat output is often a good approximation of the heat loss of the building.
             </p>
 
-            <p><b>Flow temperature:</b> The flow temperature at design &Delta;T shown above will often be lower than the design flow temperature calculated via a heat loss calculation tool - even with an accurate heat loss. This is because heat loss calculation tools do not subtract internal gains or take into account the way thermal mass can help a building ride out low temperature extremes.
+            <p><b>Design flow temperature:</b> The flow temperature at design &Delta;T shown above will often be lower than the design flow temperature calculated via a heat loss calculation tool - even with an accurate heat loss. This is because heat loss calculation tools do not subtract internal gains or take into account the way thermal mass can help a building ride out low temperature extremes.
 
             <p><b>&plusmn; Uncertainty:</b> Linear regression 80% prediction interval. 8 out of 10 data points are expected to fall within this range.</p>
         </div>
@@ -975,14 +975,30 @@ if (isset($session['admin']) && $session['admin']) {
         // summer/DHW-only days (below the balance point) drop out, cold days dominate.
         // The fit always runs so the coldest day flow temperature card is always
         // populated; the checkbox only toggles the flow series on the chart.
+        // Flow temperature reflects the system's current weather-compensation
+        // settings, which owners change between seasons — so the fit only uses the
+        // most recent 12 months of data. (Heat demand is a property of the building
+        // and uses all data.) Older points still plot, shaded as excluded.
+        var last_ts = 0;
+        for (var i = 0; i < data[mode + '_heat_mean'].length; i++) {
+            if (data[mode + '_heat_mean'][i][0] > last_ts) last_ts = data[mode + '_heat_mean'][i][0];
+        }
+        var flow_cutoff = last_ts - 365 * 86400 * 1000;
+
         var flow_points = [];
+        var flow_fit_points = [];
         for (var i = 0; i < data['heat_vs_dt'].length; i++) {
             var oi = data['heat_vs_dt'][i][2];
             var ft = data['weighted_flowT'][oi][1];
-            if (ft > 0) flow_points.push([data['heat_vs_dt'][i][0], ft, oi]);
+            if (ft > 0) {
+                flow_points.push([data['heat_vs_dt'][i][0], ft, oi]);
+                if (data[mode + '_heat_mean'][oi][0] >= flow_cutoff) {
+                    flow_fit_points.push([data['heat_vs_dt'][i][0], ft, oi]);
+                }
+            }
         }
 
-        var ffit = calculateWeightedFlowFit(flow_points, 0, app.base_DT, 5);
+        var ffit = calculateWeightedFlowFit(flow_fit_points, 0, app.base_DT, 5);
 
         // Mark which points the fit actually used (space-heating regime), to shade the rest
         var flow_inlier = {};
