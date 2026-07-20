@@ -330,7 +330,7 @@ if (isset($session['admin']) && $session['admin']) {
                 }
             },
             auto_fit: function() {
-                var fit = calculateLineOfBestFit(data['heat_vs_dt'],app.auto_min_DT);
+                var fit = calculateRobustFit(data['heat_vs_dt'], app.auto_min_DT, 2.5, 3);
 
                 app.measured_heatloss = (fit.m * app.design_DT) + fit.b;
                 app.measured_heatloss = app.measured_heatloss.toFixed(2)*1;
@@ -939,6 +939,40 @@ if (isset($session['admin']) && $session['admin']) {
             m,
             b
         };
+    }
+
+    // Least-squares fit with iterative outlier trimming: fit, drop points whose
+    // residual exceeds k standard errors, refit; repeat until stable (or maxIter).
+    function calculateRobustFit(dataPoints, min_x, k, maxIter) {
+        var pts = dataPoints.filter(function(p) { return p[0] >= min_x; });
+        if (pts.length < 3) return calculateLineOfBestFit(dataPoints, min_x);
+
+        var fit = calculateLineOfBestFit(pts, -Infinity);
+
+        for (var iter = 0; iter < maxIter; iter++) {
+            // Residual standard error about the current line
+            var sse = 0;
+            for (var i = 0; i < pts.length; i++) {
+                var r = pts[i][1] - (fit.m * pts[i][0] + fit.b);
+                sse += r * r;
+            }
+            var s = Math.sqrt(sse / Math.max(1, pts.length - 2));
+            if (s <= 0) break;
+
+            // Keep only inliers (within k standard errors)
+            var thresh = k * s;
+            var kept = pts.filter(function(p) {
+                return Math.abs(p[1] - (fit.m * p[0] + fit.b)) <= thresh;
+            });
+
+            // Stop if nothing was trimmed, or too few points remain to fit
+            if (kept.length === pts.length || kept.length < 3) break;
+
+            pts = kept;
+            fit = calculateLineOfBestFit(pts, -Infinity);
+        }
+
+        return fit;
     }
 
     function calculateSlopeWithZeroIntercept(dataPoints) {
