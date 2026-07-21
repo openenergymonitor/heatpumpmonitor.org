@@ -1943,21 +1943,21 @@ global $path;
             <div class="hpm-eyebrow"><span class="hpm-eyebrow-num">07</span> Join in</div>
             <h2 class="hpm-display mb-3">Monitor your heat pump. <span class="hpm-accent">Share your data.</span></h2>
             <p class="hpm-lead mb-5">
-                Add your system to the open data resource and help others learn from your real world experience. You can explore your own system privately, and optionally share it publicly.
+                Monitor your own heat pump to see how it performs. Add your system to the open data resource and help others learn from your real world experience.
             </p>
             <div class="row g-4 mb-4">
                 <div class="col-md-4">
                     <div class="hpm-step-card">
                         <span class="hpm-step-num">1</span>
                         <h3>Install monitoring</h3>
-                        <p>A heat meter on the primary flow and return, an electricity meter on the heat pump supply together with our internet connected data logging box, records data every 10s giving you high resolution data on exactly what the heat pump is doing.
+                        <p>A heat meter on the primary flow and return, an electricity meter on the heat pump supply together with our internet connected data logging box, records data every 10s giving you high resolution data on exactly what the heat pump is doing moment to moment.
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="hpm-step-card">
                         <span class="hpm-step-num">2</span>
                         <h3>Explore privately</h3>
-                        <p>Use the heat pump dashboard on HeatpumpMonitor privately to explore the performance of your system, use the heat loss tool to compare your real world heat demand to the calculated value. <strong>If you are an installer</strong> track performance across multiple private systems.</p>  
+                        <p>Use the heat pump dashboard on HeatpumpMonitor privately to explore the performance of your system. <br><br><strong>If you are an installer:</strong> track performance across multiple private systems.</p>  
                     </div>
                 </div>
                 <div class="col-md-4">
