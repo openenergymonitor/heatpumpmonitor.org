@@ -1493,7 +1493,7 @@ global $path;
                             <div>
                                 <div class="hpm-winner-eyebrow">Top of the SCOPs</div>
                                 <div class="hpm-stat-value hpm-stat-teal">{{ spfRankedHomes[0].cop.toFixed(2) }}</div>
-                                <div class="hpm-stat-label">{{ spfRankedHomes[0].location }} &middot; {{ homeSubtitle(spfRankedHomes[0]) }}</div>
+                                <div class="hpm-stat-label">{{ spfRankedHomes[0].location }}<template v-if="spfRankedHomes[0].hp"> &middot; <span :style="{color: hpTypeColor(spfRankedHomes[0])}">{{ hpTypeLabel(spfRankedHomes[0]) }}</span></template> &middot; {{ homeSubtitle(spfRankedHomes[0]) }}</div>
                             </div>
                         </a>
                     </div>
@@ -1548,7 +1548,7 @@ global $path;
                             <li v-for="r in spfLeaders" style="padding:0;">
                                 <a class="hpm-leader-link" :href="path + 'system/view?id=' + r.h.id">
                                     <span class="hpm-rank">{{ r.rank }}</span>
-                                    <span><span class="hpm-place">{{ r.h.location }}</span><br><span class="hpm-model">{{ homeSubtitle(r.h) }}</span></span>
+                                    <span><span class="hpm-place">{{ r.h.location }}<template v-if="r.h.hp"> &middot; <span :style="{color: hpTypeColor(r.h)}">{{ hpTypeLabel(r.h) }}</span></template></span><br><span class="hpm-model">{{ homeSubtitle(r.h) }}</span></span>
                                     <span class="hpm-val"><span class="hpm-kwh">{{ r.h.cop.toFixed(2) }}</span><br><span class="hpm-temp">SPF</span></span>
                                 </a>
                             </li>
@@ -2722,6 +2722,16 @@ global $path;
         methods: {
             clearFinder: function() { this.finder = Object.assign({}, FINDER_DEFAULTS); },
             openSystem: function(id) { window.location = path + "system/view?id=" + id; },
+            // "Air Source" / "Ground Source" shown as "Air-source" / "Ground-source"
+            hpTypeLabel: function(h) {
+                return h.hp ? h.hp.replace(" Source", "-source") : "";
+            },
+            // Same source-type colours as the system list
+            hpTypeColor: function(h) {
+                if (h.hp === "Air Source") return "#4f8baa";
+                if (h.hp === "Ground Source") return "#938e03";
+                return "";
+            },
             // "Vaillant Arotherm Plus · 7 kW · 110 m²" from whichever fields are present
             homeSubtitle: function(h) {
                 var make_model = (h.manufacturer + " " + h.model).trim();
@@ -2967,8 +2977,8 @@ global $path;
         top.forEach(function(installer) {
             var chip = document.createElement("a");
             chip.className = "hpm-installer-chip";
-            chip.href = path + "map?filter=" + encodeURIComponent(installer.name);
-            chip.title = "Show " + installer.name + " systems on the map";
+            chip.href = path + "?filter=" + encodeURIComponent(installer.name) + "&period=all&minDays=0&errors=1";
+            chip.title = "Show " + installer.name + " systems in the system list";
 
             var dot = document.createElement("span");
             dot.className = "dot";
