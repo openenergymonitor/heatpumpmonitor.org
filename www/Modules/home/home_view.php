@@ -1055,8 +1055,8 @@ global $path;
                     <span class="hpm-hero-badge"><span class="hpm-dot"></span> Open-source heat pump performance data</span>
                     <h1>What makes a heat&nbsp;pump <span class="hpm-gradient-text">efficient</span> and <span class="hpm-gradient-text">cheap&nbsp;to&nbsp;run?</span></h1>
                     <p class="hpm-lead mb-4">
-                        HeatpumpMonitor.org gathers <strong>real world data from heat pumps</strong>
-                        across the UK and beyond. Systems are monitored using high accuracy <b>MID-certified electric and heat meters</b> - ensuring that the data is reliable and comparable to previous UK Gov funded trials.
+                        HeatpumpMonitor.org gathers <strong>real world data from {{ mid_metered_count }} heat pumps</strong>
+                        across the UK and beyond. Systems are monitored using high accuracy <b>MID-certified electric and heat meters</b> - ensuring that the data is reliable and can be compared to previous UK Gov funded trials.
                     </p>
                     <div class="d-flex flex-wrap gap-3 mb-5">
                         <a class="hpm-btn hpm-btn-primary" href="<?php echo $path; ?>">Explore the data <i class="bi bi-arrow-right"></i></a>
@@ -1070,13 +1070,13 @@ global $path;
                 <div class="col-6 col-lg-3">
                     <div class="hpm-stat-card">
                         <div class="hpm-stat-value">{{ systemCount || "…" }}</div>
-                        <div class="hpm-stat-label">MID H4 boundary monitored systems with at least one year of data out of {{ mid_metered_count }} MID monitored systems total.</div>
+                        <div class="hpm-stat-label">MID H4 boundary monitored systems with at least one year of data <b>out of {{ mid_metered_count }} MID monitored systems total.</b></div>
                     </div>
                 </div>
                 <div class="col-6 col-lg-3">
                     <div class="hpm-stat-card">
                         <div class="hpm-stat-value hpm-stat-teal">{{ meanSpfH4 || "…" }}</div>
-                        <div class="hpm-stat-label">Mean SPF H4</div>
+                        <div class="hpm-stat-label">Mean SPF H4 - units of heat delivered per unit of electricity consumed.</div>
                     </div>
                 </div>
                 <div class="col-6 col-lg-3">
@@ -1096,20 +1096,20 @@ global $path;
     </section>
 
     <!-- ============ Featured data story ============ -->
-    <!-- Live cooling activity over the last 7 days, from the server-embedded cooling_systems dataset -->
+    <!-- Live cooling activity over the last 30 days, from the server-embedded cooling_systems dataset -->
     <section class="hpm-section hpm-section-sky pt-0">
         <div class="container">
             <div class="hpm-featured">
                 <div class="d-flex flex-wrap align-items-center gap-3 mb-4">
-                    <span class="hpm-chip"><span class="hpm-dot"></span> Right now &middot; UK heatwave</span>
-                    <span class="hpm-chip-plain">Featured this week</span>
+                    <span class="hpm-chip"><span class="hpm-dot"></span> &middot; UK heatwave</span>
+                    <span class="hpm-chip-plain">Featured</span>
                 </div>
                 <div class="row g-4 g-lg-5 align-items-start" v-if="cooling.length">
                     <div class="col-lg-7">
                         <h2 class="mb-3"><i class="bi bi-sun" style="color:#f5c26b;"></i> Who&rsquo;s keeping cool?</h2>
                         <p class="mb-4">
                             While we usually focus on winter heating, heat pumps can also be configured (with care) to provide cooling in the summer. 
-                            There are <strong>{{ cooling.length }} systems</strong> on HeatpumpMonitor that have provided active cooling over the last 7 days.
+                            There are <strong>{{ cooling.length }} systems</strong> on HeatpumpMonitor that have provided active cooling over the last month.
                         </p>
                         <div class="hpm-featured-stats">
                             <div class="hpm-featured-stat">
@@ -1118,7 +1118,7 @@ global $path;
                             </div>
                             <div class="hpm-featured-stat">
                                 <div class="hpm-num">{{ fmt(coolingTotalKwh) }} kWh</div>
-                                <div class="hpm-lab">cooling delivered, last 7 days</div>
+                                <div class="hpm-lab">cooling delivered, last month</div>
                             </div>
                             <div class="hpm-featured-stat">
                                 <div class="hpm-num">{{ coolingAvgCop.toFixed(1) }}</div>
@@ -1126,7 +1126,7 @@ global $path;
                             </div>
                             <div class="hpm-featured-stat">
                                 <div class="hpm-num">{{ fmt(coolingTop[0].heat) }} kWh</div>
-                                <div class="hpm-lab">top cooling, last 7 days</div>
+                                <div class="hpm-lab">top cooling, last month</div>
                             </div>
                         </div>
                     </div>
@@ -1134,7 +1134,7 @@ global $path;
                         <div class="hpm-leaderboard">
                             <div class="hpm-leaderboard-head">
                                 <h3>Most cooling delivered</h3>
-                                <span>kWh (7d) &middot; COP</span>
+                                <span>kWh (30d) &middot; COP</span>
                             </div>
                             <ol>
                                 <li v-for="(h, i) in coolingTop" style="padding:0;">
@@ -1333,7 +1333,7 @@ global $path;
             <div class="hpm-eyebrow"><span class="hpm-eyebrow-num">02</span> Time of use tariffs</div>
             <h2 class="hpm-display mb-3">How much can you save with <span class="hpm-accent">time-of-use tariffs?</span></h2>
             <p class="hpm-lead mb-5">
-                The price of electricity is an important factor in the running cost of a heat pump. Time-of-use tariffs, such as Octopus Agile, offer lower prices at certain times of day. The following explores how much HeatpumpMonitor systems would have paid on different tariffs over the last 12 months, and how they compare to the &approx;{{ PRICE_CAP.toFixed(0) }}p price cap. 
+                The price of electricity is an important factor in the running cost of a heat pump. Time-of-use tariffs offer lower prices at certain times of day. The following explores how much HeatpumpMonitor systems would have paid on different tariffs over the last 12 months, and how they compare to the &approx;{{ PRICE_CAP.toFixed(0) }}p price cap. 
             </p>
 
             <div v-if="!finderLoading && !finderError">
@@ -1840,7 +1840,7 @@ global $path;
             <div class="hpm-eyebrow"><span class="hpm-eyebrow-num">05</span> Tools &amp; data</div>
             <h2 class="hpm-display mb-3">Explore in more <span class="hpm-accent">detail</span></h2>
             <p class="hpm-lead mb-5">
-                In addition to the main system list there are a number of useful tools available to explore the data in more detail, including a heat pump database and a heat demand tool.
+                In addition to the main system list there are a number of useful tools available to explore the data in more detail.
             </p>
             <div class="row g-4">
                 <div class="col-md-6 col-xl-3">
@@ -1870,7 +1870,7 @@ global $path;
                 <div class="col-md-6 col-xl-3">
                     <a class="hpm-explore-card" href="https://docs.openenergymonitor.org/heatpumpmonitor">
                         <span class="hpm-explore-icon"><i class="bi bi-book"></i></span>
-                        <h3>Documentation</h3>
+                        <h3>Analysis</h3>
                         <p>Correlation with performance. max output testing, over-sizing and a comparison with the Electrification of Heat trial.</p>
                         <span class="hpm-go">Read the docs <i class="bi bi-arrow-right"></i></span>
                     </a>
@@ -1887,7 +1887,7 @@ global $path;
     <section class="hpm-section hpm-section-sky">
         <div class="container">
             <div class="hpm-eyebrow"><span class="hpm-eyebrow-num">06</span> Community</div>
-            <h2 class="hpm-display mb-3">Join the <span class="hpm-accent">forum</span></h2>
+            <h2 class="hpm-display mb-3">Join the <span class="hpm-accent">community</span></h2>
             <p class="hpm-lead mb-5">
                 Join the discussion on the OpenEnergyMonitor community forum. Ask questions, share your experiences and learn from other heat pump owners and installers.
             </p>
@@ -1950,21 +1950,21 @@ global $path;
                     <div class="hpm-step-card">
                         <span class="hpm-step-num">1</span>
                         <h3>Install monitoring</h3>
-                        <p>A heat meter on the primary flow and return, an electricity meter on the heat pump supply together with our internet connected data logging box, records data every 10s giving you high resolution data on exactly what the heat pump is doing moment to moment.
+                        <p>A heat meter on the primary flow and return, an electricity meter on the heat pump supply, and our internet-connected data logging box record data every 10 seconds, giving you high-resolution data on exactly what the heat pump is doing moment to moment.
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="hpm-step-card">
                         <span class="hpm-step-num">2</span>
                         <h3>Explore privately</h3>
-                        <p>Use the heat pump dashboard on HeatpumpMonitor privately to explore the performance of your system. <br><br><strong>If you are an installer:</strong> track performance across multiple private systems.</p>  
+                        <p>Use the heat pump dashboard on HeatpumpMonitor privately to explore the performance of your system. <br><br><strong>If you are an installer:</strong> track performance across multiple private systems - have your own private league table.</p>  
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="hpm-step-card">
                         <span class="hpm-step-num">3</span>
                         <h3>Share publicly (optional)</h3>
-                        <p>Contribute your data to the open data public resource so that others can learn from your real world experience. Remove your system at any time at the click of a button.</p>
+                        <p>Contribute your data to the open data public resource so that others can learn from your real world experience.</p>
                     </div>
                 </div>
             </div>
@@ -1984,8 +1984,7 @@ global $path;
                 <div class="col-lg-8">
                     <h2 class="mb-3">Open data &amp; open source.</h2>
                     <p class="mb-0">
-                        HeatpumpMonitor.org is an <strong>OpenEnergyMonitor</strong> community initiative.
-                        The website code, the monitoring hardware designs and the dataset is open source. We want this to be a useful resource for anyone involved in heat pump design, installation or research. To ultimately improve outcomes for heat pump owners and help the transition towards low carbon heat.
+                        HeatpumpMonitor.org is an <strong>OpenEnergyMonitor</strong> community initiative. With open-source code, hardware designs, and datasets, our goal is to empower homeowners, installers, designers, and researchers alike, helping everyone improve outcomes and accelerate the shift toward low-carbon heating.
                     </p>
                 </div>
                 <div class="col-lg-4">
@@ -2036,7 +2035,7 @@ global $path;
             spfLeaderMode: "top",
             finderLoading: true,
             finderError: false,
-            // Featured story: systems actively cooling over the last 7 days
+            // Featured story: systems actively cooling over the last 30 days
             cooling: [],
             coolingError: false,
             // Latest heat pump topics from the community forum
@@ -2166,9 +2165,9 @@ global $path;
             },
             medianUnitRateAgile: function() {
                 if (!this.homes.length) return null;
-                return this.tariffMedianRates.agile.toFixed(2);
+                return this.tariffMedianRates.agile.toFixed(1);
             },
-            // ---- Featured story: active cooling over the last 7 days ----
+            // ---- Featured story: active cooling over the last 30 days ----
             coolingTop: function() {
                 return this.cooling.slice().sort(function(a, b) { return b.heat - a.heat; }).slice(0, 5);
             },

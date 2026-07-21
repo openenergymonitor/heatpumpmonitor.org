@@ -138,7 +138,7 @@ class Home
         return $count;
     }
 
-    // Systems that have provided active cooling over the last 7 days
+    // Systems that have provided active cooling over the last 30 days
     public function cooling_systems()
     {
         $query = array(
@@ -167,7 +167,7 @@ class Home
                 "field" => "cooling_heat_kwh",
                 "order" => "desc"
             ),
-            "stats_table" => "system_stats_last7_v2"
+            "stats_table" => "system_stats_last30_v2"
         );
 
         $systems = $this->system_stats->combined_meta_stats_query($query);
@@ -182,7 +182,7 @@ class Home
 
             // combined_data_length in seconds converted to days
             $days = $system->combined_data_length / 86400;
-            if ($days <= 5) continue;
+            if ($days <= 20) continue;
 
             // $this->auto_flag_air_error($system);
             // if ($system->data_flag == 1) continue;
