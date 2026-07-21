@@ -137,7 +137,8 @@ function scan_system_episodes($mysqli, $emoncms_mysqli, $system_id)
         "heatpump_flowT",
         "heatpump_returnT",
         "heatpump_flowrate",
-        "heatpump_outsideT"
+        "heatpump_outsideT",
+        "heatpump_roomT"
     );
     $feedids = array();
     foreach ($feeds_to_load as $key) {
@@ -151,11 +152,20 @@ function scan_system_episodes($mysqli, $emoncms_mysqli, $system_id)
         return "heatpump_elec and heatpump_flowT feeds required";
     }
 
+    // Feeds with missing meta or no data abort the scan if required, and are
+    // silently dropped if optional (so e.g. an empty roomT feed doesn't stop
+    // the rest of the system's episodes being processed).
     $meta = array();
     foreach ($feedids as $key => $feedid) {
         $m = getmeta(PHPFINA_DIR, $feedid);
-        if ($m === false) return "missing meta for $key (feed $feedid)";
-        if ($m->npoints <= 0) return "empty feed $key (feed $feedid)";
+        if ($m === false || $m->npoints <= 0) {
+            $reason = ($m === false) ? "missing meta for" : "empty feed";
+            if ($key == "heatpump_elec" || $key == "heatpump_flowT") {
+                return "$reason $key (feed $feedid)";
+            }
+            unset($feedids[$key]);
+            continue;
+        }
         $meta[$key] = $m;
     }
 
@@ -184,6 +194,7 @@ function scan_system_episodes($mysqli, $emoncms_mysqli, $system_id)
     $F = count($keys);
     $KE = array_search("heatpump_elec", $keys);
     $KF = array_search("heatpump_flowT", $keys);
+    $KH = array_search("heatpump_heat", $keys);   // false if no heat feed
 
     // Ring buffer holding the last WINDOW good samples for every feed, with
     // running window sums, plus running totals over the current unbroken run of
@@ -261,9 +272,17 @@ function scan_system_episodes($mysqli, $emoncms_mysqli, $system_id)
             $elec = $data[$KE][$j];
             $flowT = $data[$KF][$j];
 
-            // Good sample: compressor running and flowT valid
-            // (NAN == NAN is false, NAN > x is false, so NANs fail this test)
-            if ($flowT == $flowT && $elec > MIN_ELEC) {
+            // Zero (or negative) metered heat while the compressor is running is
+            // a heat-meter error: treat the sample as bad so these periods are
+            // discarded rather than pulling episode heat/COP means down.
+            // (A NAN heat sample is not an error; it is simply missing data and
+            // is already excluded from the episode means.)
+            $heat = $KH !== false ? $data[$KH][$j] : NAN;
+            $heat_ok = $KH === false || $heat != $heat || $heat > 0;
+
+            // Good sample: compressor running, flowT valid and heat plausible
+            // (NAN == NAN is false, NAN > x is false, so NANs fail these tests)
+            if ($flowT == $flowT && $elec > MIN_ELEC && $heat_ok) {
 
                 $pos = $run_len % WINDOW;
                 $full = $run_len >= WINDOW;
@@ -382,9 +401,9 @@ function signature_write($mysqli, $system_id, $episodes)
 
     $sql = "INSERT INTO signature_episodes
         (system_id, start_time, end_time, duration,
-         elec, flowT, heat, returnT, flowrate, outsideT,
+         elec, flowT, heat, returnT, flowrate, outsideT, roomT,
          dT, cop, flowT_stdev, flowT_slope)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
     $stmt = $mysqli->prepare($sql);
     if (!$stmt) {
         print "signature_write prepare failed: " . $mysqli->error . "\n";
@@ -393,13 +412,13 @@ function signature_write($mysqli, $system_id, $episodes)
 
     // Bind variables (assigned per row below; bind_param binds by reference)
     $start_time = $end_time = $duration = 0;
-    $elec = $flowT = $heat = $returnT = $flowrate = $outsideT = null;
+    $elec = $flowT = $heat = $returnT = $flowrate = $outsideT = $roomT = null;
     $dT = $cop = $flowT_stdev = $flowT_slope = null;
 
     $stmt->bind_param(
-        "iiiidddddddddd",
+        "iiiiddddddddddd",
         $system_id, $start_time, $end_time, $duration,
-        $elec, $flowT, $heat, $returnT, $flowrate, $outsideT,
+        $elec, $flowT, $heat, $returnT, $flowrate, $outsideT, $roomT,
         $dT, $cop, $flowT_stdev, $flowT_slope
     );
 
@@ -415,6 +434,7 @@ function signature_write($mysqli, $system_id, $episodes)
         $returnT     = $nn($e['heatpump_returnT'] ?? null);
         $flowrate    = $nn($e['heatpump_flowrate'] ?? null);
         $outsideT    = $nn($e['heatpump_outsideT'] ?? null);
+        $roomT       = $nn($e['heatpump_roomT'] ?? null);
         $dT          = $nn($e['dT'] ?? null);
         $cop         = $nn($e['cop'] ?? null);
         $flowT_stdev = $nn($e['flowT_stdev'] ?? null);

@@ -27,3 +27,4 @@ www/Modules/*/
 !www/Modules/user/
 !www/Modules/home/
 !www/Modules/signature/
+!www/Modules/emitter

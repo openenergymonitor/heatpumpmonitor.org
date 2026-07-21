@@ -42,6 +42,7 @@ var SYS_COLORS = [
 var F = {
     ot:   "Outside temp (°C)",
     ft:   "Flow temp (°C)",
+    rt:   "Room temp (°C)",
     lift: "Lift, flow − outside (°C)",
     el:   "Electrical power (W)",
     heat: "Heat output (W)",
@@ -49,7 +50,7 @@ var F = {
     cop:  "COP",
     dur:  "Duration (min)"
 };
-var SHORT = { ot: "outT", ft: "flowT", lift: "lift", el: "elec", heat: "heat", dt: "ΔT", cop: "COP", dur: "dur" };
+var SHORT = { ot: "outT", ft: "flowT", rt: "roomT", lift: "lift", el: "elec", heat: "heat", dt: "ΔT", cop: "COP", dur: "dur" };
 var KEYS = Object.keys(F);
 
 // Map a signature_episodes row (from signature/list) to a chart point.
@@ -74,6 +75,7 @@ function transform(rows, sysid) {
             el:    el,
             heat:  isNaN(cop) ? NaN : Math.round(el * cop),        // heat output = elec power × COP
             ot:    ot,
+            rt:    (r.roomT === null || r.roomT === undefined) ? NaN : +r.roomT,
             cop:   cop,
             lift:  Math.round((ft - ot) * 10) / 10,                // flow minus outside temperature
             u:     path + "dashboard?id=" + sysid + "&mode=power&start=" + start + "&end=" + end
@@ -421,7 +423,8 @@ function build() {
                             var a = [];
                             if (multi) a.push(labelById(d.sysid));
                             a.push("COP " + d.cop.toFixed(2) + "   " + d.el + " W in   " + (isNaN(d.heat) ? "–" : d.heat + " W out") + "   " + d.dur + " min");
-                            a.push("flow " + d.ft + "°C   out " + d.ot + "°C   lift " + d.lift + "°C   ΔT " + d.dt + "°C");
+                            a.push("flow " + d.ft + "°C   out " + d.ot + "°C   lift " + d.lift + "°C   ΔT " + d.dt + "°C" +
+                                (isNaN(d.rt) ? "" : "   room " + d.rt.toFixed(1) + "°C"));
                             if (d.u) a.push("click to open episode ↗");
                             return a;
                         }

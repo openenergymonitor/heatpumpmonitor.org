@@ -22,6 +22,7 @@ $schema['signature_episodes'] = array(
     'returnT'     => array('type' => 'float', 'Null' => true, 'default' => null), // degC
     'flowrate'    => array('type' => 'float', 'Null' => true, 'default' => null),
     'outsideT'    => array('type' => 'float', 'Null' => true, 'default' => null), // degC
+    'roomT'       => array('type' => 'float', 'Null' => true, 'default' => null), // degC
 
     // Derived metrics
     'dT'          => array('type' => 'float', 'Null' => true, 'default' => null), // flowT - returnT

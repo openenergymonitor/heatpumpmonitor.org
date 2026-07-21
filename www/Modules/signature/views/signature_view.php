@@ -144,4 +144,4 @@ if (isset($_GET['id'])) {
     var admin = <?php echo $admin; ?>;
     var systemid = <?php echo $systemid; ?>;
 </script>
-<script src="<?php echo $path; ?>Modules/signature/views/signature.js?v=11"></script>
+<script src="<?php echo $path; ?>Modules/signature/views/signature.js?v=12"></script>
