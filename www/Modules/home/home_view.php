@@ -1055,40 +1055,40 @@ global $path;
                     <span class="hpm-hero-badge"><span class="hpm-dot"></span> Open-source heat pump performance data</span>
                     <h1>What makes a heat&nbsp;pump <span class="hpm-gradient-text">efficient</span> and <span class="hpm-gradient-text">cheap&nbsp;to&nbsp;run?</span></h1>
                     <p class="hpm-lead mb-4">
-                        HeatpumpMonitor.org gathers real world <strong>live data from {{ stats.system_count }} heat pumps</strong>
+                        HeatpumpMonitor.org gathers <strong>real world data from heat pumps</strong>
                         across the UK and beyond. Systems are monitored using high accuracy <b>MID-certified electric and heat meters</b> - ensuring that the data is reliable and comparable to previous UK Gov funded trials.
                     </p>
                     <div class="d-flex flex-wrap gap-3 mb-5">
-                        <a class="hpm-btn hpm-btn-primary" href="<?php echo $path; ?>system/list">Explore the data <i class="bi bi-arrow-right"></i></a>
-                        <a class="hpm-btn hpm-btn-secondary" href="<?php echo $path; ?>user/login"><i class="bi bi-plus-lg"></i> Add your system</a>
+                        <a class="hpm-btn hpm-btn-primary" href="<?php echo $path; ?>">Explore the data <i class="bi bi-arrow-right"></i></a>
+                        <a class="hpm-btn hpm-btn-secondary" href="#join-in"><i class="bi bi-plus-lg"></i> Add your system</a>
                     </div>
                 </div>
             </div>
 
-            <!-- Headline stats (dummy values, wired up later) -->
+            <!-- Headline stats derived live from the eligible_systems dataset -->
             <div class="row g-3">
                 <div class="col-6 col-lg-3">
                     <div class="hpm-stat-card">
-                        <div class="hpm-stat-value">{{ stats.system_count }}</div>
-                        <div class="hpm-stat-label">MID monitored systems with at least one year of data</div>
+                        <div class="hpm-stat-value">{{ systemCount || "…" }}</div>
+                        <div class="hpm-stat-label">MID H4 boundary monitored systems with at least one year of data out of {{ mid_metered_count }} MID monitored systems total.</div>
                     </div>
                 </div>
                 <div class="col-6 col-lg-3">
                     <div class="hpm-stat-card">
-                        <div class="hpm-stat-value hpm-stat-teal">{{ stats.mean_spf_h4 }}</div>
+                        <div class="hpm-stat-value hpm-stat-teal">{{ meanSpfH4 || "…" }}</div>
                         <div class="hpm-stat-label">Mean SPF H4</div>
                     </div>
                 </div>
                 <div class="col-6 col-lg-3">
                     <div class="hpm-stat-card">
-                        <div class="hpm-stat-value">£{{ (9000 / stats.mean_spf_h4 * stats.median_unit_rate_agile * 0.01).toFixed(0) }} <small>/year</small></div>
-                        <div class="hpm-stat-label">Running costs for a typical UK home. Heat demand of 9000 kWh/year, Octopus Agile median unit rate {{ stats.median_unit_rate_agile }} p/kWh.</div>
+                        <div class="hpm-stat-value">{{ meanSpfH4 && medianUnitRateAgile ? "£" + (10000 / meanSpfH4 * medianUnitRateAgile * 0.01).toFixed(0) : "…" }} <small>/year</small></div>
+                        <div class="hpm-stat-label">Running costs for a typical 3-bed UK home. Heat demand of 10,000 kWh/year, Octopus Agile median unit rate {{ medianUnitRateAgile || "…" }} p/kWh.</div>
                     </div>
                 </div>
                 <div class="col-6 col-lg-3">
                     <div class="hpm-stat-card">
                         <div class="hpm-stat-value hpm-stat-live">live</div>
-                        <div class="hpm-stat-label">updated every minute</div>
+                        <div class="hpm-stat-label">Detailed timeseries data updated every 10s. Totals updated daily.</div>
                     </div>
                 </div>
             </div>
@@ -1096,7 +1096,7 @@ global $path;
     </section>
 
     <!-- ============ Featured data story ============ -->
-    <!-- Live cooling activity over the last 7 days from home/cooling_systems -->
+    <!-- Live cooling activity over the last 7 days, from the server-embedded cooling_systems dataset -->
     <section class="hpm-section hpm-section-sky pt-0">
         <div class="container">
             <div class="hpm-featured">
@@ -1156,8 +1156,8 @@ global $path;
 
 
     <!-- ============ 01 · Homes like yours ============ -->
-    <!-- Fetches all eligible systems once from home/find_homes_like_this,
-         then filters client-side for instant response to the chips. -->
+    <!-- Uses the server-embedded eligible_systems dataset,
+         filtered client-side for instant response to the chips. -->
     <section class="hpm-section">
         <div class="container">
             <div class="hpm-eyebrow"><span class="hpm-eyebrow-num">01</span> Running costs</div>
@@ -1298,9 +1298,10 @@ global $path;
                                     </a>
                                 </li>
                             </ol>
-                            <a class="hpm-leaderboard-foot" href="<?php echo $path; ?>system/list">
+                            <a class="hpm-leaderboard-foot" href="<?php echo $path; ?>">
                                 Explore all {{ matches.length }} on the full system list page <i class="bi bi-arrow-right"></i>
                             </a>
+                            
                         </div>
                     </div>
                 </div>
@@ -1316,7 +1317,6 @@ global $path;
 
             <div v-else class="hpm-finder-empty">
                 <p class="mb-2"><strong>No monitored homes match that combination yet.</strong></p>
-                <p class="mb-3">Try broadening a filter or two &mdash; or be the first: add your system once it&rsquo;s installed.</p>
                 <button class="hpm-finder-clear" @click="clearFinder"><i class="bi bi-x-circle"></i> Clear all filters</button>
             </div>
 
@@ -1369,7 +1369,7 @@ global $path;
                 <div class="row g-4">
                     <div class="col-lg-7">
                         <div class="hpm-chart-card">
-                            <h3>{{ tariffDef.name }} &mdash; effective unit price</h3>
+                            <h3>{{ tariffDef.name }}: effective unit price</h3>
                             <div class="hpm-chart-sub">{{ tariffDef.sub }} &middot; count of systems per 0.5p band &middot; hover for detail</div>
                             <svg class="hpm-hist" viewBox="0 0 680 350" role="img"
                                  :aria-label="'Histogram of effective unit prices on ' + tariffDef.name + ' across ' + tariffStats.n + ' systems. The median is ' + tariffStats.median.toFixed(1) + ' pence, against a price cap of about ' + PRICE_CAP.toFixed(0) + ' pence.'">
@@ -1469,7 +1469,7 @@ global $path;
     </section>
 
     <!-- ============ 03 · SPF distribution ============ -->
-    <!-- Histogram of measured SPF across the same home/find_homes_like_this
+    <!-- Histogram of measured SPF across the same home/eligible_systems
          dataset used by the sections above and below. -->
     <section class="hpm-section">
         <div class="container">
@@ -1514,7 +1514,7 @@ global $path;
                             </g>
                             <g>
                                 <text v-for="t in spfXTicks" class="axis-label" :x="spfX(t)" y="322" text-anchor="middle">{{ t.toFixed(1) }}</text>
-                                <text class="axis-title" x="355" y="348" text-anchor="middle">Measured SPF &mdash; heat delivered per unit of electricity</text>
+                                <text class="axis-title" x="355" y="348" text-anchor="middle">Measured SPF: heat delivered per unit of electricity</text>
                             </g>
                             <g>
                                 <rect v-for="b in spfBins" class="bar" :x="b.x + 1" :y="b.y" :width="b.w - 2" :height="b.h" rx="2">
@@ -1560,7 +1560,7 @@ global $path;
                 <div class="hpm-note-card mt-4">
                     <div class="hpm-note-eyebrow">How SPF is measured</div>
                     <p>
-                        These figures are measured at the <strong>H4 boundary</strong>: all electricity used by the system &mdash; the heat pump itself, circulation pumps, controls and any backup heating &mdash; counted against the heat delivered for space heating and hot water over the last 365 days. This is the same boundary used by previous UK Gov funded field trials, making the figures directly comparable.
+                        We use class 1 electricity metering and class 2 heat metering to measure the electricity consumed and heat delivered by each system over a full year. The SPF is the total heat delivered divided by the total electricity consumed, space heating and hot water combined. The {{ spfStats.n }} systems in this analysis are all monitored to the SEPEMO H4 boundary - meaning that they include all electricity consumption from the outside unit, auxiliary energy such as backup or immersion heaters and any additional building circulation pumps or fans. The majority of the systems in this analysis are high temperature capable R290 units in an open-loop configuration that do not use an immersion heater and have the primary circulation pump built into the unit itself.
                     </p>
                 </div>
             </div>
@@ -1577,7 +1577,7 @@ global $path;
     <!-- Two-step walkthrough: design flow temperature (step 1, weak
          correlation) → measured coldest-day flow temperature (step 2, better,
          with a live SPF predictor).
-         Both steps use the same home/find_homes_like_this dataset as the
+         Both steps use the same home/eligible_systems dataset as the
          finder below. Background: community.openenergymonitor.org/t/29547,
          docs.openenergymonitor.org/heatpumpmonitor/low_temperature.html and
          github.com/openenergymonitor/heatpumpmonitor.org/tree/main/analysis/performance_prediction -->
@@ -1837,42 +1837,42 @@ global $path;
     
     <section class="hpm-section">
         <div class="container">
-            <div class="hpm-eyebrow"><span class="hpm-eyebrow-num">05</span> Explore the data</div>
-            <h2 class="hpm-display mb-3">Dig as deep as <span class="hpm-accent">you like</span>.</h2>
+            <div class="hpm-eyebrow"><span class="hpm-eyebrow-num">05</span> Tools &amp; data</div>
+            <h2 class="hpm-display mb-3">Explore in more <span class="hpm-accent">detail</span></h2>
             <p class="hpm-lead mb-5">
-                Start with the system list, explore performance, fabric and cost views. Click through to any system see the system dashboard and explore in more detail the context for each system.
+                In addition to the main system list there are a number of useful tools available to explore the data in more detail, including a heat pump database and a heat demand tool.
             </p>
             <div class="row g-4">
                 <div class="col-md-6 col-xl-3">
-                    <a class="hpm-explore-card" href="<?php echo $path; ?>system/list">
-                        <span class="hpm-explore-icon"><i class="bi bi-trophy"></i></span>
+                    <a class="hpm-explore-card" href="<?php echo $path; ?>">
+                        <span class="hpm-explore-icon"><i class="bi bi-list-ul"></i></span>
                         <h3>System list</h3>
-                        <p>All systems ranked by measured SPF &mdash; filter by make, output, emitter type and flow temperature.</p>
+                        <p>All systems ranked by measured SPF, fabric or cost. Filter and explore over 200 different fields per system.</p>
                         <span class="hpm-go">Browse systems <i class="bi bi-arrow-right"></i></span>
-                    </a>
-                </div>
-                <div class="col-md-6 col-xl-3">
-                    <a class="hpm-explore-card" href="<?php echo $path; ?>map">
-                        <span class="hpm-explore-icon"><i class="bi bi-geo-alt"></i></span>
-                        <h3>Map</h3>
-                        <p>Find monitored systems near you &mdash; a similar climate and housing type is the fairest benchmark for what to expect.</p>
-                        <span class="hpm-go">Open the map <i class="bi bi-arrow-right"></i></span>
-                    </a>
-                </div>
-                <div class="col-md-6 col-xl-3">
-                    <a class="hpm-explore-card" href="<?php echo $path; ?>compare">
-                        <span class="hpm-explore-icon"><i class="bi bi-bar-chart"></i></span>
-                        <h3>Comparison charts</h3>
-                        <p>Daily, monthly and histogram views to line systems up side by side and see how COP holds through the seasons.</p>
-                        <span class="hpm-go">Compare systems <i class="bi bi-arrow-right"></i></span>
                     </a>
                 </div>
                 <div class="col-md-6 col-xl-3">
                     <a class="hpm-explore-card" href="<?php echo $path; ?>heatpump">
                         <span class="hpm-explore-icon"><i class="bi bi-database"></i></span>
                         <h3>Heat pump database</h3>
-                        <p>Capacity, efficiency and sound power data for hundreds of models &mdash; linked to how each performs in the field.</p>
+                        <p>Search by make and model. Explore real world maximum capacity and minimum modulation test results.</p>
                         <span class="hpm-go">Look up a model <i class="bi bi-arrow-right"></i></span>
+                    </a>
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <a class="hpm-explore-card" href="<?php echo $path; ?>heatloss">
+                        <span class="hpm-explore-icon"><i class="bi bi-thermometer-half"></i></span>
+                        <h3>Heat demand tool</h3>
+                        <p>Compare real world heat demand to the calculated value in the heat loss calculation.</p>
+                        <span class="hpm-go">Open the tool <i class="bi bi-arrow-right"></i></span>
+                    </a>
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <a class="hpm-explore-card" href="https://docs.openenergymonitor.org/heatpumpmonitor">
+                        <span class="hpm-explore-icon"><i class="bi bi-book"></i></span>
+                        <h3>Documentation</h3>
+                        <p>Correlation with performance. max output testing, over-sizing and a comparison with the Electrification of Heat trial.</p>
+                        <span class="hpm-go">Read the docs <i class="bi bi-arrow-right"></i></span>
                     </a>
                 </div>
             </div>
@@ -1887,10 +1887,9 @@ global $path;
     <section class="hpm-section hpm-section-sky">
         <div class="container">
             <div class="hpm-eyebrow"><span class="hpm-eyebrow-num">06</span> Community</div>
-            <h2 class="hpm-display mb-3">Join the <span class="hpm-accent">forum</span>.</h2>
+            <h2 class="hpm-display mb-3">Join the <span class="hpm-accent">forum</span></h2>
             <p class="hpm-lead mb-5">
-                The data is only half the story. On the OpenEnergyMonitor community forum, owners, installers and researchers
-                compare notes on design, commissioning and tuning &mdash; here&rsquo;s what&rsquo;s being discussed right now.
+                Join the discussion on the OpenEnergyMonitor community forum. Ask questions, share your experiences and learn from other heat pump owners and installers.
             </p>
 
             <div class="hpm-forum-card" v-if="forum.length">
@@ -1939,41 +1938,40 @@ global $path;
 
     <!-- ============ 07 · Add your system ============ -->
 
-    <section class="hpm-section">
+    <section class="hpm-section" id="join-in">
         <div class="container">
             <div class="hpm-eyebrow"><span class="hpm-eyebrow-num">07</span> Join in</div>
-            <h2 class="hpm-display mb-3">Got a heat pump? <span class="hpm-accent">Put it on the map.</span></h2>
+            <h2 class="hpm-display mb-3">Monitor your heat pump. <span class="hpm-accent">Share your data.</span></h2>
             <p class="hpm-lead mb-5">
-                Every shared system adds another measured data point &mdash; for the homeowner next
-                door weighing one up, and the installer designing the next system. Here&rsquo;s
-                what&rsquo;s involved.
+                Add your system to the open data resource and help others learn from your real world experience. You can explore your own system privately, and optionally share it publicly.
             </p>
             <div class="row g-4 mb-4">
                 <div class="col-md-4">
                     <div class="hpm-step-card">
                         <span class="hpm-step-num">1</span>
-                        <h3>Fit monitoring</h3>
-                        <p>A heat meter on the flow and return, plus an electricity meter on the heat pump supply, record what the system actually delivers. Many recent installs have suitable MID meters already fitted.</p>
+                        <h3>Install monitoring</h3>
+                        <p>A heat meter on the primary flow and return, an electricity meter on the heat pump supply together with our internet connected data logging box, records data every 10s giving you high resolution data on exactly what the heat pump is doing.
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="hpm-step-card">
                         <span class="hpm-step-num">2</span>
-                        <h3>Create an account</h3>
-                        <p>Register and describe the installation &mdash; make and model, emitter type, design flow temperature, floor area and heat demand &mdash; then connect your monitoring feed.</p>
+                        <h3>Explore privately</h3>
+                        <p>Use the heat pump dashboard on HeatpumpMonitor privately to explore the performance of your system, use the heat loss tool to compare your real world heat demand to the calculated value. <strong>If you are an installer</strong> track performance across multiple private systems.</p>  
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="hpm-step-card">
                         <span class="hpm-step-num">3</span>
-                        <h3>Share it live</h3>
-                        <p>Your system joins the league table and the open dataset, updating every few minutes without further effort &mdash; you control what&rsquo;s public.</p>
+                        <h3>Share publicly (optional)</h3>
+                        <p>Contribute your data to the open data public resource so that others can learn from your real world experience. Remove your system at any time at the click of a button.</p>
                     </div>
                 </div>
             </div>
             <div class="d-flex flex-wrap gap-3">
-                <a class="hpm-btn hpm-btn-primary" href="<?php echo $path; ?>user/login">Get started <i class="bi bi-arrow-right"></i></a>
-                <a class="hpm-btn hpm-btn-secondary" href="https://docs.openenergymonitor.org/heatpumpmonitor"><i class="bi bi-book"></i> Read the docs</a>
+                <a class="hpm-btn hpm-btn-primary" href="https://shop.openenergymonitor.com/level-3-heat-pump-monitoring-bundle-emonhp">Buy it now: Level 3 Heat pump monitor <i class="bi bi-arrow-right"></i></a>
+                <!-- login to view your own system -->
+                <a class="hpm-btn hpm-btn-secondary" href="<?php echo $path; ?>user/login">Log in to view your dashboard <i class="bi bi-arrow-right"></i></a>
             </div>
         </div>
     </section>
@@ -1987,9 +1985,7 @@ global $path;
                     <h2 class="mb-3">Open data &amp; open source.</h2>
                     <p class="mb-0">
                         HeatpumpMonitor.org is an <strong>OpenEnergyMonitor</strong> community initiative.
-                        The website code, the monitoring hardware designs and the entire dataset are open
-                        &mdash; researchers, journalists, installers and the curious are welcome to pull
-                        the data, check the methodology and draw their own conclusions.
+                        The website code, the monitoring hardware designs and the dataset is open source. We want this to be a useful resource for anyone involved in heat pump design, installation or research. To ultimately improve outcomes for heat pump owners and help the transition towards low carbon heat.
                     </p>
                 </div>
                 <div class="col-lg-4">
@@ -2006,8 +2002,15 @@ global $path;
 
 <script>
 
-    var stats = JSON.parse('<?php echo json_encode($stats); ?>');
     var path = "<?php echo $path; ?>";
+
+    // Eligible systems and cooling systems are embedded server-side rather
+    // than fetched over ajax, for a faster initial load
+    var eligible_systems = <?php echo json_encode($eligible_systems); ?>;
+    var cooling_systems = <?php echo json_encode($cooling_systems); ?>;
+
+    // Count of all MID metered systems, any boundary and any data length
+    var mid_metered_count = <?php echo (int) $mid_metered_count; ?>;
 
     var FINDER_DEFAULTS = {property:"Any", floor:"Any", age:"Any", insulation:"Any", hp:"Any"};
 
@@ -2024,8 +2027,9 @@ global $path;
     var app = new Vue({
         el: '#app',
         data: {
-            stats: stats,
             path: path,
+            // All MID metered systems, any boundary and any data length
+            mid_metered_count: mid_metered_count,
 
             // Homes like yours
             homes: [],
@@ -2091,69 +2095,47 @@ global $path;
         },
         mounted: function() {
             var self = this;
-            fetch(path + "home/find_homes_like_this")
-                .then(function(response) {
-                    if (!response.ok) throw new Error("HTTP " + response.status);
-                    return response.json();
-                })
-                .then(function(data) {
-                    self.homes = data.map(function(s) {
-                        return {
-                            id: s.id,
-                            location: s.location || "",
-                            manufacturer: s.hp_manufacturer || "",
-                            model: s.hp_model || "",
-                            capacity: s.hp_output,
-                            floor: s.floor_area,
-                            property: s.property,
-                            age: s.age,
-                            insulation: s.insulation,
-                            hp: s.hp_type,
-                            design: s.flow_temp,
-                            measured: s.measured_flow_temp,
-                            flowT: s.weighted_flowT,
-                            lift: s.weighted_flowT_minus_outsideT,
-                            cooling: s.cooling_heat_kwh,
-                            agile: s.unit_rate_agile,
-                            cosy: s.unit_rate_cosy,
-                            go: s.unit_rate_go,
-                            cop: s.combined_cop,
-                            elec: s.combined_elec_kwh,
-                            heat: s.combined_heat_kwh
-                        };
-                    });
-                    self.finderLoading = false;
-                })
-                .catch(function(error) {
-                    console.error("find_homes_like_this:", error);
-                    self.finderLoading = false;
-                    self.finderError = true;
-                });
 
-            fetch(path + "home/cooling_systems")
-                .then(function(response) {
-                    if (!response.ok) throw new Error("HTTP " + response.status);
-                    return response.json();
-                })
-                .then(function(data) {
-                    self.cooling = data.map(function(s) {
-                        return {
-                            id: s.id,
-                            location: s.location || "",
-                            manufacturer: s.hp_manufacturer || "",
-                            model: s.hp_model || "",
-                            capacity: s.hp_output,
-                            floor: s.floor_area,
-                            cop: s.cooling_cop,
-                            elec: s.cooling_elec_kwh,
-                            heat: s.cooling_heat_kwh
-                        };
-                    });
-                })
-                .catch(function(error) {
-                    console.error("cooling_systems:", error);
-                    self.coolingError = true;
-                });
+            this.homes = eligible_systems.map(function(s) {
+                return {
+                    id: s.id,
+                    location: s.location || "",
+                    manufacturer: s.hp_manufacturer || "",
+                    model: s.hp_model || "",
+                    capacity: s.hp_output,
+                    floor: s.floor_area,
+                    property: s.property,
+                    age: s.age,
+                    insulation: s.insulation,
+                    hp: s.hp_type,
+                    design: s.flow_temp,
+                    measured: s.measured_flow_temp,
+                    flowT: s.weighted_flowT,
+                    lift: s.weighted_flowT_minus_outsideT,
+                    cooling: s.cooling_heat_kwh,
+                    agile: s.unit_rate_agile,
+                    cosy: s.unit_rate_cosy,
+                    go: s.unit_rate_go,
+                    cop: s.combined_cop,
+                    elec: s.combined_elec_kwh,
+                    heat: s.combined_heat_kwh
+                };
+            });
+            this.finderLoading = false;
+
+            this.cooling = cooling_systems.map(function(s) {
+                return {
+                    id: s.id,
+                    location: s.location || "",
+                    manufacturer: s.hp_manufacturer || "",
+                    model: s.hp_model || "",
+                    capacity: s.hp_output,
+                    floor: s.floor_area,
+                    cop: s.cooling_cop,
+                    elec: s.cooling_elec_kwh,
+                    heat: s.cooling_heat_kwh
+                };
+            });
 
             fetch(path + "home/forum_topics")
                 .then(function(response) {
@@ -2170,6 +2152,22 @@ global $path;
                 });
         },
         computed: {
+            // ---- Headline stats derived from the eligible_systems dataset ----
+            // The endpoint applies the same eligibility criteria as MID
+            // monitored, metering boundary code 4, >330 days of data and air
+            // error auto-flagging; null until the fetch completes.
+            systemCount: function() {
+                return this.homes.length ? this.homes.length : null;
+            },
+            meanSpfH4: function() {
+                if (!this.homes.length) return null;
+                var sum = this.homes.reduce(function(s, h) { return s + h.cop; }, 0);
+                return (sum / this.homes.length).toFixed(2);
+            },
+            medianUnitRateAgile: function() {
+                if (!this.homes.length) return null;
+                return this.tariffMedianRates.agile.toFixed(2);
+            },
             // ---- Featured story: active cooling over the last 7 days ----
             coolingTop: function() {
                 return this.cooling.slice().sort(function(a, b) { return b.heat - a.heat; }).slice(0, 5);
