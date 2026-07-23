@@ -150,6 +150,11 @@ global $settings, $session, $path;
                                 <h5>{{ cop_label }}</h5>
                                 <h4>{{ current_stats.space_cop | toFixed(1) }}</h4>
                             </div>
+
+                            <div class="col">
+                                <h5 title="Share of total output">Share</h5>
+                                <h4>{{ 100 * current_stats.space_heat_kwh / split_heat_total | toFixed(0) }}%</h4>
+                            </div>
                         </div>
 
                         <hr>
@@ -171,6 +176,11 @@ global $settings, $session, $path;
                             <div class="col">
                                 <h5>{{ cop_label }}</h5>
                                 <h4>{{ current_stats.water_cop | toFixed(1) }}</h4>
+                            </div>
+
+                            <div class="col">
+                                <h5 title="Share of total output">Share</h5>
+                                <h4>{{ 100 * current_stats.water_heat_kwh / split_heat_total | toFixed(0) }}%</h4>
                             </div>
                         </div>
                     </div>
@@ -195,6 +205,11 @@ global $settings, $session, $path;
                             <div class="col">
                                 <h5>COP</h5>
                                 <h4>{{ current_stats.cooling_cop | toFixed(1) }}</h4>
+                            </div>
+
+                            <div class="col">
+                                <h5 title="Share of total output">Share</h5>
+                                <h4>{{ 100 * current_stats.cooling_heat_kwh / split_heat_total | toFixed(0) }}%</h4>
                             </div>
                         </div>
                     </div>
@@ -842,6 +857,16 @@ global $settings, $session, $path;
                 if (!stats) return false;
                 // Same threshold as the home page: at least 1 kWh of cooling delivered and a valid COP
                 return stats.cooling_heat_kwh >= 1 && stats.cooling_cop > 0;
+            },
+            // Total output across the split rows shown, used for the % share column
+            split_heat_total() {
+                let stats = this.current_stats;
+                if (!stats) return 0;
+                let total = 0;
+                if (stats.space_heat_kwh > 0) total += stats.space_heat_kwh;
+                if (stats.water_heat_kwh > 0) total += stats.water_heat_kwh;
+                if (this.has_cooling) total += stats.cooling_heat_kwh;
+                return total;
             },
             // Show SPF rather than COP when viewing a period long enough to span a full season
             cop_label() {
