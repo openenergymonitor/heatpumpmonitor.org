@@ -881,6 +881,12 @@ global $path;
     text-decoration: none;
 }
 .hpm-leaderboard-foot:hover { color: var(--hpm-blue-deep); text-decoration: underline; }
+.hpm-leaderboard-note {
+    padding: 0.85rem 1.4rem;
+    border-top: 1px solid var(--hpm-line);
+    font-size: 0.875rem;
+    color: var(--hpm-muted);
+}
 
 /* ---- find an installer: embedded map preview ---- */
 .hpm-map-embed {
@@ -1042,10 +1048,14 @@ global $path;
 @media (prefers-reduced-motion: reduce) {
     .hpm-home * { transition: none !important; }
 }
+
+/* Hide the app until Vue has compiled the template, so raw {{ }} bindings
+   never flash on screen. Vue removes v-cloak on mount. */
+[v-cloak] { display: none !important; }
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
-<div class="hpm-home" id="app">
+<div class="hpm-home" id="app" v-cloak>
 
     <!-- ============ Hero ============ -->
     <section class="hpm-hero">
@@ -1540,6 +1550,7 @@ global $path;
                             <h3>SPF ranking</h3>
                             <div class="hpm-seg">
                                 <button :class="{active: spfLeaderMode==='top'}" @click="spfLeaderMode='top'">Top 5</button>
+                                <button :class="{active: spfLeaderMode==='decile'}" @click="spfLeaderMode='decile'">Top 10%</button>
                                 <button :class="{active: spfLeaderMode==='median'}" @click="spfLeaderMode='median'">Median 5</button>
                                 <button :class="{active: spfLeaderMode==='bottom'}" @click="spfLeaderMode='bottom'">Bottom 5</button>
                             </div>
@@ -1553,6 +1564,10 @@ global $path;
                                 </a>
                             </li>
                         </ol>
+                        <div class="hpm-leaderboard-note" v-if="spfLeaderMode==='decile'">
+                            Top 10% = {{ spfDecileStats.n }} systems, SPF {{ spfDecileStats.min.toFixed(2) }}&ndash;{{ spfDecileStats.max.toFixed(2) }},
+                            mean {{ spfDecileStats.mean.toFixed(2) }}, median {{ spfDecileStats.median.toFixed(2) }}
+                        </div>
                     </div>
                 </div>
                 </div>
@@ -2516,9 +2531,26 @@ global $path;
                 var start = 0;
                 if (this.spfLeaderMode === "bottom") start = Math.max(0, n - 5);
                 else if (this.spfLeaderMode === "median") start = Math.max(0, Math.round(n / 2) - 3);
+                // Middle of the top-10% band: window centred on the decile's median rank (n * 0.05)
+                else if (this.spfLeaderMode === "decile") start = Math.max(0, Math.round(n * 0.05) - 3);
                 return ranked.slice(start, start + 5).map(function(h, i) {
                     return { h: h, rank: start + i + 1 };
                 });
+            },
+            // Count, range, mean and median of the top 10% of systems by SPF
+            spfDecileStats: function() {
+                var ranked = this.spfRankedHomes;
+                var n = ranked.length;
+                if (!n) return { n: 0, min: 0, max: 0, mean: 0, median: 0 };
+                var k = Math.max(1, Math.round(n * 0.1));
+                var v = ranked.slice(0, k).map(function(h) { return h.cop; }).reverse();
+                return {
+                    n: k,
+                    min: v[0],
+                    max: v[v.length - 1],
+                    mean: v.reduce(function(a, b) { return a + b; }, 0) / k,
+                    median: this.quantile(v, 0.5)
+                };
             },
             // SPF axis snapped outwards to 0.5 steps
             spfDomain: function() {
