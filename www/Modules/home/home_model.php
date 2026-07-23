@@ -43,6 +43,7 @@ class Home
             'stats_fields' => array(
                 'combined_elec_kwh',
                 'combined_heat_kwh',
+                'immersion_kwh',
                 'combined_cop',
                 'combined_data_length',
                 'error_air_kwh',

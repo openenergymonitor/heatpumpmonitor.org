@@ -16,6 +16,24 @@ global $settings, $session, $path;
 <script src="<?php echo $path; ?>Modules/system/photo_lightbox.js?v=5"></script>
 <script src="<?php echo $path; ?>Modules/system/photo_upload.js?v=1"></script>
 
+<!-- Icons from Modules/dashboard/svg_icons.svg -->
+<svg aria-hidden="true" style="position:absolute; width:0; height:0; overflow:hidden" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <defs>
+        <symbol id="icon-radiator" viewBox="0 0 1200 1200">
+            <path d="m328.68 886.68c0 32.426-26.281 58.715-58.691 58.715-32.426 0-58.703-26.281-58.703-58.715v-537.34c0-32.426 26.281-58.703 58.703-58.703 32.41 0 58.691 26.281 58.691 58.703z"/>
+            <path d="m493.48 886.68c0 32.426-26.281 58.715-58.703 58.715-32.426 0-58.703-26.281-58.703-58.715l-0.003906-537.34c0-32.426 26.27-58.703 58.703-58.703 32.426 0 58.703 26.281 58.703 58.703z"/>
+            <path d="m658.82 886.68c0 32.426-26.293 58.715-58.703 58.715-32.426 0-58.703-26.281-58.703-58.715l-0.003907-537.34c0-32.426 26.281-58.703 58.703-58.703 32.398 0 58.703 26.281 58.703 58.703z"/>
+            <path d="m823.33 886.68c0 32.426-26.27 58.715-58.691 58.715-32.438 0-58.715-26.281-58.715-58.715v-537.34c0-32.426 26.27-58.703 58.715-58.703 32.41 0 58.691 26.281 58.691 58.703z"/>
+            <path d="m988.71 886.68c0 32.426-26.27 58.715-58.691 58.715-32.438 0-58.703-26.281-58.703-58.715v-537.34c0-32.426 26.258-58.703 58.703-58.703 32.41 0 58.691 26.281 58.691 58.703z"/>
+            <path d="m84.121 822.68h28.859c0.81641 6.4336 6.3242 11.398 12.984 11.398h19.008c6.6602 0 12.156-4.9688 12.984-11.398h38.594v24.938c0 3.8633 3.1211 6.9961 6.9961 7.0195h11.41c0.44531 0 0.875-0.19141 1.1875-0.49219 0.3125-0.3125 0.49219-0.74219 0.49219-1.1875v-91.285c0-0.43359-0.17969-0.875-0.49219-1.1875s-0.74219-0.50391-1.1875-0.50391h-11.41c-3.875 0-6.9961 3.168-6.9961 7.0195v24.938h-38.594c-0.74219-5.8906-5.4258-10.547-11.293-11.305v-27.168h28.754c5.9766 0 10.801-4.8594 10.801-10.812 0-5.9648-4.8359-10.801-10.801-10.801h-79.887c-5.9648 0-10.812 4.8359-10.812 10.801 0 5.9766 4.8477 10.812 10.812 10.812h28.754v27.18c-5.8789 0.74219-10.547 5.4258-11.293 11.293h-28.871z"/>
+            <path d="m175.39 395.18h843.93v60.254h-843.93z"/>
+            <path d="m204.2 774.41h910.25v60.254h-910.25z"/>
+            <path d="m1008.7 755.79h85.465v101.02h-85.465z"/>
+        </symbol>
+        <symbol id="icon-shower" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M64 131.9C64 112.1 80.1 96 99.9 96c9.5 0 18.6 3.8 25.4 10.5l16.2 16.2c-21 38.9-17.4 87.5 10.9 123L151 247c-9.4 9.4-9.4 24.6 0 33.9s24.6 9.4 33.9 0L345 121c9.4-9.4 9.4-24.6 0-33.9s-24.6-9.4-33.9 0l-1.3 1.3c-35.5-28.3-84.2-31.9-123-10.9L170.5 61.3C151.8 42.5 126.4 32 99.9 32C44.7 32 0 76.7 0 131.9L0 448c0 17.7 14.3 32 32 32s32-14.3 32-32l0-316.1zM256 352a32 32 0 1 0 0-64 32 32 0 1 0 0 64zm64 64a32 32 0 1 0 -64 0 32 32 0 1 0 64 0zm0-128a32 32 0 1 0 0-64 32 32 0 1 0 0 64zm64 64a32 32 0 1 0 -64 0 32 32 0 1 0 64 0zm0-128a32 32 0 1 0 0-64 32 32 0 1 0 0 64zm64 64a32 32 0 1 0 -64 0 32 32 0 1 0 64 0zm32-32a32 32 0 1 0 0-64 32 32 0 1 0 0 64z"/></symbol>
+    </defs>
+</svg>
+
 <div id="app" class="bg-light">
     <div style=" background-color:#f0f0f0; padding-top:20px; padding-bottom:10px">
         <div class="container" style="max-width:800px;">
@@ -63,29 +81,100 @@ global $settings, $session, $path;
 
 
         <div class="card mt-3" v-if="all.combined_data_length">
-            <h5 class="card-header">All data</h5>
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h5 class="mb-0">Performance</h5>
+                <div class="btn-group btn-group-sm">
+                    <button v-for="period in stats_periods" type="button" class="btn" :class="stats_period==period.key ? 'btn-primary' : 'btn-outline-secondary'" @click="select_period(period.key)">{{ period.label }}</button>
+                </div>
+            </div>
             <div class="card-body">
-                <div class="row" style="text-align:center">
-                    <div class="col">
-                        <h5>Electric</h5>
-                        <h4>{{ all.combined_elec_kwh | toFixed(0) }} kWh</h4>
+                <div v-if="stats_loading" class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
                     </div>
-                    
-                    <div class="col">
-                        <h5>Heat Output</h5>
-                        <h4>{{ all.combined_heat_kwh | toFixed(0) }} kWh</h4>
-                    </div>
-                    
-                    <div class="col">
-                        <h5 title="Seasonal performance factor">COP</h5>
-                        <h4>{{ all.combined_cop | toFixed(1) }}</h4>            
+                </div>
+                <div v-else-if="current_stats && current_stats.combined_data_length">
+                    <div class="row" style="text-align:center">
+                        <div class="col">
+                            <h5>Electric</h5>
+                            <h4>{{ current_stats.combined_elec_kwh | toFixed(0) }} kWh</h4>
+                        </div>
+
+                        <div class="col">
+                            <h5>Heat Output</h5>
+                            <h4>{{ current_stats.combined_heat_kwh | toFixed(0) }} kWh</h4>
+                        </div>
+
+                        <div class="col" v-if="current_stats.immersion_kwh>0">
+                            <h5>Immersion</h5>
+                            <h4>{{ current_stats.immersion_kwh | toFixed(0) }} kWh</h4>
+                        </div>
+
+                        <div class="col" v-if="current_stats.boiler_kwh>0">
+                            <h5>Boiler</h5>
+                            <h4>{{ current_stats.boiler_kwh | toFixed(0) }} kWh</h4>
+                        </div>
+
+                        <div class="col">
+                            <h5 :title="cop_label=='SPF' ? 'Seasonal performance factor' : 'Coefficient of performance'">{{ cop_label }}</h5>
+                            <h4>{{ current_stats.combined_cop | toFixed(1) }} <span v-if="current_stats.immersion_kwh>0">*</span></h4>
+                        </div>
+
+                        <div class="col">
+                            <h5 title="Data coverage">Data</h5>
+                            <h4>{{ current_stats.combined_data_length | formatDays }} days</h4>
+                        </div>
                     </div>
 
-                    <div class="col">
-                        <h5 title="Data coverage">Data</h5>
-                        <h4>{{ all.combined_data_length | formatDays }} days</h4>
+                    <p v-if="current_stats.immersion_kwh>0" style="margin-top:10px; font-size:14px; color:#666">* {{ cop_label }} calculated including immersion kWh for H4 boundary. {{ cop_label }} without immersion kWh (H2): {{ current_stats.combined_heat_kwh / current_stats.combined_elec_kwh | toFixed(1) }}</p>
+
+                    <div v-if="has_split">
+                        <hr>
+                        <div class="row align-items-center" style="text-align:center; color:#e8730e">
+                            <div class="col-auto" style="width:70px; font-size:36px" title="Space heating">
+                                <svg style="display:inline-block; width:1em; height:1em; fill:currentColor"><use xlink:href="#icon-radiator"></use></svg>
+                            </div>
+
+                            <div class="col">
+                                <h5>Electric</h5>
+                                <h4>{{ current_stats.space_elec_kwh | toFixed(0) }} kWh</h4>
+                            </div>
+
+                            <div class="col">
+                                <h5>Heat Output</h5>
+                                <h4>{{ current_stats.space_heat_kwh | toFixed(0) }} kWh</h4>
+                            </div>
+
+                            <div class="col">
+                                <h5>{{ cop_label }}</h5>
+                                <h4>{{ current_stats.space_cop | toFixed(1) }}</h4>
+                            </div>
+                        </div>
+
+                        <hr>
+                        <div class="row align-items-center" style="text-align:center; color:#3a87ad">
+                            <div class="col-auto" style="width:70px; font-size:28px" title="Hot water">
+                                <svg style="display:inline-block; width:1em; height:1em; fill:currentColor"><use xlink:href="#icon-shower"></use></svg>
+                            </div>
+
+                            <div class="col">
+                                <h5>Electric</h5>
+                                <h4>{{ current_stats.water_elec_kwh | toFixed(0) }} kWh</h4>
+                            </div>
+
+                            <div class="col">
+                                <h5>Heat Output</h5>
+                                <h4>{{ current_stats.water_heat_kwh | toFixed(0) }} kWh</h4>
+                            </div>
+
+                            <div class="col">
+                                <h5>{{ cop_label }}</h5>
+                                <h4>{{ current_stats.water_cop | toFixed(1) }}</h4>
+                            </div>
+                        </div>
                     </div>
-                </div>      
+                </div>
+                <p v-else class="mb-0" style="text-align:center">No data available for this period</p>
             </div>
         </div>
 
@@ -681,6 +770,16 @@ global $settings, $session, $path;
             system: system,
             monthly: [],
             all: [],
+            stats_period: 'last365',
+            stats_periods: [
+                {key: 'all', label: 'All'},
+                {key: 'last7', label: '7 days'},
+                {key: 'last30', label: '30 days'},
+                {key: 'last90', label: '90 days'},
+                {key: 'last365', label: '365 days'}
+            ],
+            period_stats: {},
+            stats_loading: false,
             schema_groups: schema_groups,
             filtered_schema_groups: {},
 
@@ -704,6 +803,22 @@ global $settings, $session, $path;
 
         },
         computed: {
+            current_stats() {
+                if (this.stats_period == 'all') return this.all;
+                return this.period_stats[this.stats_period];
+            },
+            has_split() {
+                let stats = this.current_stats;
+                if (!stats) return false;
+                return stats.space_heat_kwh > 0 && stats.water_heat_kwh > 0;
+            },
+            // Show SPF rather than COP when viewing a period long enough to span a full season
+            cop_label() {
+                if (this.stats_period != 'all' && this.stats_period != 'last365') return 'COP';
+                let stats = this.current_stats;
+                if (stats && (stats.combined_data_length / 86400) > 290) return 'SPF';
+                return 'COP';
+            },
             qualityColor() {
                 return function(score) {
                     const hue = (score / 100) * 120; // Map score to hue value (0-120)
@@ -771,6 +886,22 @@ global $settings, $session, $path;
             }
         },
         methods: {
+            select_period: function(period) {
+                this.stats_period = period;
+                if (period == 'all' || this.period_stats[period] != undefined) return;
+
+                this.stats_loading = true;
+                axios.get(path + 'system/stats/' + period + '?id=' + this.system.id)
+                    .then((response) => {
+                        // Cache result (Vue.set for reactivity on new object keys)
+                        this.$set(this.period_stats, period, response.data[this.system.id] || false);
+                        this.stats_loading = false;
+                    })
+                    .catch((error) => {
+                        console.log(error);
+                        this.stats_loading = false;
+                    });
+            },
             switch_mode: function(mode) {
                 this.mode = mode;
                 if (mode == 'edit') {
@@ -1371,6 +1502,10 @@ global $settings, $session, $path;
     load_monthly_and_all_stats();
 
     function load_monthly_and_all_stats() {
+        // Invalidate period stats cache, refetch current period if not 'all'
+        app.period_stats = {};
+        if (app.stats_period != 'all') app.select_period(app.stats_period);
+
         axios.get(path + 'system/stats/monthly?id=' + app.system.id)
             .then(function(response) {
                 app.monthly = response.data;

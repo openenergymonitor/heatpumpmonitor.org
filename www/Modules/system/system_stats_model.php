@@ -471,6 +471,7 @@ class SystemStats
         foreach ($categories as $category) {
             $stats[$category.'_elec_kwh'] = $totals[$category]['elec_kwh'];
             $stats[$category.'_heat_kwh'] = $totals[$category]['heat_kwh'];
+
             if ($totals[$category]['elec_kwh'] > 0) {
                 $stats[$category.'_cop'] = $totals[$category]['heat_kwh'] / $totals[$category]['elec_kwh'];
             } else {
@@ -486,6 +487,18 @@ class SystemStats
             $stats[$category.'_roomT_mean'] = $mean[$category]['roomT_mean'];
             $stats[$category.'_prc_carnot'] = $mean[$category]['prc_carnot'];
         }
+
+        // Calculation of H4 boundary condition if the system uses an immersion heater.
+        if ($totals['combined']['elec_kwh'] > 0) {
+            $stats['combined_cop'] = $totals['combined']['heat_kwh'] / $totals['combined']['elec_kwh'];
+            // If auxiliary immersion kWh is greater than 0, then calculate COP adding immersion kWh to elec and heat
+            if ($totals['immersion_kwh'] > 0) {
+                $stats['combined_cop'] = ($totals['combined']['heat_kwh'] + $totals['immersion_kwh']) / ($totals['combined']['elec_kwh'] + $totals['immersion_kwh']);
+            }
+        } else {
+            $stats['combined_cop'] = null;
+        }
+
 
         $stats['combined_cooling_kwh'] = $totals['combined']['cooling_kwh'];
         $stats['combined_starts'] = $totals['combined']['starts'];
@@ -827,6 +840,13 @@ class SystemStats
                     if ($b_val === null) return -1;
                     return $descending ? ($b_val <=> $a_val) : ($a_val <=> $b_val);
                 });
+            }
+        }
+
+        // Apply immersion heater kWh adjustment if immersion_kwh>0
+        foreach ($systems as $system) {
+            if (isset($system->immersion_kwh) && $system->immersion_kwh > 0) {
+                $system->combined_cop = ($system->combined_heat_kwh + $system->immersion_kwh) / ($system->combined_elec_kwh + $system->immersion_kwh);
             }
         }
 

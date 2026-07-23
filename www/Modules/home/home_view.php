@@ -1163,7 +1163,7 @@ global $path;
             <div class="hpm-eyebrow"><span class="hpm-eyebrow-num">01</span> Running costs</div>
             <h2 class="hpm-display mb-3">What do heat pumps <span class="hpm-accent">cost to run</span> in different homes?</h2>
             <p class="hpm-lead mb-5">
-                The running cost of a heat pump is the product of three things: the <b>heat demand</b> of the home, the <b>efficiency</b> of the heat pump (its SPF/SCOP), and the <b>price of electricity</b>. The following explores real-world examples of heat pump homes on HeatpumpMonitor to see how these factors combine.
+                The running cost of a heat pump is the product of three things: the <b>heat demand</b> of the home, the <b>efficiency</b> of the heat pump installation (SPF/SCOP), and the <b>price of electricity</b>. The following explores real-world examples of heat pump homes on HeatpumpMonitor to see how these factors combine.
             </p>
 
             <!-- Filters -->
