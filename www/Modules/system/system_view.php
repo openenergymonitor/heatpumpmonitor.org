@@ -31,6 +31,7 @@ global $settings, $session, $path;
             <path d="m1008.7 755.79h85.465v101.02h-85.465z"/>
         </symbol>
         <symbol id="icon-shower" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M64 131.9C64 112.1 80.1 96 99.9 96c9.5 0 18.6 3.8 25.4 10.5l16.2 16.2c-21 38.9-17.4 87.5 10.9 123L151 247c-9.4 9.4-9.4 24.6 0 33.9s24.6 9.4 33.9 0L345 121c9.4-9.4 9.4-24.6 0-33.9s-24.6-9.4-33.9 0l-1.3 1.3c-35.5-28.3-84.2-31.9-123-10.9L170.5 61.3C151.8 42.5 126.4 32 99.9 32C44.7 32 0 76.7 0 131.9L0 448c0 17.7 14.3 32 32 32s32-14.3 32-32l0-316.1zM256 352a32 32 0 1 0 0-64 32 32 0 1 0 0 64zm64 64a32 32 0 1 0 -64 0 32 32 0 1 0 64 0zm0-128a32 32 0 1 0 0-64 32 32 0 1 0 0 64zm64 64a32 32 0 1 0 -64 0 32 32 0 1 0 64 0zm0-128a32 32 0 1 0 0-64 32 32 0 1 0 0 64zm64 64a32 32 0 1 0 -64 0 32 32 0 1 0 64 0zm32-32a32 32 0 1 0 0-64 32 32 0 1 0 0 64z"/></symbol>
+        <symbol id="icon-snowflake" viewBox="0 0 448 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M224 0c13.3 0 24 10.7 24 24l0 46.1 23-23c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9l-57 57 0 76.5 66.2-38.2 20.9-77.8c3.4-12.8 16.6-20.4 29.4-17s20.4 16.6 17 29.4L373 142.2l37.1-21.4c11.5-6.6 26.2-2.7 32.8 8.8s2.7 26.2-8.8 32.8L397 183.8l31.5 8.4c12.8 3.4 20.4 16.6 17 29.4s-16.6 20.4-29.4 17l-77.8-20.9L272 256l66.2 38.2 77.8-20.9c12.8-3.4 26 4.2 29.4 17s-4.2 26-17 29.4L397 328.2l37.1 21.4c11.5 6.6 15.4 21.3 8.8 32.8s-21.3 15.4-32.8 8.8L373 369.8l8.4 31.5c3.4 12.8-4.2 26-17 29.4s-26-4.2-29.4-17l-20.9-77.8L248 297.6l0 76.5 57 57c9.4 9.4 9.4 24.6 0 33.9s-24.6 9.4-33.9 0l-23-23 0 46.1c0 13.3-10.7 24-24 24s-24-10.7-24-24l0-46.1-23 23c-9.4 9.4-24.6 9.4-33.9 0s-9.4-24.6 0-33.9l57-57 0-76.5-66.2 38.2-20.9 77.8c-3.4 12.8-16.6 20.4-29.4 17s-20.4-16.6-17-29.4L75 369.8 37.9 391.2c-11.5 6.6-26.2 2.7-32.8-8.8s-2.7-26.2 8.8-32.8L51 328.2l-31.5-8.4c-12.8-3.4-20.4-16.6-17-29.4s16.6-20.4 29.4-17l77.8 20.9L176 256l-66.2-38.2L31.9 238.6c-12.8 3.4-26-4.2-29.4-17s4.2-26 17-29.4L51 183.8 13.9 162.4c-11.5-6.6-15.4-21.3-8.8-32.8s21.3-15.4 32.8-8.8L75 142.2l-8.4-31.5c-3.4-12.8 4.2-26 17-29.4s26 4.2 29.4 17l20.9 77.8L200 214.4l0-76.5L143 81c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l23 23L200 24c0-13.3 10.7-24 24-24z"/></symbol>
     </defs>
 </svg>
 
@@ -170,6 +171,30 @@ global $settings, $session, $path;
                             <div class="col">
                                 <h5>{{ cop_label }}</h5>
                                 <h4>{{ current_stats.water_cop | toFixed(1) }}</h4>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="has_cooling">
+                        <hr>
+                        <div class="row align-items-center" style="text-align:center; color:#4a90d9">
+                            <div class="col-auto" style="width:70px; font-size:28px" title="Cooling">
+                                <svg style="display:inline-block; width:1em; height:1em; fill:currentColor"><use xlink:href="#icon-snowflake"></use></svg>
+                            </div>
+
+                            <div class="col">
+                                <h5>Electric</h5>
+                                <h4>{{ current_stats.cooling_elec_kwh | toFixed(0) }} kWh</h4>
+                            </div>
+
+                            <div class="col">
+                                <h5>Cooling</h5>
+                                <h4>{{ current_stats.cooling_heat_kwh | toFixed(0) }} kWh</h4>
+                            </div>
+
+                            <div class="col">
+                                <h5>COP</h5>
+                                <h4>{{ current_stats.cooling_cop | toFixed(1) }}</h4>
                             </div>
                         </div>
                     </div>
@@ -811,6 +836,12 @@ global $settings, $session, $path;
                 let stats = this.current_stats;
                 if (!stats) return false;
                 return stats.space_heat_kwh > 0 && stats.water_heat_kwh > 0;
+            },
+            has_cooling() {
+                let stats = this.current_stats;
+                if (!stats) return false;
+                // Same threshold as the home page: at least 1 kWh of cooling delivered and a valid COP
+                return stats.cooling_heat_kwh >= 1 && stats.cooling_cop > 0;
             },
             // Show SPF rather than COP when viewing a period long enough to span a full season
             cop_label() {
