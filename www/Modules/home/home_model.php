@@ -219,7 +219,8 @@ class Home
             "timeout" => 5,
             "user_agent" => "HeatpumpMonitor.org home page"
         )));
-        $response = @file_get_contents("https://community.openenergymonitor.org/c/hardware/heatpump/47/l/latest.json", false, $context);
+        
+        $response = @file_get_contents("https://community.openenergymonitor.org/c/hardware/heatpump/47/l/latest.json?v=".time(), false, $context);
         $data = $response !== false ? json_decode($response) : null;
 
         if ($data === null || !isset($data->topic_list->topics)) {
@@ -246,7 +247,7 @@ class Home
             if (!empty($topic->pinned)) continue;
 
             // Only show established discussions
-            if ($topic->posts_count <= 10) continue;
+            // if ($topic->posts_count <= 10) continue;
 
             $posters = array();
             foreach ($topic->posters as $poster) {

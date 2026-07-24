@@ -3073,7 +3073,7 @@ global $path;
         top.forEach(function(installer) {
             var chip = document.createElement("a");
             chip.className = "hpm-installer-chip";
-            chip.href = path + "?filter=" + encodeURIComponent(installer.name) + "&period=all&minDays=0&errors=1";
+            chip.href = path + "system/list?filter=" + encodeURIComponent(installer.name) + "&period=last365&minDays=290&mode=costs&tariff=agile";
             chip.title = "Show " + installer.name + " systems in the system list";
 
             var dot = document.createElement("span");
