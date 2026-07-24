@@ -144,6 +144,10 @@ $navigation = array(
                     </ul>
 
                     <ul class="navbar-nav">
+                        <li class="nav-item"><a id="system-list-link" class="nav-link " href="<?php echo $path; ?>system/list" title="System list"><i class="fas fa-list"></i> <span class="nav-item-text">System list</span></a></li>
+                    </ul>
+
+                    <ul class="navbar-nav">
                         <li class="nav-item"><a id="map-link" class="nav-link " href="<?php echo $path; ?>map" title="Map"><i class="fas fa-map"></i> <span class="nav-item-text">Map</span></a></li>
                     </ul>
 

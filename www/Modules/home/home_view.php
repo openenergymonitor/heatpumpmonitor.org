@@ -1587,6 +1587,9 @@ global $path;
                         <div class="hpm-leaderboard-note" v-if="spfLeaderNote">
                             {{ spfLeaderNote }}
                         </div>
+                        <a class="hpm-leaderboard-foot" href="<?php echo $path; ?>system/list">
+                            Explore all {{ spfStats.n }} on the full system list page <i class="bi bi-arrow-right"></i>
+                        </a>
                     </div>
                 </div>
                 </div>
