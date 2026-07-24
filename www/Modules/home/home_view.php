@@ -1993,7 +1993,7 @@ global $path;
                     <div class="hpm-step-card">
                         <span class="hpm-step-num">2</span>
                         <h3>Explore privately</h3>
-                        <p>Use the heat pump dashboard on HeatpumpMonitor privately to explore the performance of your system. <br><br><strong>If you are an installer:</strong> track performance across multiple private systems - have your own private league table.</p>  
+                        <p>Use the heat pump dashboard on HeatpumpMonitor privately to explore the performance of your system. <br><br><strong>If you are an installer:</strong> track performance across multiple private systems.</p>  
                     </div>
                 </div>
                 <div class="col-md-4">
@@ -2068,7 +2068,7 @@ global $path;
 
             // Homes like yours
             homes: [],
-            spfLeaderMode: "decile",
+            spfLeaderMode: "median",
             finderLoading: true,
             finderError: false,
             // Featured story: systems actively cooling over the last 30 days
