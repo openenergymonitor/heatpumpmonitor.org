@@ -205,7 +205,7 @@ global $path;
     color: var(--hpm-muted);
 }
 
-/* ---- "Top of the SCOPs" winner card ---- */
+/* ---- "Top of the SPFs" winner card ---- */
 .hpm-winner-card {
     display: flex;
     align-items: center;
@@ -1179,7 +1179,7 @@ global $path;
             <div class="hpm-eyebrow"><span class="hpm-eyebrow-num">01</span> Running costs</div>
             <h2 class="hpm-display mb-3">What do heat pumps <span class="hpm-accent">cost to run</span> in different homes?</h2>
             <p class="hpm-lead mb-5">
-                The running cost of a heat pump is the product of three things: the <b>heat demand</b> of the home, the <b>efficiency</b> of the heat pump installation (SPF/SCOP), and the <b>price of electricity</b>. The following explores real-world examples of heat pump homes on HeatpumpMonitor to see how these factors combine.
+                The running cost of a heat pump is the product of three things: the <b>heat demand</b> of the home, the <b>efficiency</b> of the heat pump installation (SPF), and the <b>price of electricity</b>. The following explores real-world examples of heat pump homes on HeatpumpMonitor to see how these factors combine.
             </p>
 
             <!-- Filters -->
@@ -1265,7 +1265,7 @@ global $path;
                     <div class="col-6 col-lg-3">
                         <div class="hpm-stat-card">
                             <div class="hpm-stat-value">{{ meanCopVal.toFixed(2) }}</div>
-                            <div class="hpm-stat-label">mean SCOP, range {{ worstCop.toFixed(1) }}&ndash;{{ bestCop.toFixed(1) }}</div>
+                            <div class="hpm-stat-label">mean SPF, range {{ worstCop.toFixed(1) }}&ndash;{{ bestCop.toFixed(1) }}</div>
                         </div>
                     </div>
                 </div>
@@ -1435,7 +1435,7 @@ global $path;
                                     <a class="hpm-leader-link" :href="path + 'system/view?id=' + h.id">
                                         <span class="hpm-rank">{{ i + 1 }}</span>
                                         <span><span class="hpm-place">{{ h.location }}</span><br><span class="hpm-model">{{ homeSubtitle(h) }}</span></span>
-                                        <span class="hpm-val"><span class="hpm-kwh">{{ rateOf(h).toFixed(1) }}<small>p</small></span><br><span class="hpm-temp">&approx;&pound;{{ fmt(rateOf(h) * h.elec / 100) }}/yr &middot; SCOP {{ h.cop.toFixed(1) }}</span></span>
+                                        <span class="hpm-val"><span class="hpm-kwh">{{ rateOf(h).toFixed(1) }}<small>p</small></span><br><span class="hpm-temp">&approx;&pound;{{ fmt(rateOf(h) * h.elec / 100) }}/yr &middot; SPF {{ h.cop.toFixed(1) }}</span></span>
                                     </a>
                                 </li>
                             </ol>
@@ -1639,13 +1639,13 @@ global $path;
                         <div class="col-lg-7 d-flex">
                             <div class="hpm-chart-card flex-grow-1">
                                 <h3>Design temperature vs Performance</h3>
-                                <div class="hpm-chart-sub">Each dot is one system's measured SPF/SCOP over the last 365 days &middot; click a row to select it &middot; click a dot to open that system</div>
+                                <div class="hpm-chart-sub">Each dot is one system's measured SPF over the last 365 days &middot; click a row to select it &middot; click a dot to open that system</div>
                                 <svg class="hpm-dft" viewBox="0 0 680 304" role="img"
-                                     aria-label="Five dot strips of measured SCOP, one per design flow temperature from 35 to 55 degrees. Group means fall gently from about 4.1 at 35 degrees design to about 3.6 at 55 degrees, while the spread within every group is far wider than the difference between them.">
+                                     aria-label="Five dot strips of measured SPF, one per design flow temperature from 35 to 55 degrees. Group means fall gently from about 4.1 at 35 degrees design to about 3.6 at 55 degrees, while the spread within every group is far wider than the difference between them.">
                                     <g>
                                         <line v-for="t in dftTicks" class="grid" :x1="dftX(t)" y1="8" :x2="dftX(t)" y2="268"></line>
                                         <text v-for="t in dftTicks" class="axis-label" :x="dftX(t)" y="290" text-anchor="middle">{{ t.toFixed(1) }}</text>
-                                        <text class="axis-label" x="338" y="303" text-anchor="middle">Measured SCOP, space heating &amp; hot water combined</text>
+                                        <text class="axis-label" x="338" y="303" text-anchor="middle">Measured SPF, space heating &amp; hot water combined</text>
                                     </g>
                                     <g v-for="row in dftRows">
                                         <rect :class="['row-bg', {selected: row.t===designTemp}]"
@@ -1736,11 +1736,11 @@ global $path;
                                 <h3>{{ perfMetricDef.title }}</h3>
                                 <div class="hpm-chart-sub">{{ perfMetricDef.sub }} &middot; each dot is one system</div>
                                 <svg class="hpm-scatter" viewBox="0 0 680 386" role="img"
-                                     :aria-label="'Scatter plot of measured SCOP against ' + perfMetricDef.axis + ' for ' + perfFit.n + ' systems. SCOP falls steadily as the temperature rises, with a dashed best-fit line showing roughly ' + Math.abs(perfFit.slope).toFixed(2) + ' SCOP lost per degree.'">
+                                     :aria-label="'Scatter plot of measured SPF against ' + perfMetricDef.axis + ' for ' + perfFit.n + ' systems. SPF falls steadily as the temperature rises, with a dashed best-fit line showing roughly ' + Math.abs(perfFit.slope).toFixed(2) + ' SPF lost per degree.'">
                                     <g>
                                         <line v-for="t in perfYTicks" class="grid" x1="70" :y1="perfY(t)" x2="662" :y2="perfY(t)"></line>
                                         <text v-for="t in perfYTicks" class="axis-label" x="58" :y="perfY(t) + 4" text-anchor="end">{{ t }}</text>
-                                        <text class="axis-title" x="24" y="173" transform="rotate(-90 24 173)" text-anchor="middle">SCOP</text>
+                                        <text class="axis-title" x="24" y="173" transform="rotate(-90 24 173)" text-anchor="middle">SPF</text>
                                     </g>
                                     <g>
                                         <text v-for="t in perfXTicks" class="axis-label" :x="perfX(t)" y="352" text-anchor="middle">{{ t }}</text>
@@ -1756,7 +1756,7 @@ global $path;
                                         <line class="pi-cap" :x1="perfX(predictFlowT) - 7" :y1="perfY(prediction.hi)" :x2="perfX(predictFlowT) + 7" :y2="perfY(prediction.hi)"></line>
                                         <circle class="pi-mid" :cx="perfX(predictFlowT)" :cy="perfY(prediction.mid)" r="6.5"></circle>
                                     </g>
-                                    <text class="axis-title" x="655" y="32" text-anchor="end">&minus;{{ Math.abs(perfFit.slope).toFixed(2) }} SCOP per {{ perfMetricDef.unit === 'K' ? 'K' : '&deg;C' }}</text>
+                                    <text class="axis-title" x="655" y="32" text-anchor="end">&minus;{{ Math.abs(perfFit.slope).toFixed(2) }} SPF per {{ perfMetricDef.unit === 'K' ? 'K' : '&deg;C' }}</text>
                                     <text class="axis-label" x="655" y="50" text-anchor="end">R&sup2; {{ perfFit.r2.toFixed(2) }} &middot; {{ perfFit.n }} systems</text>
                                 </svg>
                                 <div class="hpm-legend" v-if="prediction">
@@ -1809,7 +1809,7 @@ global $path;
                     cooling &mdash; cooling energy skews the heat-weighted averages.
                     Weighted averages weight each temperature reading by the heat delivered at it, so they
                     reflect the conditions most heat was produced under.
-                    Live best fit: SCOP = {{ perfFit.slope.toFixed(3) }} &times; x +
+                    Live best fit: SPF = {{ perfFit.slope.toFixed(3) }} &times; x +
                     {{ perfFit.icpt.toFixed(2) }} across {{ perfFit.n }} systems &mdash; the exact figures
                     drift a little as systems join, but the slope has stayed near 0.1 per degree for years.
                 </p>
@@ -2095,7 +2095,7 @@ global $path;
             perfMetrics: [
                 {
                     key: "coldest", name: "Coldest day", unit: "°C",
-                    title: "SCOP vs coldest-day flow temperature",
+                    title: "SPF vs coldest-day flow temperature",
                     sub: "Weighted mean flow temperature on each system's coldest day — the closest measure to the design condition",
                     axis: "Weighted mean flow temperature on the coldest day (°C)"
                 }
@@ -2284,7 +2284,7 @@ global $path;
                 }
                 return ticks;
             },
-            // ---- Correlation walkthrough: SCOP vs running temperature ----
+            // ---- Correlation walkthrough: SPF vs running temperature ----
             perfMetric: function() {
                 return "coldest";
             },
@@ -2366,7 +2366,7 @@ global $path;
                         id: p.h.id,
                         x: self.perfX(p.x),
                         y: self.perfY(p.y),
-                        label: p.h.location + " — " + subtitle(p.h) + " · SCOP " + p.y.toFixed(1)
+                        label: p.h.location + " — " + subtitle(p.h) + " · SPF " + p.y.toFixed(1)
                              + " · " + p.x.toFixed(1) + " " + def.unit
                     };
                 });
@@ -2714,7 +2714,7 @@ global $path;
                 var s = this.dftSel;
                 return s.actual !== null ? this.designTemp - s.actual : 0;
             },
-            // Shared SCOP axis across all groups, snapped outwards to 0.5 steps
+            // Shared SPF axis across all groups, snapped outwards to 0.5 steps
             dftDomain: function() {
                 var all = [];
                 var groups = this.dftGroups;
@@ -2768,7 +2768,7 @@ global $path;
                             y: center + side * level * dy,
                             r: r,
                             nm: !hasMeasured,
-                            label: h.location + " — " + subtitle(h) + " · SCOP " + h.cop.toFixed(1)
+                            label: h.location + " — " + subtitle(h) + " · SPF " + h.cop.toFixed(1)
                                  + " · designed " + h.design + "°C"
                                  + (hasMeasured ? ", ran at " + h.measured.toFixed(1) + "°C" : ", no coldest-day flow temp data")
                         };
@@ -2810,7 +2810,7 @@ global $path;
                         y: 183 - (stacks[bin] - 1) * dy,
                         r: r,
                         top: top.indexOf(h) !== -1,
-                        label: h.location + " — " + subtitle(h) + " · ≈£" + fmt(cost) + "/yr (" + costRate(h).toFixed(1) + "p/kWh) · SCOP " + h.cop.toFixed(1) + " · " + fmt(h.heat) + " kWh heat"
+                        label: h.location + " — " + subtitle(h) + " · ≈£" + fmt(cost) + "/yr (" + costRate(h).toFixed(1) + "p/kWh) · SPF " + h.cop.toFixed(1) + " · " + fmt(h.heat) + " kWh heat"
                     };
                 });
             }
@@ -2886,7 +2886,7 @@ global $path;
             spfY: function(count) {
                 return 300 - (count / this.spfMaxCount) * 270;
             },
-            // SCOP against one running-temperature metric, over the systems
+            // SPF against one running-temperature metric, over the systems
             // that report it with a plausible value
             metricPoints: function(key) {
                 return this.perfHomes.map(function(h) {
@@ -2920,7 +2920,7 @@ global $path;
                     se: Math.sqrt(Math.max(syy - slope * sxy, 0) / (n - 2))
                 };
             },
-            // Map metric / SCOP onto the scatter's plot area (x 70–662, y 16–330)
+            // Map metric / SPF onto the scatter's plot area (x 70–662, y 16–330)
             perfX: function(v) {
                 var d = this.perfXDomain;
                 var c = Math.min(Math.max(v, d.lo), d.hi);
@@ -2931,7 +2931,7 @@ global $path;
                 var c = Math.min(Math.max(cop, d.lo), d.hi);
                 return 330 - (c - d.lo) / (d.hi - d.lo) * 314;
             },
-            // Map SCOP onto the design-flow-temp chart's 90–586 plot width
+            // Map SPF onto the design-flow-temp chart's 90–586 plot width
             dftX: function(cop) {
                 var d = this.dftDomain;
                 var c = Math.min(Math.max(cop, d.lo), d.hi);
