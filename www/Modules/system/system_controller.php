@@ -114,6 +114,13 @@ function system_controller() {
                         "stats_columns"=>$system_stats->schema['system_stats_monthly_v2']
                     ));
                 }
+            } else if ($settings['public_mode_enabled']) {
+                return view("Modules/system/system_list.php",array(
+                    "mode"=>"public",
+                    "systems"=>$system->list_public(),
+                    "columns"=>$system->get_columns(),
+                    "stats_columns"=>$system_stats->schema['system_stats_monthly_v2']
+                ));
             }
         } else {
             // Public list view

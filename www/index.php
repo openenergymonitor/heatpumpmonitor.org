@@ -50,9 +50,8 @@ $session = $user->emon_session_start();
 if ($route->controller=="") {
     // If public mode is enabled, show public systems
     if ($settings['public_mode_enabled']) {
-        $route->controller = "system";
-        $route->action = "list";
-        $route->subaction = "public";
+        $route->controller = "home";
+        $route->action = "";
     } else {
         // If user is not logged in, show login page
         if (!$session['userid']) {
@@ -60,9 +59,8 @@ if ($route->controller=="") {
             $route->action = "login";
         } else {
             // If user is logged in, show user systems
-            $route->controller = "system";
-            $route->action = "list";
-            $route->subaction = "user";
+            $route->controller = "home";
+            $route->action = "";
         }
     }
 }

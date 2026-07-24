@@ -126,7 +126,7 @@ global $path;
                             <button v-if="admin && !showUnmatched" class="btn btn-danger btn-sm" @click="deleteInstaller(installer)" title="Delete">
                                 <i class="fas fa-trash" style="color: #ffffff;"></i>
                             </button>
-                            <a :href="path+'?filter='+encodeURIComponent(installer.name)+'&period=all&minDays=0&errors=1'">
+                            <a :href="path+'system/list?filter='+encodeURIComponent(installer.name)+'&period=all&minDays=0&errors=1'">
                                 <button class="btn btn-primary btn-sm" :title="'View '+installer.name+' systems'">
                                     <i class="fa fa-list-alt" style="color: #ffffff;"></i>
                                 </button>

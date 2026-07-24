@@ -844,7 +844,7 @@ global $path;
 .hpm-hist .axis-label { font-size: 13px; fill: var(--hpm-muted); font-family: inherit; }
 .hpm-hist .axis-title { font-size: 13px; fill: var(--hpm-ink-soft); font-weight: 600; font-family: inherit; }
 .hpm-hist .bar { fill: var(--hpm-teal); }
-.hpm-hist .iqr { fill: rgba(42, 157, 143, 0.12); }
+.hpm-hist .selection-band { fill: rgba(42, 157, 143, 0.16); }
 .hpm-hist .median-line { stroke: var(--hpm-amber); stroke-width: 2; stroke-dasharray: 6 5; }
 .hpm-hist .median-chip { fill: var(--hpm-amber); }
 .hpm-hist .median-chip-text { font-size: 13px; font-weight: 700; fill: #fff; font-family: inherit; }
@@ -886,6 +886,11 @@ global $path;
     border-top: 1px solid var(--hpm-line);
     font-size: 0.875rem;
     color: var(--hpm-muted);
+}
+.hpm-leaderboard-note .hpm-note-emphasis {
+    display: block;
+    margin-top: 0.35rem;
+    color: var(--hpm-ink-soft);
 }
 
 /* ---- find an installer: embedded map preview ---- */
@@ -1069,7 +1074,7 @@ global $path;
                         across the UK and beyond. Systems are monitored using high accuracy <b>MID-certified electric and heat meters</b> - ensuring that the data is reliable and can be compared to previous UK Gov funded trials.
                     </p>
                     <div class="d-flex flex-wrap gap-3 mb-5">
-                        <a class="hpm-btn hpm-btn-primary" href="<?php echo $path; ?>">Explore the data <i class="bi bi-arrow-right"></i></a>
+                        <a class="hpm-btn hpm-btn-primary" href="<?php echo $path; ?>system/list">Explore the data <i class="bi bi-arrow-right"></i></a>
                         <a class="hpm-btn hpm-btn-secondary" href="#join-in"><i class="bi bi-plus-lg"></i> Add your system</a>
                     </div>
                 </div>
@@ -1308,7 +1313,7 @@ global $path;
                                     </a>
                                 </li>
                             </ol>
-                            <a class="hpm-leaderboard-foot" href="<?php echo $path; ?>">
+                            <a class="hpm-leaderboard-foot" href="<?php echo $path; ?>system/list?mode=costs&tariff=agile">
                                 Explore all {{ matches.length }} on the full system list page <i class="bi bi-arrow-right"></i>
                             </a>
                             
@@ -1433,7 +1438,7 @@ global $path;
                                     </a>
                                 </li>
                             </ol>
-                            <a class="hpm-leaderboard-foot" :href="path + '?mode=costs&tariff=' + tariff">
+                            <a class="hpm-leaderboard-foot" :href="path + 'system/list?mode=costs&tariff=' + tariff">
                                 Explore all {{ tariffStats.n }} in cost mode <i class="bi bi-arrow-right"></i>
                             </a>
                         </div>
@@ -1516,7 +1521,7 @@ global $path;
                         <div class="hpm-chart-sub">Space heating &amp; hot water combined, last 365 days &middot; count of systems per 0.1 SPF band &middot; hover for detail</div>
                         <svg class="hpm-hist" viewBox="0 0 680 350" role="img"
                              :aria-label="'Histogram of measured SPF across ' + spfStats.n + ' systems in 0.1 SPF bands. The median is ' + spfStats.median.toFixed(2) + ', and half of all systems fall between ' + spfStats.q1.toFixed(1) + ' and ' + spfStats.q3.toFixed(1) + '.'">
-                            <rect class="iqr" :x="spfX(spfStats.q1)" y="18" :width="spfX(spfStats.q3) - spfX(spfStats.q1)" height="282"></rect>
+                            <rect v-if="spfSelectionBand" class="selection-band" :x="spfX(spfSelectionBand.lo)" y="18" :width="Math.max(6, spfX(spfSelectionBand.hi) - spfX(spfSelectionBand.lo))" height="282" rx="4"></rect>
                             <g>
                                 <line v-for="t in spfYTicks" class="grid" x1="50" :y1="spfY(t)" x2="660" :y2="spfY(t)"></line>
                                 <text v-for="t in spfYTicks" class="axis-label" x="42" :y="spfY(t) + 4" text-anchor="end">{{ t }}</text>
@@ -1539,7 +1544,7 @@ global $path;
                         </svg>
                         <div class="hpm-legend">
                             <span><span class="hpm-swatch" style="background:#2a9d8f;"></span> Systems per 0.1 SPF band</span>
-                            <span><span class="hpm-swatch" style="background:rgba(42,157,143,0.16); width:1rem; border-radius:3px;"></span> Middle 50% of systems</span>
+                            <span><span class="hpm-swatch" style="background:rgba(42,157,143,0.16); width:1rem; border-radius:3px;"></span> {{ spfSelectionBand ? spfSelectionBand.label : 'Selected ranking band' }}</span>
                             <span><span class="hpm-swatch" style="background:#c97716; height:0.2rem; width:1rem; border-radius:2px;"></span> Median</span>
                         </div>
                     </div>
@@ -1550,9 +1555,9 @@ global $path;
                             <h3>SPF ranking</h3>
                             <div class="hpm-seg">
                                 <button :class="{active: spfLeaderMode==='top'}" @click="spfLeaderMode='top'">Top 5</button>
-                                <button :class="{active: spfLeaderMode==='decile'}" @click="spfLeaderMode='decile'">Top 10%</button>
-                                <button :class="{active: spfLeaderMode==='median'}" @click="spfLeaderMode='median'">Median 5</button>
-                                <button :class="{active: spfLeaderMode==='bottom'}" @click="spfLeaderMode='bottom'">Bottom 5</button>
+                                <button :class="{active: spfLeaderMode==='decile'}" @click="spfLeaderMode='decile'">Top 25%</button>
+                                <button :class="{active: spfLeaderMode==='median'}" @click="spfLeaderMode='median'">Middle 50%</button>
+                                <button :class="{active: spfLeaderMode==='bottom'}" @click="spfLeaderMode='bottom'">Bottom 25%</button>
                             </div>
                         </div>
                         <ol>
@@ -1564,9 +1569,8 @@ global $path;
                                 </a>
                             </li>
                         </ol>
-                        <div class="hpm-leaderboard-note" v-if="spfLeaderMode==='decile'">
-                            Top 10% = {{ spfDecileStats.n }} systems, SPF {{ spfDecileStats.min.toFixed(2) }}&ndash;{{ spfDecileStats.max.toFixed(2) }},
-                            mean {{ spfDecileStats.mean.toFixed(2) }}, median {{ spfDecileStats.median.toFixed(2) }}
+                        <div class="hpm-leaderboard-note" v-if="spfLeaderNote">
+                            {{ spfLeaderNote }}
                         </div>
                     </div>
                 </div>
@@ -1859,7 +1863,7 @@ global $path;
             </p>
             <div class="row g-4">
                 <div class="col-md-6 col-xl-3">
-                    <a class="hpm-explore-card" href="<?php echo $path; ?>">
+                    <a class="hpm-explore-card" href="<?php echo $path; ?>system/list">
                         <span class="hpm-explore-icon"><i class="bi bi-list-ul"></i></span>
                         <h3>System list</h3>
                         <p>All systems ranked by measured SPF, fabric or cost. Filter and explore over 200 different fields per system.</p>
@@ -2047,7 +2051,7 @@ global $path;
 
             // Homes like yours
             homes: [],
-            spfLeaderMode: "top",
+            spfLeaderMode: "decile",
             finderLoading: true,
             finderError: false,
             // Featured story: systems actively cooling over the last 30 days
@@ -2517,33 +2521,92 @@ global $path;
                     max: v[v.length - 1]
                 };
             },
-            // Systems ranked by SPF, best first, for the winner card and top/median/bottom 5 card
+            // Systems ranked by SPF, best first, for the winner card and leaderboard views
             spfRankedHomes: function() {
                 return this.homes
                     .filter(function(h) { return h.cop !== null && h.cop > 0; })
                     .slice()
                     .sort(function(a, b) { return b.cop - a.cop; });
             },
+            spfSelectionBand: function() {
+                var ranked = this.spfRankedHomes;
+                var stats = this.spfStats;
+                var n = ranked.length;
+                var count = 0;
+                if (!n) return null;
+
+                if (this.spfLeaderMode === "top") {
+                    count = Math.min(5, n);
+                    return { lo: ranked[count - 1].cop, hi: ranked[0].cop, count: count, label: "Top 5 systems" };
+                }
+                if (this.spfLeaderMode === "bottom") {
+                    count = Math.max(1, Math.round(n * 0.25));
+                    return { lo: ranked[n - 1].cop, hi: ranked[n - count].cop, count: count, label: "Bottom 25% of systems" };
+                }
+                if (this.spfLeaderMode === "decile") {
+                    count = Math.max(1, Math.round(n * 0.25));
+                    return { lo: ranked[count - 1].cop, hi: ranked[0].cop, count: count, label: "Top 25% of systems" };
+                }
+                return { lo: stats.q1, hi: stats.q3, count: Math.max(1, Math.round(n * 0.5)), label: "Middle 50% of systems" };
+            },
             spfLeaders: function() {
                 var ranked = this.spfRankedHomes;
                 var n = ranked.length;
+                var bandCount = 0;
+                var bandStart = 0;
                 if (!n) return [];
                 var start = 0;
-                if (this.spfLeaderMode === "bottom") start = Math.max(0, n - 5);
-                else if (this.spfLeaderMode === "median") start = Math.max(0, Math.round(n / 2) - 3);
-                // Middle of the top-10% band: window centred on the decile's median rank (n * 0.05)
-                else if (this.spfLeaderMode === "decile") start = Math.max(0, Math.round(n * 0.05) - 3);
+                if (this.spfLeaderMode === "bottom") {
+                    bandCount = Math.max(1, Math.round(n * 0.25));
+                    bandStart = Math.max(0, n - bandCount);
+                    start = Math.round(bandStart + bandCount * 0.5) - 3;
+                    start = Math.max(bandStart, Math.min(start, Math.max(0, n - 5)));
+                } else if (this.spfLeaderMode === "median") start = Math.max(0, Math.round(n / 2) - 3);
+                // Middle of the top-25% band: window centred on the band's median rank
+                else if (this.spfLeaderMode === "decile") {
+                    bandCount = Math.max(1, Math.round(n * 0.25));
+                    start = Math.max(0, Math.round(bandCount * 0.5) - 3);
+                }
                 return ranked.slice(start, start + 5).map(function(h, i) {
                     return { h: h, rank: start + i + 1 };
                 });
             },
-            // Count, range, mean and median of the top 10% of systems by SPF
-            spfDecileStats: function() {
+            spfLeaderNote: function() {
+                var band = this.spfSelectionBand;
+                if (!band) return "";
+                if (this.spfLeaderMode === "decile") {
+                    return "Top 25% = " + this.spfTopQuartileStats.n + " systems, SPF " + this.spfTopQuartileStats.min.toFixed(2) + "–" + this.spfTopQuartileStats.max.toFixed(2) + ", mean " + this.spfTopQuartileStats.mean.toFixed(2) + ", median " + this.spfTopQuartileStats.median.toFixed(2);
+                }
+                if (this.spfLeaderMode === "median") {
+                    return "Middle 50% = roughly " + band.count + " systems, SPF " + this.spfStats.q1.toFixed(2) + "–" + this.spfStats.q3.toFixed(2) + "; the list shows five homes around the median.";
+                }
+                if (this.spfLeaderMode === "top") {
+                    return "Top 5 = SPF " + band.lo.toFixed(2) + "–" + band.hi.toFixed(2) + ".";
+                }
+                return "Bottom 25% = " + this.spfBottomQuartileStats.n + " systems, SPF " + this.spfBottomQuartileStats.min.toFixed(2) + "–" + this.spfBottomQuartileStats.max.toFixed(2) + ", mean " + this.spfBottomQuartileStats.mean.toFixed(2) + ", median " + this.spfBottomQuartileStats.median.toFixed(2) + ". An SPF of " + this.spfBottomQuartileStats.median.toFixed(2) + " is still a good result!"
+            },
+            // Count, range, mean and median of the top 25% of systems by SPF
+            spfTopQuartileStats: function() {
                 var ranked = this.spfRankedHomes;
                 var n = ranked.length;
                 if (!n) return { n: 0, min: 0, max: 0, mean: 0, median: 0 };
-                var k = Math.max(1, Math.round(n * 0.1));
+                var k = Math.max(1, Math.round(n * 0.25));
                 var v = ranked.slice(0, k).map(function(h) { return h.cop; }).reverse();
+                return {
+                    n: k,
+                    min: v[0],
+                    max: v[v.length - 1],
+                    mean: v.reduce(function(a, b) { return a + b; }, 0) / k,
+                    median: this.quantile(v, 0.5)
+                };
+            },
+            // Count, range, mean and median of the bottom 25% of systems by SPF
+            spfBottomQuartileStats: function() {
+                var ranked = this.spfRankedHomes;
+                var n = ranked.length;
+                if (!n) return { n: 0, min: 0, max: 0, mean: 0, median: 0 };
+                var k = Math.max(1, Math.round(n * 0.25));
+                var v = ranked.slice(n - k).map(function(h) { return h.cop; }).reverse();
                 return {
                     n: k,
                     min: v[0],
