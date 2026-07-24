@@ -1479,7 +1479,7 @@ global $path;
             </div>
 
             <p class="hpm-finder-footnote"> 
-                The Agile tariff is currently showing savings with likely no or minimal need for demand shifting, but some owners are archiving even lower rates by running their heat pumps at cheaper times of day. Many owners prefer to run their heat pumps for comfort rather than cost which is a perfectly valid way of running a heat pump. Battery storage can also be used to shift demand rather than running the heat pump at a different times of day.
+                The Agile tariff is currently showing savings with likely no or minimal need for demand shifting, but some owners are achieving even lower rates by running their heat pumps at cheaper times of day. Many owners prefer to run their heat pumps for comfort rather than cost which is a perfectly valid way of running a heat pump. Battery storage can also be used to shift demand rather than running the heat pump at a different times of day.
             </p>
 
             <!--
