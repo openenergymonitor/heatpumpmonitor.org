@@ -845,6 +845,7 @@ global $path;
 .hpm-hist .axis-title { font-size: 13px; fill: var(--hpm-ink-soft); font-weight: 600; font-family: inherit; }
 .hpm-hist .bar { fill: var(--hpm-teal); }
 .hpm-hist .selection-band { fill: rgba(42, 157, 143, 0.16); }
+.hpm-hist .iqr { fill: rgba(42, 157, 143, 0.16); }
 .hpm-hist .median-line { stroke: var(--hpm-amber); stroke-width: 2; stroke-dasharray: 6 5; }
 .hpm-hist .median-chip { fill: var(--hpm-amber); }
 .hpm-hist .median-chip-text { font-size: 13px; font-weight: 700; fill: #fff; font-family: inherit; }
