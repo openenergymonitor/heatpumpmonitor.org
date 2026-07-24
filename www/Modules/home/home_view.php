@@ -1232,8 +1232,11 @@ global $path;
                     <h3><span class="hpm-results-count">{{ matches.length }}</span> matching home{{ matches.length===1 ? '' : 's' }}</h3>
                     <button v-if="finderActive" class="hpm-finder-clear" @click="clearFinder"><i class="bi bi-x-circle"></i> Clear filters</button>
                     <div class="d-flex flex-wrap gap-2" style="margin-left:auto;">
-                        <div class="hpm-seg" role="group" aria-label="Choose tariff for cost estimates" style="margin-left:0;">
-                            <button v-for="td in costTariffDefs" type="button" :class="{active: costTariff===td.key}" @click="costTariff=td.key">{{ td.short }}</button>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="hpm-filter-label" style="flex:none;">Tariff</span>
+                            <div class="hpm-seg" role="group" aria-label="Choose tariff for cost estimates" style="margin-left:0;">
+                                <button v-for="td in costTariffDefs" type="button" :class="{active: costTariff===td.key}" @click="costTariff=td.key">{{ td.short }}</button>
+                            </div>
                         </div>
                         <div class="hpm-seg" role="group" aria-label="Show cheapest or highest cost homes" style="margin-left:0;">
                             <button type="button" :class="{active: showCheapest}" @click="showCheapest=true">Cheapest to run</button>
@@ -1465,7 +1468,7 @@ global $path;
             </div>
 
             <p class="hpm-finder-footnote"> 
-                The Agile tariff is currently showing savings without any need for demand shifting, but some owners are archiving even lower rates by running their heat pumps at cheaper times of day. Many owners prefer to run their heat pumps for comfort rather than cost which is an equally valid way of running a heat pump. The benefits of time-of-use tariffs can also be realised without changing how you run your heat pump, a battery can be used to store energy when it is cheap and use it when it is expensive.
+                The Agile tariff is currently showing savings with likely no or minimal need for demand shifting, but some owners are archiving even lower rates by running their heat pumps at cheaper times of day. Many owners prefer to run their heat pumps for comfort rather than cost which is a perfectly valid way of running a heat pump. Battery storage can also be used to shift demand rather than running the heat pump at a different times of day.
             </p>
 
             <!--
