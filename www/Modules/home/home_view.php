@@ -378,6 +378,12 @@ global $path;
     font-weight: 800;
     color: var(--hpm-ink);
     font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+.hpm-leaderboard .hpm-val .hpm-kwh .hpm-unit {
+    font-size: 0.75em;
+    font-weight: 600;
+    color: var(--hpm-muted);
 }
 .hpm-leaderboard .hpm-val .hpm-temp {
     font-size: 0.875rem;
@@ -461,6 +467,11 @@ global $path;
     margin-bottom: 0.6rem;
 }
 .hpm-note-card p { margin: 0; }
+.hpm-note-card .hpm-note-footnote {
+    margin-top: 0.9rem;
+    font-size: 0.8125rem;
+    color: rgba(255, 255, 255, 0.55);
+}
 
 /* ---- explore cards ---- */
 .hpm-explore-card {
@@ -1141,7 +1152,7 @@ global $path;
                                 <div class="hpm-lab">average cooling COP</div>
                             </div>
                             <div class="hpm-featured-stat">
-                                <div class="hpm-num">{{ fmt(coolingTop[0].heat) }} kWh</div>
+                                <div class="hpm-num">{{ fmt(coolingMaxKwh) }} kWh</div>
                                 <div class="hpm-lab">top cooling, last month</div>
                             </div>
                         </div>
@@ -1149,15 +1160,15 @@ global $path;
                     <div class="col-lg-5">
                         <div class="hpm-leaderboard">
                             <div class="hpm-leaderboard-head">
-                                <h3>Most cooling delivered</h3>
-                                <span>kWh (30d) &middot; COP</span>
+                                <h3>Most cooling delivered per m&sup2;</h3>
+                                <span>last 30 days &middot; COP</span>
                             </div>
                             <ol>
                                 <li v-for="(h, i) in coolingTop" style="padding:0;">
                                     <a class="hpm-leader-link" :href="path + 'system/view?id=' + h.id">
                                         <span class="hpm-rank">{{ i + 1 }}</span>
                                         <span><span class="hpm-place">{{ h.location }}</span><br><span class="hpm-model">{{ homeSubtitle(h) }}</span></span>
-                                        <span class="hpm-val"><span class="hpm-kwh">{{ fmt(h.heat) }}</span><br><span class="hpm-temp">{{ h.cop ? "COP " + h.cop.toFixed(1) : "—" }}</span></span>
+                                        <span class="hpm-val"><span class="hpm-kwh">{{ (h.heat / h.floor).toFixed(1) }}<span class="hpm-unit"> kWh/m&sup2;</span></span><br><span class="hpm-temp">{{ h.cop ? "COP " + h.cop.toFixed(1) : "—" }}</span></span>
                                     </a>
                                 </li>
                             </ol>
@@ -1583,8 +1594,10 @@ global $path;
                 <div class="hpm-note-card mt-4">
                     <div class="hpm-note-eyebrow">How SPF is measured</div>
                     <p>
-                        We use class 1 electricity metering and class 2 heat metering to measure the electricity consumed and heat delivered by each system over a full year. The SPF is the total heat delivered divided by the total electricity consumed, space heating and hot water combined. The {{ spfStats.n }} systems in this analysis are all monitored to the SEPEMO H4 boundary - meaning that they include all electricity consumption from the outside unit, auxiliary energy such as backup or immersion heaters and any additional building circulation pumps or fans. The majority of the systems in this analysis are high temperature capable R290 units in an open-loop configuration that do not use an immersion heater and have the primary circulation pump built into the unit itself.
+                        We use <b>MID-approved Class 1 electricity metering</b> and <b>Class 2 heat metering</b> to measure the electricity consumed and heat delivered by each system over a full year. The SPF is the total heat delivered divided by the total electricity consumed, space heating and hot water combined. The {{ spfStats.n }} systems in this analysis are all monitored to the <b>SEPEMO H4</b> boundary - meaning that they include all electricity consumption from the outside unit, auxiliary energy such as backup or immersion heaters and any additional building circulation pumps or fans. The majority of the systems in this analysis are high temperature capable R290 units in an open-loop configuration that do not use an immersion heater and have the primary circulation pump built into the unit itself.
                     </p>
+                    <p class="hpm-note-footnote">MID-approved: Certified to the accuracy classes defined in the Measuring Instruments Directive.</p>
+
                 </div>
             </div>
 
@@ -2191,8 +2204,14 @@ global $path;
                 return this.tariffMedianRates.agile.toFixed(1);
             },
             // ---- Featured story: active cooling over the last 30 days ----
+            // Leaderboard ranked by cooling delivered per m² of floor area;
+            // systems without a floor area can't be normalised so are excluded
             coolingTop: function() {
-                return this.cooling.slice().sort(function(a, b) { return b.heat - a.heat; }).slice(0, 5);
+                return this.cooling.filter(function(h) { return h.floor > 0; })
+                    .sort(function(a, b) { return (b.heat / b.floor) - (a.heat / a.floor); }).slice(0, 5);
+            },
+            coolingMaxKwh: function() {
+                return this.cooling.reduce(function(max, h) { return Math.max(max, h.heat); }, 0);
             },
             coolingTotalKwh: function() {
                 return this.cooling.reduce(function(sum, h) { return sum + h.heat; }, 0);
