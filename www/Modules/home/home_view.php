@@ -2122,7 +2122,7 @@ global $path;
 
             // Smart tariffs: unit price histogram
             // Electricity price cap flat unit rate, p/kWh (July 2026)
-            PRICE_CAP: 26.0,
+            PRICE_CAP: 26.11,
             tariff: "agile",
             tariffRank: "lowest",
             tariffDefs: [
