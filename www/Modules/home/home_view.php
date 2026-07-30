@@ -88,6 +88,7 @@ global $path;
 .hpm-hero-badge {
     display: inline-flex;
     align-items: center;
+    max-width: 100%;
     gap: 0.5rem;
     padding: 0.4rem 1rem;
     border-radius: 2rem;
@@ -110,8 +111,8 @@ global $path;
     font-weight: 800;
     letter-spacing: -0.025em;
     line-height: 1.08;
-    font-size: clamp(2.4rem, 5.5vw, 4rem);
-    max-width: 18ch;
+    font-size: clamp(2.2rem, 4.6vw, 3.4rem);
+    max-width: 20ch;
     margin-bottom: 1.5rem;
 }
 .hpm-hero h1 .hpm-accent { color: var(--hpm-blue-deep); }
@@ -126,6 +127,87 @@ global $path;
         color: transparent;
     }
 }
+
+/* ---- hero map card ---- */
+/* The map is a single inline SVG pre-rendered server-side (home_model
+   hero_map): no tiles, no map library, no data fetch — it paints with the
+   rest of the page. The whole card links to the full interactive map. */
+.hpm-hero-map-card {
+    position: relative;
+    display: block;
+    height: clamp(24rem, 62vh, 34rem);
+    background: linear-gradient(180deg, #e6f2fa 0%, #d5eaf6 100%);
+    border: 1px solid var(--hpm-line);
+    border-radius: 1.25rem;
+    overflow: hidden;
+    text-decoration: none;
+    box-shadow: 0 18px 44px rgba(20, 52, 74, 0.12);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.hpm-hero-map-card:hover, .hpm-hero-map-card:focus-visible {
+    transform: translateY(-2px);
+    box-shadow: 0 24px 54px rgba(20, 52, 74, 0.18);
+}
+.hpm-hero-map-card:focus-visible {
+    outline: 3px solid rgba(68, 179, 226, 0.55);
+    outline-offset: 2px;
+}
+.hpm-hero-map {
+    display: block;
+    width: 100%;
+    height: 100%;
+    padding: 0.75rem 0.75rem 0.75rem 0.75rem;
+}
+.hpm-hero-map-land path {
+    fill: #ffffff;
+    stroke: #b9d6e8;
+    stroke-width: 0.8;
+}
+.hpm-hero-map-dots circle {
+    stroke: rgba(255, 255, 255, 0.9);
+    stroke-width: 1.2;
+    fill-opacity: 0.9;
+}
+.hpm-hero-map-dots {
+    animation: hpm-dots-in 0.9s ease both;
+}
+@keyframes hpm-dots-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+.hpm-hero-map-chip {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 1rem;
+    border-radius: 2rem;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid var(--hpm-line);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--hpm-ink-soft);
+    box-shadow: 0 2px 10px rgba(20, 52, 74, 0.08);
+}
+.hpm-hero-map-chip .hpm-dot {
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 50%;
+    background: var(--hpm-amber);
+}
+.hpm-hero-map-chip b { color: var(--hpm-ink); }
+.hpm-hero-map-cta {
+    position: absolute;
+    left: 1.25rem;
+    bottom: 1.25rem;
+    display: flex;
+    pointer-events: none;
+}
+.hpm-hero-map-card:hover .hpm-btn-primary { background: #1b729e; }
 
 /* ---- buttons ---- */
 .hpm-btn {
@@ -875,6 +957,7 @@ global $path;
 @media (max-width: 767.98px) {
     .hpm-section { padding: 3rem 0; }
     .hpm-hero { padding: 3.5rem 0 3rem; }
+    .hpm-hero-map-card { height: 24rem; }
     .hpm-featured { padding: 1.75rem; border-radius: 1.1rem; }
     .hpm-filter-row { flex-direction: column; gap: 0.5rem; }
     .hpm-filter-label { flex: none; }
@@ -887,7 +970,7 @@ global $path;
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .hpm-home * { transition: none !important; }
+    .hpm-home * { transition: none !important; animation: none !important; }
 }
 
 /* Hide the app until Vue has compiled the template, so raw {{ }} bindings
@@ -901,19 +984,34 @@ global $path;
     <!-- ============ Hero ============ -->
     <section class="hpm-hero">
         <div class="container">
-            <div class="row">
-                <div class="col-lg-9 col-xl-8">
+            <div class="row align-items-center g-4 g-lg-5 mb-4 mb-lg-5">
+                <div class="col-lg-7 col-xl-6">
                     <span class="hpm-hero-badge"><span class="hpm-dot"></span> Open-source heat pump performance data</span>
-                    <h1>What makes a heat&nbsp;pump <span class="hpm-gradient-text">efficient</span> and <span class="hpm-gradient-text">cheap&nbsp;to&nbsp;run?</span></h1>
+                    <h1>Explore our <span class="hpm-gradient-text">database</span> of installed heat&nbsp;pumps</h1>
+                    <p class="hpm-lead mb-4">
+                        Providing information about the <strong>host property</strong>, heat pump <strong>performance</strong>,
+                        <strong>running cost</strong>, <strong>installer</strong> &amp; more.
+                    </p>
                     <p class="hpm-lead mb-4">
                         HeatpumpMonitor.org gathers <strong>real world data from {{ mid_metered_count }} heat pumps</strong>
                         across the UK and beyond. Systems are monitored using high accuracy <b>MID-certified electric and heat meters</b> - ensuring that the data is reliable and can be compared to previous UK Gov funded trials.
                     </p>
-                    <div class="d-flex flex-wrap gap-3 mb-5">
+                    <div class="d-flex flex-wrap gap-3">
                         <a class="hpm-btn hpm-btn-primary" href="<?php echo $path; ?>system/list">Explore the data <i class="bi bi-arrow-right"></i></a>
                         <a class="hpm-btn hpm-btn-secondary" href="#join-in"><i class="bi bi-plus-lg"></i> Add your system</a>
                     </div>
                 </div>
+                <?php if (!empty($hero_map['svg'])) { ?>
+                <div class="col-lg-5 col-xl-6">
+                    <!-- Server-rendered SVG map: instant, no tiles or map library.
+                         The whole card links through to the full interactive map. -->
+                    <a class="hpm-hero-map-card" href="<?php echo $path; ?>map" aria-label="Open the full interactive map of monitored systems">
+                        <?php echo $hero_map['svg']; ?>
+                        <span class="hpm-hero-map-chip"><span class="hpm-dot"></span> <b><?php echo (int) $hero_map['count']; ?></b>&nbsp;systems</span>
+                        <span class="hpm-hero-map-cta"><span class="hpm-btn hpm-btn-primary">Open the map <i class="bi bi-arrows-fullscreen"></i></span></span>
+                    </a>
+                </div>
+                <?php } ?>
             </div>
 
             <!-- Headline stats derived live from the eligible_systems dataset -->

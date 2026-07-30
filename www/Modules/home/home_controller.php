@@ -5,10 +5,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 function home_controller() {
 
-    global $route, $session, $system_stats, $redis;
+    global $route, $session, $system_stats, $redis, $mysqli;
 
     require "Modules/home/home_model.php";
-    $home = new Home($system_stats, $redis);
+    $home = new Home($system_stats, $redis, $mysqli);
 
     // HTML view
     if ($route->action == "") {
@@ -17,7 +17,8 @@ function home_controller() {
             "userid"=>$session['userid'],
             "eligible_systems" => $home->eligible_systems(),
             "cooling_systems" => $home->cooling_systems(),
-            "mid_metered_count" => $home->mid_metered_count()
+            "mid_metered_count" => $home->mid_metered_count(),
+            "hero_map" => $home->hero_map()
         ));
     }
 

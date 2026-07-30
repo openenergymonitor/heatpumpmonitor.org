@@ -7,11 +7,119 @@ class Home
 {
     private $system_stats;
     private $redis;
+    private $mysqli;
 
-    public function __construct($system_stats, $redis)
+    public function __construct($system_stats, $redis, $mysqli = null)
     {
         $this->system_stats = $system_stats;
         $this->redis = $redis;
+        $this->mysqli = $mysqli;
+    }
+
+    // Pre-rendered SVG map of system locations for the home page hero:
+    // a simplified UK & Ireland coastline (see scripts/build_hero_map_geometry.py)
+    // with one dot per public MID-metered system, coloured by installer as
+    // on the full map page. Rendering server-side keeps the hero instant — no tiles,
+    // no map library, no data fetch — and the result is cached in redis
+    // until 7am the next day, shortly after the nightly stats update.
+    // Returns array(svg, count, plotted).
+    public function hero_map()
+    {
+        $cache_key = "hpmon:home:hero_map";
+
+        if ($this->redis) {
+            $cached = $this->redis->get($cache_key);
+            if ($cached) {
+                $decoded = json_decode($cached, true);
+                if ($decoded !== null) return $decoded;
+            }
+        }
+
+        $geometry = json_decode(file_get_contents(__DIR__."/hero_map_geometry.json"));
+        if ($geometry === null || !$this->mysqli) {
+            return array("svg" => "", "count" => 0, "plotted" => 0);
+        }
+
+        // Installer name → brand colour, as used on the full map page
+        $colors = array();
+        if ($result = $this->mysqli->query("SELECT name, color FROM installer")) {
+            while ($row = $result->fetch_object()) {
+                if ($row->name && $row->color && preg_match('/^#[0-9a-fA-F]{3,8}$/', $row->color)) {
+                    $colors[trim($row->name)] = strtolower($row->color);
+                }
+            }
+        }
+
+        // Same mercator projection the geometry file was built with
+        $merc = function($lat) { return log(tan(M_PI / 4 + deg2rad($lat) / 2)); };
+        $merc_min = $merc($geometry->lat_min);
+        $merc_max = $merc($geometry->lat_max);
+
+        $default_color = "#cccccc";
+        $count = 0;
+        $plotted = 0;
+        $dots_by_color = array();
+
+        // Same query as mid_metered_count (which the hero copy quotes), plus
+        // the location fields — so the dot count always matches the text
+        $systems = $this->system_stats->combined_meta_stats_query(array(
+            'meta_filters' => array('mid_metering' => 1),
+            'meta_fields' => array('id', 'latitude', 'longitude', 'installer_name'),
+            'stats_fields' => array(),
+            'stats_table' => "system_stats_last365_v2"
+        ));
+        foreach ($systems as $row) {
+            $count++;
+            $lat = (float) $row->latitude;
+            $lon = (float) $row->longitude;
+            if (!$lat || !$lon) continue;
+            // Systems beyond the UK & Ireland viewport are counted but not drawn
+            if ($lon < $geometry->lon_min || $lon > $geometry->lon_max) continue;
+            if ($lat < $geometry->lat_min || $lat > $geometry->lat_max) continue;
+
+            $x = ($lon - $geometry->lon_min) / ($geometry->lon_max - $geometry->lon_min) * $geometry->width;
+            $y = ($merc_max - $merc($lat)) / ($merc_max - $merc_min) * $geometry->height;
+
+            $color = $default_color;
+            $installer = $row->installer_name !== null ? trim($row->installer_name) : "";
+            if ($installer !== "" && isset($colors[$installer])) $color = $colors[$installer];
+
+            $dots_by_color[$color][] = array(round($x, 1), round($y, 1));
+            $plotted++;
+        }
+
+        // Uncoloured systems first so installer-coloured dots draw on top
+        uksort($dots_by_color, function($a, $b) use ($default_color) {
+            if ($a === $default_color) return -1;
+            if ($b === $default_color) return 1;
+            return strcmp($a, $b);
+        });
+
+        // xMax pins the map to the card's right edge: any letterbox space in
+        // a wide card becomes open Atlantic on the left, under the overlays
+        $svg = '<svg class="hpm-hero-map" viewBox="0 0 '.$geometry->width.' '.$geometry->height.'" preserveAspectRatio="xMaxYMid meet" role="img" aria-label="Map of monitored heat pump systems across the UK and Ireland">';
+        $svg .= '<g class="hpm-hero-map-land"><path d="'.implode('', $geometry->paths).'"/></g>';
+        $svg .= '<g class="hpm-hero-map-dots">';
+        foreach ($dots_by_color as $color => $dots) {
+            $svg .= '<g fill="'.$color.'">';
+            foreach ($dots as $dot) {
+                $svg .= '<circle cx="'.$dot[0].'" cy="'.$dot[1].'" r="5.2"/>';
+            }
+            $svg .= '</g>';
+        }
+        $svg .= '</g></svg>';
+
+        $output = array("svg" => $svg, "count" => $count, "plotted" => $plotted);
+
+        if ($this->redis) {
+            $timezone = new DateTimeZone('Europe/London');
+            $now = new DateTime('now', $timezone);
+            $expires = new DateTime('today 07:00', $timezone);
+            if ($expires <= $now) $expires->modify('+1 day');
+            $this->redis->setex($cache_key, $expires->getTimestamp() - $now->getTimestamp(), json_encode($output));
+        }
+
+        return $output;
     }
 
     // Returns all eligible systems (MID metered, metering boundary code 4,
