@@ -21,6 +21,29 @@ function home_controller() {
         ));
     }
 
+    // Flow temperature vs performance explorer
+    if ($route->action == "flowtemp") {
+        $route->format = "html";
+        return view("Modules/home/flowtemp_view.php", array(
+            "eligible_systems" => $home->eligible_systems()
+        ));
+    }
+
+    // Economics explorer: heat pump vs boiler whole-life cost
+    if ($route->action == "economics") {
+        $route->format = "html";
+        return view("Modules/home/economics_view.php", array(
+            "economics_systems" => $home->economics_systems()
+        ));
+    }
+
+    // Systems with a recorded installation cost + the stats used by the
+    // economics explorer
+    if ($route->action == "economics_systems") {
+        $route->format = "json";
+        return $home->economics_systems();
+    }
+
     // All eligible systems with home-description meta and last-365-day stats
     if ($route->action == "eligible_systems") {
         $route->format = "json";

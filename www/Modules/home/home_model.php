@@ -38,7 +38,9 @@ class Home
                 'insulation',
                 'data_flag',
                 'flow_temp',
-                'measured_mean_flow_temp_coldest_day'
+                'design_temp',
+                'measured_mean_flow_temp_coldest_day',
+                'measured_outside_temp_coldest_day'
             ),
             'stats_fields' => array(
                 'combined_elec_kwh',
@@ -49,6 +51,7 @@ class Home
                 'error_air_kwh',
                 'weighted_flowT',
                 'weighted_flowT_minus_outsideT',
+                'weighted_prc_carnot',
                 'cooling_heat_kwh',
                 'unit_rate_agile',
                 'unit_rate_cosy',
@@ -90,9 +93,13 @@ class Home
                 'age' => $system->age,
                 'insulation' => $system->insulation,
                 'flow_temp' => $system->flow_temp !== null ? (float) $system->flow_temp : null,
+                'design_temp' => $system->design_temp !== null ? (float) $system->design_temp : null,
                 'measured_flow_temp' => $system->measured_mean_flow_temp_coldest_day !== null ? (float) $system->measured_mean_flow_temp_coldest_day : null,
+                'measured_outside_temp_coldest_day' => $system->measured_outside_temp_coldest_day !== null ? (float) $system->measured_outside_temp_coldest_day : null,
                 'weighted_flowT' => $system->weighted_flowT !== null ? round($system->weighted_flowT, 1) : null,
                 'weighted_flowT_minus_outsideT' => $system->weighted_flowT_minus_outsideT !== null ? round($system->weighted_flowT_minus_outsideT, 1) : null,
+                // 0 means the stat could not be computed — treat as missing
+                'weighted_prc_carnot' => $system->weighted_prc_carnot !== null && $system->weighted_prc_carnot > 0 ? round($system->weighted_prc_carnot, 1) : null,
                 'cooling_heat_kwh' => $system->cooling_heat_kwh !== null ? round($system->cooling_heat_kwh, 1) : null,
                 'unit_rate_agile' => $system->unit_rate_agile !== null ? round($system->unit_rate_agile, 2) : null,
                 'unit_rate_cosy' => $system->unit_rate_cosy !== null ? round($system->unit_rate_cosy, 2) : null,
@@ -200,6 +207,88 @@ class Home
                 'cooling_cop' => round($system->cooling_cop, 2),
                 'cooling_elec_kwh' => round($system->cooling_elec_kwh),
                 'cooling_heat_kwh' => round($system->cooling_heat_kwh)
+            );
+        }
+        return $output_systems;
+    }
+
+    // Systems with an installation cost recorded in system_meta
+    // (installation_Cost is entered before subtracting the grant), with the
+    // stats the economics explorer needs: measured SPF and annual heat
+    // demand. Any metering boundary is included — the boundary code is
+    // returned so the UI can badge non-H4 systems.
+    public function economics_systems()
+    {
+        $query = array(
+            'meta_filters' => array(
+                'mid_metering' => 1
+            ),
+            'meta_fields' => array(
+                'id',
+                'location',
+                'hp_type',
+                'hp_manufacturer',
+                'hp_model',
+                'hp_output',
+                'floor_area',
+                'property',
+                'installer_name',
+                'installer_url',
+                'installer_logo',
+                'metering_boundary_code',
+                'installation_Cost',
+                'data_flag'
+            ),
+            'stats_fields' => array(
+                'combined_elec_kwh',
+                'combined_heat_kwh',
+                'combined_cop',
+                'combined_data_length',
+                'error_air_kwh'
+            ),
+            "sort" => array(
+                "field" => "combined_cop",
+                "order" => "desc"
+            ),
+            "stats_table" => "system_stats_last365_v2"
+        );
+
+        $systems = $this->system_stats->combined_meta_stats_query($query);
+
+        $output_systems = array();
+        foreach ($systems as $system) {
+
+            // Only systems that have shared their installation cost
+            if ($system->installation_Cost === null || $system->installation_Cost <= 0) continue;
+
+            // Only include systems with a valid COP figure
+            if ($system->combined_cop === null) continue;
+
+            // combined_data_length in seconds converted to days
+            $days = $system->combined_data_length / 86400;
+            if ($days <= 330) continue;
+
+            $this->auto_flag_air_error($system);
+
+            if ($system->data_flag == 1) continue;
+
+            $output_systems[] = array(
+                'id' => (int) $system->id,
+                'location' => $system->location,
+                'hp_type' => $system->hp_type,
+                'hp_manufacturer' => $system->hp_manufacturer,
+                'hp_model' => $system->hp_model,
+                'hp_output' => $system->hp_output !== null ? (float) $system->hp_output : null,
+                'floor_area' => $system->floor_area !== null ? (float) $system->floor_area : null,
+                'property' => $system->property,
+                'installer' => $system->installer_name,
+                'installer_url' => $system->installer_url,
+                'installer_logo' => $system->installer_logo,
+                'boundary' => $system->metering_boundary_code !== null ? (int) $system->metering_boundary_code : null,
+                'cost' => round($system->installation_Cost),
+                'cop' => round($system->combined_cop, 2),
+                'elec' => round($system->combined_elec_kwh),
+                'heat' => round($system->combined_heat_kwh)
             );
         }
         return $output_systems;
