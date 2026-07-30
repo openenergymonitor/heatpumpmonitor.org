@@ -938,13 +938,13 @@ svg.hpm-economics-net { width: 100%; height: auto; display: block; }
 
                             <!-- cost of CO2 abated — society's number, kept as a footnote -->
                             <p class="hpm-finder-footnote mb-0">
-                                Cost of CO&#8322; abated: {{ r.abateGBP>=0 ? '£'+Math.round(r.abateGBP)+'/t' : '—' }}<span class="hpm-economics-tip" tabindex="0" aria-label="How the cost of carbon abated is worked out"><i class="bi bi-info-circle" aria-hidden="true"></i><span class="tipbox" role="tooltip">
+                                Cost of CO&#8322; abated: <span :class="r.abateGBP<0 ? 'hpm-economics-pos fw-semibold' : ''">{{ r.abateGBP>=0 ? '£'+Math.round(r.abateGBP)+'/t' : '−£'+Math.round(-r.abateGBP)+'/t (a net saving)' }}</span><span class="hpm-economics-tip" tabindex="0" aria-label="How the cost of carbon abated is worked out"><i class="bi bi-info-circle" aria-hidden="true"></i><span class="tipbox" role="tooltip">
                                     Society&rsquo;s view of the same numbers: counting the {{ money(s.hp.grant) }} grant as a cost,
                                     the heat pump
                                     {{ r.societal>=0 ? 'costs society '+money(r.societal)+' more' : 'saves society '+money(-r.societal) }}
                                     over {{ s.horizon }} years &mdash; its lifetime premium to society. Spread across the
                                     {{ r.abate.toFixed(1) }} tonnes of CO&#8322;e avoided, that&rsquo;s
-                                    {{ r.abateGBP>=0 ? '£'+Math.round(r.abateGBP)+' ($'+Math.round(r.abateUSD)+') per tonne' : 'a net saving per tonne abated' }}.
+                                    {{ r.abateGBP>=0 ? '£'+Math.round(r.abateGBP)+' ($'+Math.round(r.abateUSD)+') per tonne' : 'a net saving of £'+Math.round(-r.abateGBP)+' ($'+Math.round(-r.abateUSD)+') per tonne abated' }}.
                                 </span></span>
                             </p>
                         </div>
@@ -968,14 +968,24 @@ svg.hpm-economics-net { width: 100%; height: auto; display: block; }
     // hand-written description shown on the selected-system card. Only ids
     // present in the economics_systems dataset are rendered. Edit freely — the
     // model/SPF/cost line under each one comes from live data.
+    //
+    // An optional `defaults` object sets system-specific counterfactual
+    // assumptions applied when the system is selected (and reset to the
+    // standard defaults when a system without them is selected):
+    //   fuel:        boiler fuel preset key ("gas" | "oil" | "lpg")
+    //   boilerCapex: like-for-like boiler replacement cost (£)
+    //   grant:       grant amount (£), or "full" for one covering the whole install
     var ECON_FEATURED = [
         {id: 685,  blurb: "A 9 kW Octopus Cosy installed by Octopus Energy Services in Pudsey, Leeds — one of the lowest installation costs recorded on HeatpumpMonitor."},
-        {id: 620,  blurb: "A compact 5 kW Vaillant Arotherm+ installed by Boxt in Oxford, showing what a smaller, well-matched system can cost."},
+        {id: 620,  blurb: "A compact 5 kW Vaillant Arotherm+ installed by Boxt in Oxford, a good example of a low heat demand home."},
         {id: 980,  blurb: "A 9 kW Daikin Altherma 3 installed by Octopus Energy Services in Newcastle upon Tyne."},
         {id: 552,  blurb: "A 7 kW Vaillant Arotherm+ installed by On Point Plumbing in Denham, Buckinghamshire."},
         {id: 723,  blurb: "A self-installed 16 kW Samsung Gen 7 in Wymondham, Norfolk, running as a hybrid alongside the existing boiler."},
         {id: 68,   blurb: "A 10 kW Viessmann Vitocal 150-A in Sheffield installed by Damon Blakemore — one of the best performing systems on the platform."},
-        {id: 1163, blurb: "A 32 kW Viessmann Vitocal 150-A cascade serving Caban Cyf a community cafe and office building in Brynrefail, Gwynedd. High high temp hot water demand for the cafe drops the SPF" }
+        {id: 1163, blurb: "A 32 kW Viessmann Vitocal 150-A cascade serving Caban Cyf a community cafe and office building in Brynrefail, Gwynedd. High temp hot water demand for the cafe drops the SPF. Grant funded by the Welsh Government.",
+         // replaces an LPG twin-boiler commercial install (~£7k for redundancy);
+         // the whole heat pump install was covered by a grant
+         defaults: {fuel: "lpg", boilerCapex: 7000, grant: "full"}}
     ];
 
     // ---- default assumptions (a typical installation today) ----
@@ -983,16 +993,21 @@ svg.hpm-economics-net { width: 100%; height: auto; display: block; }
         horizon: 15, spaceHeat: 8000, hotWater: 2000, heatIncrease: 0,
         financeOn: false, financeRate: 5, downpayment: 3000, financeTerm: 10,
         fuel: "gas",
-        gas: {scopSpace: 0.85, scopHW: 0.85, price: 7.33, standing: 29.04, emissions: 184, capex: 3000, maint: 150},
-        hp: {scopSpace: 3.91, scopHW: 3.04, price: 23.00, emissions: 100, capex: 12000, grant: 7500, maint: 150}
+        gas: {scopSpace: 0.85, scopHW: 0.85, price: 7.33, standing: 29.04, emissions: 210, capex: 3000, maint: 150},
+        hp: {scopSpace: 3.91, scopHW: 3.04, price: 23.00, emissions: 75, capex: 12000, grant: 7500, maint: 150}
     };
+
+    // Pristine snapshot of the defaults — `s` below is bound straight to
+    // ECON_DEFAULTS and mutated by user edits, so system-specific defaults
+    // are reverted against this copy when switching systems.
+    var ECON_BASE = JSON.parse(JSON.stringify(ECON_DEFAULTS));
 
     // boiler fuel presets: unit price, standing charge and carbon intensity
     // (oil & LPG are delivered fuels — no standing charge)
     var ECON_FUELS = [
-        {key: "gas", label: "Gas", price: 7.33, standing: 29.04, emissions: 184},
-        {key: "oil", label: "Oil", price: 6.80, standing: 0, emissions: 247},
-        {key: "lpg", label: "LPG", price: 9.80, standing: 0, emissions: 214}
+        {key: "gas", label: "Gas", price: 7.33, standing: 29.04, emissions: 210},
+        {key: "oil", label: "Oil", price: 9.20, standing: 0, emissions: 298},
+        {key: "lpg", label: "LPG", price: 9.20, standing: 0, emissions: 241}
     ];
 
     var app = new Vue({
@@ -1212,7 +1227,8 @@ svg.hpm-economics-net { width: 100%; height: auto; display: block; }
         },
         methods: {
             // Load a real system's install cost, measured SPF and annual heat
-            // demand into the model; everything else stays as the user set it
+            // demand into the model, plus its counterfactual defaults (boiler
+            // fuel, replacement cost, grant); other levers stay as the user set them
             applySystem: function(sys) {
                 var heat = Math.max(1, Math.round(sys.heat));
                 var total = (this.s.spaceHeat || 0) + (this.s.hotWater || 0);
@@ -1230,6 +1246,15 @@ svg.hpm-economics-net { width: 100%; height: auto; display: block; }
                 this.s.hp.scopSpace = sys.cop;
                 this.s.hp.scopHW = sys.cop;
                 this.s.hp.capex = Math.round(sys.cost);
+                // counterfactual assumptions: reset to the standard defaults,
+                // then apply any system-specific ones (e.g. 1163 replaces a
+                // commercial LPG install with a full grant)
+                var featured = ECON_FEATURED.find(function(f) { return f.id === sys.id; });
+                var d = (featured && featured.defaults) || {};
+                this.setFuel(d.fuel || ECON_BASE.fuel);
+                this.s.gas.capex = d.boilerCapex != null ? d.boilerCapex : ECON_BASE.gas.capex;
+                this.s.hp.grant = d.grant === "full" ? this.s.hp.capex
+                    : (d.grant != null ? d.grant : ECON_BASE.hp.grant);
                 this.selectedSystemId = sys.id;
                 this.leverTab = "hp";   // show the panel the loaded values land in
                 this.fetchPhoto(sys.id);

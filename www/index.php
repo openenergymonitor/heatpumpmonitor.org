@@ -65,6 +65,11 @@ if ($route->controller=="") {
     }
 }
 
+// Redirects
+if ($route->controller=="economics") { $route->controller = "home"; $route->action = "economics"; }
+if ($route->controller=="flowtemp") { $route->controller = "home"; $route->action = "flowtemp"; }
+
+
 $output = "";
 
 // Dynamically load the controller based on the route
