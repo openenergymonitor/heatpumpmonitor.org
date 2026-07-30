@@ -21,7 +21,7 @@ OUT = "hero_map_geometry.json"
 
 # Countries to draw (land that appears in the viewport)
 KEEP = {"United Kingdom", "Ireland", "Isle of Man", "Guernsey", "Jersey",
-        "France", "Belgium", "Netherlands", "Germany"}
+        "France", "Belgium", "Netherlands", "Germany", "Norway"}
 
 # Viewport (lon/lat). Orkney included, Shetland omitted; northern France,
 # Belgium and the Dutch coast appear on the right for geographic context
@@ -31,17 +31,41 @@ LAT_MIN, LAT_MAX = 49.5, 59.5
 
 WIDTH = 520.0
 
-def merc_y(lat):
-    return math.log(math.tan(math.pi / 4 + math.radians(lat) / 2))
+# Projection, mirrored by Home::hero_map() in PHP:
+#   "merc" — Web Mercator, like the full map page and every web slippy map.
+#            Its 1/cos(lat) stretch enlarges the north, giving Scotland
+#            more visual prominence.  <-- preferred look
+#   "tm"   — transverse Mercator, Ordnance-Survey-style proportions.
+PROJ = "merc"
+LON0 = (LON_MIN + LON_MAX) / 2
 
-MY_MIN, MY_MAX = merc_y(LAT_MIN), merc_y(LAT_MAX)
-SCALE = WIDTH / (LON_MAX - LON_MIN)
-HEIGHT = round((MY_MAX - MY_MIN) / math.radians(LON_MAX - LON_MIN) * WIDTH, 1)
+def proj_xy(lon, lat):
+    lam = math.radians(lon - LON0)
+    phi = math.radians(lat)
+    if PROJ == "tm":
+        B = math.cos(phi) * math.sin(lam)
+        return 0.5 * math.log((1 + B) / (1 - B)), math.atan2(math.tan(phi), math.cos(lam))
+    return lam, math.log(math.tan(math.pi / 4 + phi / 2))
+
+# Fit the px transform to the projected lon/lat window (under TM its edges
+# curve slightly, so sample the whole boundary, not just the corners)
+_boundary = []
+for i in range(201):
+    f = i / 200
+    _boundary.append(proj_xy(LON_MIN + f * (LON_MAX - LON_MIN), LAT_MIN))
+    _boundary.append(proj_xy(LON_MIN + f * (LON_MAX - LON_MIN), LAT_MAX))
+    _boundary.append(proj_xy(LON_MIN, LAT_MIN + f * (LAT_MAX - LAT_MIN)))
+    _boundary.append(proj_xy(LON_MAX, LAT_MIN + f * (LAT_MAX - LAT_MIN)))
+P_XMIN = min(x for x, y in _boundary)
+P_XMAX = max(x for x, y in _boundary)
+P_YMIN = min(y for x, y in _boundary)
+P_YMAX = max(y for x, y in _boundary)
+SCALE = WIDTH / (P_XMAX - P_XMIN)
+HEIGHT = round((P_YMAX - P_YMIN) * SCALE, 1)
 
 def project(lon, lat):
-    x = (lon - LON_MIN) * SCALE
-    y = (MY_MAX - merc_y(lat)) / (MY_MAX - MY_MIN) * HEIGHT
-    return x, y
+    x, y = proj_xy(lon, lat)
+    return (x - P_XMIN) * SCALE, (P_YMAX - y) * SCALE
 
 # --- Douglas-Peucker simplification in projected px space ---
 def dp(points, tol):
@@ -153,6 +177,14 @@ for f in data["features"]:
 out = {
     "width": WIDTH,
     "height": HEIGHT,
+    # Projection params consumed by Home::hero_map() to place system dots —
+    # PHP implements the same projection with this exact transform
+    "proj": PROJ,
+    "lon0": LON0,
+    "scale": SCALE,
+    "xmin": P_XMIN,
+    "ymax": P_YMAX,
+    # Informational: the lon/lat window the viewBox was fitted to
     "lon_min": LON_MIN,
     "lon_max": LON_MAX,
     "lat_min": LAT_MIN,

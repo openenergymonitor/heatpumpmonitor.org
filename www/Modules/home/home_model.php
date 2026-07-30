@@ -50,11 +50,6 @@ class Home
             }
         }
 
-        // Same mercator projection the geometry file was built with
-        $merc = function($lat) { return log(tan(M_PI / 4 + deg2rad($lat) / 2)); };
-        $merc_min = $merc($geometry->lat_min);
-        $merc_max = $merc($geometry->lat_max);
-
         $default_color = "#cccccc";
         $count = 0;
         $plotted = 0;
@@ -73,12 +68,25 @@ class Home
             $lat = (float) $row->latitude;
             $lon = (float) $row->longitude;
             if (!$lat || !$lon) continue;
-            // Systems beyond the UK & Ireland viewport are counted but not drawn
-            if ($lon < $geometry->lon_min || $lon > $geometry->lon_max) continue;
-            if ($lat < $geometry->lat_min || $lat > $geometry->lat_max) continue;
 
-            $x = ($lon - $geometry->lon_min) / ($geometry->lon_max - $geometry->lon_min) * $geometry->width;
-            $y = ($merc_max - $merc($lat)) / ($merc_max - $merc_min) * $geometry->height;
+            // Same projection the geometry file was built with
+            // (see scripts/build_hero_map_geometry.py)
+            $lam = deg2rad($lon - $geometry->lon0);
+            $phi = deg2rad($lat);
+            if ($geometry->proj === "tm") {
+                $B = cos($phi) * sin($lam);
+                $px = 0.5 * log((1 + $B) / (1 - $B));
+                $py = atan2(tan($phi), cos($lam));
+            } else {
+                $px = $lam;
+                $py = log(tan(M_PI / 4 + $phi / 2));
+            }
+            $x = ($px - $geometry->xmin) * $geometry->scale;
+            $y = ($geometry->ymax - $py) * $geometry->scale;
+
+            // Systems beyond the map viewport are counted but not drawn
+            if ($x < 0 || $x > $geometry->width) continue;
+            if ($y < 0 || $y > $geometry->height) continue;
 
             $color = $default_color;
             $installer = $row->installer_name !== null ? trim($row->installer_name) : "";
