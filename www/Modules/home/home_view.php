@@ -987,15 +987,24 @@ global $path;
             <div class="row align-items-center g-4 g-lg-5 mb-4 mb-lg-5">
                 <div class="col-lg-7 col-xl-6">
                     <span class="hpm-hero-badge"><span class="hpm-dot"></span> Open-source heat pump performance data</span>
-                    <h1>Explore our <span class="hpm-gradient-text">database</span> of installed heat&nbsp;pumps</h1>
-                    <p class="hpm-lead mb-4">
-                        Providing information about the <strong>host property</strong>, heat pump <strong>performance</strong>,
-                        <strong>running cost</strong>, <strong>installer</strong> &amp; more.
-                    </p>
+
+                    <h1>What makes a heat&nbsp;pump <span class="hpm-gradient-text">efficient</span> and <span class="hpm-gradient-text">cheap&nbsp;to&nbsp;run?</span></h1>
+
+                    <!--<h1>Explore our <span class="hpm-gradient-text">database</span> of installed heat&nbsp;pumps</h1>-->
+
+
+
                     <p class="hpm-lead mb-4">
                         HeatpumpMonitor.org gathers <strong>real world data from {{ mid_metered_count }} heat pumps</strong>
                         across the UK and beyond. Systems are monitored using high accuracy <b>MID-certified electric and heat meters</b> - ensuring that the data is reliable and can be compared to previous UK Gov funded trials.
                     </p>
+
+                    <!--
+                    <p class="hpm-lead mb-4">
+                        Providing information about the <strong>host property</strong>, heat pump <strong>performance</strong>,
+                        <strong>running cost</strong>, <strong>installer</strong> &amp; more.
+                    </p>-->
+
                     <div class="d-flex flex-wrap gap-3">
                         <a class="hpm-btn hpm-btn-primary" href="<?php echo $path; ?>system/list">Explore the data <i class="bi bi-arrow-right"></i></a>
                         <a class="hpm-btn hpm-btn-secondary" href="#join-in"><i class="bi bi-plus-lg"></i> Add your system</a>
@@ -1008,7 +1017,7 @@ global $path;
                     <a class="hpm-hero-map-card" href="<?php echo $path; ?>map" aria-label="Open the full interactive map of monitored systems">
                         <?php echo $hero_map['svg']; ?>
                         <span class="hpm-hero-map-chip"><span class="hpm-dot"></span> <b><?php echo (int) $hero_map['count']; ?></b>&nbsp;systems</span>
-                        <span class="hpm-hero-map-cta"><span class="hpm-btn hpm-btn-primary">Open the map <i class="bi bi-arrows-fullscreen"></i></span></span>
+                        <!--<span class="hpm-hero-map-cta"><span class="hpm-btn hpm-btn-primary">Open the map <i class="bi bi-arrows-fullscreen"></i></span></span>-->
                     </a>
                 </div>
                 <?php } ?>
