@@ -726,7 +726,8 @@ $schema['system_meta'] = array(
         'name' => 'Measured base DT', 
         'group' => 'Measurements',
         'helper' => 'Use the heatpumpmonitor heat loss tool to fill this in once you have enough data', 
-        'unit' => '°K'
+        'unit' => '°K',
+        'dp' => 2
     ),
 
     'measured_design_DT' => array(
@@ -737,7 +738,8 @@ $schema['system_meta'] = array(
         'name' => 'Measured design DT', 
         'group' => 'Measurements',
         'helper' => 'Use the heatpumpmonitor heat loss tool to fill this in once you have enough data', 
-        'unit' => 'kW @ -3°C'
+        'unit' => 'kW @ -3°C',
+        'dp' => 2
     ),
 
     'measured_heat_loss' => array(
@@ -748,7 +750,8 @@ $schema['system_meta'] = array(
         'name' => 'Measured heat demand', 
         'group' => 'Measurements',
         'helper' => 'Use the heatpumpmonitor heat loss tool to fill this in once you have enough data',
-        'unit' => 'kW'
+        'unit' => 'kW',
+        'dp' => 2
     ),
 
     'measured_heat_loss_range' => array(
@@ -759,7 +762,8 @@ $schema['system_meta'] = array(
         'name' => 'Measured heat demand range', 
         'group' => 'Measurements',
         'helper' => 'Use the heatpumpmonitor heat loss tool to fill this in once you have enough data',
-        'unit' => 'kW'
+        'unit' => 'kW',
+        'dp' => 2
     ),
 
     'measured_design_flowT' => array(
@@ -770,7 +774,8 @@ $schema['system_meta'] = array(
         'name' => 'Measured design flow temperature',
         'group' => 'Measurements',
         'helper' => 'Flow temperature at design DT from the heat loss tool flow temperature fit',
-        'unit' => '°C'
+        'unit' => '°C',
+        'dp' => 2
     ),
 
     'measured_design_flowT_range' => array(
@@ -781,7 +786,8 @@ $schema['system_meta'] = array(
         'name' => 'Measured design flow temperature range',
         'group' => 'Measurements',
         'helper' => 'Flow temperature at design DT from the heat loss tool flow temperature fit',
-        'unit' => '°C'
+        'unit' => '°C',
+        'dp' => 2
     ),
 
     'measured_mean_flow_temp_coldest_day' => array(
@@ -792,7 +798,8 @@ $schema['system_meta'] = array(
         'name' => 'Weighted mean flow temperature on coldest day', 
         'group' => 'Measurements',
         'helper' => '',
-        'unit' => '°C'
+        'unit' => '°C',
+        'dp' => 2
     ),
 
     'measured_max_flow_temp_coldest_day' => array(
@@ -803,7 +810,8 @@ $schema['system_meta'] = array(
         'name' => 'Max flow temperature for space heating on coldest day', 
         'group' => 'Measurements',
         'helper' => '',
-        'unit' => '°C'
+        'unit' => '°C',
+        'dp' => 2
     ),
 
     'measured_outside_temp_coldest_day' => array(
@@ -814,7 +822,8 @@ $schema['system_meta'] = array(
         'name' => 'Weighted mean outside temperature on coldest day', 
         'group' => 'Measurements',
         'helper' => '',
-        'unit' => '°C'
+        'unit' => '°C',
+        'dp' => 2
     ),
 
     'measured_room_temp_coldest_day' => array(
@@ -825,7 +834,8 @@ $schema['system_meta'] = array(
         'name' => 'When running room temperature on coldest day', 
         'group' => 'Measurements',
         'helper' => '',
-        'unit' => '°C'
+        'unit' => '°C',
+        'dp' => 2
     )
 );
 
