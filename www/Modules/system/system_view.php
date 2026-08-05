@@ -748,7 +748,7 @@ global $settings, $session, $path;
             <div class="alert alert-danger" role="alert" v-if="show_error" v-html="message"></div>
             <div class="alert alert-success" role="alert" v-if="show_success">
                 <span v-html="message"></span>
-                <button type="button" class="btn btn-light" @click="cancel" v-if="show_success">Back to system list</button>
+                <button type="button" class="btn btn-light" @click="window.location.href = path + 'system/list/user'" v-if="show_success">Back to system list</button>
             </div>
         </div>
     </div>
