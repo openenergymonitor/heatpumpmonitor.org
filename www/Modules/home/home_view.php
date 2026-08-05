@@ -988,9 +988,9 @@ global $path;
                 <div class="col-lg-7 col-xl-6">
                     <span class="hpm-hero-badge"><span class="hpm-dot"></span> Open-source heat pump performance data</span>
 
-                    <h1>What makes a heat&nbsp;pump <span class="hpm-gradient-text">efficient</span> and <span class="hpm-gradient-text">cheap&nbsp;to&nbsp;run?</span></h1>
+                    <!--<h1>What makes a heat&nbsp;pump <span class="hpm-gradient-text">efficient</span> and <span class="hpm-gradient-text">cheap&nbsp;to&nbsp;run?</span></h1>-->
 
-                    <!--<h1>Explore our <span class="hpm-gradient-text">database</span> of installed heat&nbsp;pumps</h1>-->
+                    <h1>Explore our <span class="hpm-gradient-text">database</span> of installed heat&nbsp;pumps</h1>
 
 
 
