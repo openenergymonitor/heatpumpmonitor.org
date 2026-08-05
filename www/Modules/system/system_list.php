@@ -659,7 +659,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     columns['training'] = { name: "Combined", heading: "Training", group: "Training", helper: "Training" };
     columns['learnmore'] = { name: "Combined", heading: "", group: "Learn more" };
     columns['photos'] = { name: "Photos", heading: "", group: "Learn more" };
-    columns['boundary'] = { name: "Boundary", heading: "Hx", group: "Metering" };
+    columns['metering_boundary_code'] = { name: "Boundary", heading: "Hx", group: "Metering" };
     columns['data_flag'].heading = "";
 
     columns['hp_make_model'] = {
@@ -781,7 +781,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     // Template views
     var template_views = {}
     template_views['topofthescops'] = {}
-    template_views['topofthescops']['wide'] = ['location', 'installer_logo', 'installer_name', 'training', 'hp_type', 'hp_make_model', 'hp_output', 'data_flag', 'combined_cop', 'space_cop', 'water_cop', 'boundary' , 'mid_metering', 'learnmore', 'photos'];
+    template_views['topofthescops']['wide'] = ['location', 'installer_logo', 'installer_name', 'training', 'hp_type', 'hp_make_model', 'hp_output', 'data_flag', 'combined_cop', 'space_cop', 'water_cop', 'metering_boundary_code' , 'mid_metering', 'learnmore', 'photos'];
     template_views['topofthescops']['narrow'] = ['installer_logo', 'training', 'hp_make_model', 'hp_output', 'combined_cop', 'learnmore', 'photos'];
 
     template_views['heatpumpfabric'] = {}
@@ -832,11 +832,6 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         d.setMonth(d.getMonth() - 1);
     }
 
-    // Generate boundary HTML from API-provided boundary_code and boundary_metering
-    for (var i = 0; i < systems.length; i++) {
-        systems[i].boundary = metering_boundary_helper(systems[i]);
-    }
-
     // Calculate over-sizing factor
     for (var z in systems) {
         let system = systems[z];
@@ -873,6 +868,14 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         columns['combined_cop'].heading = 'COP';
     }
 
+
+    // maps deprecated filter fields/values from old shared URLs onto their current equivalents
+    function remapDeprecatedFilterField(field, value) {
+        if (field === 'boundary') {
+            return { field: 'metering_boundary_code', value: String(value).replace(/^H/i, '') };
+        }
+        return { field: field, value: value };
+    }
 
     var app = new Vue({
         el: '#app',
@@ -1657,6 +1660,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         return '';
                     }
                 }
+
+
+                if (key=='metering_boundary_code') {
+                    return metering_boundary_helper(system);
+                }
                 
                 /*
                 if (key=='electricity_tariff_unit_rate_all') {
@@ -1805,7 +1813,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 part.operatorSign = this.getOperatorSign(part.operator);
 
                 // don't have the installer URL and icons don't look great in filter display, so ignore the formatting
-                if (part.field == 'installer_name' || this.columns[part.field].group == 'Training') {
+                if (part.field == 'installer_name' || (this.columns[part.field] && this.columns[part.field].group == 'Training')) {
                     part.formattedValue = part.value;
                 } else {
                     part.formattedValue = this.column_format({ [part.field]: part.value }, part.field);
@@ -1900,8 +1908,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
                             for (var i = 0; i < query_parts.length; i++) {
                                 var query_part = query_parts[i].split(':');
-                                var field = query_part[0];
-                                var value = query_part[1];
+                                var mapped_part = remapDeprecatedFilterField(query_part[0], query_part[1]);
+                                var field = mapped_part.field;
+                                var value = mapped_part.value;
                                 var operator = query_part[2] || 'eq'; // default to 'eq' if no operator is provided
                                 var enabled = query_part[3] || 't'; // default to 't' if no status is provided
 
@@ -2315,7 +2324,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 app.showContent = false;
                 if (first) app.show_field_selector = false;
             } else {
-                app.selected_columns = ['location', 'hp_type', 'hp_model', 'hp_output', 'data_flag', 'combined_cop', 'space_cop', 'boundary', 'heatpump_max_age'];
+                app.selected_columns = ['location', 'hp_type', 'hp_model', 'hp_output', 'data_flag', 'combined_cop', 'space_cop', 'metering_boundary_code', 'heatpump_max_age'];
                 app.showContent = true;
             }
         }
