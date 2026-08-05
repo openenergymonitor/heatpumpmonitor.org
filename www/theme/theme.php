@@ -127,7 +127,7 @@ $navigation = array(
     <header>
         <nav class="navbar navbar-expand-lg navbar-dark bg-custom">
             <div class="container-fluid">
-                <a class="navbar-brand" href="<?php echo $path; ?>">
+                <a class="navbar-brand" href="<?php echo $path; ?>system/list">
                     <img src="<?php echo $path; ?>theme/img/logo/apple-touch-icon.png" alt="HeatpumpMonitor Logo" class="navbar-brand-logo">
                     <span><b>HeatpumpMonitor</b>.org</span>
                 </a>
