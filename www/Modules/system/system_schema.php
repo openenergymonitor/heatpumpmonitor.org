@@ -990,3 +990,11 @@ $schema['system_meta_changes'] = array(
     'old_value' => array('type' => 'text'),
     'new_value' => array('type' => 'text')
 );
+
+// Per-user configuration for the system list view (My Systems)
+// config is a JSON blob: {"template":"topofthescops","columns":["..."],"headings":{"column_key":"Custom title"}}
+$schema['system_list_user_config'] = array(
+    'userid' => array('type' => 'int(11)', 'Null' => false, 'Key' => 'PRI'),
+    'config' => array('type' => 'text'),
+    'last_updated' => array('type' => 'int(11)')
+);

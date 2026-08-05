@@ -791,6 +791,86 @@ class System
     }
 
     // --------------------------------------------------------------------------------
+    // Per-user system list configuration (default columns & custom column titles)
+    // --------------------------------------------------------------------------------
+
+    public function get_list_config($userid) {
+        $userid = (int) $userid;
+        $result = $this->mysqli->query("SELECT config FROM system_list_user_config WHERE userid='$userid'");
+        if ($result && $row = $result->fetch_object()) {
+            $config = json_decode($row->config);
+            if ($config !== null) return $config;
+        }
+        return false;
+    }
+
+    public function save_list_config($userid, $config) {
+        $userid = (int) $userid;
+        $config = $this->validate_list_config($config);
+        if ($config === false) {
+            return array("success"=>false, "message"=>"Invalid configuration");
+        }
+        $json = json_encode($config);
+        $stmt = $this->mysqli->prepare("INSERT INTO system_list_user_config (userid, config, last_updated) VALUES (?,?,?) ON DUPLICATE KEY UPDATE config=VALUES(config), last_updated=VALUES(last_updated)");
+        if (!$stmt) {
+            return array("success"=>false, "message"=>"Database error");
+        }
+        $time = time();
+        $stmt->bind_param("isi", $userid, $json, $time);
+        $stmt->execute();
+        $stmt->close();
+        return array("success"=>true, "config"=>$config);
+    }
+
+    public function delete_list_config($userid) {
+        $userid = (int) $userid;
+        $this->mysqli->query("DELETE FROM system_list_user_config WHERE userid='$userid'");
+        return array("success"=>true);
+    }
+
+    // Validate and sanitise a user submitted list configuration
+    // {"template":"topofthescops","columns":["..."],"headings":{"column_key":"Custom title"}}
+    private function validate_list_config($config) {
+        if (!is_object($config)) return false;
+
+        $clean = new stdClass();
+
+        // Template that the saved column selection applies to
+        $clean->template = 'topofthescops';
+        $valid_templates = array('topofthescops','heatpumpfabric','costs');
+        if (isset($config->template) && in_array($config->template, $valid_templates, true)) {
+            $clean->template = $config->template;
+        }
+
+        // Selected columns: list of column keys
+        if (!isset($config->columns) || !is_array($config->columns)) return false;
+        $clean->columns = array();
+        foreach ($config->columns as $column) {
+            if (count($clean->columns) >= 50) break;
+            if (is_string($column) && preg_match('/^[a-zA-Z0-9_]{1,64}$/', $column)) {
+                if (!in_array($column, $clean->columns, true)) $clean->columns[] = $column;
+            }
+        }
+        if (count($clean->columns) == 0) return false;
+
+        // Custom column titles: column key => title
+        $clean->headings = new stdClass();
+        $heading_count = 0;
+        if (isset($config->headings) && is_object($config->headings)) {
+            foreach ($config->headings as $key => $value) {
+                if ($heading_count >= 50) break;
+                if (!preg_match('/^[a-zA-Z0-9_]{1,64}$/', $key) || !is_string($value)) continue;
+                $value = trim(preg_replace('/[^\p{L}\p{N}\s\.\,\-\+\(\)\&\%\/°²]/u', '', $value));
+                if ($value === '' || mb_strlen($value) > 40) continue;
+                $clean->headings->$key = $value;
+                $heading_count++;
+            }
+        }
+
+        return $clean;
+    }
+
+    // --------------------------------------------------------------------------------
     // System meta changes log
     // --------------------------------------------------------------------------------
 

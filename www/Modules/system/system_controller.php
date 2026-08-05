@@ -100,7 +100,8 @@ function system_controller() {
                         "mode" => "user",
                         "systems"=>$system->list_user($session['userid']),
                         "columns"=>$system->get_columns(),
-                        "stats_columns"=>$system_stats->schema['system_stats_monthly_v2']
+                        "stats_columns"=>$system_stats->schema['system_stats_monthly_v2'],
+                        "user_config"=>$system->get_list_config($session['userid'])
                     ));
                 }
 
@@ -331,6 +332,26 @@ function system_controller() {
             } else {
                 return "No log file found";
             }
+        }
+    }
+
+    // Per-user system list column configuration
+    // listconfig          - get saved config
+    // listconfig/save     - save config (JSON body: {template, columns, headings})
+    // listconfig/delete   - clear saved config
+    if ($route->action=="listconfig") {
+        $route->format = "json";
+        if (!$session['userid']) return array("success"=>false, "message"=>"Authentication required");
+
+        if ($route->subaction=="save") {
+            if ($settings['read_only_mode']) return read_only_mode_response();
+            $input = json_decode(file_get_contents('php://input'));
+            return $system->save_list_config($session['userid'], $input);
+        } else if ($route->subaction=="delete") {
+            if ($settings['read_only_mode']) return read_only_mode_response();
+            return $system->delete_list_config($session['userid']);
+        } else {
+            return array("success"=>true, "config"=>$system->get_list_config($session['userid']));
         }
     }
 

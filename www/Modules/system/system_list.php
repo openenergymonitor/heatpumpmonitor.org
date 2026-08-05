@@ -110,10 +110,19 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         align-items: center;
     }
 
-    /* apply scroll only to the "Add fields" card */
+    /* allow the searchable dropdown to overflow the "Columns" card,
+       the selected columns list scrolls internally instead */
     .add-fields-card {
-        overflow-y: scroll;
-        max-height: 780px;
+        overflow: visible !important;
+    }
+
+    .selected-columns-list {
+        max-height: 480px;
+        overflow-y: auto;
+    }
+
+    .selected-columns-list .list-group-item {
+        padding: 6px 12px;
     }
 
     .add-filters-card {
@@ -234,28 +243,39 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <button class="btn btn-sm btn-secondary" style="float:right; margin-right:-8px" @click="show_field_selector = !show_field_selector">
                             <i :class="{'fas fa-minus': show_field_selector, 'fas fa-plus': !show_field_selector}"></i>
                         </button>
-                        <div style="margin-top:2px; font-size:18px">Add fields</div>
+                        <div style="margin-top:2px; font-size:18px">Columns</div>
                         </div>
                         <div class="collapse show" :class="{ 'd-none': !show_field_selector, 'd-md-block': show_field_selector }">
-                            <ul class="list-group list-group-flush">
-                            <template v-for="(group, group_name) in column_groups" v-if="!((stats_time_start=='last365' || stats_time_start=='all') && (group_name=='When Running' || group_name=='Standby'))">
-                                <li class="list-group-item" @click="toggle_field_group(group_name)" style="cursor:pointer; background-color:#f7f7f7;">
-                                    <!-- plus icon -->
-                                    <i :class="(show_field_group[group_name])?'fa fa-angle-up':'fa fa-angle-down'" style="float:right; margin-top:3px; margin-right:3px"></i>
-                                    <b>{{ group_name }}</b>
+                            <div style="padding:10px">
+                                <v-select :options="addFieldOptions" v-model="column_to_add" placeholder="Add column" class="custom-select" :reduce="option => option.value" @input="add_column"></v-select>
+                            </div>
+                            <ul class="list-group list-group-flush selected-columns-list">
+                                <li v-for="key in selected_columns" v-if="columns[key]" class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div v-if="editing_heading!=key">
+                                        <div class="category">{{ columns[key].group }}</div>
+                                        <div class="column">{{ columns[key].name }}<span v-if="custom_headings[key]" class="text-muted"> &rarr; {{ custom_headings[key] }}</span></div>
+                                    </div>
+                                    <div v-else class="d-flex w-100 flex-column">
+                                        <div class="category">{{ columns[key].name }}</div>
+                                        <input type="text" v-model="heading_edit_value" class="form-control form-control-sm mb-2" placeholder="Custom column title" @keyup.enter="save_heading(key)">
+                                        <div class="btn-group">
+                                            <button class="btn btn-xs btn-success me-2" @click="save_heading(key)" title="Apply custom title"><i class="fa fa-check"></i></button>
+                                            <button class="btn btn-xs btn-secondary" @click="editing_heading=null" title="Cancel"><i class="fa fa-times"></i></button>
+                                        </div>
+                                    </div>
+                                    <div v-if="editing_heading!=key" class="btn-group" style="margin-left:auto">
+                                        <button class="btn btn-xs btn-warning" @click="edit_heading(key)" title="Set a custom column title"><i class="fa fa-edit"></i></button>
+                                        <button class="btn btn-xs btn-danger" @click="select_column(key)" title="Remove column"><i class="fa fa-times"></i></button>
+                                    </div>
                                 </li>
-                                <li v-for="column in group" class="list-group-item" v-if="show_field_group[group_name] && column.fields!=false">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault" @click="select_column(column.key)" :checked="selected_columns.includes(column.key)">
-                                    <label class="form-check-label" for="flexCheckDefault" style="font-size:15px">
-                                    {{ column.name }}
-                                    </label>
-                                </div>
-                                </li>
-                            </template>
                             </ul>
+                            <div v-if="mode=='user'" style="padding:10px; border-top:1px solid #dee2e6">
+                                <button class="btn btn-sm btn-primary" @click="save_default" :disabled="saving_default">Save as my default</button>
+                                <button class="btn btn-sm btn-outline-secondary" @click="clear_default" v-if="has_saved_default">Clear</button>
+                                <div v-if="default_saved_message" class="text-success mt-1" style="font-size:13px">{{ default_saved_message }}</div>
+                            </div>
                         </div>
-                    </div>                    
+                    </div>
 
                     <div class="card mt-3 add-filters-card">
                         <div class="card-header">
@@ -649,6 +669,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     var stats_columns = <?php echo json_encode($stats_columns); ?>;
     var systems = <?php echo json_encode($systems); ?>;
 
+    // Per-user saved column configuration (user mode only)
+    var user_list_config = <?php echo json_encode(isset($user_config) ? $user_config : false); ?>;
+
     columns['hp_type'].name = "Source";
     columns['hp_manufacturer'].name = "Manufacturer";
     columns['hp_model'].name = "Model";
@@ -765,18 +788,22 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
     // convert to column groups
     var column_groups = {};
-    var show_field_group = {};
 
     for (var key in columns) {
         var column = columns[key];
         if (column_groups[column.group] == undefined) column_groups[column.group] = [];
         column_groups[column.group].push({key: key, name: column.name, helper: column.helper});
-        show_field_group[column.group] = false;
     }
 
     columns['installer_logo'].heading = "";
     columns['mid_metering'].heading = "MID";
     // columns['electricity_tariff_unit_rate_all'].heading = "Elec<br>p/kWh";
+
+    // snapshot of the standard headings, used to restore when a custom title is removed
+    var original_headings = {};
+    for (var key in columns) {
+        original_headings[key] = columns[key].heading;
+    }
     
     // Template views
     var template_views = {}
@@ -804,10 +831,55 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         }
     }
 
+    // User mode: append live data status column to the wide template views
+    // (previously pushed on each resize, done once here so selected_columns can
+    //  share the template_views array reference like the other modes)
+    if (mode == 'user') {
+        for (var template in template_views) {
+            if (!template_views[template]['wide'].includes('heatpump_max_age')) {
+                template_views[template]['wide'].push('heatpump_max_age');
+            }
+        }
+    }
+
+    // Apply per-user saved column configuration (user mode only)
+    var custom_headings = {};
+    var has_saved_default = false;
+    if (mode == 'user' && user_list_config) {
+        if (user_list_config.columns && user_list_config.columns.length > 0) {
+            has_saved_default = true;
+            var user_template = user_list_config.template;
+            if (template_views[user_template] == undefined) user_template = 'topofthescops';
+
+            // The saved columns become the wide view of the saved template
+            template_views[user_template]['wide'] = user_list_config.columns.filter(function(key) {
+                return columns[key] != undefined;
+            });
+
+            // Open on the saved template unless overridden by URL
+            if (!urlParams.has('mode')) {
+                selected_template = user_template;
+                if (user_template == 'costs') {
+                    currentSortColumn = 'combined_heat_unit_cost';
+                    currentSortDir = 'asc';
+                } else if (user_template == 'heatpumpfabric') {
+                    currentSortColumn = 'combined_elec_kwh_per_m2';
+                    currentSortDir = 'asc';
+                }
+            }
+        }
+        if (user_list_config.headings) {
+            for (var key in user_list_config.headings) {
+                if (columns[key] != undefined) custom_headings[key] = user_list_config.headings[key];
+            }
+        }
+    }
+
     // add to template views
     for (var key in template_views) {
         for (var view in template_views[key]) {
             for (var i in added_columns) {
+                if (template_views[key][view].includes(added_columns[i])) continue;
                 if (added_columns[i] == 'id') {
                     template_views[key][view].unshift('id');
                 } else {
@@ -888,7 +960,6 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             chart_enable: show_chart,
             columns: columns,
             column_groups: column_groups,
-            show_field_group: show_field_group,
             selected_columns: [],
             currentSortColumn: currentSortColumn,
             currentSortDir: currentSortDir,
@@ -905,6 +976,13 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             minDays: minDays,
             showContent: true,
             show_field_selector: false,
+            column_to_add: null,
+            custom_headings: custom_headings,
+            editing_heading: null,
+            heading_edit_value: '',
+            has_saved_default: has_saved_default,
+            saving_default: false,
+            default_saved_message: '',
             public_mode_enabled: public_mode_enabled,
             selected_template: selected_template,
 
@@ -1122,13 +1200,84 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
                 app.url_update();
             },
-            toggle_field_group: function(group) {
-                // hide all
-                for (var key in this.show_field_group) {
-                    if (key==group) continue;
-                    this.show_field_group[key] = false;
+            add_column: function(key) {
+                if (!key) return;
+                if (!this.selected_columns.includes(key)) {
+                    this.select_column(key);
                 }
-                this.show_field_group[group] = !this.show_field_group[group];
+                // clear the dropdown ready for the next selection
+                var self = this;
+                this.$nextTick(function() { self.column_to_add = null; });
+            },
+            edit_heading: function(key) {
+                this.editing_heading = key;
+                this.heading_edit_value = this.custom_headings[key] || '';
+            },
+            save_heading: function(key) {
+                var value = this.heading_edit_value.trim();
+                if (value == '') {
+                    // remove the custom title, restore the standard heading
+                    this.$delete(this.custom_headings, key);
+                    this.columns[key].heading = original_headings[key];
+                    if (key == 'combined_cop') {
+                        var spf = (this.stats_time_start=='last365' || this.stats_time_start=='custom');
+                        this.columns[key].heading = spf ? 'SPF' : 'COP';
+                    }
+                } else {
+                    this.$set(this.custom_headings, key, value);
+                    this.columns[key].heading = escape_html(value);
+                }
+                this.editing_heading = null;
+            },
+            // custom titles override the standard headings, re-applied after
+            // anything that resets headings (period change, resize)
+            apply_custom_headings: function() {
+                for (var key in this.custom_headings) {
+                    if (this.columns[key] != undefined) {
+                        this.columns[key].heading = escape_html(this.custom_headings[key]);
+                    }
+                }
+            },
+            save_default: function() {
+                var self = this;
+                this.saving_default = true;
+                axios.post(path+'system/listconfig/save', {
+                    template: this.selected_template,
+                    columns: template_views[this.selected_template]['wide'],
+                    headings: this.custom_headings
+                }).then(function(response) {
+                    self.saving_default = false;
+                    if (response.data.success) {
+                        self.has_saved_default = true;
+                        self.default_saved_message = 'Saved as your default view';
+                        // the saved columns are now the default, clear the add/rm url overrides
+                        added_columns = [];
+                        removed_columns = [];
+                        self.url_update();
+                        setTimeout(function() { self.default_saved_message = ''; }, 3000);
+                    } else {
+                        alert('Error saving default: ' + response.data.message);
+                    }
+                }).catch(function(error) {
+                    self.saving_default = false;
+                    alert('Error saving default: ' + error);
+                });
+            },
+            clear_default: function() {
+                if (!confirm('Clear your saved default view and return to the standard columns?')) return;
+                axios.get(path+'system/listconfig/delete').then(function(response) {
+                    if (response.data.success) {
+                        // reload with the standard view
+                        var url = new URL(window.location.href);
+                        url.searchParams.delete('add');
+                        url.searchParams.delete('rm');
+                        window.location = url.toString();
+                    } else {
+                        alert('Error clearing default: ' + response.data.message);
+                    }
+                }).catch(function(error) {
+                    alert('Error clearing default: ' + error);
+                });
             },
             sort: function(column, starting_order) {
 
@@ -1287,7 +1436,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     columns['combined_cop'].name = 'COP';
                     columns['combined_cop'].heading = 'COP';
                 }
-                
+
+                this.apply_custom_headings();
                 this.load_system_stats();
                 this.url_update();
             },
@@ -2181,6 +2331,22 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         },
 
         computed: {
+            // options for the "Add column" searchable dropdown, grouped and ordered
+            // the same as the filter column dropdown, minus already selected columns
+            addFieldOptions: function () {
+                var options = [];
+                for (var group_name in this.column_groups) {
+                    var group = this.column_groups[group_name];
+                    for (var i = 0; i < group.length; i++) {
+                        if (this.selected_columns.includes(group[i].key)) continue;
+                        options.push({
+                            label: group_name + ': ' + group[i].name,
+                            value: group[i].key
+                        });
+                    }
+                }
+                return options;
+            },
             /*
             fSystems: function () {
             
@@ -2249,6 +2415,13 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     app.populateColumnOptions();
     resize(true);
 
+    // custom column titles are rendered with v-html in the table header, escape them
+    function escape_html(str) {
+        return String(str).replace(/[&<>"']/g, function(m) {
+            return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];
+        });
+    }
+
     function time_ago(val,ago='') {
         if (val == null || val == 0) {
             return '';
@@ -2310,10 +2483,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 app.showContent = false;
                 if (first) app.show_field_selector = false;
                 app.columns['training'].heading = "";
-                
+
             } else {
-                app.selected_columns = [...template_views[app.selected_template]['wide']];
-                app.selected_columns.push('heatpump_max_age');
+                app.selected_columns = template_views[app.selected_template]['wide'];
                 app.showContent = true;
                 app.columns['training'].heading = "Training";
             }
@@ -2328,6 +2500,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 app.showContent = true;
             }
         }
+
+        app.apply_custom_headings();
     }
 
 
