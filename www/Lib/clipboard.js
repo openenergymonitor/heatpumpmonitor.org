@@ -71,10 +71,32 @@ function copyToClipboard(elem) {
 // an administrator. By default a prompt is shown the first
 // time the clipboard is used (per session).
 function copy_text_to_clipboard(text,message="Text copied to clipboard") {
+    // Prefer the modern async Clipboard API (requires a secure context).
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function() {
+            alert(message);
+        }).catch(function(ex) {
+            console.warn("Copy to clipboard failed.", ex);
+            if (!copy_text_to_clipboard_fallback(text)) {
+                alert("Copy not supported by this browser.");
+            } else {
+                alert(message);
+            }
+        });
+        return true;
+    }
+    // Fall back to the legacy execCommand approach (older browsers / non-secure contexts).
+    if (copy_text_to_clipboard_fallback(text)) {
+        alert(message);
+        return true;
+    }
+    alert("Copy not supported by this browser.");
+    return false;
+}
+function copy_text_to_clipboard_fallback(text) {
     if (window.clipboardData && window.clipboardData.setData) {
         // Internet Explorer-specific code path to prevent textarea being shown while dialog is visible.
         return window.clipboardData.setData("Text", text);
-
     }
     else if (document.queryCommandSupported && document.queryCommandSupported("copy")) {
         var textarea = document.createElement("textarea");
@@ -91,7 +113,7 @@ function copy_text_to_clipboard(text,message="Text copied to clipboard") {
         }
         finally {
             document.body.removeChild(textarea);
-            alert(message);
         }
     }
+    return false;
 }
