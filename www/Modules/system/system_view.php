@@ -748,7 +748,7 @@ global $settings, $session, $path;
             <div class="alert alert-danger" role="alert" v-if="show_error" v-html="message"></div>
             <div class="alert alert-success" role="alert" v-if="show_success">
                 <span v-html="message"></span>
-                <button type="button" class="btn btn-light" @click="cancel" v-if="show_success">Back to system list</button>
+                <button type="button" class="btn btn-light" @click="goToMySystems" v-if="show_success">Back to system list</button>
             </div>
         </div>
     </div>
@@ -1038,6 +1038,9 @@ global $settings, $session, $path;
             },
             cancel: function() {
                 window.location.href = path + 'system/list/public';
+            },
+            goToMySystems: function() {
+                window.location.href = path + 'system/list/user';
             },
             loadstats: function(load_mode, show_alert=true) {
                 app.disable_loadstats = true;
