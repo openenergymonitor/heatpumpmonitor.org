@@ -264,3 +264,6 @@ function read_only_mode_response()
 {
     return array("success" => false, "message" => "Heatpumpmonitor is currently in read-only mode for maintenance. Please try again later.");
 }
+
+function tr($text) { return $text; }
+function ctx_tr($context, $text) { return $text; }

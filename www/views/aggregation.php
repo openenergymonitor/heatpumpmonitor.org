@@ -101,9 +101,43 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                     <label class="form-check-label" for="show_outside_temp">Outside temperature</label>
                                 </div>
                             </div>
+                            <!--
+                            <div class="col-lg-3 col-md-3 col-sm-6 col-6 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="show_systems" v-model="show_systems" @change="load">
+                                    <label class="form-check-label" for="show_systems">Number of systems</label>
+                                </div>
+                            </div>
+                            -->
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <div class="row justify-content-center" style="margin-top:20px">
+            <div class="col-lg-10 col-xl-9 text-center">
+
+
+                <div v-if="average_systems!==null" style="font-size:14px; color:#666; margin-bottom:20px">
+                    Average number of systems in window: <b>{{ average_systems }}</b>
+                </div>
+
+                <p>Can you match supply and demand with heat pumps on the grid?</p><p>Explore our simple grid model that uses the above HeatpumpMonitor dataset.</p>
+                <a href="https://openenergymonitor.org/tools/ukgridsim.html" class="btn btn-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px; margin-right:8px" aria-hidden="true">
+                        <!-- Pylon legs and top -->
+                        <path d="M8.5 21 L11.2 3 h1.6 L15.5 21"/>
+                        <!-- Crossarms -->
+                        <path d="M4.5 7 h15"/>
+                        <path d="M6 11 h12"/>
+                        <!-- Insulators -->
+                        <path d="M4.5 7 v2 M19.5 7 v2"/>
+                        <!-- Lattice cross-brace -->
+                        <path d="M9.9 12 L14.8 16.5 M14.1 12 L9.2 16.5"/>
+                    </svg>UK Grid Sim</a>
+                    <br><br>
+                <p style="font-size:14px; color:#666">Note: There are a small number of HeatpumpMonitor systems that also provide active cooling in summer, real active cooling demand is aggregated as positive heat output (winter defrost heat loss is still subtracted as it should be).</p>
             </div>
         </div>
 
@@ -129,7 +163,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         // Outside temperature on axis 2
         "outsideT": { label: "Outside temperature", data: false, yaxis: 2, color: 'blue', lines: { show: true, fill: 0.0 }},
         // COP data on axis 3
-        "cop": { label: "Heat pump COP", data: false, yaxis: 3, color: 'orange', lines: { show: true, fill: 0.0 }}
+        "cop": { label: "Heat pump COP", data: false, yaxis: 3, color: 'orange', lines: { show: true, fill: 0.0 }},
+        // Number of systems on axis 4
+        "systems": { label: "Number of systems", data: false, yaxis: 4, color: 'purple', lines: { show: true, fill: 0.0 }}
     };
 
     var scale_unit = "kW";
@@ -145,12 +181,14 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         el: '#app',
         data: {
             number_of_households: 300000,
-            household_heat_demand_kwh: 9100,
+            household_heat_demand_kwh: 10000,
             show_wind: false,
             show_heat: false,
             wind_proportion: 120,
             show_cop: false,
             show_outside_temp: false,
+            show_systems: false,
+            average_systems: null,
             SPF: 3.8
         },
         methods: {
@@ -207,10 +245,17 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
         $.ajax({
             // text plain dataType:
+
+            // 476422: HeatpumpMonitor normalised_aggregated_electric_demand
+            // 536709: HeatpumpMonitor normalised_aggregated_heat_output
+            // 97699: UK wind generation
+            // 536695: UK outside temperature
+            // 476417: HeatpumpMonitor number of systems
+
             dataType: "json",
             url: path + "remote-feed",
             data: {
-                'ids': [476422,536709,97699,536695].join(","),
+                'ids': [476422,536709,97699,536695,476417].join(","),
                 'start': view.start,
                 'end': view.end,
                 'interval': view.interval,
@@ -283,6 +328,19 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 var heatpump_heat_data = result[1]['data'];
                 var wind_generation_data = result[2]['data'];
                 var outside_temp_data = result[3]['data'];
+                var number_of_systems_data = result[4]['data'];
+
+                // Average number of systems in window
+                var sum_systems = 0;
+                var count_systems = 0;
+                for (var z in number_of_systems_data) {
+                    let number_of_systems = number_of_systems_data[z][1];
+                    if (number_of_systems!==null && number_of_systems>0) {
+                        sum_systems += number_of_systems;
+                        count_systems += 1;
+                    }
+                }
+                app.average_systems = count_systems>0 ? Math.round(sum_systems/count_systems) : null;
 
                 var sum_heatpump_elec = 0;
                 var sum_heatpump_heat = 0;
@@ -335,6 +393,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 series["wind"].data = wind_generation_data;
                 series["outsideT"].data = outside_temp_data;
                 series["cop"].data = cop_data;
+                series["systems"].data = number_of_systems_data;
                 draw();
             }
         });
@@ -342,13 +401,21 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
     function draw() {
 
+        // Adapt x-axis date/time format to the visible range
+        var range = view.end - view.start;
+        var day = 24 * 3600 * 1000;
+        var timeformat = "%b %Y";                               // months and beyond
+        if (range <= 2 * day) timeformat = "%H:%M";             // hours
+        else if (range <= 14 * day) timeformat = "%d %b %H:%M"; // days
+        else if (range <= 180 * day) timeformat = "%d %b";      // weeks to months
+
         // Flot options
         var options = {
             xaxis: {
                 // axisLabel: xaxis_label,
                 // max: app.design_DT
                 mode: "time",
-                timeformat: "%b %Y",
+                timeformat: timeformat,
                 min: view.start,
                 max: view.end,
             },
@@ -374,6 +441,13 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     position: "right",
                     min: 0,
                     show: app.show_cop
+                },
+                {
+                    // y4axis - number of systems
+                    axisLabel: "Number of systems",
+                    position: "right",
+                    min: 0,
+                    show: app.show_systems
                 }
             ],
             grid: {
@@ -418,6 +492,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             plot_series.push(series["cop"]);
         }
 
+        // Hide number of systems if not selected
+        if (app.show_systems) {
+            plot_series.push(series["systems"]);
+        }
+
         var chart = $.plot("#placeholder", plot_series, options);
     }
 
@@ -456,6 +535,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 }
                 if (app.show_cop) {
                     str += series["cop"].label + ": " + series["cop"].data[item.dataIndex][1].toFixed(1) + "<br>";
+                }
+                if (app.show_systems) {
+                    str += series["systems"].label + ": " + series["systems"].data[item.dataIndex][1].toFixed(0) + "<br>";
                 }
                 str += date.toLocaleString();
 
