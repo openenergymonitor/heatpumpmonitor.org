@@ -62,9 +62,9 @@ class SystemPhotos
             return array("success" => false, "message" => "Maximum of 4 photos allowed per system");
         }
         
-        // Generate random filename while preserving extension
-        $extension = strtolower(pathinfo($photo['name'], PATHINFO_EXTENSION));
-        $filename = uniqid('img_', true) . '.' . $extension;
+        // Generate random filename. The extension comes from the validated MIME
+        // type, not from the uploaded filename, which the user controls
+        $filename = uniqid('img_', true) . '.' . $validation['extension'];
         
         // Process upload using shared helper
         $upload_dir = "theme/img/system/" . $system_id . "/";

@@ -11,6 +11,10 @@ www/settings.php
 www/theme/img/installers/*
 www/theme/img/system/*
 www/theme/img/heatpumps/*
+# ...but the upload dirs must keep their "never execute anything here" rules
+!www/theme/img/installers/.htaccess
+!www/theme/img/system/.htaccess
+!www/theme/img/heatpumps/.htaccess
 mysqlbackup
 
 # Ignore all modules except core ones

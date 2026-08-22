@@ -15,6 +15,19 @@ class ImageUploadHelper
     private $max_file_size = 5242880; // 5MB in bytes
     private $allowed_mime_types = array('image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic', 'image/heif');
 
+    // The only extensions an upload may ever be saved with. The extension is
+    // derived from the validated MIME type, never from the uploaded filename:
+    // a file whose content is a valid JPEG can still be named "shell.php", and
+    // saving it under that name inside the web root is remote code execution.
+    private $mime_extensions = array(
+        'image/jpeg' => 'jpg',
+        'image/jpg'  => 'jpg',
+        'image/png'  => 'png',
+        'image/webp' => 'webp',
+        'image/heic' => 'heic',
+        'image/heif' => 'heif'
+    );
+
     public function __construct()
     {
         $this->thumbnail_generator = new ThumbnailGenerator();
@@ -22,9 +35,11 @@ class ImageUploadHelper
 
     /**
      * Validate uploaded file
-     * 
+     *
      * @param array $file The $_FILES array entry
-     * @return array Success status and error message if validation fails
+     * @return array Success status, and on success the detected mime_type and
+     *               the extension the file must be saved with. On failure an
+     *               error message.
      */
     public function validateFile($file)
     {
@@ -69,8 +84,23 @@ class ImageUploadHelper
         if (!in_array($mime_type, $this->allowed_mime_types)) {
             return array("success" => false, "message" => "Invalid file type. Only JPG, PNG, WebP, and HEIC are allowed ($mime_type)");
         }
-        
-        return array("success" => true);
+
+        return array(
+            "success" => true,
+            "mime_type" => $mime_type,
+            "extension" => $this->mime_extensions[$mime_type]
+        );
+    }
+
+    /**
+     * Extension an image of this MIME type must be saved with
+     *
+     * @param string $mime_type A MIME type returned by validateFile()
+     * @return string|false The extension, or false if the type is not allowed
+     */
+    public function getExtensionForMime($mime_type)
+    {
+        return isset($this->mime_extensions[$mime_type]) ? $this->mime_extensions[$mime_type] : false;
     }
 
     /**
@@ -83,6 +113,14 @@ class ImageUploadHelper
      */
     public function processUpload($file, $target_dir, $filename)
     {
+        // Last line of defence: whatever the caller passes, the file is only
+        // ever written with an allowed image extension and no path components
+        $filename = basename($filename);
+        $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+        if (!in_array($extension, $this->mime_extensions, true)) {
+            return array("success" => false, "message" => "Invalid file extension");
+        }
+
         // Create directory structure if needed
         if (!file_exists($target_dir)) {
             if (!mkdir($target_dir, 0755, true)) {

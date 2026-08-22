@@ -499,10 +499,10 @@ class Heatpump
             return array("success" => false, "message" => "Heat pump model not found");
         }
         
-        // Generate filename based on heatpump info
-        $extension = strtolower(pathinfo($photo['name'], PATHINFO_EXTENSION));
+        // Generate filename based on heatpump info. The extension comes from the
+        // validated MIME type, not from the uploaded filename, which the user controls
         $safe_name = preg_replace('/[^a-z0-9_-]/', '_', strtolower($heatpump['manufacturer_name'] . '_' . $heatpump['name'] . '_' . $heatpump['capacity'] . 'kw'));
-        $filename = $safe_name . '.' . $extension;
+        $filename = $safe_name . '.' . $validation['extension'];
         
         // Remove old image if exists (before uploading new one)
         if (!empty($heatpump['img'])) {

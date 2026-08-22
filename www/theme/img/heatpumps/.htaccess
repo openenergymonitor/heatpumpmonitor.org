@@ -1,0 +1,33 @@
+# Uploaded images. These are static images and nothing more:
+# the web server must never execute anything in this directory or below it.
+
+
+# mod_php: turn the interpreter off outright.
+# Guarded by IfModule - php_flag is a syntax error when mod_php is absent.
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php8.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php7.c>
+    php_flag engine off
+</IfModule>
+
+# php-fpm / proxy_fcgi / any SetHandler based setup ignores php_flag,
+# so refuse to serve script files at all.
+<FilesMatch "\.(?i:php|php[0-9]|phtml|phps|phar|pht|shtml|cgi|pl|py|asp|aspx|jsp)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Belt and braces: drop any handler/type mapping inherited from a parent config
+<IfModule mod_mime.c>
+    RemoveHandler .php .php3 .php4 .php5 .php7 .php8 .phtml .phps .phar .pht
+    RemoveType .php .php3 .php4 .php5 .php7 .php8 .phtml .phps .phar .pht
+</IfModule>
