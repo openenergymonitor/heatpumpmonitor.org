@@ -49,9 +49,15 @@ class Email
 
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
         $response = curl_exec($curl);
+        $httpcode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
         curl_close($curl);
 
-        print $response;
+        // Never echo the provider response: callers return JSON, and printing
+        // here corrupts it and leaks delivery detail to whoever triggered the
+        // email. Log failures instead.
+        if ($httpcode < 200 || $httpcode >= 300) {
+            error_log("Email send failed, http $httpcode: ".substr((string) $response, 0, 500));
+        }
 
         return $response;
     }

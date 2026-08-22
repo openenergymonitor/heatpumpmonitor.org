@@ -9,8 +9,13 @@ class User
     private $emoncms_mysqli;
     private $host;
     private $rememberme;
+    private $redis;
 
     private $email_verification = false;
+
+    // Must match User::$password_reset_window in the emoncms codebase: this
+    // site issues the reset token, emoncms.org redeems it
+    private $password_reset_window = 3600;
 
     public function __construct($mysqli, $rememberme)
     {
@@ -21,9 +26,12 @@ class User
 
         $this->rememberme = $rememberme;
 
+        global $redis;
+        $this->redis = $redis;
+
         global $settings;
         $this->host = $settings['emoncms_host'];
-        
+
         if (isset($settings["email_verification"])) {
             $this->email_verification = $settings["email_verification"];
         }
@@ -210,51 +218,138 @@ class User
         session_destroy();
     }
 
+    /**
+     * Send a password reset link.
+     *
+     * HeatpumpMonitor accounts are emoncms.org accounts: this site has no users
+     * table of its own, it reads and writes emoncms's. So this issues a reset
+     * token into the shared users table and emails a link that lands on
+     * emoncms.org, which owns the credential and is the only place a password
+     * is actually changed (User::passwordreset_confirm there).
+     *
+     * This deliberately does NOT change the password. It is reachable by anyone
+     * knowing a username and an email address, so setting a new credential here
+     * let a stranger lock any account out of both sites at will.
+     *
+     * The response is the same whether or not an account matched, so it cannot
+     * be used to test which usernames or addresses are registered.
+     *
+     * @param string $username
+     * @param string $emailto
+     * @return array
+     */
     public function passwordreset($username,$emailto)
     {
-        // if null or empty
-        if (!$username || !$emailto) return array('success'=>false, 'message'=>"Username or email empty");
-        
-        $username_out = preg_replace('/[^\p{N}\p{L}_\s\-]/u','',$username);
-        if (!filter_var($emailto, FILTER_VALIDATE_EMAIL)) return array('success'=>false, 'message'=>"Email address format error");
+        // Sent whatever happens below: never reveal whether an account matched
+        $generic = array('success'=>true, 'message'=>"If that username and email match an account, a password reset link has been sent.");
 
-        $stmt = $this->emoncms_mysqli->prepare("SELECT id FROM users WHERE username=? AND email=?");
-        $stmt->bind_param("ss",$username_out,$emailto);
-        $stmt->execute();
-        $stmt->bind_result($userid);
-        $stmt->fetch();
-        $stmt->close();
-        
-        if ($userid!==false && $userid>0)
-        {
-            // Generate new random password
-            // 8 characters long with letter, numbers and mixed case
-            $newpass = substr(str_shuffle('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, 8);
-
-            // Hash and salt
-            $hash = hash('sha256', $newpass);
-            $salt = generate_secure_key(16);
-            $password = hash('sha256', $salt . $hash);
-
-            require_once "Lib/email.php";
-            $email_class = new Email();
-            $email_class->send(array(
-                "to" => array(array("email" => $emailto)),
-                "subject" => "HeatpumpMonitor.org password reset",
-                "text" => "A password reset was requested for your HeatpumpMonitor account.\n\nYou can now login with password: $newpass",
-                "html" => "<p>A password reset was requested for your HeatpumpMonitor account.</p><p>Your can now login with password: <b>$newpass</b> </p>"
-            ));
-
-            // Save password and salt
-            $stmt = $this->emoncms_mysqli->prepare("UPDATE users SET password = ?, salt = ? WHERE id = ?");
-            $stmt->bind_param("ssi", $password, $salt, $userid);
-            $stmt->execute();
-            $stmt->close();
-
-            return array('success'=>true, 'message'=>"Password recovery email sent!");
-        } else {
-            return array('success'=>false, 'message'=>"Invalid username or email");
+        if ($this->is_rate_limited('passwordreset', 3, 900)) {
+            return array('success'=>false, 'message'=>"Too many attempts, please try again later");
         }
+
+        // if null or empty
+        if (!$username || !$emailto) return $generic;
+
+        // Usernames are emoncms usernames: a-z 0-9 only
+        if (!ctype_alnum($username) || strlen($username) < 3 || strlen($username) > 30) return $generic;
+        if (!filter_var($emailto, FILTER_VALIDATE_EMAIL)) return $generic;
+
+        $stmt = $this->emoncms_mysqli->prepare("SELECT id,access,archived,term FROM users WHERE username=? AND email=?");
+        $stmt->bind_param("ss",$username,$emailto);
+        $stmt->execute();
+        $userData = $stmt->get_result()->fetch_object();
+        $stmt->close();
+
+        if (!$userData || $userData->id < 1) return $generic;
+
+        // Don't send a reset for an account that could not log in afterwards
+        // anyway. Indistinguishable from success to the caller.
+        if ($this->account_login_denied($userData)) return $generic;
+
+        $userid = (int) $userData->id;
+
+        // Only the hash is stored, so read access to the users table does not
+        // yield usable reset links. emoncms.org validates against the same hash.
+        $token = generate_secure_key(32);
+        $token_hash = hash('sha256', $token);
+        $expires = time() + $this->password_reset_window;
+
+        $stmt = $this->emoncms_mysqli->prepare("UPDATE users SET password_reset_hash=?, password_reset_expires=? WHERE id=?");
+        if (!$stmt) {
+            // Columns missing means the emoncms schema update has not been run
+            return array('success'=>false, 'message'=>"Password reset is unavailable, please contact support");
+        }
+        $stmt->bind_param("sii", $token_hash, $expires, $userid);
+        $stmt->execute();
+        $stmt->close();
+
+        $reset_link = rtrim($this->host,'/')."/user/passwordreset-confirm?key=".$token;
+        $minutes = (int) round($this->password_reset_window / 60);
+
+        require_once "Lib/email.php";
+        $email_class = new Email();
+        $email_class->send(array(
+            "to" => array(array("email" => $emailto)),
+            "subject" => "HeatpumpMonitor.org password reset",
+            "text" => "A password reset was requested for your HeatpumpMonitor account.\n\n"
+                     ."To choose a new password open this link:\n$reset_link\n\n"
+                     ."The link can be used once and expires in $minutes minutes. "
+                     ."If you did not request this you can ignore this email, your password has not been changed.",
+            "html" => "<p>A password reset was requested for your HeatpumpMonitor account.</p>"
+                     ."<p>To choose a new password follow this link: <a href=\"$reset_link\">$reset_link</a></p>"
+                     ."<p>The link can be used once and expires in $minutes minutes. "
+                     ."If you did not request this you can ignore this email, your password has not been changed.</p>"
+        ));
+
+        return $generic;
+    }
+
+    /**
+     * Whether an account is barred from logging in, matching the checks in
+     * login(). Used to avoid issuing a reset that could not be used.
+     *
+     * @param object $userData row from the users table
+     * @return bool
+     */
+    private function account_login_denied($userData)
+    {
+        if (isset($userData->term) && $userData->term > 0) {
+            $d = new DateTime();
+            $d->setTimestamp($userData->term);
+            $d->modify("+4 weeks");
+            if ((time() - $d->getTimestamp()) > 0) return true;
+        }
+        if (isset($userData->archived) && $userData->archived == 1) return true;
+        if (!isset($userData->access) || $userData->access < 2) return true;
+        return false;
+    }
+
+    /**
+     * Fixed window rate limit, keyed on the requesting IP.
+     *
+     * This site talks to the emoncms database directly rather than through
+     * emoncms.org's HTTP endpoints, so emoncms's own limiter never sees these
+     * requests. Without this, the shared reset flow would be rate limited on
+     * one site and wide open on the other.
+     *
+     * @param string $action
+     * @param int    $limit   max attempts in the window
+     * @param int    $window  seconds
+     * @return bool
+     */
+    private function is_rate_limited($action, $limit, $window)
+    {
+        if (!$this->redis) return false;
+
+        $ip = get_client_ip_env();
+        if (empty($ip)) return false;
+
+        $key = "hpmon:ratelimit:{$action}:".$ip;
+        $attempts = $this->redis->incr($key);
+        if ($attempts === 1) {
+            $this->redis->expire($key, $window);
+        }
+        return $attempts > $limit;
     }
     public function change_password($userid, $old, $new)
     {
