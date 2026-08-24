@@ -48,7 +48,10 @@ require_once "Modules/system/system_photos_model.php";
 $system_photos = new SystemPhotos($mysqli, $system);
 
 // Path and route
-$path = get_application_path(false);
+// Build $path from the configured domain rather than the request's Host header,
+// so it cannot be steered by a client (open redirect / reflected XSS). Falls
+// back to HTTP_HOST only when settings.php has no domain set.
+$path = get_application_path($settings['domain'] ?? false);
 $route = new Route(get('q'), server('DOCUMENT_ROOT'), server('REQUEST_METHOD'));
 
 // Session

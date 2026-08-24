@@ -44,13 +44,10 @@ function get_application_path($manual_domain = false)
         return "$proto://" . $manual_domain . "/";
     }
 
-    if (isset($_SERVER['HTTP_X_FORWARDED_HOST'])) {
-        $path = dirname("$proto://" . server('HTTP_X_FORWARDED_HOST') . server('SCRIPT_NAME')) . "/";
-    } else {
-        $path = dirname("$proto://" . server('HTTP_HOST') . server('SCRIPT_NAME')) . "/";
-    }
-
-    return $path;
+    // No domain configured: fall back to the Host header, which the web server
+    // validates. X-Forwarded-Host is deliberately not consulted as it is
+    // arbitrary client input.
+    return dirname("$proto://" . server('HTTP_HOST') . server('SCRIPT_NAME')) . "/";
 }
 
 function view($filepath, array $args = array())
