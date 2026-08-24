@@ -145,11 +145,11 @@ global $path;
             <p>This python example replicates the last 90 days stats view on HeatpumpMonitor.org</p>
 
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/monokai-sublime.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<link rel="stylesheet" href="<?php echo $path; ?>theme/vendor/highlight.js-11.9.0/styles/monokai-sublime.min.css" integrity="sha384-fPmRQ3GXo2iBk8Sgxizmu0IOOv+vAPjYXqCHNut2KSkSBleqjCd7FpBJwrfyCfGc">
+<script src="<?php echo $path; ?>theme/vendor/highlight.js-11.9.0/highlight.min.js" integrity="sha384-F/bZzf7p3Joyp5psL90p/p89AZJsndkSoGwRpXcZhleCWhd8SnRuoYo4d0yirjJp"></script>
 
 <!-- and it's easy to individually load additional languages -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/go.min.js"></script>
+<script src="<?php echo $path; ?>theme/vendor/highlight.js-11.9.0/languages/go.min.js" integrity="sha384-WmGkHEmwSI19EhTfO1nrSk3RziUQKRWg3vO0Ur3VYZjWvJRdRnX4/scQg+S2w1fI"></script>
 
 <script>hljs.highlightAll();</script>
 

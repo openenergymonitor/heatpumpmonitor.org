@@ -670,7 +670,7 @@ svg.hpm-economics-net { width: 100%; height: auto; display: block; }
 [v-cloak] { display: none !important; }
 </style>
 
-<script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+<script src="<?php echo $path; ?>theme/vendor/vue-2.7.16/vue.min.js" integrity="sha384-YVYXhPGIH/Gmcr0W5Rin4PcpcsG1a4pcdUUod1CnbDEJut7XiUaJtSlNKeRLJBPk"></script>
 <div class="hpm-home hpm-economics" id="economics" v-cloak>
 
     <!-- ============ Economics ============ -->

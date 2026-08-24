@@ -480,7 +480,7 @@ global $path;
 [v-cloak] { display: none !important; }
 </style>
 
-<script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+<script src="<?php echo $path; ?>theme/vendor/vue-2.7.16/vue.min.js" integrity="sha384-YVYXhPGIH/Gmcr0W5Rin4PcpcsG1a4pcdUUod1CnbDEJut7XiUaJtSlNKeRLJBPk"></script>
 <div class="hpm-home" id="flowtemp" v-cloak>
 
     <!-- Shared chart tooltip: anchored to the hovered dot, styled to match

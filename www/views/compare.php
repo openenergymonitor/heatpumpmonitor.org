@@ -6,9 +6,9 @@ if (isset($_GET['id'])) {
 }
 ?>
 
-<script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
-<script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
-<script src="https://cdn.plot.ly/plotly-2.18.1.min.js" charset="utf-8"></script>
+<script src="<?php echo $path; ?>theme/vendor/vue-2.7.16/vue.min.js" integrity="sha384-YVYXhPGIH/Gmcr0W5Rin4PcpcsG1a4pcdUUod1CnbDEJut7XiUaJtSlNKeRLJBPk"></script>
+<script src="<?php echo $path; ?>theme/vendor/jquery-3.6.3/jquery.min.js" integrity="sha384-Ft/vb48LwsAEtgltj7o+6vtS2esTU9PCpDqcXs4OCVQFZu5BqprHtUCZ4kjK+bpE"></script>
+<script src="<?php echo $path; ?>theme/vendor/plotly-2.18.1/plotly.min.js" integrity="sha384-ldLGNABp1IGx5zWzIrYaG/leOGvvDv4Xzwjizqu7MetOppUeJwRrBnHErSzIh293" charset="utf-8"></script>
 
 <div id="app">
     <div style=" background-color:#f0f0f0; padding-top:20px; padding-bottom:10px">

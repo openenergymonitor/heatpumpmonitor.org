@@ -1122,6 +1122,12 @@ class User
             return array('success' => false, 'message' => 'Sub account does not belong to admin user');
         }
 
+        // Never allow a site admin's credentials to be changed through the
+        // sub account path, whatever the accounts table says
+        if ($this->is_admin($sub_account_userid)) {
+            return array('success' => false, 'message' => 'Sub account cannot be an admin user');
+        }
+
         // Start by changing username if modified, return errors if any
         if (isset($data['username'])) {
             $result = $this->change_username($sub_account_userid, $data['username']);

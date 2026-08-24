@@ -2,9 +2,9 @@
 defined('EMONCMS_EXEC') or die('Restricted access');
 ?>
 
-<script src="https://cdn.jsdelivr.net/npm/ol@v7.4.0/dist/ol.js"></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v7.4.0/ol.css">
-<script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
+<script src="<?php echo $path; ?>theme/vendor/ol-7.4.0/ol.js" integrity="sha384-UnFf8KXzbcP68LSCc4PSf4WbixBySdywUoVXLwlMw14SsRiQYHMAImua4dnHgwzo"></script>
+<link rel="stylesheet" href="<?php echo $path; ?>theme/vendor/ol-7.4.0/ol.css" integrity="sha384-9bhh0d43Gp9ct3OBqOdccAg6nQ48H3ibQN30wXbD0oC/uFYftJt4aOK45aGS1TJL">
+<script src="<?php echo $path; ?>theme/vendor/jquery-3.6.3/jquery.min.js" integrity="sha384-Ft/vb48LwsAEtgltj7o+6vtS2esTU9PCpDqcXs4OCVQFZu5BqprHtUCZ4kjK+bpE"></script>
 <script src="<?php echo $path; ?>Modules/map/filter_systems.js?v=123"></script>
 <link rel="stylesheet" href="<?php echo $path; ?>Modules/map/map_view.css?v=124>">
 

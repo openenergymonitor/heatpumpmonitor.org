@@ -1,0 +1,271 @@
+[
+ {
+  "file": "apexcharts-6.10.0/apexcharts.min.js",
+  "source": "https://cdn.jsdelivr.net/npm/apexcharts@6.10.0",
+  "sha384": "sha384-5EG9CeSqSzymwY307XCL4zMqifjcpwh/uGHYg1CPiyMNHVvfCcx8VZi2JzW2035O",
+  "verified": "jsdelivr hash api (/dist/apexcharts.min.js)",
+  "replaces": []
+ },
+ {
+  "file": "axios-1.4.0/axios.min.js",
+  "source": "https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js",
+  "sha384": "sha384-I4Qw/vWb/sK/7VwepTtkaq636YLYClbEgEwKp3ueUCvjiLFrcoKUFAY5mOl40Fj3",
+  "verified": "cdnjs SRI api",
+  "replaces": [
+   "https://cdn.jsdelivr.net/npm/axios@1.19.0/dist/axios.min.js"
+  ]
+ },
+ {
+  "file": "bootstrap-5.3.0/css/bootstrap.min.css",
+  "source": "https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css",
+  "sha384": "sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM",
+  "verified": "cdnjs SRI api",
+  "replaces": [
+   "https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css"
+  ]
+ },
+ {
+  "file": "bootstrap-5.3.0/js/bootstrap.bundle.min.js",
+  "source": "https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js",
+  "sha384": "sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz",
+  "verified": "cdnjs SRI api",
+  "replaces": []
+ },
+ {
+  "file": "bootstrap-icons-1.11.0/font/bootstrap-icons.css",
+  "source": "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css",
+  "sha384": "sha384-QuGBSgV5Im3DzL2z+8Ko9/hqNy/N0O7zwvXAtfd1MvPKWa/UbeLV65cfm4BV5Wgq",
+  "verified": "jsdelivr hash api (/font/bootstrap-icons.css)",
+  "replaces": []
+ },
+ {
+  "file": "chart.js-4.4.1/chart.umd.js",
+  "source": "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js",
+  "sha384": "sha384-dug+JxfBvklEQdJ4AYuBBAIScUz0bVN73xpy273gcAwHjb3qI0fXmuYNaNfdyYJG",
+  "verified": "cdnjs SRI api",
+  "replaces": [
+   "https://cdn.jsdelivr.net/npm/chart.js@4.5.1"
+  ]
+ },
+ {
+  "file": "flot-0.8.3/jquery.flot.min.js",
+  "source": "https://cdnjs.cloudflare.com/ajax/libs/flot/0.8.3/jquery.flot.min.js",
+  "sha384": "sha384-RwhSkUmEGeOAldfwpJck6gcmrGxI7Q8shFWFF5lqnOihJnV556qpqUVpYNP7wSew",
+  "verified": "cdnjs SRI api",
+  "replaces": []
+ },
+ {
+  "file": "flot-0.8.3/jquery.flot.selection.min.js",
+  "source": "https://cdnjs.cloudflare.com/ajax/libs/flot/0.8.3/jquery.flot.selection.min.js",
+  "sha384": "sha384-CwXlgbYx235nUO+kK1VMvvpMQvCQBPTxSvnARPZ10KOjsCVYSalFvknxEzuQXwxi",
+  "verified": "cdnjs SRI api",
+  "replaces": []
+ },
+ {
+  "file": "flot-0.8.3/jquery.flot.stack.min.js",
+  "source": "https://cdnjs.cloudflare.com/ajax/libs/flot/0.8.3/jquery.flot.stack.min.js",
+  "sha384": "sha384-HDhsF+TZWoNp9Id3vlhgMxzrxIZ0S0EzJ9ZnM8SQcMyejH+ZIspghhVVrT0GDlPp",
+  "verified": "cdnjs SRI api",
+  "replaces": []
+ },
+ {
+  "file": "flot-0.8.3/jquery.flot.time.min.js",
+  "source": "https://cdnjs.cloudflare.com/ajax/libs/flot/0.8.3/jquery.flot.time.min.js",
+  "sha384": "sha384-qSVSrwJ8D6S0H6+MOkF7MBxx9C21JN6c8O8uZlZzGPMpLhsV0N015e/P4bdc4Whj",
+  "verified": "cdnjs SRI api",
+  "replaces": []
+ },
+ {
+  "file": "font-awesome-5.15.4/css/fontawesome.min.css",
+  "source": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css",
+  "sha384": "sha384-jLKHWM3JRmfMU0A5x5AkjWkw/EYfGUAGagvnfryNV3F9VqM98XiIH7VBGVoxVSc7",
+  "verified": "cdnjs SRI api",
+  "replaces": []
+ },
+ {
+  "file": "font-awesome-5.15.4/css/solid.min.css",
+  "source": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css",
+  "sha384": "sha384-Tv5i09RULyHKMwX0E8wJUqSOaXlyu3SQxORObAI08iUwIalMmN5L6AvlPX2LMoSE",
+  "verified": "cdnjs SRI api",
+  "replaces": []
+ },
+ {
+  "file": "highlight.js-11.9.0/highlight.min.js",
+  "source": "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js",
+  "sha384": "sha384-F/bZzf7p3Joyp5psL90p/p89AZJsndkSoGwRpXcZhleCWhd8SnRuoYo4d0yirjJp",
+  "verified": "cdnjs SRI api",
+  "replaces": []
+ },
+ {
+  "file": "highlight.js-11.9.0/languages/go.min.js",
+  "source": "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/go.min.js",
+  "sha384": "sha384-WmGkHEmwSI19EhTfO1nrSk3RziUQKRWg3vO0Ur3VYZjWvJRdRnX4/scQg+S2w1fI",
+  "verified": "cdnjs SRI api",
+  "replaces": []
+ },
+ {
+  "file": "highlight.js-11.9.0/styles/monokai-sublime.min.css",
+  "source": "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/monokai-sublime.min.css",
+  "sha384": "sha384-fPmRQ3GXo2iBk8Sgxizmu0IOOv+vAPjYXqCHNut2KSkSBleqjCd7FpBJwrfyCfGc",
+  "verified": "cdnjs SRI api",
+  "replaces": []
+ },
+ {
+  "file": "jquery-3.6.3/jquery.min.js",
+  "source": "https://code.jquery.com/jquery-3.6.3.min.js",
+  "sha384": "sha384-Ft/vb48LwsAEtgltj7o+6vtS2esTU9PCpDqcXs4OCVQFZu5BqprHtUCZ4kjK+bpE",
+  "verified": "cross-CDN cdnjs",
+  "replaces": [
+   "https://code.jquery.com/jquery-3.6.0.min.js"
+  ]
+ },
+ {
+  "file": "jstat-1.9.6/jstat.min.js",
+  "source": "https://cdn.jsdelivr.net/npm/jstat@1.9.6/dist/jstat.min.js",
+  "sha384": "sha384-7uGOMhLhjroTamet5l69PR8EGxKUyWZlZOFFDRymtVqIfsh4Hj7uZRctW67ZCdkD",
+  "verified": "jsdelivr hash api (/dist/jstat.min.js)",
+  "replaces": []
+ },
+ {
+  "file": "moment-2.29.1/moment.min.js",
+  "source": "https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js",
+  "sha384": "sha384-Uz1UHyakAAz121kPY0Nx6ZGzYeUTy9zAtcpdwVmFCEwiTGPA2K6zSGgkKJEQfMhK",
+  "verified": "cdnjs SRI api",
+  "replaces": []
+ },
+ {
+  "file": "ol-7.4.0/ol.css",
+  "source": "https://cdn.jsdelivr.net/npm/ol@v7.4.0/ol.css",
+  "sha384": "sha384-9bhh0d43Gp9ct3OBqOdccAg6nQ48H3ibQN30wXbD0oC/uFYftJt4aOK45aGS1TJL",
+  "verified": "jsdelivr hash api (/ol.css)",
+  "replaces": []
+ },
+ {
+  "file": "ol-7.4.0/ol.js",
+  "source": "https://cdn.jsdelivr.net/npm/ol@v7.4.0/dist/ol.js",
+  "sha384": "sha384-UnFf8KXzbcP68LSCc4PSf4WbixBySdywUoVXLwlMw14SsRiQYHMAImua4dnHgwzo",
+  "verified": "jsdelivr hash api (/dist/ol.js)",
+  "replaces": []
+ },
+ {
+  "file": "plotly-2.18.1/plotly.min.js",
+  "source": "https://cdn.plot.ly/plotly-2.18.1.min.js",
+  "sha384": "sha384-ldLGNABp1IGx5zWzIrYaG/leOGvvDv4Xzwjizqu7MetOppUeJwRrBnHErSzIh293",
+  "verified": "cross-CDN cdnjs",
+  "replaces": [
+   "https://cdn.plot.ly/plotly-2.16.1.min.js"
+  ]
+ },
+ {
+  "file": "vue-2.7.16/vue.min.js",
+  "source": "https://cdn.jsdelivr.net/npm/vue@2.7.16",
+  "sha384": "sha384-YVYXhPGIH/Gmcr0W5Rin4PcpcsG1a4pcdUUod1CnbDEJut7XiUaJtSlNKeRLJBPk",
+  "verified": "jsdelivr hash api (/dist/vue.min.js)",
+  "replaces": []
+ },
+ {
+  "file": "vue-select-3.20.4/vue-select.css",
+  "source": "https://cdn.jsdelivr.net/npm/vue-select@3.20.4/dist/vue-select.css",
+  "sha384": "sha384-d47t1X+T2AtAlhF0RnmMrSByfjJtWLX62A/zYSFLWF5hnjIryfT2GX3zaNCXjL/2",
+  "verified": "jsdelivr hash api (/dist/vue-select.css)",
+  "replaces": []
+ },
+ {
+  "file": "vue-select-3.20.4/vue-select.js",
+  "source": "https://cdn.jsdelivr.net/npm/vue-select@3.20.4/dist/vue-select.js",
+  "sha384": "sha384-XG89Coh+Sc6fdYDtm9AqhAGIOt2HUo8+NiTs2v5kx26XYaffyPvPdr7+cn/qpEE6",
+  "verified": "jsdelivr hash api (/dist/vue-select.js)",
+  "replaces": []
+ },
+ {
+  "file": "bootstrap-icons-1.11.0/font/fonts/bootstrap-icons.woff2",
+  "source": "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/fonts/bootstrap-icons.woff2",
+  "sha384": "sha384-KoRugHSRrvj5dWFDXACL3VSSqDjno21U52laTdBeNExt4L5B/6BQG01Q71ZvFzP4",
+  "verified": "jsdelivr hash api (/font/fonts/bootstrap-icons.woff2)",
+  "replaces": []
+ },
+ {
+  "file": "bootstrap-icons-1.11.0/font/fonts/bootstrap-icons.woff",
+  "source": "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/fonts/bootstrap-icons.woff",
+  "sha384": "sha384-C3L+MAA3z+5Jo1ThoUGM4/nNVWZFAN3fNVZvLs8IA7QyjdJycVpvgdvBVEyg0FpP",
+  "verified": "jsdelivr hash api (/font/fonts/bootstrap-icons.woff)",
+  "replaces": []
+ },
+ {
+  "file": "font-awesome-5.15.4/webfonts/fa-solid-900.woff2",
+  "source": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/webfonts/fa-solid-900.woff2",
+  "sha384": "sha384-J+Hec+Cl+N/SJPtXkxffygzO3i2HKS6radtcWe9DhOd+0yka4r/u4y+I4+g29xKn",
+  "verified": "jsdelivr hash api for npm @fortawesome/fontawesome-free (/webfonts/fa-solid-900.woff2)",
+  "replaces": []
+ },
+ {
+  "file": "font-awesome-5.15.4/webfonts/fa-solid-900.woff",
+  "source": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/webfonts/fa-solid-900.woff",
+  "sha384": "sha384-8yvOn0Nc6x628D4z+3k0d+jXkJreZ3x8Vobm9frG+jCSR4BUjh48xEIYTOLfR04k",
+  "verified": "jsdelivr hash api for npm @fortawesome/fontawesome-free (/webfonts/fa-solid-900.woff)",
+  "replaces": []
+ },
+ {
+  "file": "font-awesome-5.15.4/webfonts/fa-solid-900.ttf",
+  "source": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/webfonts/fa-solid-900.ttf",
+  "sha384": "sha384-ugSKcSBNjwVs/fk4YJ7sAZP7jXPvqjTyo+1iZtOl/iakH0k5ADgM+LrEnYEk40Sl",
+  "verified": "jsdelivr hash api for npm @fortawesome/fontawesome-free (/webfonts/fa-solid-900.ttf)",
+  "replaces": []
+ },
+ {
+  "file": "font-awesome-5.15.4/webfonts/fa-solid-900.eot",
+  "source": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/webfonts/fa-solid-900.eot",
+  "sha384": "sha384-Isn3HvL5LRQY0I7TT17jJcUfqgQcsL8q8wutwIfENC9HsJskVdpHjJiM8xalwzAw",
+  "verified": "jsdelivr hash api for npm @fortawesome/fontawesome-free (/webfonts/fa-solid-900.eot)",
+  "replaces": []
+ },
+ {
+  "file": "font-awesome-5.15.4/webfonts/fa-solid-900.svg",
+  "source": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/webfonts/fa-solid-900.svg",
+  "sha384": "sha384-PqhE+beEMAcHtdZ03v2DSm3p71LFmT1QqT+dbtha3ZGioNmxAAmIHWLuLLTrdLvI",
+  "verified": "jsdelivr hash api for npm @fortawesome/fontawesome-free (/webfonts/fa-solid-900.svg)",
+  "replaces": []
+ },
+ {
+  "file": "montserrat/montserrat-JTUHjIg1_i6t8kCHKm4532VJOt5-QNFgpCtr6Hw0aXpsog.woff2",
+  "source": "https://fonts.gstatic.com/s/montserrat/v31/JTUHjIg1_i6t8kCHKm4532VJOt5-QNFgpCtr6Hw0aXpsog.woff2",
+  "sha384": "sha384-ujdUHV1J3NdWcFEJk9yhum2gGXbKlYkk873Nd0mTwAdq0TCXKTpl3/hjsW/WooZA",
+  "verified": "two independent fetches identical (Google publishes no hash)",
+  "replaces": []
+ },
+ {
+  "file": "montserrat/montserrat-JTUHjIg1_i6t8kCHKm4532VJOt5-QNFgpCtr6Hw2aXpsog.woff2",
+  "source": "https://fonts.gstatic.com/s/montserrat/v31/JTUHjIg1_i6t8kCHKm4532VJOt5-QNFgpCtr6Hw2aXpsog.woff2",
+  "sha384": "sha384-ENwrGbrF0GRjjXw/4N82NANoOtU43pWhBzC94iA1apyG3V3eoWMmNbA9QrAUnBSR",
+  "verified": "two independent fetches identical (Google publishes no hash)",
+  "replaces": []
+ },
+ {
+  "file": "montserrat/montserrat-JTUHjIg1_i6t8kCHKm4532VJOt5-QNFgpCtr6Hw3aXpsog.woff2",
+  "source": "https://fonts.gstatic.com/s/montserrat/v31/JTUHjIg1_i6t8kCHKm4532VJOt5-QNFgpCtr6Hw3aXpsog.woff2",
+  "sha384": "sha384-Q52xxCyFSxuzz5VP7p7wz7OzgcnANk6CtjTd9pT0zbGRVBS9uuPruk/G+zit8w1z",
+  "verified": "two independent fetches identical (Google publishes no hash)",
+  "replaces": []
+ },
+ {
+  "file": "montserrat/montserrat-JTUHjIg1_i6t8kCHKm4532VJOt5-QNFgpCtr6Hw5aXo.woff2",
+  "source": "https://fonts.gstatic.com/s/montserrat/v31/JTUHjIg1_i6t8kCHKm4532VJOt5-QNFgpCtr6Hw5aXo.woff2",
+  "sha384": "sha384-TZp3MNli7D4I9HF7ut1KGl19b69Ah6oafBq+SgFy8VzLt3vFx74DrLJ2Jt/z5gUY",
+  "verified": "two independent fetches identical (Google publishes no hash)",
+  "replaces": []
+ },
+ {
+  "file": "montserrat/montserrat-JTUHjIg1_i6t8kCHKm4532VJOt5-QNFgpCtr6Hw9aXpsog.woff2",
+  "source": "https://fonts.gstatic.com/s/montserrat/v31/JTUHjIg1_i6t8kCHKm4532VJOt5-QNFgpCtr6Hw9aXpsog.woff2",
+  "sha384": "sha384-Y1cHI0k3KbpWNYzZaCSsgqYc8skKPJDzYqJdvK+7PmRdUfm341OsFunlT6/6CeJs",
+  "verified": "two independent fetches identical (Google publishes no hash)",
+  "replaces": []
+ },
+ {
+  "file": "montserrat/montserrat.css",
+  "source": "https://fonts.googleapis.com/css?family=Montserrat&lang=en",
+  "sha384": "sha384-AMYJBiYWg2fH/qW9FBMISO0zcqcNjcZlfNz2wBgd5TALef3TT+VTOri6yfRQAD5J",
+  "verified": "generated (font urls rewritten to local)",
+  "replaces": []
+ }
+]

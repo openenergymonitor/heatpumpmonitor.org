@@ -1,17 +1,17 @@
 // Service Worker for HeatpumpMonitor.org PWA
-const CACHE_NAME = 'heatpumpmonitor-v1';
+const CACHE_NAME = 'heatpumpmonitor-v2';
 const OFFLINE_URL = '/';
 
-// Assets to cache on install
+// Assets to cache on install (third party libraries are vendored under theme/vendor)
 const PRECACHE_ASSETS = [
   '/',
   '/theme/style.css',
   '/theme/img/icons/icon-192x192.png',
   '/theme/img/icons/icon-512x512.png',
-  'https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css',
-  'https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css',
-  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css'
+  '/theme/vendor/bootstrap-5.3.0/css/bootstrap.min.css',
+  '/theme/vendor/bootstrap-5.3.0/js/bootstrap.bundle.min.js',
+  '/theme/vendor/font-awesome-5.15.4/css/fontawesome.min.css',
+  '/theme/vendor/font-awesome-5.15.4/css/solid.min.css'
 ];
 
 // Install event - cache core assets
@@ -52,8 +52,7 @@ self.addEventListener('fetch', (event) => {
   // Parse URL to check origin properly
   const url = new URL(event.request.url);
   const allowedOrigins = [
-    self.location.origin,
-    'https://cdnjs.cloudflare.com'
+    self.location.origin
   ];
   
   // Skip cross-origin requests that are not from allowed origins

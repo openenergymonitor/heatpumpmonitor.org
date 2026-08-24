@@ -978,7 +978,7 @@ global $path;
 [v-cloak] { display: none !important; }
 </style>
 
-<script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+<script src="<?php echo $path; ?>theme/vendor/vue-2.7.16/vue.min.js" integrity="sha384-YVYXhPGIH/Gmcr0W5Rin4PcpcsG1a4pcdUUod1CnbDEJut7XiUaJtSlNKeRLJBPk"></script>
 <div class="hpm-home" id="app" v-cloak>
 
     <!-- ============ Hero ============ -->
@@ -2431,13 +2431,16 @@ global $path;
         if (started) return;
         started = true;
 
+        // OpenLayers is vendored (see theme/vendor/MANIFEST.md); hashes match the manifest
         var css = document.createElement("link");
         css.rel = "stylesheet";
-        css.href = "https://cdn.jsdelivr.net/npm/ol@v7.4.0/ol.css";
+        css.href = path + "theme/vendor/ol-7.4.0/ol.css";
+        css.integrity = "sha384-9bhh0d43Gp9ct3OBqOdccAg6nQ48H3ibQN30wXbD0oC/uFYftJt4aOK45aGS1TJL";
         document.head.appendChild(css);
 
         var script = document.createElement("script");
-        script.src = "https://cdn.jsdelivr.net/npm/ol@v7.4.0/dist/ol.js";
+        script.src = path + "theme/vendor/ol-7.4.0/ol.js";
+        script.integrity = "sha384-UnFf8KXzbcP68LSCc4PSf4WbixBySdywUoVXLwlMw14SsRiQYHMAImua4dnHgwzo";
         script.onload = loadData;
         document.head.appendChild(script);
     }

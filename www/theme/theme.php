@@ -52,10 +52,10 @@ $navigation = array(
     <link rel="icon" type="image/x-icon" href="<?php echo $path; ?>theme/img/logo/favicon.ico">
     <link rel="apple-touch-icon" href="<?php echo $path; ?>theme/img/logo/apple-touch-icon.png">
     
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css">
+    <link rel="stylesheet" href="<?php echo $path; ?>theme/vendor/bootstrap-5.3.0/css/bootstrap.min.css" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM">
+    <link rel="stylesheet" href="<?php echo $path; ?>theme/vendor/bootstrap-icons-1.11.0/font/bootstrap-icons.css" integrity="sha384-QuGBSgV5Im3DzL2z+8Ko9/hqNy/N0O7zwvXAtfd1MvPKWa/UbeLV65cfm4BV5Wgq">
+    <link rel="stylesheet" href="<?php echo $path; ?>theme/vendor/font-awesome-5.15.4/css/fontawesome.min.css" integrity="sha384-jLKHWM3JRmfMU0A5x5AkjWkw/EYfGUAGagvnfryNV3F9VqM98XiIH7VBGVoxVSc7">
+    <link rel="stylesheet" href="<?php echo $path; ?>theme/vendor/font-awesome-5.15.4/css/solid.min.css" integrity="sha384-Tv5i09RULyHKMwX0E8wJUqSOaXlyu3SQxORObAI08iUwIalMmN5L6AvlPX2LMoSE">
     <link rel="stylesheet" href="<?php echo $path; ?>theme/style.css?v=54" />
 
 </head>
@@ -234,7 +234,7 @@ $navigation = array(
         </div>
     </footer>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="<?php echo $path; ?>theme/vendor/bootstrap-5.3.0/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"></script>
     <?php if ($session['userid']) { ?>
         <script src="<?php echo $path; ?>Lib/md5.js"></script>
         <script>

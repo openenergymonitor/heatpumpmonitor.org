@@ -22,14 +22,14 @@ if ($system_data->share==0) {
 <link href="<?php echo $path; ?>Modules/dashboard/config.css?v=<?php echo $v; ?>" rel="stylesheet">
 <link href="<?php echo $path; ?>Modules/dashboard/light.css?v=<?php echo $v; ?>" rel="stylesheet">
 
-<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Montserrat&amp;lang=en" />
+<link rel="stylesheet" href="<?php echo $path; ?>theme/vendor/montserrat/montserrat.css" integrity="sha384-AMYJBiYWg2fH/qW9FBMISO0zcqcNjcZlfNz2wBgd5TALef3TT+VTOri6yfRQAD5J" />
 
 
-<script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/flot/0.8.3/jquery.flot.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/flot/0.8.3/jquery.flot.time.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/flot/0.8.3/jquery.flot.selection.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/flot/0.8.3/jquery.flot.stack.min.js"></script>
+<script src="<?php echo $path; ?>theme/vendor/jquery-3.6.3/jquery.min.js" integrity="sha384-Ft/vb48LwsAEtgltj7o+6vtS2esTU9PCpDqcXs4OCVQFZu5BqprHtUCZ4kjK+bpE"></script>
+<script src="<?php echo $path; ?>theme/vendor/flot-0.8.3/jquery.flot.min.js" integrity="sha384-RwhSkUmEGeOAldfwpJck6gcmrGxI7Q8shFWFF5lqnOihJnV556qpqUVpYNP7wSew"></script>
+<script src="<?php echo $path; ?>theme/vendor/flot-0.8.3/jquery.flot.time.min.js" integrity="sha384-qSVSrwJ8D6S0H6+MOkF7MBxx9C21JN6c8O8uZlZzGPMpLhsV0N015e/P4bdc4Whj"></script>
+<script src="<?php echo $path; ?>theme/vendor/flot-0.8.3/jquery.flot.selection.min.js" integrity="sha384-CwXlgbYx235nUO+kK1VMvvpMQvCQBPTxSvnARPZ10KOjsCVYSalFvknxEzuQXwxi"></script>
+<script src="<?php echo $path; ?>theme/vendor/flot-0.8.3/jquery.flot.stack.min.js" integrity="sha384-HDhsF+TZWoNp9Id3vlhgMxzrxIZ0S0EzJ9ZnM8SQcMyejH+ZIspghhVVrT0GDlPp"></script>
 
 <script type="text/javascript" src="<?php echo $path; ?>Modules/dashboard/date.format.js?v=<?php echo $v; ?>"></script>
 <script type="text/javascript" src="<?php echo $path; ?>Modules/dashboard/vis.helper.js?v=<?php echo $v; ?>"></script>

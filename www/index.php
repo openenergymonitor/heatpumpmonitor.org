@@ -21,6 +21,35 @@ require "Lib/load_database.php";
 require "core.php";
 require "route.php";
 
+// ----------------------------------------------------------------------------------
+// Security headers, sent on every response before any output
+// ----------------------------------------------------------------------------------
+header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: SAMEORIGIN');
+header('Referrer-Policy: strict-origin-when-cross-origin');
+if (is_https()) {
+    header('Strict-Transport-Security: max-age=31536000');
+}
+// Vue 2 compiles templates in the browser ('unsafe-eval') and the views carry
+// inline <script> blocks ('unsafe-inline'), so this policy is about limiting
+// *where* code can load from, plus framing, object embedding and form targets.
+// All third party libraries are vendored under theme/vendor (see MANIFEST.md
+// there) and load with SRI hashes; the PayPal donate SDK is the one exception.
+header("Content-Security-Policy: "
+    ."default-src 'self'; "
+    ."script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.paypalobjects.com; "
+    ."style-src 'self' 'unsafe-inline'; "
+    ."font-src 'self' data:; "
+    ."img-src 'self' data: blob: https:; "
+    ."connect-src 'self'; "
+    ."frame-src https://www.paypal.com https://www.paypalobjects.com; "
+    ."worker-src 'self' blob:; "
+    ."manifest-src 'self'; "
+    ."object-src 'none'; "
+    ."base-uri 'self'; "
+    ."form-action 'self'; "
+    ."frame-ancestors 'self'");
+
 // User model is required for session management
 // RememberMe model is required for remember me functionality
 //

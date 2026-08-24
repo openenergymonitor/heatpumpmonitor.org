@@ -4,18 +4,18 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 ?>
 
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/vue-select@3.20.4/dist/vue-select.min.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/vue-select@3.20.4/dist/vue-select.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
-<script src="https://cdn.plot.ly/plotly-2.16.1.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jstat@1.9.6/dist/jstat.min.js"></script>
+<link href="<?php echo $path; ?>theme/vendor/bootstrap-5.3.0/css/bootstrap.min.css" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" rel="stylesheet">
+<link href="<?php echo $path; ?>theme/vendor/vue-select-3.20.4/vue-select.css" integrity="sha384-d47t1X+T2AtAlhF0RnmMrSByfjJtWLX62A/zYSFLWF5hnjIryfT2GX3zaNCXjL/2" rel="stylesheet">
+<script src="<?php echo $path; ?>theme/vendor/vue-2.7.16/vue.min.js" integrity="sha384-YVYXhPGIH/Gmcr0W5Rin4PcpcsG1a4pcdUUod1CnbDEJut7XiUaJtSlNKeRLJBPk"></script>
+<script src="<?php echo $path; ?>theme/vendor/vue-select-3.20.4/vue-select.js" integrity="sha384-XG89Coh+Sc6fdYDtm9AqhAGIOt2HUo8+NiTs2v5kx26XYaffyPvPdr7+cn/qpEE6"></script>
+<script src="<?php echo $path; ?>theme/vendor/axios-1.4.0/axios.min.js" integrity="sha384-I4Qw/vWb/sK/7VwepTtkaq636YLYClbEgEwKp3ueUCvjiLFrcoKUFAY5mOl40Fj3"></script>
+<script src="<?php echo $path; ?>theme/vendor/plotly-2.18.1/plotly.min.js" integrity="sha384-ldLGNABp1IGx5zWzIrYaG/leOGvvDv4Xzwjizqu7MetOppUeJwRrBnHErSzIh293"></script>
+<script src="<?php echo $path; ?>theme/vendor/jstat-1.9.6/jstat.min.js" integrity="sha384-7uGOMhLhjroTamet5l69PR8EGxKUyWZlZOFFDRymtVqIfsh4Hj7uZRctW67ZCdkD"></script>
 <script src="<?php echo $path; ?>Lib/clipboard.js"></script>
 <script src="<?php echo $path; ?>Modules/system/system_list_chart.js?v=42"></script>
 
 <link rel="stylesheet" href="<?php echo $path; ?>Lib/autocomplete.css?v=4">
-<script src="Lib/autocomplete.js?v=8"></script>
+<script src="<?php echo $path; ?>Lib/autocomplete.js?v=8"></script>
 <link rel="stylesheet" href="<?php echo $path; ?>Modules/system/system_view.css?v=6">
 <script src="<?php echo $path; ?>Modules/system/photo_utils.js?v=1"></script>
 <script src="<?php echo $path; ?>Modules/system/photo_lightbox.js?v=5"></script>

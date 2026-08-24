@@ -97,10 +97,13 @@ function post($index, $error_if_missing = false, $default = null)
         if (!is_array($_POST[$index])) {
             $val = rawurldecode($_POST[$index]); // does not decode the plus symbol into spaces
         } else {
-            // sanitize the array values
-            $SANTIZED_POST  = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
-            if (!empty($SANTIZED_POST[$index])) {
-                $val = $SANTIZED_POST[$index];
+            // Escape each array value (FILTER_SANITIZE_STRING is removed in
+            // PHP 8.1+). Nested arrays are dropped; only scalar values are kept.
+            $val = array();
+            foreach ($_POST[$index] as $key => $item) {
+                if (!is_array($item)) {
+                    $val[$key] = htmlspecialchars((string) $item, ENT_QUOTES, 'UTF-8');
+                }
             }
         }
     } else if ($error_if_missing) {
@@ -110,8 +113,7 @@ function post($index, $error_if_missing = false, $default = null)
 
     if (is_array($val)) {
         $val = array_map("stripslashes", $val);
-    }
-    if (!is_null($val)) {
+    } else if (!is_null($val)) {
         $val = stripslashes($val);
     }
     return $val;
