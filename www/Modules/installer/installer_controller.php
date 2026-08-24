@@ -69,9 +69,14 @@ function installer_controller() {
 
         // Get dominant color from logo
         if ($route->action == "get_dominant_color" && $session['admin']) {
-            $logo = post('logo', true);
+            $logo = basename((string) post('logo', true));
             if (empty($logo)) {
                 return array('success' => false, 'message' => 'Logo path is required');
+            }
+            // Only accept filenames of the form fetch_installer_logo() produces,
+            // so this cannot be used to probe for files outside the logo directory
+            if (!preg_match('/^[A-Za-z0-9_-]+\.(jpg|png|gif)$/', $logo)) {
+                return array('success' => false, 'message' => 'Invalid logo filename');
             }
 
             $logo_path = 'theme/img/installers/' . $logo;
