@@ -198,6 +198,12 @@ function heatpump_controller() {
             }
             $stmt->close();
 
+            // load_from_emoncms() authenticates with the target system's own
+            // stored readkey, so the caller must be allowed to read that system
+            if (!$system->has_read_access($session['userid'], $system_id)) {
+                return array("error" => "Access denied");
+            }
+
             $result = $system_stats->load_from_emoncms($system_id, $start, $end);
             if (!$result['success']) {
                 return array("error" => "Failed to load stats: " . ($result['message'] ?? 'unknown error'));

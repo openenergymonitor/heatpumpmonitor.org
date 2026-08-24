@@ -13,7 +13,9 @@ function dashboard_controller() {
 
     // if a read key is provided and no user session exists
     // then switch to private mode
-    if (isset($_GET['readkey']) && !$session['userid']) {
+    // A readkey is a 32 char hex emoncms apikey (the same rule the lookup
+    // applies); anything else is discarded so it never reaches the view.
+    if (isset($_GET['readkey']) && !$session['userid'] && preg_match('/^[a-f0-9]{32}$/', $_GET['readkey'])) {
         $readkey = $_GET['readkey'];
         $session_userid = $user->get_userid_from_apikey_read($readkey);
         $private_mode = true;

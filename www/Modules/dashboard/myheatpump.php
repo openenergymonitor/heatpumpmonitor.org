@@ -430,7 +430,7 @@ if ($system_data->share==0) {
 <div class="ajax-loader"></div>
 
 <script>
-  var apikey = "<?php echo $apikey; ?>";
+  var apikey = <?php echo json_encode($apikey); ?>;
   var session_write = 0;
 
   var config = {};

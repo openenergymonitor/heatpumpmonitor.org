@@ -39,7 +39,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 <script>
 
-var system_id = "<?php echo $system_id; ?>";
+var system_id = <?php echo json_encode($system_id); ?>;
 
 var app = new Vue({
     el: '#app',

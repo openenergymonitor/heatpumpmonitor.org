@@ -15,6 +15,8 @@
 // one site is never presented to the other; only the revocation is shared.
 // ---------------------------------------------------------------------------------------------------------
 
+defined('EMONCMS_EXEC') or die('Restricted access');
+
 class Rememberme {
 
     private $mysqli;

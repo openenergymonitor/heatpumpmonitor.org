@@ -993,7 +993,8 @@ class User
             return false;
         } else {
             $row = $result->fetch_object();
-            session_regenerate_id();
+            // true: delete the old session file so the admin's previous id cannot be reused
+            session_regenerate_id(true);
             $_SESSION['userid'] = $row->id;
             $_SESSION['username'] = $row->username;
             $_SESSION['admin'] = 0;
