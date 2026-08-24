@@ -3,7 +3,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 ?>
 <script src="<?php echo $path; ?>theme/vendor/vue-2.7.16/vue.min.js" integrity="sha384-YVYXhPGIH/Gmcr0W5Rin4PcpcsG1a4pcdUUod1CnbDEJut7XiUaJtSlNKeRLJBPk"></script>
 <script src="<?php echo $path; ?>theme/vendor/axios-1.4.0/axios.min.js" integrity="sha384-I4Qw/vWb/sK/7VwepTtkaq636YLYClbEgEwKp3ueUCvjiLFrcoKUFAY5mOl40Fj3"></script>
-<script src="<?php echo $path; ?>theme/vendor/apexcharts-6.10.0/apexcharts.min.js" integrity="sha384-5EG9CeSqSzymwY307XCL4zMqifjcpwh/uGHYg1CPiyMNHVvfCcx8VZi2JzW2035O"></script>
+<script src="<?php echo $path; ?>theme/vendor/chart.js-4.4.1/chart.umd.js" integrity="sha384-dug+JxfBvklEQdJ4AYuBBAIScUz0bVN73xpy273gcAwHjb3qI0fXmuYNaNfdyYJG"></script>
 
 <div id="app">
     <div style=" background-color:#f0f0f0; padding-top:20px; padding-bottom:10px">
@@ -48,7 +48,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             </div>
             <div class="col-md-7">
                 <!-- Add your flot chart here -->
-                <div id="chart"></div>
+                <div style="position:relative; height:600px"><canvas id="chart"></canvas></div>
 
             </div>
         </div>
@@ -115,27 +115,34 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         }
     });
 
-    chart_options = {
-        colors_style_guidlines: ['#29ABE2'],
-        colors: ['#29AAE3'],
-        chart: {
-            type: 'bar',
-            height: 600,
-            toolbar: {
-                show: false
-            }
-        },
-        dataLabels: {
-            enabled: false
-        },
-        series: [],
-        xaxis: {
-            categories: [],
-            type: 'datetime'
-        },
-        yaxis: {
-            title: {
-                text: 'COP'
+    var chart = null;
+    var chart_options = {
+        type: 'bar',
+        data: { labels: [], datasets: [] },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            plugins: {
+                legend: { display: true, position: 'top' },
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx) {
+                            var v = ctx.parsed.y;
+                            return ctx.dataset.label + ': ' + (v == null ? '' : +v.toFixed(3));
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { maxRotation: 45, autoSkip: true }
+                },
+                y: {
+                    beginAtZero: true,
+                    title: { display: true, text: 'COP' }
+                }
             }
         }
     };
@@ -155,8 +162,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 
 
-    chart = new ApexCharts(document.querySelector("#chart"), chart_options);
-    chart.render();
+    chart = new Chart(document.getElementById("chart"), chart_options);
 
     function load_system_data(idx) {
         var system = app.selected_systems[idx];
@@ -172,13 +178,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     }
 
     function draw_chart() {
-        chart_options.yaxis = {
-            title: {
-                text: system_stats_monthly[app.chart_yaxis].name
-            }
-        }
+        chart_options.options.scales.y.title.text = system_stats_monthly[app.chart_yaxis].name;
 
-        chart_options.series = [];
+        var datasets = [];
+        var labels = [];
 
         for (var i in app.selected_systems) {
             let system = app.selected_systems[i];
@@ -186,20 +189,28 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             let y = [];
 
             for (var j = 0; j < system.monthly.length; j++) {
-                x.push(system.monthly[j]['timestamp'] * 1000);
+                x.push(month_label(system.monthly[j]['timestamp']));
                 y.push(system.monthly[j][app.chart_yaxis]);
             }
             var idx = get_system_index(system.id);
+            if (idx == undefined) continue;
 
-            chart_options.xaxis.categories = x;
-            chart_options.series.push({
-                name: app.system_list[idx].location+" "+app.system_list[idx].hp_model+" "+app.system_list[idx].hp_output+" kW",
+            labels = x;
+            datasets.push({
+                label: app.system_list[idx].location+" "+app.system_list[idx].hp_model+" "+app.system_list[idx].hp_output+" kW",
                 data: y,
-                color: system.color
-                
+                backgroundColor: system.color,
+                borderColor: system.color,
+                borderWidth: 0
             });
         }
-        chart.updateOptions(chart_options);
+        chart_options.data.labels = labels;
+        chart_options.data.datasets = datasets;
+        chart.update();
+    }
+
+    function month_label(timestamp) {
+        return new Date(timestamp * 1000).toLocaleDateString('en-GB', {month: 'short', year: 'numeric'});
     }
 
     function get_system_index(system_id) {

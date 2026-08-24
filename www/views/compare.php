@@ -8,7 +8,7 @@ if (isset($_GET['id'])) {
 
 <script src="<?php echo $path; ?>theme/vendor/vue-2.7.16/vue.min.js" integrity="sha384-YVYXhPGIH/Gmcr0W5Rin4PcpcsG1a4pcdUUod1CnbDEJut7XiUaJtSlNKeRLJBPk"></script>
 <script src="<?php echo $path; ?>theme/vendor/jquery-3.6.3/jquery.min.js" integrity="sha384-Ft/vb48LwsAEtgltj7o+6vtS2esTU9PCpDqcXs4OCVQFZu5BqprHtUCZ4kjK+bpE"></script>
-<script src="<?php echo $path; ?>theme/vendor/plotly-2.18.1/plotly.min.js" integrity="sha384-ldLGNABp1IGx5zWzIrYaG/leOGvvDv4Xzwjizqu7MetOppUeJwRrBnHErSzIh293" charset="utf-8"></script>
+<script src="<?php echo $path; ?>theme/vendor/chart.js-4.4.1/chart.umd.js" integrity="sha384-dug+JxfBvklEQdJ4AYuBBAIScUz0bVN73xpy273gcAwHjb3qI0fXmuYNaNfdyYJG"></script>
 
 <div id="app">
     <div style=" background-color:#f0f0f0; padding-top:20px; padding-bottom:10px">
@@ -81,7 +81,7 @@ if (isset($_GET['id'])) {
                 
             </div>
             <div class="col-md-7">
-                <div id="gd" style="height:690px"></div>
+                <div style="position:relative; height:690px"><canvas id="gd"></canvas></div>
             </div>  
         </div> 
     </div>  
@@ -109,4 +109,4 @@ if (id) {
 }
 </script>
 
-<script src="views/compare.js?v=16"></script>
+<script src="views/compare.js?v=17"></script>

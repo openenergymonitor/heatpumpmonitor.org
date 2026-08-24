@@ -1,4 +1,26 @@
 var first_chart_load = true;
+var scatter_chart = null;
+
+// Plotly's 10-stop Viridis colorscale (kept so the chart looks the same as before)
+var VIRIDIS = ['#440154','#482878','#3e4989','#31688e','#26828e','#1f9e89','#35b779','#6ece58','#b5de2b','#fde725'];
+
+function viridis(t) {
+    if (!isFinite(t)) t = 0;
+    t = Math.min(Math.max(t, 0), 1);
+    var pos = t * (VIRIDIS.length - 1);
+    var i = Math.floor(pos);
+    if (i >= VIRIDIS.length - 1) return VIRIDIS[VIRIDIS.length - 1];
+    var f = pos - i;
+    var c0 = hex_to_rgb(VIRIDIS[i]), c1 = hex_to_rgb(VIRIDIS[i + 1]);
+    var r = Math.round(c0[0] + (c1[0] - c0[0]) * f);
+    var g = Math.round(c0[1] + (c1[1] - c0[1]) * f);
+    var b = Math.round(c0[2] + (c1[2] - c0[2]) * f);
+    return 'rgb(' + r + ',' + g + ',' + b + ')';
+}
+
+function hex_to_rgb(hex) {
+    return [parseInt(hex.substr(1, 2), 16), parseInt(hex.substr(3, 2), 16), parseInt(hex.substr(5, 2), 16)];
+}
 
 function draw_scatter() 
 {
@@ -10,21 +32,7 @@ function draw_scatter()
 
     console.log("Drawing scatter chart");
 
-    var trace = {
-        mode: 'markers',
-        marker: {
-            size: 10,
-            colorscale: 'Viridis',
-            showscale: false
-        }
-    };
-
-    trace.hovertemplate = '%{text}';
-
-    trace.x = [];
-    trace.y = [];
-    trace.marker.color = [];
-    trace.text = [];
+    var trace = { x: [], y: [], color: [], text: [] };
 
     for (var z in app.fSystems) {
         let system = app.fSystems[z];
@@ -45,9 +53,9 @@ function draw_scatter()
 
         if (columns[app.selected_color].options != undefined) {
             let index = columns[app.selected_color].options.indexOf(system[app.selected_color]);
-            trace.marker.color.push(index);
+            trace.color.push(index);
         } else {
-            trace.marker.color.push(system[app.selected_color]);
+            trace.color.push(system[app.selected_color]);
         }
 
         if (columns[app.selected_xaxis].dp != undefined) {
@@ -58,15 +66,41 @@ function draw_scatter()
             y = y.toFixed(columns[app.selected_yaxis].dp);
         }
 
-        var tooltip = "System: "+system.id+", "+system.location+"<br>"+system.hp_output+" kW "+system.hp_model+"<br>";
-        tooltip += columns[app.selected_xaxis].name + ": "+x+"<br>";
-        tooltip += columns[app.selected_yaxis].name + ": "+y+"<br>";
-        tooltip += columns[app.selected_color].name + ": "+system[app.selected_color];
-
-        trace.text.push(tooltip);
+        trace.text.push([
+            "System: "+system.id+", "+system.location,
+            system.hp_output+" kW "+system.hp_model,
+            columns[app.selected_xaxis].name + ": "+x,
+            columns[app.selected_yaxis].name + ": "+y,
+            columns[app.selected_color].name + ": "+system[app.selected_color]
+        ]);
     }
 
-    var data = [trace];
+    // Map colour values onto the Viridis scale (Plotly auto-ranged min..max)
+    var cmin = Infinity, cmax = -Infinity;
+    for (let i = 0; i < trace.color.length; i++) {
+        let c = 1 * trace.color[i];
+        if (!isFinite(c)) continue;
+        if (c < cmin) cmin = c;
+        if (c > cmax) cmax = c;
+    }
+    var points = [];
+    var point_colors = [];
+    for (let i = 0; i < trace.x.length; i++) {
+        points.push({ x: trace.x[i], y: trace.y[i], text: trace.text[i] });
+        let c = 1 * trace.color[i];
+        point_colors.push(viridis(cmax > cmin ? (c - cmin) / (cmax - cmin) : 0.5));
+    }
+
+    var datasets = [{
+        type: 'scatter',
+        label: 'systems',
+        data: points,
+        backgroundColor: point_colors,
+        borderColor: point_colors,
+        pointRadius: 5,
+        pointHoverRadius: 6,
+        order: 0
+    }];
 
     // Use appropriate regression method based on toggle
     var regression;
@@ -84,25 +118,29 @@ function draw_scatter()
 
     // Add line of best fit
     if (app.line_best_fit_type != 'none') {
-        data.push({
-            type: 'scatter',
-            x: [min_x, max_x],
-            y: [regression.slope * min_x + regression.intercept, regression.slope * max_x + regression.intercept],
-            mode: 'lines',
-            name: app.line_best_fit_type == 'tls' ? 'Orthogonal Fit Line' : 'Best Fit Line',
-            line: {
-                color: app.line_best_fit_type == 'tls' ? "#ff7f0e" : "#1f77b4",
-                width: 2
-            },
-            showlegend: false
+        var line_color = app.line_best_fit_type == 'tls' ? "#ff7f0e" : "#1f77b4";
+        var interval_color = app.line_best_fit_type == 'tls' ? 'rgba(255, 127, 14, 0.3)' : 'rgba(31, 119, 180, 0.3)';
+        var fill_color = app.line_best_fit_type == 'tls' ? 'rgba(255, 127, 14, 0.1)' : 'rgba(31, 119, 180, 0.1)';
+
+        datasets.push({
+            type: 'line',
+            label: app.line_best_fit_type == 'tls' ? 'Orthogonal Fit Line' : 'Best Fit Line',
+            data: [
+                { x: min_x, y: regression.slope * min_x + regression.intercept },
+                { x: max_x, y: regression.slope * max_x + regression.intercept }
+            ],
+            borderColor: line_color,
+            borderWidth: 2,
+            pointRadius: 0,
+            pointHitRadius: 0,
+            fill: false,
+            order: 1
         });
 
-        // Add prediction interval bands
-        var x_range = [];
+        // Prediction interval bands
         var upper_bound = [];
         var lower_bound = [];
         
-        // Create smooth curves for prediction intervals
         for (let i = 0; i <= 50; i++) {
             let x = min_x + (max_x - min_x) * (i / 50);
             let bounds;
@@ -111,55 +149,36 @@ function draw_scatter()
             } else {
                 bounds = calculatePredictionInterval(x, trace.x, trace.y, regression, 0.1);
             }
-            x_range.push(x);
-            upper_bound.push(bounds.upper);
-            lower_bound.push(bounds.lower);
+            upper_bound.push({ x: x, y: bounds.upper });
+            lower_bound.push({ x: x, y: bounds.lower });
         }
 
-        var interval_color = app.line_best_fit_type == 'tls' ? 'rgba(255, 127, 14, 0.3)' : 'rgba(31, 119, 180, 0.3)';
-        var fill_color = app.line_best_fit_type == 'tls' ? 'rgba(255, 127, 14, 0.1)' : 'rgba(31, 119, 180, 0.1)';
-
-        // Add upper prediction interval
-        data.push({
-            type: 'scatter',
-            x: x_range,
-            y: upper_bound,
-            mode: 'lines',
-            name: '90% Prediction Interval',
-            line: {
-                color: interval_color,
-                width: 1,
-                dash: 'dash'
-            },
-            showlegend: false
+        // Upper bound (dashed), filled down to the lower bound dataset that follows it
+        datasets.push({
+            type: 'line',
+            label: '90% Prediction Interval',
+            data: upper_bound,
+            borderColor: interval_color,
+            borderWidth: 1,
+            borderDash: [6, 4],
+            pointRadius: 0,
+            pointHitRadius: 0,
+            backgroundColor: fill_color,
+            fill: '+1',
+            order: 2
         });
 
-        // Add lower prediction interval
-        data.push({
-            type: 'scatter',
-            x: x_range,
-            y: lower_bound,
-            mode: 'lines',
-            name: '90% Prediction Interval',
-            line: {
-                color: interval_color,
-                width: 1,
-                dash: 'dash'
-            },
-            showlegend: false
-        });
-
-        // Add filled area between bounds
-        data.push({
-            type: 'scatter',
-            x: [...x_range, ...x_range.slice().reverse()],
-            y: [...upper_bound, ...lower_bound.slice().reverse()],
-            fill: 'toself',
-            fillcolor: fill_color,
-            line: { color: 'transparent' },
-            name: '90% Prediction Interval',
-            showlegend: false,
-            hoverinfo: 'skip'
+        datasets.push({
+            type: 'line',
+            label: '90% Prediction Interval',
+            data: lower_bound,
+            borderColor: interval_color,
+            borderWidth: 1,
+            borderDash: [6, 4],
+            pointRadius: 0,
+            pointHitRadius: 0,
+            fill: false,
+            order: 2
         });
     }
 
@@ -187,28 +206,45 @@ function draw_scatter()
         }
     }
 
-    var layout = {
-        xaxis: {
-            title: x_group + ": " + x_name,
-            showgrid: true,
-            zeroline: false,
+    var options = {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        layout: { padding: { top: 10, right: 10 } },
+        interaction: { mode: 'nearest', intersect: true },
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                filter: function(item) { return item.dataset.label == 'systems'; },
+                callbacks: {
+                    title: function() { return ''; },
+                    label: function(ctx) { return ctx.raw.text; }
+                }
+            }
         },
-        yaxis: {
-            title: y_group + ": "+ y_name,
-            showgrid: true,
-            zeroline: false,
-        },
-        margin: { t: 10 },
-        dragmode: false,
-        showlegend: false,
-        margin: { t: 10, r: 10 }
+        scales: {
+            x: {
+                type: 'linear',
+                title: { display: true, text: x_group + ": " + x_name },
+                grid: { color: '#eee' }
+            },
+            y: {
+                type: 'linear',
+                title: { display: true, text: y_group + ": " + y_name },
+                grid: { color: '#eee' }
+            }
+        }
     };
 
-    var config = { displayModeBar: false };
-    Plotly.newPlot('chart', data, layout, config);
+    if (scatter_chart) scatter_chart.destroy();
+    scatter_chart = new Chart(document.getElementById('chart'), {
+        type: 'scatter',
+        data: { datasets: datasets },
+        options: options
+    });
 
     // Calculate prediction interval at mean x for display
-    var mean_x = jStat.mean(trace.x);
+    var mean_x = stat_mean(trace.x);
     var mean_bounds;
     if (app.line_best_fit_type == 'tls') {
         mean_bounds = calculateOrthogonalPredictionInterval(mean_x, trace.x, trace.y, regression, 0.1);
@@ -226,19 +262,121 @@ function draw_scatter()
     }
 }
 
+// ---------------------------------------------------------------------------
+// Statistics helpers (mean, sample variance, Pearson r, Student's t quantile)
+// ---------------------------------------------------------------------------
+
+function stat_mean(a) {
+    var s = 0;
+    for (var i = 0; i < a.length; i++) s += a[i];
+    return s / a.length;
+}
+
+// Sample variance (n-1 denominator)
+function stat_variance(a) {
+    var m = stat_mean(a);
+    var s = 0;
+    for (var i = 0; i < a.length; i++) s += (a[i] - m) * (a[i] - m);
+    return s / (a.length - 1);
+}
+
+// Pearson correlation coefficient
+function stat_corrcoeff(x, y) {
+    var mx = stat_mean(x), my = stat_mean(y);
+    var sxy = 0, sxx = 0, syy = 0;
+    for (var i = 0; i < x.length; i++) {
+        sxy += (x[i] - mx) * (y[i] - my);
+        sxx += (x[i] - mx) * (x[i] - mx);
+        syy += (y[i] - my) * (y[i] - my);
+    }
+    return sxy / Math.sqrt(sxx * syy);
+}
+
+// log-gamma via Lanczos approximation
+function stat_gammaln(x) {
+    var cof = [76.18009172947146, -86.50532032941677, 24.01409824083091,
+               -1.231739572450155, 0.1208650973866179e-2, -0.5395239384953e-5];
+    var y = x, tmp = x + 5.5;
+    tmp -= (x + 0.5) * Math.log(tmp);
+    var ser = 1.000000000190015;
+    for (var j = 0; j < 6; j++) ser += cof[j] / ++y;
+    return -tmp + Math.log(2.5066282746310005 * ser / x);
+}
+
+// Continued fraction for the incomplete beta function
+function stat_betacf(x, a, b) {
+    var fpmin = 1e-30, m = 1, qab = a + b, qap = a + 1, qam = a - 1;
+    var c = 1, d = 1 - qab * x / qap;
+    if (Math.abs(d) < fpmin) d = fpmin;
+    d = 1 / d;
+    var h = d;
+    for (; m <= 100; m++) {
+        var m2 = 2 * m;
+        var aa = m * (b - m) * x / ((qam + m2) * (a + m2));
+        d = 1 + aa * d; if (Math.abs(d) < fpmin) d = fpmin;
+        c = 1 + aa / c; if (Math.abs(c) < fpmin) c = fpmin;
+        d = 1 / d; h *= d * c;
+        aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2));
+        d = 1 + aa * d; if (Math.abs(d) < fpmin) d = fpmin;
+        c = 1 + aa / c; if (Math.abs(c) < fpmin) c = fpmin;
+        d = 1 / d;
+        var del = d * c;
+        h *= del;
+        if (Math.abs(del - 1) < 3e-7) break;
+    }
+    return h;
+}
+
+// Regularised incomplete beta I_x(a, b)
+function stat_ibeta(x, a, b) {
+    if (x <= 0) return 0;
+    if (x >= 1) return 1;
+    var bt = Math.exp(stat_gammaln(a + b) - stat_gammaln(a) - stat_gammaln(b) + a * Math.log(x) + b * Math.log(1 - x));
+    if (x < (a + 1) / (a + b + 2)) return bt * stat_betacf(x, a, b) / a;
+    return 1 - bt * stat_betacf(1 - x, b, a) / b;
+}
+
+// Student's t CDF
+function stat_studentt_cdf(t, df) {
+    var x = df / (df + t * t);
+    var p = 0.5 * stat_ibeta(x, df / 2, 0.5);
+    return t >= 0 ? 1 - p : p;
+}
+
+// Inverse Student's t CDF (quantile)
+function stat_studentt_inv(p, df) {
+    if (!(df > 0)) return NaN;
+    if (p <= 0) return -Infinity;
+    if (p >= 1) return Infinity;
+    // bracket then bisect on the CDF
+    var lo = -1, hi = 1;
+    while (stat_studentt_cdf(lo, df) > p) lo *= 2;
+    while (stat_studentt_cdf(hi, df) < p) hi *= 2;
+    for (var i = 0; i < 200; i++) {
+        var mid = 0.5 * (lo + hi);
+        if (stat_studentt_cdf(mid, df) < p) lo = mid; else hi = mid;
+        if (hi - lo < 1e-10) break;
+    }
+    return 0.5 * (lo + hi);
+}
+
+// ---------------------------------------------------------------------------
+// Regression
+// ---------------------------------------------------------------------------
+
 function calculateOrthogonalRegressionWithPI(x, y, alpha) {
     var n = x.length;
     
-    // Calculate correlation using jStat
-    var correlation = jStat.corrcoeff(x, y);
+    // Calculate correlation
+    var correlation = stat_corrcoeff(x, y);
     
     // Calculate means
-    var x_mean = jStat.mean(x);
-    var y_mean = jStat.mean(y);
+    var x_mean = stat_mean(x);
+    var y_mean = stat_mean(y);
     
     // Calculate variances and covariance
-    var var_x = jStat.variance(x, true); // sample variance
-    var var_y = jStat.variance(y, true);
+    var var_x = stat_variance(x); // sample variance
+    var var_y = stat_variance(y);
     var cov_xy = 0;
     
     for (let i = 0; i < n; i++) {
@@ -308,7 +446,7 @@ function calculateOrthogonalPredictionInterval(x_val, x_data, y_data, regression
     // For orthogonal regression, prediction intervals need to account for 
     // uncertainty in both x and y directions
     
-    var t_critical = jStat.studentt.inv(1 - alpha/2, regression.n - 2);
+    var t_critical = stat_studentt_inv(1 - alpha/2, regression.n - 2);
     
     // Calculate the prediction in the y-direction
     var y_pred = regression.slope * x_val + regression.intercept;
@@ -337,15 +475,14 @@ function calculateOrthogonalPredictionInterval(x_val, x_data, y_data, regression
 }
 
 function calculateRegressionWithPredictionInterval(x, y, alpha) {
-    // Convert to jStat matrices for easier computation
     var n = x.length;
     
-    // Calculate correlation using jStat
-    var correlation = jStat.corrcoeff(x, y);
+    // Calculate correlation
+    var correlation = stat_corrcoeff(x, y);
     
     // Calculate means
-    var x_mean = jStat.mean(x);
-    var y_mean = jStat.mean(y);
+    var x_mean = stat_mean(x);
+    var y_mean = stat_mean(y);
     
     // Calculate slope and intercept
     var numerator = 0;
@@ -395,7 +532,7 @@ function calculateRegressionWithPredictionInterval(x, y, alpha) {
 
 function calculatePredictionInterval(x_val, x_data, y_data, regression, alpha) {
     // Calculate prediction interval for a given x value
-    var t_critical = jStat.studentt.inv(1 - alpha/2, regression.n - 2);
+    var t_critical = stat_studentt_inv(1 - alpha/2, regression.n - 2);
     
     // Standard error for prediction
     var se_pred = regression.se * Math.sqrt(1 + (1/regression.n) + 
@@ -411,9 +548,9 @@ function calculatePredictionInterval(x_val, x_data, y_data, regression, alpha) {
     };
 }
 
-// Simplified correlation function using jStat (you can replace the existing one)
+// Pearson correlation
 function calculatePearsonCorrelation(x, y) {
-    return jStat.corrcoeff(x, y);
+    return stat_corrcoeff(x, y);
 }
 
 function resizeChart() {
@@ -421,8 +558,8 @@ function resizeChart() {
         return;
     }
 
-    var chartDiv = document.getElementById('chart');
-    var width = chartDiv.offsetWidth;
+    var wrap = document.getElementById('chart_wrap');
+    var width = wrap.offsetWidth;
 
     if (!width) {
         return;
@@ -436,10 +573,8 @@ function resizeChart() {
 
     console.log("Resizing chart to width: " + width + ", height: " + height);
 
-    Plotly.relayout(chartDiv, {
-        width: width,
-        height: height
-    });
+    wrap.style.height = height + "px";
+    if (scatter_chart) scatter_chart.resize();
 }
 
 window.addEventListener('resize', resizeChart);

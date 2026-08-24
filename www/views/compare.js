@@ -140,43 +140,17 @@ var app = new Vue({
 });
 
 var timeout = false;
+var compare_chart = null;
 
 load_all();
 draw_chart();
 
 function draw_chart() {
 
-    var plot_data = {
-        "data": [],
-        "layout": {
-            "font": {
-                "size": 14
-            },
-            "title": {
-                "text": ""
-            },
-            "xaxis": {
-                "type": "linear",
-                "range": [],
-                "title": {
-                    "text": ""
-                },
-                "autorange": true
-            },
-            "yaxis": {
-                "type": "linear",
-                "range": [],
-                "title": {
-                    "text": ""
-                },
-                "autorange": true
-            },
-            "autosize": true,
-            "showlegend": false,
-            "annotations": []
-        },
-        "frames": []
-    }
+    var datasets = [];
+    var chart_title = "";
+    var x_title = "";
+    var y_title = "";
 
     let date = new Date();
 
@@ -282,25 +256,60 @@ function draw_chart() {
             "profile": { xaxis: "Time of day", yaxis: "Elec" }
         }
 
-        plot_data.layout.title.text = titles[app.mode].yaxis + " vs " + titles[app.mode].xaxis;
-        plot_data.layout.xaxis.title.text = titles[app.mode].xaxis;
-        plot_data.layout.yaxis.title.text = titles[app.mode].yaxis;
+        chart_title = titles[app.mode].yaxis + " vs " + titles[app.mode].xaxis;
+        x_title = titles[app.mode].xaxis;
+        y_title = titles[app.mode].yaxis;
 
-        plot_data.data.push({
-            "mode": "markers",
-            "type": "scatter",
-            "x": x, "y": y,
-            "marker": {
-                "line": {
-                    "width": 0
-                },
-                "size": size,
-                "color": app.selected_systems[i].color
-            }
+        var points = [];
+        for (var p = 0; p < x.length; p++) {
+            // Plotly marker size is a diameter in px; Chart.js radius is half of that
+            points.push({ x: x[p], y: y[p], r: size[p] / 2 });
+        }
+
+        datasets.push({
+            type: "bubble",
+            label: "System " + id,
+            data: points,
+            backgroundColor: app.selected_systems[i].color,
+            borderWidth: 0
         });
     }
 
-    Plotly.newPlot("gd", plot_data);
+    if (compare_chart) compare_chart.destroy();
+    compare_chart = new Chart(document.getElementById("gd"), {
+        type: "bubble",
+        data: { datasets: datasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            plugins: {
+                legend: { display: false },
+                title: { display: true, text: chart_title, font: { size: 17, weight: "normal" }, color: "#444" },
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx) {
+                            return "(" + (+ctx.parsed.x.toFixed(2)) + ", " + (+ctx.parsed.y.toFixed(2)) + ")";
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    type: "linear",
+                    title: { display: true, text: x_title, font: { size: 14 } },
+                    grid: { color: "#eee" },
+                    ticks: { font: { size: 14 } }
+                },
+                y: {
+                    type: "linear",
+                    title: { display: true, text: y_title, font: { size: 14 } },
+                    grid: { color: "#eee" },
+                    ticks: { font: { size: 14 } }
+                }
+            }
+        }
+    });
     console.log("redraw complete");
 }
 

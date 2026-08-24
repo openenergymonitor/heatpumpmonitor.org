@@ -8,7 +8,6 @@ this manifest.
 
 | File | Source | Verified by | sha384 |
 |---|---|---|---|
-| `apexcharts-6.10.0/apexcharts.min.js` | https://cdn.jsdelivr.net/npm/apexcharts@6.10.0 | jsdelivr hash api (/dist/apexcharts.min.js) | `5EG9CeSqSzymwY307XCL4zMqifjcpwh/uGHYg1CPiyMNHVvfCcx8VZi2JzW2035O` |
 | `axios-1.4.0/axios.min.js` | https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js (also replaces https://cdn.jsdelivr.net/npm/axios@1.19.0/dist/axios.min.js) | cdnjs SRI api | `I4Qw/vWb/sK/7VwepTtkaq636YLYClbEgEwKp3ueUCvjiLFrcoKUFAY5mOl40Fj3` |
 | `bootstrap-5.3.0/css/bootstrap.min.css` | https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css (also replaces https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css) | cdnjs SRI api | `9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM` |
 | `bootstrap-5.3.0/js/bootstrap.bundle.min.js` | https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js | cdnjs SRI api | `geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz` |
@@ -24,11 +23,8 @@ this manifest.
 | `highlight.js-11.9.0/languages/go.min.js` | https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/go.min.js | cdnjs SRI api | `WmGkHEmwSI19EhTfO1nrSk3RziUQKRWg3vO0Ur3VYZjWvJRdRnX4/scQg+S2w1fI` |
 | `highlight.js-11.9.0/styles/monokai-sublime.min.css` | https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/monokai-sublime.min.css | cdnjs SRI api | `fPmRQ3GXo2iBk8Sgxizmu0IOOv+vAPjYXqCHNut2KSkSBleqjCd7FpBJwrfyCfGc` |
 | `jquery-3.6.3/jquery.min.js` | https://code.jquery.com/jquery-3.6.3.min.js (also replaces https://code.jquery.com/jquery-3.6.0.min.js) | cross-CDN cdnjs | `Ft/vb48LwsAEtgltj7o+6vtS2esTU9PCpDqcXs4OCVQFZu5BqprHtUCZ4kjK+bpE` |
-| `jstat-1.9.6/jstat.min.js` | https://cdn.jsdelivr.net/npm/jstat@1.9.6/dist/jstat.min.js | jsdelivr hash api (/dist/jstat.min.js) | `7uGOMhLhjroTamet5l69PR8EGxKUyWZlZOFFDRymtVqIfsh4Hj7uZRctW67ZCdkD` |
-| `moment-2.29.1/moment.min.js` | https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js | cdnjs SRI api | `Uz1UHyakAAz121kPY0Nx6ZGzYeUTy9zAtcpdwVmFCEwiTGPA2K6zSGgkKJEQfMhK` |
 | `ol-7.4.0/ol.css` | https://cdn.jsdelivr.net/npm/ol@v7.4.0/ol.css | jsdelivr hash api (/ol.css) | `9bhh0d43Gp9ct3OBqOdccAg6nQ48H3ibQN30wXbD0oC/uFYftJt4aOK45aGS1TJL` |
 | `ol-7.4.0/ol.js` | https://cdn.jsdelivr.net/npm/ol@v7.4.0/dist/ol.js | jsdelivr hash api (/dist/ol.js) | `UnFf8KXzbcP68LSCc4PSf4WbixBySdywUoVXLwlMw14SsRiQYHMAImua4dnHgwzo` |
-| `plotly-2.18.1/plotly.min.js` | https://cdn.plot.ly/plotly-2.18.1.min.js (also replaces https://cdn.plot.ly/plotly-2.16.1.min.js) | cross-CDN cdnjs | `ldLGNABp1IGx5zWzIrYaG/leOGvvDv4Xzwjizqu7MetOppUeJwRrBnHErSzIh293` |
 | `vue-2.7.16/vue.min.js` | https://cdn.jsdelivr.net/npm/vue@2.7.16 | jsdelivr hash api (/dist/vue.min.js) | `YVYXhPGIH/Gmcr0W5Rin4PcpcsG1a4pcdUUod1CnbDEJut7XiUaJtSlNKeRLJBPk` |
 | `vue-select-3.20.4/vue-select.css` | https://cdn.jsdelivr.net/npm/vue-select@3.20.4/dist/vue-select.css | jsdelivr hash api (/dist/vue-select.css) | `d47t1X+T2AtAlhF0RnmMrSByfjJtWLX62A/zYSFLWF5hnjIryfT2GX3zaNCXjL/2` |
 | `vue-select-3.20.4/vue-select.js` | https://cdn.jsdelivr.net/npm/vue-select@3.20.4/dist/vue-select.js | jsdelivr hash api (/dist/vue-select.js) | `XG89Coh+Sc6fdYDtm9AqhAGIOt2HUo8+NiTs2v5kx26XYaffyPvPdr7+cn/qpEE6` |

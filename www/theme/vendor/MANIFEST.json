@@ -1,12 +1,5 @@
 [
  {
-  "file": "apexcharts-6.10.0/apexcharts.min.js",
-  "source": "https://cdn.jsdelivr.net/npm/apexcharts@6.10.0",
-  "sha384": "sha384-5EG9CeSqSzymwY307XCL4zMqifjcpwh/uGHYg1CPiyMNHVvfCcx8VZi2JzW2035O",
-  "verified": "jsdelivr hash api (/dist/apexcharts.min.js)",
-  "replaces": []
- },
- {
   "file": "axios-1.4.0/axios.min.js",
   "source": "https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js",
   "sha384": "sha384-I4Qw/vWb/sK/7VwepTtkaq636YLYClbEgEwKp3ueUCvjiLFrcoKUFAY5mOl40Fj3",
@@ -120,20 +113,6 @@
   ]
  },
  {
-  "file": "jstat-1.9.6/jstat.min.js",
-  "source": "https://cdn.jsdelivr.net/npm/jstat@1.9.6/dist/jstat.min.js",
-  "sha384": "sha384-7uGOMhLhjroTamet5l69PR8EGxKUyWZlZOFFDRymtVqIfsh4Hj7uZRctW67ZCdkD",
-  "verified": "jsdelivr hash api (/dist/jstat.min.js)",
-  "replaces": []
- },
- {
-  "file": "moment-2.29.1/moment.min.js",
-  "source": "https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js",
-  "sha384": "sha384-Uz1UHyakAAz121kPY0Nx6ZGzYeUTy9zAtcpdwVmFCEwiTGPA2K6zSGgkKJEQfMhK",
-  "verified": "cdnjs SRI api",
-  "replaces": []
- },
- {
   "file": "ol-7.4.0/ol.css",
   "source": "https://cdn.jsdelivr.net/npm/ol@v7.4.0/ol.css",
   "sha384": "sha384-9bhh0d43Gp9ct3OBqOdccAg6nQ48H3ibQN30wXbD0oC/uFYftJt4aOK45aGS1TJL",
@@ -146,15 +125,6 @@
   "sha384": "sha384-UnFf8KXzbcP68LSCc4PSf4WbixBySdywUoVXLwlMw14SsRiQYHMAImua4dnHgwzo",
   "verified": "jsdelivr hash api (/dist/ol.js)",
   "replaces": []
- },
- {
-  "file": "plotly-2.18.1/plotly.min.js",
-  "source": "https://cdn.plot.ly/plotly-2.18.1.min.js",
-  "sha384": "sha384-ldLGNABp1IGx5zWzIrYaG/leOGvvDv4Xzwjizqu7MetOppUeJwRrBnHErSzIh293",
-  "verified": "cross-CDN cdnjs",
-  "replaces": [
-   "https://cdn.plot.ly/plotly-2.16.1.min.js"
-  ]
  },
  {
   "file": "vue-2.7.16/vue.min.js",

@@ -9,10 +9,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 <script src="<?php echo $path; ?>theme/vendor/vue-2.7.16/vue.min.js" integrity="sha384-YVYXhPGIH/Gmcr0W5Rin4PcpcsG1a4pcdUUod1CnbDEJut7XiUaJtSlNKeRLJBPk"></script>
 <script src="<?php echo $path; ?>theme/vendor/vue-select-3.20.4/vue-select.js" integrity="sha384-XG89Coh+Sc6fdYDtm9AqhAGIOt2HUo8+NiTs2v5kx26XYaffyPvPdr7+cn/qpEE6"></script>
 <script src="<?php echo $path; ?>theme/vendor/axios-1.4.0/axios.min.js" integrity="sha384-I4Qw/vWb/sK/7VwepTtkaq636YLYClbEgEwKp3ueUCvjiLFrcoKUFAY5mOl40Fj3"></script>
-<script src="<?php echo $path; ?>theme/vendor/plotly-2.18.1/plotly.min.js" integrity="sha384-ldLGNABp1IGx5zWzIrYaG/leOGvvDv4Xzwjizqu7MetOppUeJwRrBnHErSzIh293"></script>
-<script src="<?php echo $path; ?>theme/vendor/jstat-1.9.6/jstat.min.js" integrity="sha384-7uGOMhLhjroTamet5l69PR8EGxKUyWZlZOFFDRymtVqIfsh4Hj7uZRctW67ZCdkD"></script>
+<script src="<?php echo $path; ?>theme/vendor/chart.js-4.4.1/chart.umd.js" integrity="sha384-dug+JxfBvklEQdJ4AYuBBAIScUz0bVN73xpy273gcAwHjb3qI0fXmuYNaNfdyYJG"></script>
 <script src="<?php echo $path; ?>Lib/clipboard.js"></script>
-<script src="<?php echo $path; ?>Modules/system/system_list_chart.js?v=42"></script>
+<script src="<?php echo $path; ?>Modules/system/system_list_chart.js?v=43"></script>
 
 <link rel="stylesheet" href="<?php echo $path; ?>Lib/autocomplete.css?v=4">
 <script src="<?php echo $path; ?>Lib/autocomplete.js?v=8"></script>
@@ -451,7 +450,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
                         </div>
                         <p v-if="line_best_fit_type!='none'">{{ chart_info }}</p>
-                        <div id="chart"></div>
+                        <div id="chart_wrap" style="position:relative; height:400px"><canvas id="chart"></canvas></div>
                     </div>
                 </div>
 

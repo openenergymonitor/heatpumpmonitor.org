@@ -8,8 +8,6 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 <script src="<?php echo $path; ?>theme/vendor/flot-0.8.3/jquery.flot.time.min.js" integrity="sha384-qSVSrwJ8D6S0H6+MOkF7MBxx9C21JN6c8O8uZlZzGPMpLhsV0N015e/P4bdc4Whj"></script>
 <script src="Lib/jquery.flot.axislabels.js"></script>
 
-<!-- moment.js for date formatting -->
-<script src="<?php echo $path; ?>theme/vendor/moment-2.29.1/moment.min.js" integrity="sha384-Uz1UHyakAAz121kPY0Nx6ZGzYeUTy9zAtcpdwVmFCEwiTGPA2K6zSGgkKJEQfMhK"></script>
 
 <div id="app">
     <div style=" background-color:#f0f0f0; padding-top:20px; padding-bottom:10px">
@@ -214,7 +212,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             toDate: function(value) {
                 // 15 Dec 2022
                 // timezone is London
-                return moment(value*1000).format('DD MMM YYYY');
+                return new Date(value*1000).toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'});
             }
         }
     });
