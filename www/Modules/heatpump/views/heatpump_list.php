@@ -62,8 +62,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
             <div class="row">
                 <div class="col-12">
-                    <a href="<?php echo $path; ?>heatpump/unmatched" class="btn btn-warning" v-if="mode=='admin'" style="float:right; margin-left:10px;"><i class="fas fa-exclamation-triangle"></i> Unmatched Heat Pumps</a>
-                    <button class="btn btn-primary" @click="openAddModal" v-if="mode=='admin'" style="float:right"><i class="fas fa-plus"></i> Add heatpump</button>
+                    <a href="<?php echo $path; ?>heatpump/unmatched" class="btn btn-warning" v-if="mode=='admin'" style="float:right; margin-left:10px;"><i class="bi bi-exclamation-triangle-fill"></i> Unmatched Heat Pumps</a>
+                    <button class="btn btn-primary" @click="openAddModal" v-if="mode=='admin'" style="float:right"><i class="bi bi-plus-lg"></i> Add heatpump</button>
 
                     <h3>Heatpump database</h3>
                     <p class="text-muted">Explore heat pump models by manufacturer and model name.</p>
@@ -166,41 +166,41 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     <tr>
                         <!--
                         <th @click="sort('id', 'asc')" style="cursor:pointer">ID
-                            <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='id'"></i>
+                            <i :class="currentSortDir == 'asc' ? 'bi bi-arrow-up' : 'bi bi-arrow-down'" v-if="currentSortColumn=='id'"></i>
                         </th>
                         -->
                         <th @click="sort('manufacturer_name', 'asc')" style="cursor:pointer">Make
-                            <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='manufacturer_name'"></i>
+                            <i :class="currentSortDir == 'asc' ? 'bi bi-arrow-up' : 'bi bi-arrow-down'" v-if="currentSortColumn=='manufacturer_name'"></i>
                         </th>
                         <th @click="sort('name', 'asc')" style="cursor:pointer">Model
-                            <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='name'"></i>
+                            <i :class="currentSortDir == 'asc' ? 'bi bi-arrow-up' : 'bi bi-arrow-down'" v-if="currentSortColumn=='name'"></i>
                         </th>
                         <th @click="sort('refrigerant', 'asc')" style="cursor:pointer">
                             <span class="d-none d-md-inline">Refrigerant</span>
                             <span class="d-md-none">Ref</span>
-                            <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='refrigerant'"></i>
+                            <i :class="currentSortDir == 'asc' ? 'bi bi-arrow-up' : 'bi bi-arrow-down'" v-if="currentSortColumn=='refrigerant'"></i>
                         </th>
                         <th @click="sort('type', 'asc')" style="cursor:pointer" class="type-column d-none d-md-table-cell">Type
-                            <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='type'"></i>
+                            <i :class="currentSortDir == 'asc' ? 'bi bi-arrow-up' : 'bi bi-arrow-down'" v-if="currentSortColumn=='type'"></i>
                         </th>
                         <th @click="sort('capacity', 'desc')" style="cursor:pointer">
                             <span class="d-none d-md-inline">Capacity</span>
                             <span class="d-md-none">Cap</span>
-                            <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='capacity'"></i>
+                            <i :class="currentSortDir == 'asc' ? 'bi bi-arrow-up' : 'bi bi-arrow-down'" v-if="currentSortColumn=='capacity'"></i>
                         </th>
                         <th @click="sort('number_of_systems', 'desc')" style="cursor:pointer">
                             <span class="d-none d-md-inline">Systems</span>
                             <span class="d-md-none">Sys</span>
-                            <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='number_of_systems'"></i>
+                            <i :class="currentSortDir == 'asc' ? 'bi bi-arrow-up' : 'bi bi-arrow-down'" v-if="currentSortColumn=='number_of_systems'"></i>
                         </th>
                         <th @click="sort('min_output', 'desc')" style="cursor:pointer">Min
-                            <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='min_output'"></i>
+                            <i :class="currentSortDir == 'asc' ? 'bi bi-arrow-up' : 'bi bi-arrow-down'" v-if="currentSortColumn=='min_output'"></i>
                         </th>
                         <th @click="sort('max_output', 'desc')" style="cursor:pointer">Max
-                            <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='max_output'"></i>
+                            <i :class="currentSortDir == 'asc' ? 'bi bi-arrow-up' : 'bi bi-arrow-down'" v-if="currentSortColumn=='max_output'"></i>
                         </th>
-                        <th @click="sort('awaiting_review', 'desc')" style="cursor:pointer" v-if="mode=='admin'" title="Awaiting review.."><i class="fas fa-clock" style="color: #856404;"></i>
-                            <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='awaiting_review'"></i>
+                        <th @click="sort('awaiting_review', 'desc')" style="cursor:pointer" v-if="mode=='admin'" title="Awaiting review.."><i class="bi bi-clock-fill" style="color: #856404;"></i>
+                            <i :class="currentSortDir == 'asc' ? 'bi bi-arrow-up' : 'bi bi-arrow-down'" v-if="currentSortColumn=='awaiting_review'"></i>
                         </th>
                         <th style="width:120px"></th>
                     </tr>
@@ -264,15 +264,15 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         </td>
                         <td>
                             <div v-if="editingId === unit.id">
-                                <button class="btn btn-success btn-sm me-1" @click="save_heatpump(unit.id)"><i class="fas fa-check"></i></button>
-                                <button class="btn btn-secondary btn-sm" @click="cancel_edit()"><i class="fas fa-times"></i></button>
+                                <button class="btn btn-success btn-sm me-1" @click="save_heatpump(unit.id)"><i class="bi bi-check-lg"></i></button>
+                                <button class="btn btn-secondary btn-sm" @click="cancel_edit()"><i class="bi bi-x-lg"></i></button>
                             </div>
                             <div v-else>
                                 <a :href="'<?php echo $path;?>heatpump/view?id='+unit.id">
-                                    <button class="btn btn-secondary btn-sm me-1" title="Details"><i class="fa fa-list-alt" style="color: #ffffff;"></i></button>
+                                    <button class="btn btn-secondary btn-sm me-1" title="Details"><i class="bi bi-card-list" style="color: #ffffff;"></i></button>
                                 </a>
-                                <button class="btn btn-warning btn-sm me-1" @click="edit_heatpump(unit.id)" title="Edit" v-if="mode=='admin'"><i class="fas fa-edit" style="color: #ffffff;"></i></button>
-                                <button class="btn btn-danger btn-sm" @click="delete_heatpump(unit.id)" title="Delete" v-if="mode=='admin'"><i class="fas fa-trash"></i></button>
+                                <button class="btn btn-warning btn-sm me-1" @click="edit_heatpump(unit.id)" title="Edit" v-if="mode=='admin'"><i class="bi bi-pencil-square" style="color: #ffffff;"></i></button>
+                                <button class="btn btn-danger btn-sm" @click="delete_heatpump(unit.id)" title="Delete" v-if="mode=='admin'"><i class="bi bi-trash"></i></button>
                             </div>
                         </td>    
                     </tr>

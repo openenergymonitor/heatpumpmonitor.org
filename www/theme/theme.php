@@ -5,12 +5,12 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 global $path, $settings, $session;
 
 $navigation = array(
-    array("controller" => "", "href" => ".", "title" => "Home", "icon" => "fa-home"),
-    // array("controller" => "stats", "href" => "stats", "title" => "30 Day Stats", "icon" => "fa-table"),
-    // array("controller" => "costs", "href" => "costs", "title" => "Running Costs", "icon" => "fa-coins"),
-    // array("controller" => "graph", "href" => "graph", "title" => "Comparison Charts", "icon" => "fa-chart-line"),
-    // array("controller" => "compare", "href" => "compare", "title" => "Comparison Charts", "icon" => "fa-object-group"),
-    array("controller" => "user", "href" => "user/login", "title" => "Login", "icon" => "fa-user")
+    array("controller" => "", "href" => ".", "title" => "Home", "icon" => "bi-house-fill"),
+    // array("controller" => "stats", "href" => "stats", "title" => "30 Day Stats", "icon" => "bi-table"),
+    // array("controller" => "costs", "href" => "costs", "title" => "Running Costs", "icon" => "bi-coin"),
+    // array("controller" => "graph", "href" => "graph", "title" => "Comparison Charts", "icon" => "bi-graph-up"),
+    // array("controller" => "compare", "href" => "compare", "title" => "Comparison Charts", "icon" => "bi-bounding-box"),
+    array("controller" => "user", "href" => "user/login", "title" => "Login", "icon" => "bi-person-fill")
 );
 ?>
 
@@ -54,8 +54,6 @@ $navigation = array(
     
     <link rel="stylesheet" href="<?php echo $path; ?>theme/vendor/bootstrap-5.3.0/css/bootstrap.min.css" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM">
     <link rel="stylesheet" href="<?php echo $path; ?>theme/vendor/bootstrap-icons-1.11.0/font/bootstrap-icons.css" integrity="sha384-QuGBSgV5Im3DzL2z+8Ko9/hqNy/N0O7zwvXAtfd1MvPKWa/UbeLV65cfm4BV5Wgq">
-    <link rel="stylesheet" href="<?php echo $path; ?>theme/vendor/font-awesome-5.15.4/css/fontawesome.min.css" integrity="sha384-jLKHWM3JRmfMU0A5x5AkjWkw/EYfGUAGagvnfryNV3F9VqM98XiIH7VBGVoxVSc7">
-    <link rel="stylesheet" href="<?php echo $path; ?>theme/vendor/font-awesome-5.15.4/css/solid.min.css" integrity="sha384-Tv5i09RULyHKMwX0E8wJUqSOaXlyu3SQxORObAI08iUwIalMmN5L6AvlPX2LMoSE">
     <link rel="stylesheet" href="<?php echo $path; ?>theme/style.css?v=54" />
 
 </head>
@@ -140,29 +138,29 @@ $navigation = array(
                     <?php if ($settings['public_mode_enabled'] || $session['userid']) { ?>
 
                     <ul class="navbar-nav ms-auto">
-                        <li class="nav-item"><a class="nav-link " href="<?php echo $path; ?>" title="Home"><i class="fas fa-home"></i> <span class="nav-item-text">Home</span></a></li>
+                        <li class="nav-item"><a class="nav-link " href="<?php echo $path; ?>" title="Home"><i class="bi bi-house-fill"></i> <span class="nav-item-text">Home</span></a></li>
                     </ul>
 
                     <ul class="navbar-nav">
-                        <li class="nav-item"><a id="system-list-link" class="nav-link " href="<?php echo $path; ?>system/list" title="System list"><i class="fas fa-list-alt"></i> <span class="nav-item-text">System list</span></a></li>
+                        <li class="nav-item"><a id="system-list-link" class="nav-link " href="<?php echo $path; ?>system/list" title="System list"><i class="bi bi-card-list"></i> <span class="nav-item-text">System list</span></a></li>
                     </ul>
 
                     <ul class="navbar-nav">
-                        <li class="nav-item"><a id="map-link" class="nav-link " href="<?php echo $path; ?>map" title="Map"><i class="fas fa-map"></i> <span class="nav-item-text">Map</span></a></li>
+                        <li class="nav-item"><a id="map-link" class="nav-link " href="<?php echo $path; ?>map" title="Map"><i class="bi bi-map-fill"></i> <span class="nav-item-text">Map</span></a></li>
                     </ul>
 
                     <ul class="navbar-nav">
-                        <li class="nav-item"><a class="nav-link " href="https://docs.openenergymonitor.org/heatpumpmonitor" title="Docs"><i class="fas fa-book"></i> <span class="nav-item-text">Docs</span></a></li>
+                        <li class="nav-item"><a class="nav-link " href="https://docs.openenergymonitor.org/heatpumpmonitor" title="Docs"><i class="bi bi-book-fill"></i> <span class="nav-item-text">Docs</span></a></li>
                     </ul>
 
                     <ul class="navbar-nav"> 
-                        <li class="nav-item"><a id="heatpump-database-link" class="nav-link " href="<?php echo $path; ?>heatpump" title="Heat pump database"><i class="fas fa-database"></i> <span class="nav-item-text">Heat pump database</span></a></li>
+                        <li class="nav-item"><a id="heatpump-database-link" class="nav-link " href="<?php echo $path; ?>heatpump" title="Heat pump database"><i class="bi bi-database-fill"></i> <span class="nav-item-text">Heat pump database</span></a></li>
                     </ul>
 
                     <ul class="navbar-nav"> 
                         <li class="nav-item">
                             <a id="installer-link" class="nav-link" href="<?php echo $path; ?>installer" title="Installer database">
-                                <i class="fas fa-tools"></i> <span class="nav-item-text">Installers</span>
+                                <i class="bi bi-tools"></i> <span class="nav-item-text">Installers</span>
                             </a>
                         </li>
                     </ul>
@@ -170,7 +168,7 @@ $navigation = array(
                     <ul class="navbar-nav">
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="avatarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="fas fa-chart-line"></i>
+                                <i class="bi bi-graph-up"></i>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="avatarDropdown">
                                 <li><a class="dropdown-item" href="<?php echo $path; ?>heatloss">Heat demand tool</a></li>
@@ -187,7 +185,7 @@ $navigation = array(
 
                     <?php if (!$session['userid']) { ?>
                         <ul class="navbar-nav <?php if (!$settings['public_mode_enabled']) echo "ms-auto"; ?>">
-                            <li class="nav-item"><a class="nav-link " href="<?php echo $path; ?>user/login" title="Login"><i class="fas fa-user"></i> <span class="nav-item-text">Login</span></a></li>
+                            <li class="nav-item"><a class="nav-link " href="<?php echo $path; ?>user/login" title="Login"><i class="bi bi-person-fill"></i> <span class="nav-item-text">Login</span></a></li>
                         </ul>
                     <?php } else { ?>
                         <ul class="navbar-nav">

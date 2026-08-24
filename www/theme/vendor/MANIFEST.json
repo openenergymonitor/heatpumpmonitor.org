@@ -69,20 +69,6 @@
   "replaces": []
  },
  {
-  "file": "font-awesome-5.15.4/css/fontawesome.min.css",
-  "source": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css",
-  "sha384": "sha384-jLKHWM3JRmfMU0A5x5AkjWkw/EYfGUAGagvnfryNV3F9VqM98XiIH7VBGVoxVSc7",
-  "verified": "cdnjs SRI api",
-  "replaces": []
- },
- {
-  "file": "font-awesome-5.15.4/css/solid.min.css",
-  "source": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css",
-  "sha384": "sha384-Tv5i09RULyHKMwX0E8wJUqSOaXlyu3SQxORObAI08iUwIalMmN5L6AvlPX2LMoSE",
-  "verified": "cdnjs SRI api",
-  "replaces": []
- },
- {
   "file": "highlight.js-11.9.0/highlight.min.js",
   "source": "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js",
   "sha384": "sha384-F/bZzf7p3Joyp5psL90p/p89AZJsndkSoGwRpXcZhleCWhd8SnRuoYo4d0yirjJp",
@@ -159,41 +145,6 @@
   "source": "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/fonts/bootstrap-icons.woff",
   "sha384": "sha384-C3L+MAA3z+5Jo1ThoUGM4/nNVWZFAN3fNVZvLs8IA7QyjdJycVpvgdvBVEyg0FpP",
   "verified": "jsdelivr hash api (/font/fonts/bootstrap-icons.woff)",
-  "replaces": []
- },
- {
-  "file": "font-awesome-5.15.4/webfonts/fa-solid-900.woff2",
-  "source": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/webfonts/fa-solid-900.woff2",
-  "sha384": "sha384-J+Hec+Cl+N/SJPtXkxffygzO3i2HKS6radtcWe9DhOd+0yka4r/u4y+I4+g29xKn",
-  "verified": "jsdelivr hash api for npm @fortawesome/fontawesome-free (/webfonts/fa-solid-900.woff2)",
-  "replaces": []
- },
- {
-  "file": "font-awesome-5.15.4/webfonts/fa-solid-900.woff",
-  "source": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/webfonts/fa-solid-900.woff",
-  "sha384": "sha384-8yvOn0Nc6x628D4z+3k0d+jXkJreZ3x8Vobm9frG+jCSR4BUjh48xEIYTOLfR04k",
-  "verified": "jsdelivr hash api for npm @fortawesome/fontawesome-free (/webfonts/fa-solid-900.woff)",
-  "replaces": []
- },
- {
-  "file": "font-awesome-5.15.4/webfonts/fa-solid-900.ttf",
-  "source": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/webfonts/fa-solid-900.ttf",
-  "sha384": "sha384-ugSKcSBNjwVs/fk4YJ7sAZP7jXPvqjTyo+1iZtOl/iakH0k5ADgM+LrEnYEk40Sl",
-  "verified": "jsdelivr hash api for npm @fortawesome/fontawesome-free (/webfonts/fa-solid-900.ttf)",
-  "replaces": []
- },
- {
-  "file": "font-awesome-5.15.4/webfonts/fa-solid-900.eot",
-  "source": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/webfonts/fa-solid-900.eot",
-  "sha384": "sha384-Isn3HvL5LRQY0I7TT17jJcUfqgQcsL8q8wutwIfENC9HsJskVdpHjJiM8xalwzAw",
-  "verified": "jsdelivr hash api for npm @fortawesome/fontawesome-free (/webfonts/fa-solid-900.eot)",
-  "replaces": []
- },
- {
-  "file": "font-awesome-5.15.4/webfonts/fa-solid-900.svg",
-  "source": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/webfonts/fa-solid-900.svg",
-  "sha384": "sha384-PqhE+beEMAcHtdZ03v2DSm3p71LFmT1QqT+dbtha3ZGioNmxAAmIHWLuLLTrdLvI",
-  "verified": "jsdelivr hash api for npm @fortawesome/fontawesome-free (/webfonts/fa-solid-900.svg)",
   "replaces": []
  },
  {

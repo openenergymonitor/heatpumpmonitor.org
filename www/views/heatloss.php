@@ -173,7 +173,7 @@ if (isset($session['admin']) && $session['admin']) {
                 <div class="input-group mb-3">
                     <span class="input-group-text">Max output test</span>
                     <input type="text" class="form-control" :value="hp_max_test_text" disabled>
-                    <a class="btn btn-primary" :href="heatpump_url" v-if="heatpump_url" title="View heat pump database entry"><i class="fas fa-database"></i></a>
+                    <a class="btn btn-primary" :href="heatpump_url" v-if="heatpump_url" title="View heat pump database entry"><i class="bi bi-database-fill"></i></a>
                 </div>
             </div>
             <div class="col-lg-5 col-md-6" v-else>
@@ -182,7 +182,7 @@ if (isset($session['admin']) && $session['admin']) {
                     <input type="text" class="form-control" :value="badge_capacity" disabled>
                     <span class="input-group-text">kW</span>
                     <span class="input-group-text">No max output test available</span>
-                    <a class="btn btn-primary" :href="heatpump_url" v-if="heatpump_url" title="View heat pump database entry"><i class="fas fa-database"></i></a>
+                    <a class="btn btn-primary" :href="heatpump_url" v-if="heatpump_url" title="View heat pump database entry"><i class="bi bi-database-fill"></i></a>
                 </div>
             </div>
         </div>

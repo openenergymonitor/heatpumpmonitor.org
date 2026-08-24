@@ -136,3 +136,12 @@
   background-color: #efe;
 }
 */
+
+/* Icon size / animation helpers (Bootstrap Icons replacement for fa-2x, fa-3x, fa-spin) */
+.bi-2x { font-size: 2em; }
+.bi-3x { font-size: 3em; }
+.bi-spin { display: inline-block; animation: bi-spin 2s infinite linear; }
+@keyframes bi-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

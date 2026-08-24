@@ -51,7 +51,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                     class="gallery-thumbnail"
                                 >
                                 <div class="thumbnail-overlay">
-                                    <i class="fas fa-expand-alt"></i>
+                                    <i class="bi bi-arrows-angle-expand"></i>
                                 </div>
                             </div>
                         </td>
@@ -81,7 +81,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                 @click="confirmDelete(photo)"
                                 title="Delete photo"
                             >
-                                <i class="fas fa-trash"></i>
+                                <i class="bi bi-trash"></i>
                             </button>
                         </td>
                     </tr>
@@ -153,7 +153,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <span v-if="photoToDelete.system_info"> - {{ photoToDelete.system_info }}</span>
                     </p>
                     <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle"></i>
+                        <i class="bi bi-exclamation-triangle-fill"></i>
                         This action cannot be undone.
                     </div>
                 </div>

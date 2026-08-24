@@ -31,8 +31,8 @@ global $path;
         <div class="container" style="max-width:1200px;">
             <div style="float:right">
                 <button class="btn btn-warning me-2" @click="toggleMode" v-if="admin">
-                    <i class="fas fa-exclamation-triangle" v-if="!showUnmatched"></i>
-                    <i class="fas fa-list" v-else></i>
+                    <i class="bi bi-exclamation-triangle-fill" v-if="!showUnmatched"></i>
+                    <i class="bi bi-list-ul" v-else></i>
                     {{ showUnmatched ? 'Show Registered' : 'Show Unmatched' }}
                 </button>
                 <button class="btn btn-primary" @click="openAddModal" v-if="admin && !showUnmatched">+ Add Installer</button>
@@ -71,14 +71,14 @@ global $path;
             <thead class="table-light">
                 <tr>
                     <th @click="sort('name', 'asc')" style="cursor:pointer">Name
-                        <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='name'"></i>
+                        <i :class="currentSortDir == 'asc' ? 'bi bi-arrow-up' : 'bi bi-arrow-down'" v-if="currentSortColumn=='name'"></i>
                     </th>
                     <th @click="sort('url', 'asc')" style="cursor:pointer" class="url-column d-none d-md-table-cell">URL
-                        <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='url'"></i>
+                        <i :class="currentSortDir == 'asc' ? 'bi bi-arrow-up' : 'bi bi-arrow-down'" v-if="currentSortColumn=='url'"></i>
                     </th>
                     <th>Logo</th>
                     <th @click="sort('systems', 'desc')" style="cursor:pointer">Systems
-                        <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='systems'"></i>
+                        <i :class="currentSortDir == 'asc' ? 'bi bi-arrow-up' : 'bi bi-arrow-down'" v-if="currentSortColumn=='systems'"></i>
                     </th>
                     <th class="d-none d-sm-table-cell">Color</th>
                     <th class="actions-column">
@@ -117,23 +117,23 @@ global $path;
                     <td class="actions-column" :style="{width: admin ? '180px' : '90px'}">
                         <div class="d-flex flex-wrap gap-1">
                             <button v-if="admin && showUnmatched" class="btn btn-success btn-sm" @click="addUnmatchedInstaller(installer)" title="Add to Database">
-                                <i class="fas fa-plus" style="color: #ffffff;"></i> 
+                                <i class="bi bi-plus-lg" style="color: #ffffff;"></i> 
                                 <span class="d-none d-sm-inline">Add</span>
                             </button>
                             <button v-if="admin && !showUnmatched" class="btn btn-secondary btn-sm" @click="openEditModal(installer)" title="Edit">
-                                <i class="fas fa-pencil-alt" style="color: #ffffff;"></i>
+                                <i class="bi bi-pencil-fill" style="color: #ffffff;"></i>
                             </button>
                             <button v-if="admin && !showUnmatched" class="btn btn-danger btn-sm" @click="deleteInstaller(installer)" title="Delete">
-                                <i class="fas fa-trash" style="color: #ffffff;"></i>
+                                <i class="bi bi-trash" style="color: #ffffff;"></i>
                             </button>
                             <a :href="path+'system/list?filter='+encodeURIComponent(installer.name)+'&period=all&minDays=0&errors=1'">
                                 <button class="btn btn-primary btn-sm" :title="'View '+installer.name+' systems'">
-                                    <i class="fa fa-list-alt" style="color: #ffffff;"></i>
+                                    <i class="bi bi-card-list" style="color: #ffffff;"></i>
                                 </button>
                             </a>
                             <a :href="path+'map?filter='+encodeURIComponent(installer.name)+'&period=all&minDays=0&errors=1'">
                                 <button class="btn btn-primary btn-sm" :title="'View '+installer.name+' map'">
-                                    <i class="fa fa-map" style="color: #ffffff;"></i>
+                                    <i class="bi bi-map-fill" style="color: #ffffff;"></i>
                                 </button>
                             </a>
                         </div>

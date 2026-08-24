@@ -65,7 +65,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                              title="Click to view full size">
                         <div v-if="mode=='admin'" class="image-controls mt-2">
                             <button class="btn btn-danger btn-sm" @click="deleteImage" title="Delete image">
-                                <i class="fas fa-trash"></i> Delete Image
+                                <i class="bi bi-trash"></i> Delete Image
                             </button>
                         </div>
                     </div>
@@ -73,7 +73,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <div class="placeholder-content" @click="mode=='admin' && triggerImageUpload()" 
                              :class="{'clickable': mode=='admin'}" 
                              :title="mode=='admin' ? 'Click to upload heat pump image' : ''">
-                            <i class="fas fa-thermometer-half fa-3x text-muted mb-3"></i>
+                            <i class="bi bi-thermometer-half bi-3x text-muted mb-3"></i>
                             <p class="text-muted mb-0">Heat Pump Image</p>
                             <p v-if="mode=='admin'" class="text-muted small">Click to upload</p>
                             <p v-else class="text-muted small">No image available</p>
@@ -82,7 +82,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     <!-- Admin upload controls -->
                     <div v-if="mode=='admin' && heatpump.img" class="replace-image-section mt-2">
                         <button class="btn btn-secondary btn-sm" @click="triggerImageUpload" title="Replace image">
-                            <i class="fas fa-upload"></i> Replace Image
+                            <i class="bi bi-upload"></i> Replace Image
                         </button>
                     </div>
                     <!-- Hidden file input -->
@@ -145,10 +145,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         </td>
                         <td style="width:120px">
                             <a :href="'https://heatpumpmonitor.org/dashboard?id='+test.system_id+'&mode=power&start='+test.start+'&end='+test.end+'&cool=1'" target="_blank">
-                                <button class="btn btn-secondary btn-sm" title="Dashboard"><i class="fa fa-chart-bar" style="color: #ffffff;"></i></button>
+                                <button class="btn btn-secondary btn-sm" title="Dashboard"><i class="bi bi-bar-chart-fill" style="color: #ffffff;"></i></button>
                             </a>
-                            <button class="btn btn-warning btn-sm" title="Review" @click="open_review_modal('max',test)" v-if="mode=='admin'"><i class="fa fa-eye" style="color: #ffffff;"></i></button>
-                            <button class="btn btn-danger btn-sm" title="Delete" @click="delete_cap_test('max', test.id)" v-if="mode=='admin' || userid==test.userid"><i class="fa fa-trash" style="color: #ffffff;"></i></button>
+                            <button class="btn btn-warning btn-sm" title="Review" @click="open_review_modal('max',test)" v-if="mode=='admin'"><i class="bi bi-eye-fill" style="color: #ffffff;"></i></button>
+                            <button class="btn btn-danger btn-sm" title="Delete" @click="delete_cap_test('max', test.id)" v-if="mode=='admin' || userid==test.userid"><i class="bi bi-trash" style="color: #ffffff;"></i></button>
                         </td>
                     </tr>
                     <tr>
@@ -205,10 +205,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         </td>
                         <td style="width:120px">
                             <a :href="'https://heatpumpmonitor.org/dashboard?id='+test.system_id+'&mode=power&start='+test.start+'&end='+test.end" target="_blank">
-                                <button class="btn btn-secondary btn-sm" title="Dashboard"><i class="fa fa-chart-bar" style="color: #ffffff;"></i></button>
+                                <button class="btn btn-secondary btn-sm" title="Dashboard"><i class="bi bi-bar-chart-fill" style="color: #ffffff;"></i></button>
                             </a>
-                            <button class="btn btn-warning btn-sm" title="Review" @click="open_review_modal('min',test)" v-if="mode=='admin'"><i class="fa fa-eye" style="color: #ffffff;"></i></button>
-                            <button class="btn btn-danger btn-sm" title="Delete" @click="delete_cap_test('min', test.id)" v-if="mode=='admin' || userid==test.userid"><i class="fa fa-trash" style="color: #ffffff;"></i></button>
+                            <button class="btn btn-warning btn-sm" title="Review" @click="open_review_modal('min',test)" v-if="mode=='admin'"><i class="bi bi-eye-fill" style="color: #ffffff;"></i></button>
+                            <button class="btn btn-danger btn-sm" title="Delete" @click="delete_cap_test('min', test.id)" v-if="mode=='admin' || userid==test.userid"><i class="bi bi-trash" style="color: #ffffff;"></i></button>
                         </td>
                     </tr>
                     <tr>
@@ -260,7 +260,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                                     @click="reload_test_data"
                                                     :disabled="reloading_test_data || !review_form.url.trim()"
                                                     title="Reload test data from URL">
-                                                <i class="fas fa-sync-alt" :class="{'fa-spin': reloading_test_data}"></i>
+                                                <i class="bi bi-arrow-repeat" :class="{'bi-spin': reloading_test_data}"></i>
                                                 {{ reloading_test_data ? 'Loading...' : 'Reload' }}
                                             </button>
                                         </div>
@@ -269,10 +269,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                     
                                     <!-- Reload status messages -->
                                     <div v-if="reload_success" class="alert alert-success alert-sm" role="alert">
-                                        <i class="fas fa-check-circle"></i> Test data reloaded successfully
+                                        <i class="bi bi-check-circle-fill"></i> Test data reloaded successfully
                                     </div>
                                     <div v-if="reload_error" class="alert alert-danger alert-sm" role="alert">
-                                        <i class="fas fa-exclamation-triangle"></i> {{ reload_error }}
+                                        <i class="bi bi-exclamation-triangle-fill"></i> {{ reload_error }}
                                     </div>
                                     
                                     <div class="mb-3">
@@ -396,7 +396,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     @click.stop="closeLightbox"
                     v-show="overlayVisible"
                     :class="{ 'overlay-hidden': !overlayVisible }">
-                <i class="fas fa-times"></i>
+                <i class="bi bi-x-lg"></i>
             </button>
             
             <div class="lightbox-image-container" 

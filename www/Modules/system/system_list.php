@@ -204,7 +204,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             <option value="only">Only</option>
                             <option v-for="month in available_months_end">{{ month }}</option>
                         </select>
-                        <button class="btn btn-primary" @click="toggle_chart"><i class="fa fa-chart-bar"></i></button>
+                        <button class="btn btn-primary" @click="toggle_chart"><i class="bi bi-bar-chart-fill"></i></button>
                     </div>
 
                     <div class="input-group" style="margin-top: 12px">
@@ -232,15 +232,15 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 <div class="sticky-top">
 
                     <ul class="list-group mt-3">
-                        <li @click="template_view('topofthescops')" :class="'list-group-item list-group-item-action '+(selected_template=='topofthescops'?'active':'')" style="cursor:pointer"><i class="fa fa-trophy" style="margin: 0px 10px 0px 5px"></i> Top of the SCOPs</li>
-                        <li @click="template_view('heatpumpfabric')" :class="'list-group-item list-group-item-action '+(selected_template=='heatpumpfabric'?'active':'')" style="cursor:pointer"><i class="fas fa-house-damage" style="margin: 0px 10px 0px 5px"></i> Heatpump + Fabric</li>
-                        <li @click="template_view('costs')" :class="'list-group-item list-group-item-action '+(selected_template=='costs'?'active':'')" style="cursor:pointer"><i class="fas fa-pound-sign" style="margin: 0px 15px 0px 8px"></i> Costs</li>
+                        <li @click="template_view('topofthescops')" :class="'list-group-item list-group-item-action '+(selected_template=='topofthescops'?'active':'')" style="cursor:pointer"><i class="bi bi-trophy-fill" style="margin: 0px 10px 0px 5px"></i> Top of the SCOPs</li>
+                        <li @click="template_view('heatpumpfabric')" :class="'list-group-item list-group-item-action '+(selected_template=='heatpumpfabric'?'active':'')" style="cursor:pointer"><i class="bi bi-house-exclamation-fill" style="margin: 0px 10px 0px 5px"></i> Heatpump + Fabric</li>
+                        <li @click="template_view('costs')" :class="'list-group-item list-group-item-action '+(selected_template=='costs'?'active':'')" style="cursor:pointer"><i class="bi bi-currency-pound" style="margin: 0px 15px 0px 8px"></i> Costs</li>
                     </ul>
                     
                     <div class="card mt-3 add-fields-card">
                         <div class="card-header">
                         <button class="btn btn-sm btn-secondary" style="float:right; margin-right:-8px" @click="show_field_selector = !show_field_selector">
-                            <i :class="{'fas fa-minus': show_field_selector, 'fas fa-plus': !show_field_selector}"></i>
+                            <i :class="{'bi bi-dash-lg': show_field_selector, 'bi bi-plus-lg': !show_field_selector}"></i>
                         </button>
                         <div style="margin-top:2px; font-size:18px">Columns</div>
                         </div>
@@ -258,13 +258,13 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                         <div class="category">{{ columns[key].name }}</div>
                                         <input type="text" v-model="heading_edit_value" class="form-control form-control-sm mb-2" placeholder="Custom column title" @keyup.enter="save_heading(key)">
                                         <div class="btn-group">
-                                            <button class="btn btn-xs btn-success me-2" @click="save_heading(key)" title="Apply custom title"><i class="fa fa-check"></i></button>
-                                            <button class="btn btn-xs btn-secondary" @click="editing_heading=null" title="Cancel"><i class="fa fa-times"></i></button>
+                                            <button class="btn btn-xs btn-success me-2" @click="save_heading(key)" title="Apply custom title"><i class="bi bi-check-lg"></i></button>
+                                            <button class="btn btn-xs btn-secondary" @click="editing_heading=null" title="Cancel"><i class="bi bi-x-lg"></i></button>
                                         </div>
                                     </div>
                                     <div v-if="editing_heading!=key" class="btn-group" style="margin-left:auto">
-                                        <button class="btn btn-xs btn-warning" @click="edit_heading(key)" title="Set a custom column title"><i class="fa fa-edit"></i></button>
-                                        <button class="btn btn-xs btn-danger" @click="select_column(key)" title="Remove column"><i class="fa fa-times"></i></button>
+                                        <button class="btn btn-xs btn-warning" @click="edit_heading(key)" title="Set a custom column title"><i class="bi bi-pencil-square"></i></button>
+                                        <button class="btn btn-xs btn-danger" @click="select_column(key)" title="Remove column"><i class="bi bi-x-lg"></i></button>
                                     </div>
                                 </li>
                             </ul>
@@ -279,8 +279,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     <div class="card mt-3 add-filters-card">
                         <div class="card-header">
                             <button class="btn btn-sm btn-secondary" style="float:right; margin-right:-8px" @click="addFilterPart">
-                                <i class="fa fa-plus"></i>
-                                <i class="fa fa-filter"></i>
+                                <i class="bi bi-plus-lg"></i>
+                                <i class="bi bi-funnel-fill"></i>
                             </button>
                             <div style="margin-top:2px; font-size:18px">Filters</div>
                         </div>
@@ -312,19 +312,19 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                                         </datalist>
                                         <div class="btn-group">
                                             <button class="btn btn-xs btn-success me-2" @click="saveFilterPart(index)" :disabled="!part.field || part.value === null || part.value === undefined">
-                                                <i class="fa fa-check"></i>
+                                                <i class="bi bi-check-lg"></i>
                                             </button>
                                             <button class="btn btn-xs btn-danger" @click="removeFilterPart(index)">
-                                                <i class="fa fa-trash"></i>
+                                                <i class="bi bi-trash"></i>
                                             </button>
                                         </div>
                                     </div>
                                     <div v-if="!part.editing" class="btn-group" style="margin-left: auto;">
                                         <button class="btn btn-xs btn-warning" @click="editFilterPart(index)" >
-                                            <i class="fa fa-edit"></i>
+                                            <i class="bi bi-pencil-square"></i>
                                         </button>                                        
                                         <button class="btn btn-xs btn-danger" @click="removeFilterPart(index)">
-                                            <i class="fa fa-trash"></i>
+                                            <i class="bi bi-trash"></i>
                                         </button>
                                     </div>
                                 </li>
@@ -365,7 +365,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
                 <div class="btn-group" role="group" aria-label="Basic example" v-if="mode=='admin'" style="float:right">
                     <button type="button" class="btn btn-primary" @click="toggle_restricted_list">
-                        <i :class="admin_restricted_list?'fa fa-eye':'fa fa-eye-slash'"></i> {{ admin_restricted_list?'Show all systems':'Show restricted' }}
+                        <i :class="admin_restricted_list?'bi bi-eye-fill':'bi bi-eye-slash-fill'"></i> {{ admin_restricted_list?'Show all systems':'Show restricted' }}
                     </button>
                 </div>
 
@@ -466,16 +466,16 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <th v-if="showContent" style="width:40px"></th>
                         <th v-if="mode!='public'" @click="sort('id', 'asc')" style="cursor:pointer">ID</th>
                         <th v-if="mode=='admin' || mode=='user'" @click="sort('name', 'asc')" style="cursor:pointer">User
-                            <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='name'"></i>
+                            <i :class="currentSortDir == 'asc' ? 'bi bi-arrow-up' : 'bi bi-arrow-down'" v-if="currentSortColumn=='name'"></i>
                         </th>
                         <th v-for="column in selected_columns" @click="sort(column, 'desc')" style="cursor:pointer" :title="columns[column].helper"><span v-html="columns[column].heading"></span>
-                            <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn==column"></i>
+                            <i :class="currentSortDir == 'asc' ? 'bi bi-arrow-up' : 'bi bi-arrow-down'" v-if="currentSortColumn==column"></i>
                         </th>
                         <th v-if="mode!='public' && public_mode_enabled" @click="sort('share', 'desc')" style="cursor:pointer">Share
-                            <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='share'"></i>
+                            <i :class="currentSortDir == 'asc' ? 'bi bi-arrow-up' : 'bi bi-arrow-down'" v-if="currentSortColumn=='share'"></i>
                         </th>
                         <th v-if="mode!='public' && public_mode_enabled" @click="sort('published', 'desc')" style="cursor:pointer">Published
-                            <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='published'"></i>
+                            <i :class="currentSortDir == 'asc' ? 'bi bi-arrow-up' : 'bi bi-arrow-down'" v-if="currentSortColumn=='published'"></i>
                         </th>
                         <th v-if="mode=='public'" :style="(showContent)?'width:80px':'width:20px'">View</th>
                         <th v-if="mode!='public'" :style="(showContent)?'width:120px':'width:20px'"></th>
@@ -498,21 +498,21 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <td>
                             <!--View button-->
                             <a :href="'<?php echo $path;?>system/view?id='+system.id" v-if="mode=='public'">
-                                <button class="btn btn-primary btn-sm" title="Summary"><i class="fa fa-list-alt" style="color: #ffffff;"></i></button>
+                                <button class="btn btn-primary btn-sm" title="Summary"><i class="bi bi-card-list" style="color: #ffffff;"></i></button>
                             </a>
 
                             <!--Dashboard-->
                             <a :href="'<?php echo $path;?>dashboard?id='+system.id+((!system.share || !system.published) && system.readkey ? '&readkey='+system.readkey : '')" target="_blank" v-if="showContent">
-                                <button class="btn btn-secondary btn-sm" title="Dashboard"><i class="fa fa-chart-bar" style="color: #ffffff;"></i></button>
+                                <button class="btn btn-secondary btn-sm" title="Dashboard"><i class="bi bi-bar-chart-fill" style="color: #ffffff;"></i></button>
                             </a>
 
                             <!--Edit button-->
                             <a :href="'<?php echo $path;?>system/edit?id='+system.id" v-if="mode!='public'">
-                                <button class="btn btn-warning btn-sm" title="Edit"><i class="fa fa-edit" style="color: #ffffff;"></i></button>
+                                <button class="btn btn-warning btn-sm" title="Edit"><i class="bi bi-pencil-square" style="color: #ffffff;"></i></button>
                             </a>
 
                             <!--Delete button-->
-                            <button v-if="mode!='public'" class="btn btn-danger btn-sm" @click="remove(system.id)" title="Delete"><i class="fa fa-trash" style="color: #ffffff;"></i></button>
+                            <button v-if="mode!='public'" class="btn btn-danger btn-sm" @click="remove(system.id)" title="Delete"><i class="bi bi-trash" style="color: #ffffff;"></i></button>
 
 
                         </td>
@@ -1717,7 +1717,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             color = "#ff0000";
                         }
 
-                        flag = "<i class='fas fa-exclamation-circle' style='color: "+color+"; margin-left:10px; cursor:pointer' title='"+system['data_flag_note']+"'></i>";
+                        flag = "<i class='bi bi-exclamation-circle-fill' style='color: "+color+"; margin-left:10px; cursor:pointer' title='"+system['data_flag_note']+"'></i>";
                     }
                     return flag;
                 }
@@ -1775,7 +1775,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 if (key=='photos') {
                     var photos = "";
                     if (system['photo_count'] && system['photo_count'] > 0) {
-                        photos += "<a href='javascript:void(0)' onclick='app.openSystemPhotos(" + system['id'] + ")' style='color: #0d6efd; font-size: 1.2em; text-decoration: none;' title='View system photos (" + system['photo_count'] + ")'><i class='fas fa-camera'></i></a>";
+                        photos += "<a href='javascript:void(0)' onclick='app.openSystemPhotos(" + system['id'] + ")' style='color: #0d6efd; font-size: 1.2em; text-decoration: none;' title='View system photos (" + system['photo_count'] + ")'><i class='bi bi-camera-fill'></i></a>";
                     }
                     return photos;
                 }

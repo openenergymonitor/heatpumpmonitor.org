@@ -9,9 +9,7 @@ const PRECACHE_ASSETS = [
   '/theme/img/icons/icon-192x192.png',
   '/theme/img/icons/icon-512x512.png',
   '/theme/vendor/bootstrap-5.3.0/css/bootstrap.min.css',
-  '/theme/vendor/bootstrap-5.3.0/js/bootstrap.bundle.min.js',
-  '/theme/vendor/font-awesome-5.15.4/css/fontawesome.min.css',
-  '/theme/vendor/font-awesome-5.15.4/css/solid.min.css'
+  '/theme/vendor/bootstrap-5.3.0/js/bootstrap.bundle.min.js'
 ];
 
 // Install event - cache core assets

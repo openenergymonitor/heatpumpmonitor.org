@@ -47,7 +47,7 @@ if ($system_data->share==0) {
       <div class="col1-inner">
         <div class="block-bound">
           <div style="float:right">
-            <a id="permalink" href="" title="Share this view" class="myheatpump-top-buttons"><i class="fas fa-share-square" style="color:#fff"></i></a>
+            <a id="permalink" href="" title="Share this view" class="myheatpump-top-buttons"><i class="bi bi-box-arrow-up-right" style="color:#fff"></i></a>
             <div class="myheatpump-top-buttons config-open">
               <i class="icon-wrench icon-white" title="Configure app"></i>
             </div>

@@ -75,22 +75,22 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     <thead>
                         <tr>
                             <th @click="sort('manufacturer', 'asc')" style="cursor:pointer">Manufacturer
-                                <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='manufacturer'"></i>
+                                <i :class="currentSortDir == 'asc' ? 'bi bi-arrow-up' : 'bi bi-arrow-down'" v-if="currentSortColumn=='manufacturer'"></i>
                             </th>
                             <th @click="sort('model', 'asc')" style="cursor:pointer">Model
-                                <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='model'"></i>
+                                <i :class="currentSortDir == 'asc' ? 'bi bi-arrow-up' : 'bi bi-arrow-down'" v-if="currentSortColumn=='model'"></i>
                             </th>
                             <th @click="sort('refrigerant', 'asc')" style="cursor:pointer">Refrigerant
-                                <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='refrigerant'"></i>
+                                <i :class="currentSortDir == 'asc' ? 'bi bi-arrow-up' : 'bi bi-arrow-down'" v-if="currentSortColumn=='refrigerant'"></i>
                             </th>
                             <th @click="sort('type', 'asc')" style="cursor:pointer">Type
-                                <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='type'"></i>
+                                <i :class="currentSortDir == 'asc' ? 'bi bi-arrow-up' : 'bi bi-arrow-down'" v-if="currentSortColumn=='type'"></i>
                             </th>
                             <th @click="sort('capacity', 'desc')" style="cursor:pointer">Capacity
-                                <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='capacity'"></i>
+                                <i :class="currentSortDir == 'asc' ? 'bi bi-arrow-up' : 'bi bi-arrow-down'" v-if="currentSortColumn=='capacity'"></i>
                             </th>
                             <th @click="sort('count', 'desc')" style="cursor:pointer">Count
-                                <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='count'"></i>
+                                <i :class="currentSortDir == 'asc' ? 'bi bi-arrow-up' : 'bi bi-arrow-down'" v-if="currentSortColumn=='count'"></i>
                             </th>
                             <th>Systems</th>
                             <th v-if="mode=='admin'" style="width:120px">Actions</th>
@@ -121,7 +121,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             </td>
                             <td v-if="mode=='admin'">
                                 <button class="btn btn-primary btn-sm" @click="addToDatabase(item)" title="Add to Database">
-                                    <i class="fas fa-plus"></i> Add
+                                    <i class="bi bi-plus-lg"></i> Add
                                 </button>
                             </td>
                         </tr>

@@ -66,15 +66,15 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     <td>
                         <div v-if="editingId === manufacturer.id">
                             <button class="btn btn-success btn-sm me-1" @click="save_manufacturer(manufacturer.id)"><i
-                                    class="fas fa-check"></i></button>
+                                    class="bi bi-check-lg"></i></button>
                             <button class="btn btn-secondary btn-sm" @click="cancel_edit()"><i
-                                    class="fas fa-times"></i></button>
+                                    class="bi bi-x-lg"></i></button>
                         </div>
                         <div v-else>
                             <button class="btn btn-primary btn-sm me-1" @click="edit_manufacturer(manufacturer.id)"><i
-                                    class="fas fa-edit"></i></button>
+                                    class="bi bi-pencil-square"></i></button>
                             <button class="btn btn-danger btn-sm" @click="delete_manufacturer(manufacturer.id)"><i
-                                    class="fas fa-trash"></i></button>
+                                    class="bi bi-trash"></i></button>
                         </div>
                     </td>
                 </tr>

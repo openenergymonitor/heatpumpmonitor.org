@@ -40,19 +40,19 @@ global $settings, $session, $path;
             <div style="float:right" v-if="admin && system.id"><a :href="path+'system/log?id='+system.id" class="btn btn-light">Change log</a></div>
             <div style="float:right; margin-right:10px;" v-if="admin && system.id">
                 <a :href="'https://mail.google.com/mail/?view=cm&fs=1&to=<?php echo $email; ?>'" target="_blank" class="btn btn-dark">
-                    <i class="fa fa-envelope" style="color: #ffffff;"></i> Email
+                    <i class="bi bi-envelope-fill" style="color: #ffffff;"></i> Email
                 </a>
             </div>
             <?php if (isset($session['admin']) && $session['admin'] == 1) { ?>
             <div style="float:right; margin-right:10px;" v-if="admin && system.id">
                 <a :href="'https://emoncms.org/admin/setuser?id='+system.userid" target="_blank" class="btn btn-dark">
-                     CMS <i class="fa fa-sign-in-alt" style="color: #ffffff;"></i>
+                     CMS <i class="bi bi-box-arrow-in-right" style="color: #ffffff;"></i>
                 </a>
             </div>
             <?php } ?>
 
             <div v-if="!system.share" class="badge bg-danger ms-2 float-end">
-                <i class="fas fa-lock"></i> Private
+                <i class="bi bi-lock-fill"></i> Private
             </div>
 
             <div v-if="system.hp_model!=''">
@@ -341,7 +341,7 @@ global $settings, $session, $path;
                         <div class="photo-thumbnail-item" @click="openLightbox(getPhotoIndexByType('outdoor_unit'))">
                             <img :src="selectThumbnail(getPhotoByType('outdoor_unit'), '150')" alt="Outdoor unit" class="gallery-thumbnail">
                             <div class="thumbnail-overlay">
-                                <i class="fas fa-expand-alt"></i>
+                                <i class="bi bi-arrows-angle-expand"></i>
                             </div>
                         </div>
                     </div>
@@ -352,7 +352,7 @@ global $settings, $session, $path;
                         <div class="photo-thumbnail-item" @click="openLightbox(getPhotoIndexByType('plant_room'))">
                             <img :src="selectThumbnail(getPhotoByType('plant_room'), '150')" alt="Plant room" class="gallery-thumbnail">
                             <div class="thumbnail-overlay">
-                                <i class="fas fa-expand-alt"></i>
+                                <i class="bi bi-arrows-angle-expand"></i>
                             </div>
                         </div>
                     </div>
@@ -369,7 +369,7 @@ global $settings, $session, $path;
                             >
                                 <img :src="selectThumbnail(photo, '150')" :alt="photo.name" class="gallery-thumbnail">
                                 <div class="thumbnail-overlay">
-                                    <i class="fas fa-expand-alt"></i>
+                                    <i class="bi bi-arrows-angle-expand"></i>
                                 </div>
                             </div>
                         </div>
@@ -494,13 +494,13 @@ global $settings, $session, $path;
                     </tr>
                     <tr>
                         <td><span>Heat pump has backup heater installed and in use</span> <!----></td> 
-                        <td><span data-bs-toggle="tooltip" data-bs-placement="top" title="This is an inline electric element that can top up the heat pump output mostly for space heating"><i class="fas fa-question-circle"></i></span></td>
+                        <td><span data-bs-toggle="tooltip" data-bs-placement="top" title="This is an inline electric element that can top up the heat pump output mostly for space heating"><i class="bi bi-question-circle-fill"></i></span></td>
                         <td><span><input type="checkbox" v-model="system.uses_backup_heater"></span> <!----></td>
                     </tr>
 
                     <tr>
                         <td><span>Hybrid heat pump system (boiler installed and used)</span> <!----></td> 
-                        <td><span data-bs-toggle="tooltip" data-bs-placement="top" title="A hybrid system is one that includes a non-electric heating system such as a gas boiler"><i class="fas fa-question-circle"></i></span></td>
+                        <td><span data-bs-toggle="tooltip" data-bs-placement="top" title="A hybrid system is one that includes a non-electric heating system such as a gas boiler"><i class="bi bi-question-circle-fill"></i></span></td>
                         <td><span><input type="checkbox" v-model="system.hp_hybrid"></span> <!----></td>
                     </tr>        
                 </tbody>
@@ -517,7 +517,7 @@ global $settings, $session, $path;
                         </td>
                         <td>
                             <span v-if="field.helper" data-bs-toggle="tooltip" data-bs-placement="top" :title="field.helper">
-                                <i class="fas fa-question-circle"></i>
+                                <i class="bi bi-question-circle-fill"></i>
                             </span>
                         </td>
                         <td>
@@ -576,13 +576,13 @@ global $settings, $session, $path;
                                         class="btn btn-sm btn-danger photo-remove-btn" 
                                         @click.stop="removePhoto(getPhotoIndexByType('outdoor_unit'))"
                                         title="Remove photo">
-                                    <i class="fas fa-trash"></i>
+                                    <i class="bi bi-trash"></i>
                                 </button>
                             </div>
                             <div class="photo-label">Outdoor Unit</div>
                         </div>
                         <div v-else class="photo-placeholder">
-                            <i class="fas fa-plus fa-2x mb-2"></i>
+                            <i class="bi bi-plus-lg bi-2x mb-2"></i>
                             <div class="placeholder-text">Outdoor unit</div>
                             <small class="text-muted">Click or drag photo here</small>
                         </div>
@@ -605,13 +605,13 @@ global $settings, $session, $path;
                                         class="btn btn-sm btn-danger photo-remove-btn" 
                                         @click.stop="removePhoto(getPhotoIndexByType('plant_room'))"
                                         title="Remove photo">
-                                    <i class="fas fa-trash"></i>
+                                    <i class="bi bi-trash"></i>
                                 </button>
                             </div>
                             <div class="photo-label">Plant Room</div>
                         </div>
                         <div v-else class="photo-placeholder">
-                            <i class="fas fa-plus fa-2x mb-2"></i>
+                            <i class="bi bi-plus-lg bi-2x mb-2"></i>
                             <div class="placeholder-text">Plant room/cylinder cupboard</div>
                             <small class="text-muted">Click or drag photo here</small>
                         </div>
@@ -631,7 +631,7 @@ global $settings, $session, $path;
                                             class="btn btn-sm btn-danger photo-remove-btn" 
                                             @click="removePhoto(getPhotoIndexById(photo.id))"
                                             title="Remove photo">
-                                        <i class="fas fa-trash"></i>
+                                        <i class="bi bi-trash"></i>
                                     </button>
                                 </div>
                             </div>
@@ -643,10 +643,10 @@ global $settings, $session, $path;
                                     </div>
                                 </div>
                                 <div class="upload-status" v-if="photo.uploaded">
-                                    <small class="text-success"><i class="fas fa-check"></i> Uploaded</small>
+                                    <small class="text-success"><i class="bi bi-check-lg"></i> Uploaded</small>
                                 </div>
                                 <div class="upload-status" v-if="photo.error">
-                                    <small class="text-danger"><i class="fas fa-exclamation-triangle"></i> {{ photo.error }}</small>
+                                    <small class="text-danger"><i class="bi bi-exclamation-triangle-fill"></i> {{ photo.error }}</small>
                                 </div>
                             </div>
                         </div>
@@ -658,7 +658,7 @@ global $settings, $session, $path;
                                 class="btn btn-outline-secondary" 
                                 @click="show_other_photo_upload = true"
                                 v-if="!show_other_photo_upload && system_photos.length < 4">
-                            <i class="fas fa-plus"></i> Add Other Photos
+                            <i class="bi bi-plus-lg"></i> Add Other Photos
                         </button>
 
                         <!-- Other Photos Drop Zone -->
@@ -669,11 +669,11 @@ global $settings, $session, $path;
                              :class="{ 'drag-active': isDragActive }"
                              v-if="show_other_photo_upload && system_photos.length < 4">
                             <div class="drop-zone-content">
-                                <i class="fas fa-cloud-upload-alt fa-2x mb-2" style="color: #6c757d;"></i>
+                                <i class="bi bi-cloud-upload-fill bi-2x mb-2" style="color: #6c757d;"></i>
                                 <h6>Drag and drop other photos here</h6>
                                 <p class="text-muted">or</p>
                                 <button type="button" class="btn btn-outline-primary" @click="triggerFileSelectForType('other')">
-                                    <i class="fas fa-folder-open"></i> Select Photos
+                                    <i class="bi bi-folder2-open"></i> Select Photos
                                 </button>
                             </div>
                         </div>
