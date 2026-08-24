@@ -26,6 +26,31 @@ class User
     private $password_reset_account_limit = 3;
     private $password_reset_account_window = 3600;
 
+    /**
+     * Base URL to put in a password reset email.
+     *
+     * Deliberately built only from the configured domain, never from the
+     * request. $path is derived from HTTP_X_FORWARDED_HOST or HTTP_HOST, see
+     * get_application_path() in core.php, and a reset link built from those
+     * can be pointed at an attacker's server by sending a spoofed Host header
+     * with the reset request. The victim then receives a genuine looking email
+     * that hands the token over on click. Mirrors emoncms's
+     * password_reset_link_base().
+     *
+     * Returns false when no domain is configured, in which case no reset email
+     * should be sent at all.
+     *
+     * @return string|false
+     */
+    private function password_reset_link_base()
+    {
+        global $settings;
+
+        if (empty($settings["domain"])) return false;
+
+        return get_application_path($settings["domain"]);
+    }
+
     public function __construct($mysqli, $rememberme)
     {
         $this->mysqli = $mysqli;
@@ -408,6 +433,15 @@ class User
         $result = $this->is_valid_email($emailto);
         if (!$result['success']) return $generic;
 
+        // Resolve the link base before touching the account: a reset link built
+        // from the request host is worse than no reset at all, see
+        // password_reset_link_base()
+        $link_base = $this->password_reset_link_base();
+        if ($link_base === false) {
+            $this->log->error("passwordreset: settings['domain'] is not set, refusing to email a reset link");
+            return $generic;
+        }
+
         $stmt = $this->emoncms_mysqli->prepare("SELECT id,access,archived,term FROM users WHERE username=? AND email=?");
         $stmt->bind_param("ss",$username,$emailto);
         $stmt->execute();
@@ -452,9 +486,7 @@ class User
         $stmt->execute();
         $stmt->close();
 
-        // $path is this site's own absolute base URL, see get_application_path()
-        global $path;
-        $reset_link = rtrim($path,'/')."/user/passwordreset-confirm?key=".$token;
+        $reset_link = rtrim($link_base,'/')."/user/passwordreset-confirm?key=".$token;
         $minutes = (int) round($this->password_reset_window / 60);
 
         require_once "Lib/email.php";

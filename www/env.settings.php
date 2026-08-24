@@ -5,6 +5,10 @@ $settings = array(
     "emoncms_host" => getenv("EMONCMS_HOST") ?: "https://emoncms.org",
     "path"=>"/opt/openenergymonitor/heatpumpmonitor",
 
+    // This site's own public host, used to build password reset email links.
+    // Never taken from the request's Host header. Unset: no reset email is sent.
+    "domain" => getenv("DOMAIN") ?: false,
+
     "sql"=>array(
         "server"=>$_ENV["MYSQL_HOST"],
         "username"=>$_ENV["MYSQL_USER"],

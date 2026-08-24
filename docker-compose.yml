@@ -20,6 +20,8 @@ services:
     environment:
       # Base URL for Emoncms API (service name on compose network); override via host .env if needed
       EMONCMS_HOST: ${EMONCMS_HOST:-http://emoncms}
+      # Public host of this site, used for password reset email links (never taken from the request)
+      DOMAIN: ${DOMAIN:-localhost:8080}
       # Redis used by system_model.php for feed last-updated lookups (shared with emoncms)
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: ${REDIS_PORT:-6379}

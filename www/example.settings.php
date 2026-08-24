@@ -5,6 +5,13 @@ $settings = array(
     "emoncms_host" => getenv("EMONCMS_HOST") ?: "https://emoncms.org",
     "path"=>"/opt/openenergymonitor/heatpumpmonitor",
 
+    // This site's own public host (plus any sub directory), used to build the
+    // links in password reset emails, e.g "heatpumpmonitor.org" or
+    // "localhost/heatpumpmonitor". Required for password reset to work: the
+    // link is never built from the request's Host header, which an attacker
+    // could point at their own server. With this false no reset email is sent.
+    "domain" => getenv("DOMAIN") ?: false,
+
     "sql"=>array(
         "server"=>"localhost",
         "username"=>"username",
