@@ -1,8 +1,11 @@
 <?php
 
 defined('EMONCMS_EXEC') or die('Restricted access');
+// Log errors rather than rendering them into responses: warnings, SQL errors
+// and absolute paths must not be disclosed to clients.
 error_reporting(E_ALL);
-ini_set('display_errors', 'on');
+ini_set('display_errors', 'off');
+ini_set('log_errors', 'on');
 
 // Very basic loading of settings.php
 // no thourough checking that setting keys as available here

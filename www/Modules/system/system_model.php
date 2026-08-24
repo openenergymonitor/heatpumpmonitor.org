@@ -574,14 +574,18 @@ class System
         $codes = implode("",$codes);
         
         // Prepare and execute the query with error checking
+        // Database error details go to the server log only, never to the client
         if (!$stmt = $this->mysqli->prepare("UPDATE system_meta SET $query WHERE id=?")) {
-            return array("success"=>false,"message"=>"Prepare failed: (" . $this->mysqli->errno . ") " . $this->mysqli->error);
+            error_log("system_model::save prepare failed: (" . $this->mysqli->errno . ") " . $this->mysqli->error);
+            return array("success"=>false,"message"=>"Database error saving system");
         }
         if (!$stmt->bind_param($codes, ...$values)) {
-            return array("success"=>false,"message"=>"Binding parameters failed: (" . $stmt->errno . ") " . $stmt->error);
+            error_log("system_model::save bind_param failed: (" . $stmt->errno . ") " . $stmt->error);
+            return array("success"=>false,"message"=>"Database error saving system");
         }
         if (!$stmt->execute()) {
-            return array("success"=>false,"message"=>"Execute failed: (" . $stmt->errno . ") " . $stmt->error);
+            error_log("system_model::save execute failed: (" . $stmt->errno . ") " . $stmt->error);
+            return array("success"=>false,"message"=>"Database error saving system");
         }
 
         $affected = $stmt->affected_rows;

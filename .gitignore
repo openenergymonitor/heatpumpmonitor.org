@@ -32,3 +32,5 @@ www/Modules/*/
 !www/Modules/home/
 !www/Modules/signature/
 !www/Modules/emitter
+
+audits/
