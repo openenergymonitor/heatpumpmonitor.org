@@ -21,6 +21,21 @@ function user_controller() {
             }
         }
 
+        // Redeem an emailed password reset link. Tokens are issued into the
+        // shared users table by passwordreset() here, or by emoncms.org, and
+        // redeem on either site. Reachable with or without a session: someone
+        // logged in on this browser is still entitled to finish a reset.
+        if ($route->action=="passwordreset-confirm") {
+            // The token is checked before rendering the form so an expired or
+            // used link says so up front. Missing key falls through to the same
+            // "invalid link" message as a bad one.
+            $key = get('key', false, '');
+            return view("Modules/user/Views/login/passwordreset_confirm_view.php", array(
+                'key' => $key,
+                'key_valid' => $user->passwordreset_key_is_valid($key)
+            ));
+        }
+
         // Views that require an active session:
         if ($session['userid']) {
             // Account view: requires session
@@ -45,6 +60,11 @@ function user_controller() {
     // ------------------------------------------------------------------------------------------------
 
     $route->format = "json";
+
+    // Password reset redemption: session independent, see the view route above
+    if ($route->action=="passwordreset-confirm" && $route->method=="POST") {
+        return $user->passwordreset_confirm(post('key'), post('password'));
+    }
 
     // ------------------------------------------------------------------------------------------------
     // ACTIONS WITHOUT AN ACTIVE SESSION ONLY

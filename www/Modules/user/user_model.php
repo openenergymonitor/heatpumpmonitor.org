@@ -14,8 +14,8 @@ class User
 
     private $email_verification = false;
 
-    // Must match User::$password_reset_window in the emoncms codebase: this
-    // site issues the reset token, emoncms.org redeems it
+    // Must match User::$password_reset_window in the emoncms codebase: both
+    // sites issue and redeem tokens against the same users table columns
     private $password_reset_window = 3600;
 
     // How many reset emails a single account can be sent, regardless of how many
@@ -371,13 +371,17 @@ class User
      *
      * HeatpumpMonitor accounts are emoncms.org accounts: this site has no users
      * table of its own, it reads and writes emoncms's. So this issues a reset
-     * token into the shared users table and emails a link that lands on
-     * emoncms.org, which owns the credential and is the only place a password
-     * is actually changed (User::passwordreset_confirm there).
+     * token into the shared users table and emails a link back to this site,
+     * where passwordreset_confirm() redeems it. The link used to land on
+     * emoncms.org instead, which confused people who had never heard of it;
+     * the token format and columns are the same, so a link from either site
+     * would still redeem on the other.
      *
      * This deliberately does NOT change the password. It is reachable by anyone
      * knowing a username and an email address, so setting a new credential here
-     * let a stranger lock any account out of both sites at will.
+     * let a stranger lock any account out of both sites at will. The account is
+     * only altered once the emailed token comes back, which proves control of
+     * the mailbox.
      *
      * The response is the same whether or not an account matched, so it cannot
      * be used to test which usernames or addresses are registered.
@@ -448,7 +452,9 @@ class User
         $stmt->execute();
         $stmt->close();
 
-        $reset_link = rtrim($this->host,'/')."/user/passwordreset-confirm?key=".$token;
+        // $path is this site's own absolute base URL, see get_application_path()
+        global $path;
+        $reset_link = rtrim($path,'/')."/user/passwordreset-confirm?key=".$token;
         $minutes = (int) round($this->password_reset_window / 60);
 
         require_once "Lib/email.php";
@@ -467,6 +473,119 @@ class User
         ));
 
         return $generic;
+    }
+
+    /**
+     * Whether a reset token would currently redeem.
+     *
+     * Lets the confirm page say "invalid or expired" up front, rather than after
+     * the user has typed a new password twice. Only a lookup: the redemption in
+     * passwordreset_confirm() re-checks everything.
+     *
+     * @param string $key token from the emailed link
+     * @return bool
+     */
+    public function passwordreset_key_is_valid($key)
+    {
+        // Generous limit: this is a page load, and the redemption below has its
+        // own stricter counter. Fail open, the real gate is on redemption.
+        if ($this->is_rate_limited('passwordresetcheck', 30, 900)) return true;
+
+        if (!is_string($key) || strlen($key) != 64 || !ctype_xdigit($key)) return false;
+
+        $token_hash = hash('sha256', $key);
+        $now = time();
+
+        // Renders a page, so treat a database that predates the reset columns
+        // as "no valid token" rather than letting it 500
+        try {
+            $userid = 0;
+            $stmt = $this->emoncms_mysqli->prepare("SELECT id FROM users WHERE password_reset_hash=? AND password_reset_expires>?");
+            $stmt->bind_param("si", $token_hash, $now);
+            $stmt->execute();
+            $stmt->bind_result($userid);
+            $found = $stmt->fetch();
+            $stmt->close();
+        } catch (Exception $e) {
+            $this->log->warn("passwordreset_key_is_valid failed: ".$e->getMessage());
+            return false;
+        }
+
+        return $found && $userid > 0;
+    }
+
+    /**
+     * Step 2 of password reset: redeem the emailed token and set a new password.
+     *
+     * Mirrors User::passwordreset_confirm in emoncms, against the same columns,
+     * so a token issued by either site redeems on either. Single use: the UPDATE
+     * clears the token in the same statement that sets the password, so two
+     * redemptions arriving together cannot both succeed.
+     *
+     * @param string $key token from the emailed link
+     * @param string $new new password
+     * @return array
+     */
+    public function passwordreset_confirm($key, $new)
+    {
+        if ($this->is_rate_limited('passwordresetconfirm', 10, 900)) return array('success'=>false, 'message'=>"Too many attempts, please try again later");
+
+        $invalid = array('success'=>false, 'message'=>"This password reset link is invalid or has expired, please request a new one");
+
+        // Same shape generate_secure_key(32) produces
+        if (!is_string($key) || strlen($key) != 64 || !ctype_xdigit($key)) return $invalid;
+
+        $result = $this->is_valid_password($new);
+        if (!$result['success']) return $result;
+
+        $token_hash = hash('sha256', $key);
+        $now = time();
+
+        $userid = 0;
+        $stmt = $this->emoncms_mysqli->prepare("SELECT id FROM users WHERE password_reset_hash=? AND password_reset_expires>?");
+        if (!$stmt) return $invalid;
+        $stmt->bind_param("si", $token_hash, $now);
+        $stmt->execute();
+        $stmt->bind_result($userid);
+        $found = $stmt->fetch();
+        $stmt->close();
+
+        if (!$found || $userid < 1) {
+            $this->log->warn("passwordreset_confirm: invalid or expired key ip:".get_client_ip_env());
+            return $invalid;
+        }
+
+        $userid = (int) $userid;
+
+        // A reset always lands on the configured algorithm, bcrypt or argon2id,
+        // and clears any legacy salt with it. Both sites read this row, so it
+        // has to be written the way Lib/password.php defines.
+        $password = hash_password($new);
+        $salt = '';
+
+        $stmt = $this->emoncms_mysqli->prepare("UPDATE users SET password=?, salt=?, password_reset_hash='', password_reset_expires=0 WHERE id=? AND password_reset_hash=?");
+        $stmt->bind_param("ssis", $password, $salt, $userid, $token_hash);
+        $stmt->execute();
+        $changed = $stmt->affected_rows;
+        $stmt->close();
+
+        if ($changed < 1) return $invalid;
+
+        // A reset is only meaningful if it also ends logins held with the old
+        // password. Covers the remember me cookies on both sites, since both
+        // store their tokens in the same table; not sessions already open.
+        $this->rememberme->clearAllTriplets($userid);
+
+        // The reset completed, so the per account send limit has done its job.
+        // Clearing it means someone who used up their allowance and then reset
+        // successfully is not locked out of asking again for the rest of the
+        // window. Only reachable by redeeming a token, so it cannot be reset by
+        // whoever was flooding the account.
+        $this->clear_rate_limit_by('passwordreset:user', $userid);
+
+        $this->log->info("passwordreset_confirm: password reset userid:$userid ip:".get_client_ip_env());
+
+        return array('success'=>true, 'message'=>"Password updated, you can now log in with your new password");
     }
 
     /**
@@ -573,6 +692,22 @@ class User
             return true;
         }
         return false;
+    }
+
+    /**
+     * Drop a bucket's counter. Used once the thing it was guarding has
+     * completed, so the limit does not outlive its purpose.
+     *
+     * @param string $action
+     * @param string $bucket
+     * @return void
+     */
+    private function clear_rate_limit_by($action, $bucket)
+    {
+        if (!$this->redis) return;
+        if ($bucket === '' || $bucket === null) return;
+
+        $this->redis->del("ratelimit:{$action}:" . $bucket);
     }
 
     /**
