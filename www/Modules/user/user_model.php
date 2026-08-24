@@ -18,6 +18,14 @@ class User
     // site issues the reset token, emoncms.org redeems it
     private $password_reset_window = 3600;
 
+    // How many reset emails a single account can be sent, regardless of how many
+    // different IPs ask for them. Must also match emoncms's, since the two share
+    // one counter: see the note above is_rate_limited(). Set to the link
+    // lifetime, as there is no legitimate reason to need a fourth link while the
+    // first is still live.
+    private $password_reset_account_limit = 3;
+    private $password_reset_account_window = 3600;
+
     public function __construct($mysqli, $rememberme)
     {
         $this->mysqli = $mysqli;
@@ -162,14 +170,23 @@ class User
     
     public function login($username, $password, $rememberme = false)
     {
+        // Checked before anything else, and before any password is verified.
+        // Two reasons: it is the brute force limit on a password that is shared
+        // with emoncms.org, and with argon2id every verify allocates
+        // argon2_memory_cost whether the password is right or wrong, so an
+        // unlimited login endpoint is a memory amplifier as much as a guessing
+        // oracle. 10 failures per IP per 15 minutes, the same bucket
+        // emoncms.org uses. See the note above is_rate_limited().
+        if ($this->is_rate_limit_exceeded('login', 10)) return array('success'=>false, 'message'=>"Too many attempts, please try again later");
+
         if (!$username || !$password) return array('success'=>false, 'message'=>"Username or password empty");
 
-        // filter out all except for alphanumeric white space and dash
-        // if (!ctype_alnum($username))
-        $username_out = preg_replace('/[^\p{N}\p{L}_\s\-]/u','',$username);
-        if ($username_out!=$username) return array('success'=>false, 'message'=>"Username must only contain a-z 0-9 dash and underscore");
+        $result = $this->is_valid_username($username);
+        if (!$result['success']) return $result;
 
         if (!$userid = $this->get_id($username)) {
+            $this->record_failed_attempt('login', 900);
+            $this->log->error("Login: username does not exist username:$username ip:".get_client_ip_env());
             return array('success'=>false, 'message'=>"Invalid username or password");
         }
 
@@ -177,7 +194,7 @@ class User
         if (!$result) return array('success'=>false, 'message'=>"Database error");
 
         $userData = $result->fetch_object();
-        
+
         if ($this->email_verification && isset($userData->email_verified) && !$userData->email_verified) return array('success'=>false, 'message'=>"Please verify email address");
 
         // Reads all three formats: the legacy sha256, bcrypt and argon2id. The
@@ -186,6 +203,7 @@ class User
         // whatever that one wrote. See Lib/password.php.
         if (!verify_password($password, $userData->password, $userData->salt))
         {
+            $this->record_failed_attempt('login', 900);
             $this->log->error("Login: incorrect password username:$username ip:".get_client_ip_env());
             return array('success'=>false, 'message'=>"Invalid username or password");
         }
@@ -381,8 +399,10 @@ class User
         if (!$username || !$emailto) return $generic;
 
         // Usernames are emoncms usernames: a-z 0-9 only
-        if (!ctype_alnum($username) || strlen($username) < 3 || strlen($username) > 30) return $generic;
-        if (!filter_var($emailto, FILTER_VALIDATE_EMAIL)) return $generic;
+        $result = $this->is_valid_username($username);
+        if (!$result['success']) return $generic;
+        $result = $this->is_valid_email($emailto);
+        if (!$result['success']) return $generic;
 
         $stmt = $this->emoncms_mysqli->prepare("SELECT id,access,archived,term FROM users WHERE username=? AND email=?");
         $stmt->bind_param("ss",$username,$emailto);
@@ -397,6 +417,21 @@ class User
         if ($this->account_login_denied($userData)) return $generic;
 
         $userid = (int) $userData->id;
+
+        // Per account limit, on top of the per IP limit above. The IP bucket
+        // alone does not protect the account holder: an attacker with a pool of
+        // addresses stays under it on every address while filling one victim's
+        // inbox. Worse here than on either site alone, because the UPDATE below
+        // overwrites password_reset_hash, the same column emoncms.org redeems
+        // from, so a flood keeps invalidating the link the real user is trying
+        // to use. Checked here so it only counts requests that would actually
+        // send, and before the UPDATE. Shares emoncms.org's bucket, so three is
+        // three across both sites, and emoncms clears it on a successful reset.
+        // The response stays the generic one, so this is not an account oracle.
+        if ($this->is_rate_limited_by('passwordreset:user', $userid, $this->password_reset_account_limit, $this->password_reset_account_window)) {
+            $this->log->warn("passwordreset: per account limit reached userid:$userid ip:".get_client_ip_env());
+            return $generic;
+        }
 
         // Only the hash is stored, so read access to the users table does not
         // yield usable reset links. emoncms.org validates against the same hash.
@@ -466,39 +501,180 @@ class User
         return false;
     }
 
+    // -----------------------------------------------------------------------
+    // Rate limiting
+    //
+    // These mirror the helpers of the same names in emoncms's user model, and
+    // deliberately share its redis key namespace ("ratelimit:...") rather than
+    // carrying a prefix of their own.
+    //
+    // The keys have to be shared because what they protect is shared. Both
+    // sites authenticate against one users table, so a login limit that is
+    // per site lets an attacker take 10 guesses here and another 10 there
+    // against the same password. Both sites write to one password_reset_hash
+    // column, so a per site reset limit lets them send twice as many emails and
+    // invalidate the link the real user is trying to use twice as often. One
+    // bucket per IP, per account, across both front doors, is the only version
+    // of these limits that means anything.
+    //
+    // The cost of sharing is that failures on one site count against the other,
+    // which is the correct behaviour for one credential with two front doors.
+    //
+    // Kept in step by hand for now; a candidate for Lib/SHARED.md if these grow.
+    // -----------------------------------------------------------------------
+
     /**
-     * Fixed window rate limit, keyed on the requesting IP.
-     *
-     * This site talks to the emoncms database directly rather than through
-     * emoncms.org's HTTP endpoints, so emoncms's own limiter never sees these
-     * requests. Without this, the shared reset flow would be rate limited on
-     * one site and wide open on the other.
+     * Fixed window rate limit, keyed on the requesting IP. Increments.
      *
      * @param string $action
      * @param int    $limit   max attempts in the window
      * @param int    $window  seconds
-     * @return bool
+     * @return bool true when over the limit (blocked)
      */
     private function is_rate_limited($action, $limit, $window)
     {
         if (!$this->redis) return false;
 
         $ip = get_client_ip_env();
-        if (empty($ip)) return false;
+        if (empty($ip)) {
+            // REMOTE_ADDR missing or invalid (CLI, misconfigured proxy). Skip
+            // rather than writing every such request into one shared bucket.
+            $this->log->warn("Rate limit skipped: empty IP for action:{$action}");
+            return false;
+        }
 
-        $key = "hpmon:ratelimit:{$action}:".$ip;
+        return $this->is_rate_limited_by($action, $ip, $limit, $window);
+    }
+
+    /**
+     * Same counter, but the caller chooses the bucket instead of it always
+     * being the client IP. Used to limit an action per target account, which an
+     * IP bucket cannot do: an attacker with a pool of addresses stays under the
+     * per IP limit on every one of them while hitting a single victim.
+     *
+     * @param string $action e.g. 'passwordreset:user'
+     * @param string $bucket what is being limited, e.g. a userid
+     * @param int    $limit
+     * @param int    $window seconds
+     * @return bool
+     */
+    private function is_rate_limited_by($action, $bucket, $limit, $window)
+    {
+        if (!$this->redis) return false;
+        if ($bucket === '' || $bucket === null) return false;
+
+        $key = "ratelimit:{$action}:" . $bucket;
         $attempts = $this->redis->incr($key);
         if ($attempts === 1) {
             $this->redis->expire($key, $window);
         }
-        return $attempts > $limit;
+        if ($attempts > $limit) {
+            $this->log->warn("Rate limit hit action:{$action} bucket:{$bucket}");
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Check the limit without incrementing.
+     *
+     * Paired with record_failed_attempt() so that only failures count, and so
+     * the check itself can run before any expensive work. That ordering is the
+     * point on the login path: with argon2id every password check, right or
+     * wrong, allocates argon2_memory_cost (64 MiB by default) for the length of
+     * the verify. Checking first means a blocked address costs a redis GET
+     * rather than a 64 MiB allocation, so the login endpoint cannot be used as
+     * a memory amplifier.
+     *
+     * @param string $action
+     * @param int    $limit
+     * @return bool
+     */
+    private function is_rate_limit_exceeded($action, $limit)
+    {
+        if (!$this->redis) return false;
+
+        $ip = get_client_ip_env();
+        if (empty($ip)) return false;
+
+        $key = "ratelimit:{$action}:" . $ip;
+        $attempts = (int) $this->redis->get($key);
+        if ($attempts > $limit) {
+            $this->log->warn("Rate limit hit action:{$action} ip:{$ip}");
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Increment the failure counter for an action without checking the limit.
+     *
+     * @param string $action
+     * @param int    $window seconds
+     * @return void
+     */
+    private function record_failed_attempt($action, $window)
+    {
+        if (!$this->redis) return;
+
+        $ip = get_client_ip_env();
+        if (empty($ip)) return;
+
+        $key = "ratelimit:{$action}:" . $ip;
+        $attempts = $this->redis->incr($key);
+        if ($attempts === 1) {
+            $this->redis->expire($key, $window);
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Validation
+    //
+    // Centralised so that the rules cannot drift between the paths that use
+    // them, and matching emoncms's, since both sites write the same columns.
+    // -----------------------------------------------------------------------
+
+    private function is_valid_email($email) {
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return array('success'=>false, 'message'=>"Email address format error");
+        }
+        return array('success'=>true);
+    }
+
+    private function is_valid_username($username) {
+        if (!ctype_alnum($username)) {
+            return array('success'=>false, 'message'=>"Username must only contain a-z and 0-9 characters");
+        } else if (strlen($username) < 3) {
+            return array('success'=>false, 'message'=>"Username must be at least 3 characters");
+        } else if (strlen($username) > 30) {
+            return array('success'=>false, 'message'=>"Username must be less than 30 characters");
+        }
+        return array('success'=>true);
+    }
+
+    private function is_valid_password($password) {
+        if (strlen($password) < 4) {
+            return array('success'=>false, 'message'=>"Password must be at least 4 characters");
+        } else if (strlen($password) > 250) {
+            return array('success'=>false, 'message'=>"Password must be less than 250 characters");
+        }
+        return array('success'=>true);
     }
     public function change_password($userid, $old, $new)
     {
+        // Needs a session, but a session is not proof of knowing the password:
+        // this is the one authenticated path where an attacker with a hijacked
+        // session can guess the current password at will. It also costs two
+        // argon2 operations per call, a verify and a hash.
+        if ($this->is_rate_limited('changepassword', 5, 900)) return array('success'=>false, 'message'=>"Too many attempts, please try again later");
+
         $userid = (int) $userid;
 
-        if (strlen($old) < 4 || strlen($old) > 250) return array('success'=>false, 'message'=>"Password length error");
-        if (strlen($new) < 4 || strlen($new) > 250) return array('success'=>false, 'message'=>"Password length error");
+        $result = $this->is_valid_password($old);
+        if (!$result['success']) return $result;
+
+        $result = $this->is_valid_password($new);
+        if (!$result['success']) return $result;
 
         // 1) check that old password is correct
         $result = $this->emoncms_mysqli->query("SELECT password, salt FROM users WHERE id = '$userid'");
@@ -813,8 +989,9 @@ class User
         // }
 
         $userid = (int) $userid;
-        if (strlen($username) < 3 || strlen($username) > 30) return array('success'=>false, 'message'=>"Username length error");
-        if (!ctype_alnum($username)) return array('success'=>false, 'message'=>"Username must only contain a-z and 0-9 characters");
+
+        $result = $this->is_valid_username($username);
+        if (!$result['success']) return $result;
 
         $userid_from_username = $this->get_id($username);
 
@@ -837,9 +1014,9 @@ class User
         // }
 
         $userid = (int) $userid;
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            return array('success'=>false, 'message'=>"Email address format error");
-        }
+
+        $result = $this->is_valid_email($email);
+        if (!$result['success']) return $result;
 
         $stmt = $this->emoncms_mysqli->prepare("UPDATE users SET email = ? WHERE id = ?");
         $stmt->bind_param("si", $email, $userid);
@@ -871,7 +1048,14 @@ class User
     public function change_password_no_check($userid, $new) {
         $userid = (int) $userid;
 
-        if (strlen($new) < 8 || strlen($new) > 250) return array('success'=>false, 'message'=>"Password length error");
+        $result = $this->is_valid_password($new);
+        if (!$result['success']) return $result;
+
+        // Stricter than is_valid_password's shared floor of 4. Kept, rather than
+        // relaxed to match emoncms, because the sub account holder does not
+        // choose this password: an admin does, so there is no argument for
+        // letting it be weak.
+        if (strlen($new) < 8) return array('success'=>false, 'message'=>"Password must be at least 8 characters");
 
         // Save the new password in the configured algorithm and clear any legacy
         // salt. This used to write a single sha256 round, which quietly moved a
