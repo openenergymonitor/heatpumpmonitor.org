@@ -23,8 +23,16 @@ require "route.php";
 
 // User model is required for session management
 // RememberMe model is required for remember me functionality
+//
+// Rememberme takes the emoncms connection, not ours: accounts and their
+// persistent login tokens both live in the emoncms database, which this site
+// shares. Storing the tokens there rather than in a local table is what makes a
+// password reset on emoncms.org revoke the cookies held here as well. The cookie
+// name is ours, and cookies are host scoped, so a token issued by one site is
+// never presented to the other; only the storage and the revocation are shared.
+require "Lib/EmonLogger.php";
 require("Modules/user/rememberme_model.php");
-$rememberme = new RememberMe($mysqli);
+$rememberme = new Rememberme($emoncms_mysqli, "HPMON_ORG_REMEMBERME");
 require("Modules/user/user_model.php");
 $user = new User($mysqli,$rememberme);
 

@@ -21,6 +21,26 @@ $settings = array(
         "port"=>$_ENV["EMONCMS_MYSQL_PORT"]
     ),
 
+    // Password hashing. MUST match settings['password'] on the linked emoncms
+    // install: accounts are shared, and if the two disagree each site rewrites
+    // the other's hashes on every login. Only affects what is written, never
+    // what can be read. See Lib/SHARED.md.
+    "password"=>array(
+        'algo' => getenv("PASSWORD_ALGO") ?: 'bcrypt',
+        'bcrypt_cost' => (int) (getenv("PASSWORD_BCRYPT_COST") ?: 10),
+        'argon2_memory_cost' => (int) (getenv("PASSWORD_ARGON2_MEMORY_COST") ?: 65536),
+        'argon2_time_cost' => (int) (getenv("PASSWORD_ARGON2_TIME_COST") ?: 3),
+        'argon2_threads' => (int) (getenv("PASSWORD_ARGON2_THREADS") ?: 1)
+    ),
+
+    // Log file configuration
+    "log"=>array(
+        "enabled" => (bool) getenv("LOG_ENABLED"),
+        "location" => getenv("LOG_LOCATION") ?: "/var/log/heatpumpmonitor",
+        // Log Level: 1=INFO, 2=WARN, 3=ERROR
+        "level" => (int) (getenv("LOG_LEVEL") ?: 2)
+    ),
+
     "mailersend_api_key"=>"",
     "email_verification"=>false,
     "change_notifications_enabled"=>false,

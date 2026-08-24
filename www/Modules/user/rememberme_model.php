@@ -1,148 +1,462 @@
 <?php
 
-// no direct access
-defined('EMONCMS_EXEC') or die('Restricted access');
+// ---------------------------------------------------------------------------------------------------------
+// SHARED FILE. See Lib/SHARED.md.
+//
+// This file is duplicated byte for byte in HeatpumpMonitor.org
+// (www/Modules/user/rememberme_model.php). Both sites store their remember me
+// tokens in the same emoncms `rememberme` table, which is what makes a password
+// reset on one site revoke the persistent cookies held on the other. The two
+// copies have to agree on the storage format for that to work. Change it in one
+// place, copy it to the other, and check with scripts/check_shared.sh.
+//
+// The cookie name is the only per site difference, so it is a constructor
+// argument rather than an edit. Cookies are host scoped, so a token issued by
+// one site is never presented to the other; only the revocation is shared.
+// ---------------------------------------------------------------------------------------------------------
 
-class RememberMe
-{
+class Rememberme {
+
     private $mysqli;
+    private $log;
 
-    public function __construct($mysqli) {
-        $this->mysqli = $mysqli;
-    }
+    /**
+     * Cookie settings
+     * @var string
+     */
+    private $cookieName;
+    private $path = '/';
+    private $domain = "";
+    private $secure = false;
+    private $httpOnly = true;
 
-    // Generate tokens
-    public function generate_tokens() {
-        $selector = bin2hex(random_bytes(16));
-        $validator = bin2hex(random_bytes(32));
-        return [$selector, $validator, $selector . ':' . $validator];
-    }
+    // Number of seconds in the future the cookie and storage will expire
+    private $expireTime = 7776000; // 90 days
 
-    // Parse token
-    public function parse_token($token) {
-        $parts = explode(':', $token);
-    
-        if ($parts && count($parts) == 2) {
-            return [$parts[0], $parts[1]];
-        }
-        return false;
-    }
+    /**
+     * If the return from the storage was Rememberme_Storage_StorageInterface::TRIPLET_INVALID,
+     * this is set to true
+     *
+     * @var bool
+     */
+    protected $lastLoginTokenWasInvalid = false;
 
-    // Insert user token
-    public function insert_user_token($userid, $selector, $hash_validator, $expires) {
-        $stmt = $this->mysqli->prepare("INSERT INTO user_sessions (userid, selector, hash_validator, expires) VALUES (?, ?, ?, ?)");
-        $stmt->bind_param("isss", $userid, $selector, $hash_validator, $expires);
-        $result = $stmt->execute();
-        $stmt->close();
-        return $result;
-    }
+    /**
+     * If the login token was invalid, delete all login tokens of this user
+     *
+     * @var type
+     */
+    protected $cleanStoredTokensOnInvalidResult = true;
 
-    // Find user token by selector
-    public function find_user_token_by_selector($selector) {
-        $now = time();
-        $stmt = $this->mysqli->prepare("SELECT * FROM user_sessions WHERE selector = ? AND expires >= ?");
-        $stmt->bind_param("si", $selector, $now);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $stmt->close();
-        return $result->fetch_object();
-    }
+    const TRIPLET_FOUND     =  1,
+          TRIPLET_NOT_FOUND =  0,
+          TRIPLET_INVALID   = -1;
 
-    // Delete user token
-    public function delete_user_token($userid) {
-        $stmt = $this->mysqli->prepare("DELETE FROM user_sessions WHERE userid = ?");
-        $stmt->bind_param("i", $userid);
-        $result = $stmt->execute();
-        $stmt->close();
-        return $result;
-    }
-
-    public function remember_me($userid, $day = 30)
+    // ---------------------------------------------------------------------------------------------------------
+    public function __construct($mysqli, $cookieName = "EMONCMSORG_REMEMBERME")
     {
-        [$selector, $validator, $token] = $this->generate_tokens();
-    
-        // remove all existing token associated with the user id
-        $this->delete_user_token($userid);
-    
-        // set expiration date
-        $expiry = time() + (3600 * 24 * $day);
-    
-        // insert a token to the database
-        $hash_validator = password_hash($validator, PASSWORD_DEFAULT);
-    
-        if ($this->insert_user_token($userid, $selector, $hash_validator, $expiry)) {
-            setcookie('remember_me', $token, [
-                'expires' => $expiry,
-                'path' => '/',
-                'domain' => '',
-                'secure' => true,
-                'httponly' => true,
-                'samesite' => 'Strict'
-            ]);
-            
-        }
+        $this->mysqli = $mysqli;
+        $this->cookieName = $cookieName;
+        $this->log = new EmonLogger(__FILE__);
     }
 
-    // Forget me
-    public function logout($userid) {
+    // ---------------------------------------------------------------------------------------------------------
+    public function setCookie($content,$expire)
+    {
+        $this->log->info("setCookie: $expire");
 
-        // delete the user token
-        $this->delete_user_token($userid);
+        if (is_https()) {
+            $this->secure = true;
+        }
 
-        // remove the remember_me cookie
-        if (isset($_COOKIE['remember_me'])) {
-            unset($_COOKIE['remember_me']);
-            setcookie('remember_me', '', [
-                'expires' => time() - 3600,
-                'path' => '/',
-                'domain' => '',
-                'secure' => true,
-                'httponly' => true,
+        // Set httpOnly to true for security
+        $this->httpOnly = true;
+
+        // May be limited to PHP7.3
+        if (PHP_VERSION_ID>=70300) {
+            setcookie($this->cookieName,$content, [
+                'expires' => $expire,
+                'path' => $this->path,
+                'domain' => $this->domain,
+                'secure' => $this->secure,
+                'httponly' => $this->httpOnly,
                 'samesite' => 'Strict'
             ]);
+        } else {
+            setcookie($this->cookieName,$content,$expire,$this->path,$this->domain,$this->secure,$this->httpOnly);
         }
+
+        return true;
     }
 
-    // Is logged in?
-    public function login_from_cookie() {
+    // ---------------------------------------------------------------------------------------------------------
+    // Check Credentials from cookie
+    // @return bool|string False if login was not successful, credential string if it was successful
+    // ---------------------------------------------------------------------------------------------------------
+    public function login() {
+        $this->log->info("login");
+        if (!$cookieValues = $this->getCookieValues()) {
+            // If the cookie is invalid
+            // the only thing to do is clear the cookie
 
-        // checkk if the remember_me cookie exist
-        if (!isset($_COOKIE['remember_me'])) {
+            // Only clear the cookie if there is content in it
+            if (isset($_COOKIE[$this->cookieName]) && $_COOKIE[$this->cookieName]!="") {
+                // Set cookie blank and force to expire
+                $this->setCookie("",time()-$this->expireTime);
+                unset($_COOKIE[$this->cookieName]);
+            }
+
+            $this->lastLoginTokenWasInvalid = true;
             return false;
         }
 
-        // check the remember_me in cookie
-        $token = filter_input(INPUT_COOKIE, 'remember_me', FILTER_SANITIZE_SPECIAL_CHARS);
+        $loginResult = false;
+        switch($this->findTriplet($cookieValues)) {
+            case self::TRIPLET_FOUND:
+                // remove old triplet before creating new one, otherwise since the salt is defaulted to "" it would create
+                // a new triplet with the same persistentToken in DB which will cause the next findTriplet to fail (finding the incorrect one) and remove the cookie again.
+                $this->cleanTriplet($cookieValues);
 
-        // parse the token to get the selector and validator
-        if (!$result = $this->parse_token($token)) {
-            return false;
-        }
-        [$selector, $validator] = $result;
+                // create new cookie and register values in db - refresh token
+                $cookieValues->token = $this->createToken();
+                $expire = time() + $this->expireTime;
+                if ($this->storeTriplet($cookieValues, $expire)) {
 
-        // check the selector
-        $user = $this->find_user_token_by_selector($selector);
-        if (!$user) {
-            return false;
+                    if (!$this->setCookie(implode("|",array($cookieValues->userid,$cookieValues->token,$cookieValues->persistentToken)),$expire)) {
+                        // this should never happen
+                        $this->log->warn("login, errors setting cookie");
+                    }
+                    $loginResult = $cookieValues->userid;
+                } else {
+                    $loginResult = false;
+                }
+                break;
+            case self::TRIPLET_INVALID:
+                $this->setCookie("",time()-$this->expireTime);
+                $this->lastLoginTokenWasInvalid = true;
+                if($this->cleanStoredTokensOnInvalidResult) {
+                    $this->cleanAllTriplets($cookieValues->userid);
+                }
+                break;
+            case self::TRIPLET_NOT_FOUND:
+                // Only clear the cookie if there is content in it
+                if (isset($_COOKIE[$this->cookieName]) && $_COOKIE[$this->cookieName]!="") {
+                    // Set cookie blank and force to expire
+                    $this->setCookie("",time()-$this->expireTime);
+                    unset($_COOKIE[$this->cookieName]);
+                }
+                break;
         }
+        return $loginResult;
+    }
 
-        // check the validator
-        if (password_verify($validator, $user->hash_validator)) {
-            // Rotate the token after successful use
-            $this->remember_me($user->userid);
-            return $user->userid;
-        }
+    // ---------------------------------------------------------------------------------------------------------
+    public function cookieIsValid($userid) {
+        $this->log->info("cookieIsValid");
+        $userid = (int) $userid;
+
+        // Fetch cookie values, if result false cookie is not valid
+        if (!$cookieValues = $this->getCookieValues()) return false;
+
+        // If we have a valid cookie, check for database match
+        $state = $this->findTriplet($cookieValues);
+
+        if ($state === self::TRIPLET_FOUND) return true;
         return false;
     }
 
-    // 3. Add cleanup method and call it periodically
-    public function cleanup_expired_tokens() {
-        $now = time();
-        $stmt = $this->mysqli->prepare("DELETE FROM user_sessions WHERE expires < ?");
-        $stmt->bind_param("i", $now);
-        $result = $stmt->execute();
-        $stmt->close();
-        return $result;
+    // ---------------------------------------------------------------------------------------------------------
+    // createCookie called from user_model, login function
+    // @param int $userid
+    // @return boolean
+    // ---------------------------------------------------------------------------------------------------------
+    public function createCookie($userid)
+    {
+        $this->log->info("createCookie");
+
+        $cookieValues = new stdClass();
+        $cookieValues->userid = (int) $userid;
+        $cookieValues->token = $this->createToken();
+        $cookieValues->persistentToken = $this->createToken();
+
+        $expire = time() + $this->expireTime;
+
+        if (!$this->storeTriplet($cookieValues, $expire)) {
+            // Failure to save entry to database, will result in message to user defined in user_model
+            return false;
+        }
+
+        if (!$this->setCookie(implode("|",array($cookieValues->userid,$cookieValues->token,$cookieValues->persistentToken)),$expire)) {
+            // Failure to set cookie, will result in message to user defined in user_model
+            return false;
+        }
+
+        return true;
     }
 
+    // ---------------------------------------------------------------------------------------------------------
+    // Clear cookie
+    // called from user_model
+    // result is currently unused
+    // ---------------------------------------------------------------------------------------------------------
+    public function clearCookie() {
+        $this->log->info("clearCookie");
+
+        // fetch and validate cookie
+        $cookieValues = $this->getCookieValues();
+
+        // Only clear the cookie if there is content in it
+        if (isset($_COOKIE[$this->cookieName]) && $_COOKIE[$this->cookieName]!="") {
+            // Set cookie blank and force to expire
+            $this->setCookie("",time()-$this->expireTime);
+            unset($_COOKIE[$this->cookieName]);
+        }
+
+        // If original cookie was invalid exit
+        if (!$cookieValues) return false;
+
+        $this->log->info("clearCookie call to cleanTriplet");
+        if (!$this->cleanTriplet($cookieValues)) return false;
+        return true;
+    }
+
+    public function getCookieName() {
+        return $this->cookieName;
+    }
+
+    /**
+     * Revoke every remember me token held for a user, on any device.
+     *
+     * Called after a credential change (password reset in particular): without
+     * this, a persistent cookie issued before the reset would keep working,
+     * which defeats the point of resetting a password you believe is known to
+     * someone else.
+     *
+     * @param int $userid
+     * @return bool
+     */
+    public function clearAllTriplets($userid) {
+        return $this->cleanAllTriplets((int) $userid);
+    }
+
+    public function loginTokenWasInvalid() {
+        return $this->lastLoginTokenWasInvalid;
+    }
+
+    // ---------------------------------------------------------------------------------------------------------
+    // Create a pseudo-random token.
+    // ---------------------------------------------------------------------------------------------------------
+    private function createToken() {
+            return generate_secure_key(16);
+    }
+    // ---------------------------------------------------------------------------------------------------------
+    private function getCookieValues()
+    {
+        // Cookie was not sent with incoming request
+        if(!isset($_COOKIE[$this->cookieName])) {
+            $ip_address = get_client_ip_env();
+            $this->log->info("getCookieValues: not present for: ".$ip_address);
+            return false;
+        }
+
+        if ($_COOKIE[$this->cookieName]=="") {
+            return false;
+        }
+
+        // $this->log->info($this->cookieName." ".json_encode($_COOKIE));
+
+        $cookieValueArray = explode("|", $_COOKIE[$this->cookieName], 3);
+
+        if(count($cookieValueArray) != 3) {
+            $this->log->warn("getCookieValues: cookie must contain 3 parts: ".count($cookieValueArray));
+            return false;
+        }
+
+        // $this->log->info("getCookieValues: ".json_encode($cookieValueArray));
+
+        // Validate
+        if (intval($cookieValueArray[0])!=$cookieValueArray[0]) {
+            $this->log->warn("getCookieValues: userid is not an integer");
+            return false;
+        }
+
+        // Validate token format (32-character hex string)
+        if (!preg_match('/^[a-f0-9]{32}$/', $cookieValueArray[1])) {
+            $this->log->warn("getCookieValues: token is not a valid 32-character hex string");
+            return false;
+        }
+        // Validate persistentToken format (32-character hex string)
+        if (!preg_match('/^[a-f0-9]{32}$/', $cookieValueArray[2])) {
+            $this->log->warn("getCookieValues: persistentToken is not a valid 32-character hex string");
+            return false;
+        }
+
+        // Create cookie value object
+        $cookieValues = new stdClass();
+        $cookieValues->userid = (int) $cookieValueArray[0];
+        $cookieValues->token = $cookieValueArray[1];
+        $cookieValues->persistentToken = $cookieValueArray[2];
+
+        return $cookieValues;
+    }
+
+    // ---------------------------------------------------------------------------------------------------------
+    private function findTriplet($cookieValues) {
+        //$this->log->info("findTriplet");
+
+        // The expire check belongs here, in the lookup, not only in the periodic
+        // cleanup below. The cookie's own expiry is set by the browser and can
+        // simply be edited, or the value replayed by whoever copied it, so an
+        // expireTime that is only enforced client side is not enforced at all:
+        // without this predicate a token stayed valid for as long as someone
+        // kept presenting it. An expired row is treated as absent rather than as
+        // evidence of theft, because reaching the end of the window is what is
+        // supposed to happen.
+        if (!$stmt = $this->mysqli->prepare("SELECT token FROM rememberme WHERE userid=? AND persistentToken=? AND expire>? LIMIT 1")) {
+            $this->log->warn("findTriplet schema fail");
+            return self::TRIPLET_NOT_FOUND;
+        }
+
+        $hashed_persistentToken = hash('sha256', $cookieValues->persistentToken);
+        $now = date("Y-m-d H:i:s", time());
+        $stmt->bind_param("iss",$cookieValues->userid,$hashed_persistentToken,$now);
+        if (!$stmt->execute()) {
+            $this->log->warn("findTriplet sql fail");
+        }
+        $hashed_token = null;
+        $stmt->bind_result($hashed_token);
+        $fetched = $stmt->fetch();
+        $stmt->close();
+
+        // fetch() returns true when a row was found, null when no rows exist
+        if ($fetched !== true) {
+            $this->log->info("findTriplet TRIPLET_NOT_FOUND");
+            return self::TRIPLET_NOT_FOUND;
+        }
+
+        // Row found but token is null or empty — legacy (pre-sha256) or corrupt session
+        if ($hashed_token === null || $hashed_token === "") {
+            $this->log->info("findTriplet: Legacy or null token found, invalidating session");
+            return self::TRIPLET_INVALID;
+        }
+
+        // sha256 of token match: triplet found
+        if (hash_equals((string)$hashed_token, hash('sha256', (string)$cookieValues->token))) {
+            $this->log->info("findTriplet TRIPLET_FOUND");
+            return self::TRIPLET_FOUND;
+
+        // token does not match query token
+        } else {
+            $this->log->info("findTriplet TRIPLET_INVALID");
+            return self::TRIPLET_INVALID;
+        }
+    }
+
+    // ---------------------------------------------------------------------------------------------------------
+    // $cookieValues has been validated
+    // called from login and createCookie
+    // ---------------------------------------------------------------------------------------------------------
+    private function storeTriplet($cookieValues, $expire=0)
+    {
+        $date = date("Y-m-d H:i:s", $expire);
+
+        if (!$stmt = $this->mysqli->prepare("INSERT INTO rememberme (userid, token, persistentToken, expire) VALUES (?,?,?,?)")) {
+            $this->log->warn("storeTriplet schema fail");
+            return false;
+        }
+
+        $hashed_token = hash('sha256', $cookieValues->token);
+        $hashed_persistentToken = hash('sha256', $cookieValues->persistentToken);
+
+        $stmt->bind_param("isss",$cookieValues->userid,$hashed_token,$hashed_persistentToken,$date);
+        try {
+            $result = $stmt->execute();
+        } catch (mysqli_sql_exception $e) {
+            $this->log->warn("storeTriplet sql fail: " . $e->getMessage() . " - database schema may need updating");
+            $stmt->close();
+            return false;
+        }
+        if ($result) {
+            $stmt->close();
+            return true;
+        } else {
+            $this->log->warn("storeTriplet sql fail");
+            $stmt->close();
+            return false;
+        }
+    }
+
+    // ---------------------------------------------------------------------------------------------------------
+    // Clean entry of particular cookie
+    // $cookieValues have been validated
+    // called from login and clearCookie
+    // ---------------------------------------------------------------------------------------------------------
+    private function cleanTriplet($cookieValues)
+    {
+        if (!$stmt = $this->mysqli->prepare("DELETE FROM rememberme WHERE userid=? AND persistentToken=?")) {
+            $this->log->warn("cleanTriplet schema fail");
+            return false;
+        }
+
+        $hashed_persistentToken = hash('sha256', $cookieValues->persistentToken);
+        $stmt->bind_param("is",$cookieValues->userid,$hashed_persistentToken);
+        if ($stmt->execute()) {
+            $this->log->info("cleanTriplet success");
+            $this->cleanExpiredTriplets($cookieValues->userid);
+            return true;
+        } else {
+            $this->log->warn("cleanTriplet sql fail");
+            return false;
+        }
+    }
+
+    // ---------------------------------------------------------------------------------------------------------
+    // Delete all entries for a given user
+    // $userid has been validated
+    // called from login
+    // ---------------------------------------------------------------------------------------------------------
+    private function cleanAllTriplets($userid)
+    {
+        $this->log->info("cleanAllTriplets");
+
+        $stmt = $this->mysqli->prepare("DELETE FROM rememberme WHERE userid=?");
+        $stmt->bind_param("i",$userid);
+
+        if ($stmt->execute()) {
+            $stmt->close();
+            return true;
+        } else {
+            $stmt->close();
+            $this->log->warn("cleanAllTriplets sql fail");
+            return false;
+        }
+    }
+
+    // ---------------------------------------------------------------------------------------------------------
+    // Scans through all entries for a given user to check if they have expired
+    // ---------------------------------------------------------------------------------------------------------
+    private function cleanExpiredTriplets($userid)
+    {
+        // One statement rather than a select and a delete per row: findTriplet
+        // already refuses expired tokens, so this is only housekeeping and does
+        // not need to read back what it removed.
+        //
+        // The 5 minute grace is kept. Both the stored expire and the comparison
+        // are generated by PHP on the same host, so it is not really guarding
+        // against clock skew, but deleting a row the very second it lapses gains
+        // nothing and the margin costs nothing.
+        $cutoff = date("Y-m-d H:i:s", time() - 300);
+
+        $stmt = $this->mysqli->prepare("DELETE FROM rememberme WHERE userid=? AND expire<?");
+        $stmt->bind_param("is",$userid,$cutoff);
+        if (!$stmt->execute()) {
+            $this->log->warn("cleanExpiredTriplets sql fail userid:$userid");
+            $stmt->close();
+            return;
+        }
+        $deleted = $stmt->affected_rows;
+        $stmt->close();
+
+        if ($deleted>0) $this->log->info("Deleted $deleted expired");
+    }
 }

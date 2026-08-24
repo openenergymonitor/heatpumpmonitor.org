@@ -256,6 +256,16 @@ function generate_secure_key($length)
     }
 }
 
+// ---------------------------------------------------------------------------------------------------------
+// Password hashing
+//
+// hash_password(), verify_password() and password_needs_upgrade() live in
+// Lib/password.php, which is shared verbatim with emoncms.org: HeatpumpMonitor
+// authenticates against emoncms's users table, so the two have to agree exactly
+// on how a stored hash is produced and checked. See Lib/SHARED.md.
+// ---------------------------------------------------------------------------------------------------------
+require_once __DIR__."/Lib/password.php";
+
 
 // ---------------------------------------------------------------------------------------------------------
 // Read only mode response

@@ -10,6 +10,7 @@ class User
     private $host;
     private $rememberme;
     private $redis;
+    private $log;
 
     private $email_verification = false;
 
@@ -28,6 +29,8 @@ class User
 
         global $redis;
         $this->redis = $redis;
+
+        $this->log = new EmonLogger(__FILE__);
 
         global $settings;
         $this->host = $settings['emoncms_host'];
@@ -70,13 +73,28 @@ class User
 
         session_start();
 
-        // If no session, check for remember me cookie
         if (!isset($_SESSION['userid']) || !$_SESSION['userid']) {
-            $userid = $this->rememberme->login_from_cookie();
+            // No session: try the remember me cookie
+            $userid = $this->rememberme->login();
             if ($userid) {
-                if (!$this->create_session($userid)) {
+                if (!$this->create_session($userid, true)) {
                     $this->logout();
                 }
+            } else if ($this->rememberme->loginTokenWasInvalid()) {
+                // A token was presented that had already been rotated past,
+                // which means someone is replaying a copied cookie. Rememberme
+                // has revoked every token on the account by this point, on both
+                // sites; make sure nothing is left standing here either.
+                $this->logout();
+            }
+        } else if (!empty($_SESSION['cookielogin'])) {
+            // Session was resumed from a cookie rather than from the login form.
+            // Re-check the token on every request so that a revocation, whether
+            // from a password reset here or on emoncms.org, from a logout
+            // elsewhere, or from the theft detection above, ends this session
+            // rather than waiting for it to expire on its own.
+            if (!$this->rememberme->cookieIsValid($_SESSION['userid'])) {
+                $this->logout();
             }
         }
 
@@ -90,22 +108,53 @@ class User
         else $session['username'] = '';
         if (isset($_SESSION['email'])) $session['email'] = $_SESSION['email'];
         else $session['email'] = '';
+        if (isset($_SESSION['cookielogin'])) $session['cookielogin'] = $_SESSION['cookielogin'];
+        else $session['cookielogin'] = 0;
 
         return $session;
     }
 
-    public function create_session($userid) {
+    /**
+     * Start a session for a user who has not just typed their password.
+     *
+     * Only the remember me cookie path reaches this. It applies the same account
+     * state checks as login(): without them an account that has since been
+     * archived, or had its login access revoked, would keep resuming a session
+     * from a cookie issued before the restriction was applied, indefinitely.
+     *
+     * Deliberately does not grant admin. Admin here can list every account and
+     * switch into any of them, which is not something a cookie sitting on a
+     * laptop for three months should be able to do; an admin logs in with their
+     * password for that. emoncms.org withholds admin on this path for the same
+     * reason.
+     *
+     * @param int  $userid
+     * @param bool $cookielogin true when the session came from a cookie
+     * @return bool
+     */
+    public function create_session($userid, $cookielogin = false) {
         $userid = (int) $userid;
-        $result = $this->emoncms_mysqli->query("SELECT id,username,email,admin FROM users WHERE id='$userid'");
-        if ($result->num_rows == 0) {
+        $result = $this->emoncms_mysqli->query("SELECT id,username,email,admin,access,archived,term FROM users WHERE id='$userid'");
+        if (!$result || $result->num_rows == 0) {
             return false;
         } else {
             $row = $result->fetch_object();
-            session_regenerate_id();
+
+            if ($this->account_login_denied($row)) {
+                $this->log->error("create_session: refused for restricted account userid:$userid");
+                return false;
+            }
+
+            session_regenerate_id(true);
             $_SESSION['userid'] = $row->id;
             $_SESSION['username'] = $row->username;
-            $_SESSION['admin'] = $row->admin;
             $_SESSION['email'] = $row->email;
+            if ($cookielogin) {
+                $_SESSION['admin'] = 0;
+                $_SESSION['cookielogin'] = true;
+            } else {
+                $_SESSION['admin'] = $row->admin;
+            }
             $this->update_last_login($userid);
             return true;
         }
@@ -131,42 +180,32 @@ class User
         
         if ($this->email_verification && isset($userData->email_verified) && !$userData->email_verified) return array('success'=>false, 'message'=>"Please verify email address");
 
-        $hash = hash('sha256', $userData->salt . hash('sha256', $password));
-
-        if ($hash != $userData->password) {
+        // Reads all three formats: the legacy sha256, bcrypt and argon2id. The
+        // account may have been migrated off sha256 by a login on emoncms.org,
+        // which shares this users table, so this site has to be able to read
+        // whatever that one wrote. See Lib/password.php.
+        if (!verify_password($password, $userData->password, $userData->salt))
+        {
+            $this->log->error("Login: incorrect password username:$username ip:".get_client_ip_env());
             return array('success'=>false, 'message'=>"Invalid username or password");
         }
         else
         {
+            // Upgrade the stored hash if it is still sha256, or was written with
+            // weaker parameters than settings now ask for
+            $this->upgrade_password_hash($userData->id, $password, $userData->password);
+
             // Default write access
             // if (!isset($userData->access)) $userData->access = 2;
-            
-            if (isset($userData->term) && $userData->term>0) {
-                $d = new DateTime();
-                $d->setTimestamp($userData->term);
-                $d->modify("+4 weeks");
-                if ((time()-$d->getTimestamp())>0) {
-                    // $this->log->error("Login: Account archived message:$username");             
+
+            if ($denied = $this->account_login_denied($userData)) {
+                if ($denied === 'archived') {
+                    $this->log->error("Login: account archived username:$username");
                     return array('success'=>false, 'message'=>"This account has been archived.<br>Please contact us if you wish to restore the account:<br>support@openenergymonitor.zendesk.com");
                 }
-            }
-            
-            if (isset($userData->archived) && $userData->archived==1) {
-                // $this->log->error("Login: Account archived message:$username");             
-                return array('success'=>false, 'message'=>"This account has been archived.<br>Please contact us if you wish to restore the account:<br>support@openenergymonitor.zendesk.com");
+                return array('success'=>false, 'message'=>"Login disabled for this account");
             }
 
-            // Read only access is not currently supported
-            // only allow login if access level is == 2
-            if (!isset($userData->access) || $userData->access<2) {
-                return array('success'=>false, 'message'=>"Login disabled for this account");
-            }
-            
-            // If no access via login
-            if ($userData->access==0) {
-                return array('success'=>false, 'message'=>"Login disabled for this account");
-            }
-        
             // Ensure session is active before regenerating
             if (session_status() === PHP_SESSION_NONE) {
                 session_start();
@@ -174,11 +213,17 @@ class User
 
             $this->update_last_login($userid);
 
+            // The user still has their password, so any reset link sitting in
+            // their inbox is no longer needed and should stop working now rather
+            // than at the end of its window. Matches emoncms.org, which clears
+            // the same columns on its own login.
+            $this->clear_password_reset_token($userData->id);
+
             session_regenerate_id(true);
             $_SESSION['userid'] = $userData->id;
             $_SESSION['username'] = $username;
-            
-            if ($userData->access>0) { 
+
+            if ($userData->access>0) {
                 $_SESSION['read'] = 1;
             }
             if ($userData->access>1) {
@@ -192,10 +237,94 @@ class User
             $_SESSION['email'] = $userData->email;
 
             if ($rememberme) {
-                $this->rememberme->remember_me($userid);
+                if (!$this->rememberme->createCookie($userid)) {
+                    $this->logout();
+                    return array('success'=>false, 'message'=>"Error creating rememberme cookie, try login without rememberme");
+                }
+            } else {
+                // Logging in without the box ticked retires any cookie this
+                // browser was still holding, rather than leaving it live
+                $this->rememberme->clearCookie();
             }
-            
+
             return array('success' => true, 'message' => _("Login successful"));
+        }
+    }
+
+    /**
+     * Replace a stored hash with a current one, after the password has been
+     * verified against it.
+     *
+     * This is how accounts move off the old sha256 scheme: there is no way to
+     * convert a stored hash without the password, so each account is upgraded at
+     * the one moment the password is in memory, a successful authentication.
+     * emoncms.org does the same on its own login, against the same table, so an
+     * account migrates whichever site its owner happens to use first.
+     *
+     * Never allowed to fail the authentication that triggered it: the caller has
+     * already verified the password, so a write failure here means the account
+     * stays on the old format and is retried next time, not that the user is
+     * refused.
+     *
+     * @param int    $userid
+     * @param string $password verified plaintext
+     * @param string $stored   hash it was verified against
+     * @return void
+     */
+    private function upgrade_password_hash($userid, $password, $stored)
+    {
+        $userid = (int) $userid;
+        if ($userid < 1) return;
+        if (!password_needs_upgrade($stored)) return;
+
+        try {
+            $new_hash = hash_password($password);
+            $salt = '';
+
+            // Guarded on the hash it was verified against, so a concurrent
+            // password change, here or on emoncms.org, is not overwritten by
+            // this upgrade
+            $stmt = $this->emoncms_mysqli->prepare("UPDATE users SET password=?, salt=? WHERE id=? AND password=?");
+            $stmt->bind_param("ssis", $new_hash, $salt, $userid, $stored);
+            $stmt->execute();
+            $upgraded = $stmt->affected_rows;
+            $stmt->close();
+
+            if ($upgraded > 0) {
+                $algo = password_hash_config();
+                $this->log->info("upgrade_password_hash: upgraded to ".$algo['name']." userid:$userid");
+            }
+        } catch (Exception $e) {
+            $this->log->warn("upgrade_password_hash failed userid:$userid ".$e->getMessage());
+        }
+    }
+
+    /**
+     * Clear any outstanding password reset token for a user.
+     *
+     * Called whenever the account holder proves they still have the password. A
+     * live emailed link is only meant to cover the case where they have lost it,
+     * so leaving one usable for the rest of the window is an unnecessary window
+     * for whoever can read that mailbox.
+     *
+     * @param int $userid
+     * @return void
+     */
+    private function clear_password_reset_token($userid)
+    {
+        $userid = (int) $userid;
+        if ($userid < 1) return;
+
+        // This runs on the login path, so it must never be able to break a
+        // login: where the emoncms schema update has not been applied the
+        // columns are missing and prepare() throws
+        try {
+            $stmt = $this->emoncms_mysqli->prepare("UPDATE users SET password_reset_hash='', password_reset_expires=0 WHERE id=? AND password_reset_hash!=''");
+            $stmt->bind_param("i", $userid);
+            $stmt->execute();
+            $stmt->close();
+        } catch (Exception $e) {
+            $this->log->warn("clear_password_reset_token failed userid:$userid ".$e->getMessage());
         }
     }
 
@@ -210,10 +339,11 @@ class User
 
     public function logout()
     {
-        if (isset($_SESSION['userid'])) {
-            $userid = (int) $_SESSION['userid'];
-            $this->rememberme->logout($userid);
-        }
+        // Retires this browser's token only, not every token on the account: a
+        // logout on one machine should not sign the account out on the others.
+        // Theft detection and password resets are the paths that revoke all of
+        // them, see Rememberme::clearAllTriplets().
+        $this->rememberme->clearCookie();
         session_unset();
         session_destroy();
     }
@@ -305,11 +435,21 @@ class User
     }
 
     /**
-     * Whether an account is barred from logging in, matching the checks in
-     * login(). Used to avoid issuing a reset that could not be used.
+     * Whether an account is barred from being given a session.
+     *
+     * The single gate for every path that starts one: the login form, the
+     * remember me cookie in create_session(), and passwordreset(), which uses it
+     * to avoid issuing a reset that could not be used afterwards. Keeping the
+     * rules in one place is the point, as the cookie path previously skipped
+     * them entirely.
+     *
+     * Returns the reason as a string so the caller can pick the right message,
+     * or false when the account may log in. An account marked for termination
+     * only counts as archived once the 4 week grace period after `term` has
+     * elapsed; inside that window it is still a live account.
      *
      * @param object $userData row from the users table
-     * @return bool
+     * @return string|false 'archived', 'disabled', or false
      */
     private function account_login_denied($userData)
     {
@@ -317,10 +457,12 @@ class User
             $d = new DateTime();
             $d->setTimestamp($userData->term);
             $d->modify("+4 weeks");
-            if ((time() - $d->getTimestamp()) > 0) return true;
+            if ((time() - $d->getTimestamp()) > 0) return 'archived';
         }
-        if (isset($userData->archived) && $userData->archived == 1) return true;
-        if (!isset($userData->access) || $userData->access < 2) return true;
+        if (isset($userData->archived) && $userData->archived == 1) return 'archived';
+        // Read only access is not currently supported here, so a login needs
+        // access 2. 0 is no access at all, 1 is read only.
+        if (!isset($userData->access) || $userData->access < 2) return 'disabled';
         return false;
     }
 
@@ -361,26 +503,34 @@ class User
         // 1) check that old password is correct
         $result = $this->emoncms_mysqli->query("SELECT password, salt FROM users WHERE id = '$userid'");
         $row = $result->fetch_object();
-        $hash = hash('sha256', $row->salt . hash('sha256', $old));
 
-        if ($hash == $row->password)
+        if (verify_password($old, $row->password, $row->salt))
         {
-            // 2) Save new password
-            $hash = hash('sha256', $new);
-            $salt = generate_secure_key(16);
-            $password = hash('sha256', $salt . $hash);
+            // 2) Save the new password in the configured algorithm, bcrypt or
+            // argon2id, and clear any legacy salt with it. Both sites read this
+            // row, so it has to be written the way Lib/password.php defines.
+            $password = hash_password($new);
+            $salt = '';
 
             $stmt = $this->emoncms_mysqli->prepare("UPDATE users SET password = ?, salt = ? WHERE id = ?");
             $stmt->bind_param("ssi", $password, $salt, $userid);
             $stmt->execute();
             $stmt->close();
-            
+
+            // Changing the password is only meaningful if it also ends logins
+            // held with the old one. Covers the cookies on both sites, since
+            // both store their tokens in the same table.
+            $this->rememberme->clearAllTriplets($userid);
+
+            // An outstanding reset link would otherwise stay redeemable against
+            // the password just set
+            $this->clear_password_reset_token($userid);
+
             return array('success'=>true, 'message'=>"Password updated successfully");
         }
         else
         {
-            // $ip_address = get_client_ip_env();
-            // $this->log->error("change_password: old password incorect ip:$ip_address");
+            $this->log->error("change_password: old password incorrect userid:$userid ip:".get_client_ip_env());
             return array('success'=>false, 'message'=>"Old password incorect");
         }
     }
@@ -716,21 +866,31 @@ class User
     }
 
     // Change password (without old password check!)
+    // Only reachable from update_sub_account(), where an account admin sets a
+    // password for a sub account they own.
     public function change_password_no_check($userid, $new) {
         $userid = (int) $userid;
 
         if (strlen($new) < 8 || strlen($new) > 250) return array('success'=>false, 'message'=>"Password length error");
 
-        // Save new password
-        $hash = hash('sha256', $new);
-        $salt = generate_secure_key(16);
-        $password = hash('sha256', $salt . $hash);
+        // Save the new password in the configured algorithm and clear any legacy
+        // salt. This used to write a single sha256 round, which quietly moved a
+        // sub account back off bcrypt every time its admin set a password.
+        $password = hash_password($new);
+        $salt = '';
 
         $stmt = $this->emoncms_mysqli->prepare("UPDATE users SET password = ?, salt = ? WHERE id = ?");
         $stmt->bind_param("ssi", $password, $salt, $userid);
         $stmt->execute();
         $stmt->close();
-        
+
+        // The sub account holder's existing logins were held with a password
+        // they no longer have
+        $this->rememberme->clearAllTriplets($userid);
+        $this->clear_password_reset_token($userid);
+
+        $this->log->info("change_password_no_check: password set for sub account userid:$userid");
+
         return array('success'=>true, 'message'=>"Password updated successfully");
     }
 
