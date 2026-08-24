@@ -148,10 +148,21 @@ function timeseries_controller() {
             }
         }
 
-        $apikeystr = "";
-        if ($config->apikey) $apikeystr = "&apikey=".$config->apikey;
-        
-        $url = "$config->server/feed/data.json?ids=".implode(",",$feedids)."&start=$start&end=$end&interval=$interval&average=$average&dela=$delta&skipmissing=0&timeformat=$timeformat".$apikeystr;
+        // start/end are raw request values: url encode everything rather than
+        // interpolating so extra parameters cannot be injected into the call
+        $query = array(
+            "ids" => implode(",",$feedids),
+            "start" => $start,
+            "end" => $end,
+            "interval" => $interval,
+            "average" => $average,
+            "delta" => $delta,
+            "skipmissing" => 0,
+            "timeformat" => $timeformat
+        );
+        if ($config->apikey) $query["apikey"] = $config->apikey;
+
+        $url = "$config->server/feed/data.json?".http_build_query($query);
 
         $result = json_decode(file_get_contents($url));
 

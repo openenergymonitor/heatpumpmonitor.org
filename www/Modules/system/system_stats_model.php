@@ -119,15 +119,13 @@ class SystemStats
             return array("success"=>false, "message"=>"System does not exist");
         }
 
-        // 2. Construct request URL
-        $request_url = $this->host."/app/$action.json?id=$row->app_id&apikey=$row->readkey";
-
-        // 3. Add additional parameters
-        if (!empty($params)) {
-            foreach ($params as $key => $value) {
-                $request_url .= "&$key=$value";
-            }
-        }
+        // 2. Construct request URL. readkey is a user editable field, so every
+        //    parameter is url encoded rather than interpolated.
+        $query = array_merge(
+            array("id" => (int) $row->app_id, "apikey" => $row->readkey),
+            $params
+        );
+        $request_url = $this->host."/app/$action.json?".http_build_query($query);
 
         // 4. Make the request
         $ch = curl_init();
