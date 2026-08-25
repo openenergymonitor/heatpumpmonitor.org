@@ -265,6 +265,15 @@ function generate_secure_key($length)
 // ---------------------------------------------------------------------------------------------------------
 require_once __DIR__."/Lib/password.php";
 
+// ---------------------------------------------------------------------------------------------------------
+// Logging
+//
+// EmonLogger is instantiated by the user and rememberme models, which are
+// loaded by the CLI scripts as well as by index.php, so it is required here
+// rather than at a single entry point.
+// ---------------------------------------------------------------------------------------------------------
+require_once __DIR__."/Lib/EmonLogger.php";
+
 
 // ---------------------------------------------------------------------------------------------------------
 // Read only mode response

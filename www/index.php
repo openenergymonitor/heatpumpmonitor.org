@@ -59,7 +59,6 @@ header("Content-Security-Policy: "
 // password reset on emoncms.org revoke the cookies held here as well. The cookie
 // name is ours, and cookies are host scoped, so a token issued by one site is
 // never presented to the other; only the storage and the revocation are shared.
-require "Lib/EmonLogger.php";
 require("Modules/user/rememberme_model.php");
 $rememberme = new Rememberme($emoncms_mysqli, "HPMON_ORG_REMEMBERME");
 require("Modules/user/user_model.php");
