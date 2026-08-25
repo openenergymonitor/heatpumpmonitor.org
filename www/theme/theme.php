@@ -192,8 +192,15 @@ $navigation = array(
                     <?php } else { ?>
                         <ul class="navbar-nav">
                             <li class="nav-item dropdown">
+                                <?php $show_gravatar = $session['email'] && gravatar_enabled(); ?>
+                                <?php // s=52 rather than the 32 it is drawn at: that is the size emoncms.org
+                                      // asks gravatar.com for, so the two sites share one cache entry per user ?>
                                 <a class="nav-link dropdown-toggle" href="#" id="avatarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <img width="32" height="32" class="rounded-circle avatar-image">
+                                    <?php if ($show_gravatar) { ?>
+                                        <img width="32" height="32" class="rounded-circle avatar-image" alt="" src="<?php echo $path; ?>user/gravatar?hash=<?php echo md5(strtolower(trim($session['email']))); ?>&amp;s=52">
+                                    <?php } else { ?>
+                                        <i class="bi bi-person-circle" style="font-size:32px; line-height:1"></i>
+                                    <?php } ?>
                                 </a>
                                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="avatarDropdown">
                                     <li><a class="dropdown-item" href="<?php echo $path; ?>user/account"><i class="bi bi-person-circle"></i> My account</a></li>
@@ -235,16 +242,6 @@ $navigation = array(
     </footer>
 
     <script src="<?php echo $path; ?>theme/vendor/bootstrap-5.3.0/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"></script>
-    <?php if ($session['userid']) { ?>
-        <script src="<?php echo $path; ?>Lib/md5.js"></script>
-        <script>
-            // Include gravitar profile image
-            var avatar = document.getElementsByClassName("avatar-image");
-            // json_encode, not bare interpolation: the address comes from the
-            // shared users table and can contain a quote or "</script>"
-            avatar[0].src = "https://www.gravatar.com/avatar/" + CryptoJS.MD5(<?php echo json_encode($session['email']); ?>) + "?s=32&d=mm";
-        </script>
-    <?php } ?>
     
     <!-- PWA Service Worker Registration -->
     <script>

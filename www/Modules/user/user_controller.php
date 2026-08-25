@@ -8,6 +8,26 @@ function user_controller() {
 
     // ------------------------------------------------------------------------------------------------
 
+    // Server-side gravatar proxy, see User::get_gravatar. Responds with image
+    // bytes rather than a view, so it returns nothing and exits here.
+    // Session only: the endpoint takes an email hash and would otherwise let
+    // anyone use the site to ask gravatar.com whether an arbitrary address has
+    // an avatar, and to fill the shared cache directory while doing it.
+    if ($route->action=="gravatar" && $session['userid']) {
+        $avatar = $user->get_gravatar(get('hash'), (int) get('s'));
+        if ($avatar === false) {
+            header($_SERVER["SERVER_PROTOCOL"]." 404 Not Found");
+            exit();
+        }
+        header("Content-Type: ".$avatar['mime']);
+        header("Content-Length: ".strlen($avatar['content']));
+        header("Cache-Control: private, max-age=86400");
+        echo $avatar['content'];
+        exit();
+    }
+
+    // ------------------------------------------------------------------------------------------------
+
     // HTML Views
     if ($route->format=="html") {
 

@@ -274,5 +274,19 @@ function read_only_mode_response()
     return array("success" => false, "message" => "Heatpumpmonitor is currently in read-only mode for maintenance. Please try again later.");
 }
 
+// ---------------------------------------------------------------------------------------------------------
+// Is the server side gravatar proxy available, see User::gravatar_enabled()
+//
+// Views call this before emitting an avatar <img>: with the feature off the
+// user/gravatar endpoint responds 404, so the placeholder icon is shown instead
+// of a broken image.
+// ---------------------------------------------------------------------------------------------------------
+function gravatar_enabled()
+{
+    global $user;
+
+    return $user && $user->gravatar_enabled();
+}
+
 function tr($text) { return $text; }
 function ctx_tr($context, $text) { return $text; }

@@ -14,6 +14,12 @@ class User
 
     private $email_verification = false;
 
+    // Cache directory for the server side gravatar proxy, shared with the
+    // emoncms install on the same host so a given avatar is only ever fetched
+    // once. See gravatar_enabled(): where this does not exist or is not
+    // writable the gravatar feature is disabled.
+    const GRAVATAR_CACHE_DIR = '/var/opt/emoncms/gravatar';
+
     // Must match User::$password_reset_window in the emoncms codebase: both
     // sites issue and redeem tokens against the same users table columns
     private $password_reset_window = 3600;
@@ -1258,6 +1264,86 @@ class User
         $this->log->info("change_password_no_check: password set for sub account userid:$userid");
 
         return array('success'=>true, 'message'=>"Password updated successfully");
+    }
+
+    /**
+     * Is the server side gravatar proxy available on this install?
+     *
+     * The cache directory is deliberately not created here: it is provisioned
+     * alongside the other /var/opt/emoncms data directories, so that ownership
+     * and permissions are set once rather than by whichever request happens to
+     * arrive first. Where the directory is missing or read only the feature is
+     * simply off and the views fall back to a placeholder icon.
+     *
+     * @return bool
+     */
+    public function gravatar_enabled()
+    {
+        static $enabled = null;
+        if ($enabled === null) {
+            $enabled = is_dir(self::GRAVATAR_CACHE_DIR) && is_writable(self::GRAVATAR_CACHE_DIR);
+        }
+        return $enabled;
+    }
+
+    /**
+     * Server-side gravatar proxy: avatars are fetched and cached by the server
+     * so that the visitor's browser never connects to gravatar.com directly
+     * (gravatar.com would otherwise receive the visitor's IP and email hash on
+     * every page view). Mirrors User::get_gravatar in the emoncms codebase, and
+     * shares its cache directory: both sites run on the same host, key the
+     * cache on the hash the same way, and so warm each other's entries.
+     *
+     * @param string $hash  md5 (32 hex chars) or sha256 (64 hex chars) gravatar email hash
+     * @param int    $size  image size in pixels
+     * @return array|false  array('content'=>bytes, 'mime'=>type) or false if unavailable
+     */
+    public function get_gravatar($hash, $size)
+    {
+        if (!$this->gravatar_enabled()) return false;
+        if (!is_string($hash) || !preg_match('/^([0-9a-f]{32}|[0-9a-f]{64})$/', $hash)) return false;
+        $size = (int) $size;
+        if ($size<1 || $size>512) $size = 52;
+
+        $cache_file = self::GRAVATAR_CACHE_DIR."/$hash-$size";
+        $cache_max_age = 7*24*3600;
+
+        $content = false;
+        if (is_file($cache_file) && (time()-filemtime($cache_file)) < $cache_max_age) {
+            $content = @file_get_contents($cache_file);
+        }
+        if ($content === false) {
+            $ch = curl_init("https://www.gravatar.com/avatar/$hash?s=$size&d=mp&r=g");
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+            curl_setopt($ch, CURLOPT_MAXREDIRS, 2);
+            $fetched = curl_exec($ch);
+            $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            // no curl_close(): deprecated since PHP 8.0 and the handle is freed
+            // when it goes out of scope. The deprecation notice it raises would be
+            // written into the response ahead of the image bytes, corrupting every
+            // cache miss on installs that have display_errors on.
+            unset($ch);
+            if ($fetched !== false && $http_code == 200 && strlen($fetched)) {
+                $content = $fetched;
+                // atomic write so concurrent requests never read a partial file
+                $tmp_file = $cache_file.".".getmypid().".tmp";
+                if (@file_put_contents($tmp_file, $content) !== false) @rename($tmp_file, $cache_file);
+            } else if (is_file($cache_file)) {
+                // gravatar.com unreachable: fall back to the stale cached copy
+                $content = @file_get_contents($cache_file);
+            }
+        }
+        if ($content === false) return false;
+
+        $mime = "image/png";
+        if (substr($content,0,3)=="\xFF\xD8\xFF") $mime = "image/jpeg";
+        else if (substr($content,0,6)=="GIF87a" || substr($content,0,6)=="GIF89a") $mime = "image/gif";
+        else if (substr($content,0,4)=="RIFF" && substr($content,8,4)=="WEBP") $mime = "image/webp";
+
+        return array('content'=>$content, 'mime'=>$mime);
     }
 
 }

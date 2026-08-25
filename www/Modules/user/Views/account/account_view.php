@@ -23,7 +23,7 @@ global $settings;
         <div class="container py-4" style="max-width:900px;">
             <div class="d-flex align-items-center">
                 <i class="bi bi-person-circle fs-1 me-3" v-show="!gravatar_loaded"></i>
-                <img width="48" height="48" class="rounded-circle me-3 border border-3 border-white" :src="gravatar_url" @load="gravatar_loaded = true" @error="gravatar_loaded = false" v-show="gravatar_loaded">
+                <img v-if="gravatar_url" width="48" height="48" class="rounded-circle me-3 border border-3 border-white" alt="" :src="gravatar_url" @load="gravatar_loaded = true" @error="gravatar_loaded = false" v-show="gravatar_loaded">
                 <div>
                     <h2 class="mb-0">Account Settings</h2>
                     <p class="text-muted mb-0">Manage your profile and security settings</p>
@@ -167,10 +167,12 @@ global $settings;
     </div>
 </div>
 
-<script src="<?php echo $path; ?>Lib/md5.js"></script>
-
 <script>
     var account = <?php echo json_encode($account); ?>;
+    var gravatar_enabled = <?php echo json_encode(gravatar_enabled()); ?>;
+    // sha256 of the normalised address, at the size emoncms.org's profile page
+    // asks for: same hash, same size, so the two sites share one cache entry
+    var gravatar_hash = <?php echo json_encode($account->email ? hash('sha256', strtolower(trim($account->email))) : ''); ?>;
 
     var app = new Vue({
         el: '#app',
@@ -191,9 +193,11 @@ global $settings;
         },
         computed: {
             gravatar_url: function() {
-                var email = this.account.email ? this.account.email.trim().toLowerCase() : '';
-                var hash = CryptoJS.MD5(email).toString();
-                return "https://www.gravatar.com/avatar/" + hash + "?s=48&d=404";
+                // avatars are served via the local proxy rather than by
+                // gravatar.com directly, and the proxy is only available where
+                // its cache directory exists, see User::gravatar_enabled
+                if (!gravatar_enabled || !gravatar_hash) return '';
+                return path + "user/gravatar?hash=" + gravatar_hash + "&s=80";
             }
         },
         methods: {
