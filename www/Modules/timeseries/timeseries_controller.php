@@ -133,6 +133,13 @@ function timeseries_controller() {
         if (!in_array($timeformat,array("unix","unixms","excel","iso8601","notime"))) {
             return array('success'=>false, 'message'=>'Invalid time format');
         }
+
+        // emoncms now requires numeric timestamps, resolve date strings here
+        if (!is_numeric($start)) $start = strtotime($start);
+        if (!is_numeric($end)) $end = strtotime($end);
+        if ($start === false || $end === false) {
+            return array('success'=>false, 'message'=>'Invalid start or end time');
+        }
         
         $config = $system_stats->get_system_config_with_meta($session['userid'], $system_id);
         if (is_array($config) && isset($config['success'])) {
@@ -166,13 +173,19 @@ function timeseries_controller() {
 
         $result = json_decode(file_get_contents($url));
 
+        if ($result === null) {
+            return array('success'=>false, 'message'=>'Invalid response from emoncms');
+        }
+        // emoncms returns an error object rather than a list of feeds
+        if (isset($result->success)) {
+            return array('success'=>false, 'message'=>isset($result->message) ? $result->message : 'Request failed');
+        }
+
         $remapped = array();
 
-        if ($result) {
-            foreach ($result as $data) {
-                $key = $feed_map[$data->feedid];
-                $remapped[$key] = $data->data;
-            }
+        foreach ($result as $data) {
+            if (!isset($data->feedid) || !isset($feed_map[$data->feedid])) continue;
+            $remapped[$feed_map[$data->feedid]] = $data->data;
         }
 
         return $remapped;
