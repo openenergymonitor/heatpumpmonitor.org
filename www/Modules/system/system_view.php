@@ -39,7 +39,13 @@ global $settings, $session, $path;
         <div class="container" style="max-width:800px;">
             <div style="float:right" v-if="admin && system.id"><a :href="path+'system/log?id='+system.id" class="btn btn-light">Change log</a></div>
             <div style="float:right; margin-right:10px;" v-if="admin && system.id">
-                <a :href="'https://mail.google.com/mail/?view=cm&fs=1&to=<?php echo $email; ?>'" target="_blank" class="btn btn-dark">
+                <?php
+                // Static href, not :href — Vue evaluates a :href value as a JS
+                // expression, so a quote in the email used to break out and run
+                // as script. Fixed for the page's life, so it needs no binding.
+                $email_href = 'https://mail.google.com/mail/?view=cm&amp;fs=1&amp;to='.rawurlencode($email);
+                ?>
+                <a href="<?php echo $email_href; ?>" target="_blank" class="btn btn-dark">
                     <i class="fa fa-envelope" style="color: #ffffff;"></i> Email
                 </a>
             </div>

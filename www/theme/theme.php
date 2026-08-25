@@ -240,7 +240,9 @@ $navigation = array(
         <script>
             // Include gravitar profile image
             var avatar = document.getElementsByClassName("avatar-image");
-            avatar[0].src = "https://www.gravatar.com/avatar/" + CryptoJS.MD5("<?php echo $session['email']; ?>") + "?s=32&d=mm";
+            // json_encode, not bare interpolation: the address comes from the
+            // shared users table and can contain a quote or "</script>"
+            avatar[0].src = "https://www.gravatar.com/avatar/" + CryptoJS.MD5(<?php echo json_encode($session['email']); ?>) + "?s=32&d=mm";
         </script>
     <?php } ?>
     

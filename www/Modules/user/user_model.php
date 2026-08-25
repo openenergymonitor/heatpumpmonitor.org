@@ -1192,6 +1192,14 @@ class User
         $result = $this->is_valid_email($email);
         if (!$result['success']) return $result;
 
+        // FILTER_VALIDATE_EMAIL accepts RFC 5321 quoted local parts, so
+        // `"</script>…"@x.com` passes it. The sinks escape properly; this just
+        // stops the one path that WRITES to the shared users table planting
+        // such a value. Narrow on purpose: apostrophes stay, o'brien@ is real.
+        if (preg_match('/["\\\\\x00-\x1f\x7f]/', $email)) {
+            return array('success'=>false, 'message'=>"Email address format error");
+        }
+
         $stmt = $this->emoncms_mysqli->prepare("UPDATE users SET email = ? WHERE id = ?");
         $stmt->bind_param("si", $email, $userid);
         $stmt->execute();

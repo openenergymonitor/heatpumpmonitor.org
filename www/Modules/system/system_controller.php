@@ -28,11 +28,11 @@ function system_controller() {
             $systemid = get("id",false);
             $system_data = $system->get($session['userid'],$systemid);
             if (is_object($system_data)) {
-                if ($session['admin']) {
+                // Owner's email, for the admin "Email" button only
+                $email = "";
+                if ($session['admin'] && isset($system_data->userid)) {
                     $u = $user->get($system_data->userid);
-                    $email = $u->email;
-                } else {
-                    $email = "";
+                    if (is_object($u) && isset($u->email)) $email = (string) $u->email;
                 }
                 
                 return view("Modules/system/system_view.php", array(
@@ -52,11 +52,11 @@ function system_controller() {
         $systemid = get("id",false);
         $system_data = $system->get($session['userid'],$systemid);
 
-        if ($session['admin']) {
+        // As above; $system_data is an error array when the system is unreadable
+        $email = "";
+        if ($session['admin'] && is_object($system_data) && isset($system_data->userid)) {
             $u = $user->get($system_data->userid);
-            $email = $u->email;
-        } else {
-            $email = "";
+            if (is_object($u) && isset($u->email)) $email = (string) $u->email;
         }
 
         return view("Modules/system/system_view.php", array(
