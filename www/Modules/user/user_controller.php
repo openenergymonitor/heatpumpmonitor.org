@@ -10,11 +10,31 @@ function user_controller() {
 
     // Server-side gravatar proxy, see User::get_gravatar. Responds with image
     // bytes rather than a view, so it returns nothing and exits here.
-    // Session only: the endpoint takes an email hash and would otherwise let
-    // anyone use the site to ask gravatar.com whether an arbitrary address has
-    // an avatar, and to fill the shared cache directory while doing it.
     if ($route->action=="gravatar" && $session['userid']) {
-        $avatar = $user->get_gravatar(get('hash'), (int) get('s'));
+        $hash = get('hash');
+
+        // Only ever the visitor's own avatar. Both call sites, the navbar and
+        // the account page, render the session user's address and nothing
+        // else, so an arbitrary hash is never legitimate here. Left open, any
+        // logged in account could use the proxy to find out whether some other
+        // address has a gravatar, and could grow the shared cache directory
+        // without limit: gravatar.com answers 200 for an unknown address, so
+        // every distinct hash and size combination writes a file.
+        $own_avatar = $user->gravatar_hash_matches($hash, $session['email']);
+        if (!$own_avatar) {
+            // The session address can lag the users table, as changing a sub
+            // account's email does not touch that account's live session.
+            // Fall back to the stored one so their avatar keeps working
+            // rather than dropping to the placeholder until they log in again.
+            $account = $user->get($session['userid']);
+            $own_avatar = $account && $user->gravatar_hash_matches($hash, $account->email);
+        }
+        if (!$own_avatar) {
+            header($_SERVER["SERVER_PROTOCOL"]." 404 Not Found");
+            exit();
+        }
+
+        $avatar = $user->get_gravatar($hash, (int) get('s'));
         if ($avatar === false) {
             header($_SERVER["SERVER_PROTOCOL"]." 404 Not Found");
             exit();

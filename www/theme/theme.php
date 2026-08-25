@@ -197,7 +197,7 @@ $navigation = array(
                                       // asks gravatar.com for, so the two sites share one cache entry per user ?>
                                 <a class="nav-link dropdown-toggle" href="#" id="avatarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                     <?php if ($show_gravatar) { ?>
-                                        <img width="32" height="32" class="rounded-circle avatar-image" alt="" src="<?php echo $path; ?>user/gravatar?hash=<?php echo md5(strtolower(trim($session['email']))); ?>&amp;s=52">
+                                        <img width="32" height="32" class="rounded-circle avatar-image" alt="" src="<?php echo $path; ?>user/gravatar?hash=<?php echo hash('sha256', strtolower(trim($session['email']))); ?>&amp;s=52">
                                     <?php } else { ?>
                                         <i class="bi bi-person-circle" style="font-size:32px; line-height:1"></i>
                                     <?php } ?>

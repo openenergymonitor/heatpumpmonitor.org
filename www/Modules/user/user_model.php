@@ -1287,6 +1287,32 @@ class User
     }
 
     /**
+     * Does $hash identify $email on gravatar.com?
+     *
+     * sha256 is the scheme gravatar.com documents; md5 is only kept alive there
+     * for backwards compatibility. Both sites hash every avatar this way, so a
+     * given address has one hash and the shared cache has one entry per size.
+     *
+     * Used to confine the proxy to the visitor's own address, see the gravatar
+     * route in user_controller. Neither side is a secret from the session
+     * holder; hash_equals is used because it is the right default for
+     * comparing a submitted digest, not because there is anything to leak.
+     *
+     * @param string $hash   hash supplied by the request
+     * @param string $email  address to check it against
+     * @return bool
+     */
+    public function gravatar_hash_matches($hash, $email)
+    {
+        if (!is_string($hash) || !is_string($email)) return false;
+
+        $normalised = strtolower(trim($email));
+        if ($normalised === '') return false;
+
+        return hash_equals(hash('sha256', $normalised), $hash);
+    }
+
+    /**
      * Server-side gravatar proxy: avatars are fetched and cached by the server
      * so that the visitor's browser never connects to gravatar.com directly
      * (gravatar.com would otherwise receive the visitor's IP and email hash on
@@ -1294,14 +1320,18 @@ class User
      * shares its cache directory: both sites run on the same host, key the
      * cache on the hash the same way, and so warm each other's entries.
      *
-     * @param string $hash  md5 (32 hex chars) or sha256 (64 hex chars) gravatar email hash
+     * @param string $hash  sha256 (64 hex chars) gravatar email hash
      * @param int    $size  image size in pixels
      * @return array|false  array('content'=>bytes, 'mime'=>type) or false if unavailable
      */
     public function get_gravatar($hash, $size)
     {
         if (!$this->gravatar_enabled()) return false;
-        if (!is_string($hash) || !preg_match('/^([0-9a-f]{32}|[0-9a-f]{64})$/', $hash)) return false;
+        // \z, not $: PHP's $ also matches before a trailing newline, so a hash
+        // submitted as "<64 hex>%0A" would otherwise pass and be spliced into
+        // the request URL and the cache filename. libcurl rejects such a URL
+        // anyway; this does not rely on it doing so.
+        if (!is_string($hash) || !preg_match('/^[0-9a-f]{64}\z/', $hash)) return false;
         $size = (int) $size;
         if ($size<1 || $size>512) $size = 52;
 
@@ -1317,8 +1347,12 @@ class User
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
             curl_setopt($ch, CURLOPT_TIMEOUT, 5);
-            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-            curl_setopt($ch, CURLOPT_MAXREDIRS, 2);
+            // Redirects are deliberately not followed. gravatar.com answers these
+            // requests with a direct 200, so following them gains nothing, and a
+            // redirect is the one way a compromised gravatar.com could point this
+            // fetch at an address inside the network. Unfollowed, a 3xx is simply
+            // not a 200 and is handled as a failed fetch below.
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
             $fetched = curl_exec($ch);
             $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             // no curl_close(): deprecated since PHP 8.0 and the handle is freed
@@ -1331,9 +1365,17 @@ class User
                 // atomic write so concurrent requests never read a partial file
                 $tmp_file = $cache_file.".".getmypid().".tmp";
                 if (@file_put_contents($tmp_file, $content) !== false) @rename($tmp_file, $cache_file);
-            } else if (is_file($cache_file)) {
-                // gravatar.com unreachable: fall back to the stale cached copy
-                $content = @file_get_contents($cache_file);
+            } else {
+                if ($http_code >= 300 && $http_code < 400) {
+                    // Only reachable if gravatar.com starts redirecting these
+                    // requests, at which point avatars quietly stop refreshing.
+                    // Logged so that shows up as a cause rather than a mystery.
+                    $this->log->warn("get_gravatar: gravatar.com returned HTTP $http_code, redirects are not followed");
+                }
+                if (is_file($cache_file)) {
+                    // gravatar.com unreachable: fall back to the stale cached copy
+                    $content = @file_get_contents($cache_file);
+                }
             }
         }
         if ($content === false) return false;
