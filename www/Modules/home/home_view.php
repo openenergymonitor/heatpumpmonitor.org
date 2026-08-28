@@ -2486,6 +2486,23 @@ global $path;
             markerSource.addFeature(marker);
         });
 
+        var esriTiles = "https://services.arcgisonline.com/ArcGIS/rest/services/";
+
+        // Multiply blend, matching the full map: the hillshade service renders
+        // sea as white, so plain opacity would wash the water out.
+        var hillshadeLayer = new ol.layer.Tile({
+            source: new ol.source.XYZ({
+                url: esriTiles + "Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}",
+                maxZoom: 16
+            })
+        });
+        hillshadeLayer.on("prerender", function(event) {
+            event.context.globalCompositeOperation = "multiply";
+        });
+        hillshadeLayer.on("postrender", function(event) {
+            event.context.globalCompositeOperation = "source-over";
+        });
+
         new ol.Map({
             target: "installer-map",
             controls: [new ol.control.Attribution({ collapsible: true })],
@@ -2493,14 +2510,15 @@ global $path;
             layers: [
                 new ol.layer.Tile({
                     source: new ol.source.XYZ({
-                        url: "https://services.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}",
-                        attributions: 'Tiles &copy; <a href="https://www.esri.com">Esri</a> &mdash; Esri, GEBCO, NOAA, Garmin, HERE, &copy; OpenStreetMap contributors',
-                        maxZoom: 13
+                        url: esriTiles + "Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+                        attributions: 'Tiles &copy; <a href="https://www.esri.com">Esri</a> &mdash; Esri, USGS, NOAA, Garmin, HERE, &copy; OpenStreetMap contributors',
+                        maxZoom: 16
                     })
                 }),
+                hillshadeLayer,
                 new ol.layer.Tile({
                     source: new ol.source.XYZ({
-                        url: "https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}",
+                        url: esriTiles + "Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}",
                         maxZoom: 16
                     })
                 }),

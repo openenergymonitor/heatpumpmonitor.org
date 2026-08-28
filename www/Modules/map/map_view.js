@@ -25,14 +25,12 @@
     // Map Setup
     // ------------------------------
     const ESRI_TILE_URL = 'https://services.arcgisonline.com/ArcGIS/rest/services/';
-    const ESRI_ATTRIBUTION = 'Tiles &copy; <a href="https://www.esri.com">Esri</a> &mdash; Esri, GEBCO, NOAA, Garmin, HERE, &copy; OpenStreetMap contributors';
+    const ESRI_ATTRIBUTION = 'Tiles &copy; <a href="https://www.esri.com">Esri</a> &mdash; Esri, USGS, NOAA, Garmin, HERE, &copy; OpenStreetMap contributors';
 
-    // Esri Ocean Base is only cached to z13 (above that the service returns a
-    // "map data not yet available" placeholder), so it covers the national and
-    // regional view and Esri Street Map -- same cream palette, tiles to z19 --
-    // takes over past z13. Layer maxZoom is inclusive, minZoom exclusive, so
-    // the two partition the zoom range with no gap and no overlap.
-    const OCEAN_MAX_ZOOM = 13;
+    // The grey canvas and hillshade services are both cached to z16; past that
+    // Esri serves a "map data not yet available" placeholder, so the sources
+    // are capped and OpenLayers over-zooms the z16 tiles instead.
+    const ESRI_MAX_ZOOM = 16;
 
     const map = new ol.Map({
         target: 'map',
@@ -45,35 +43,40 @@
     });
 
     const baseLayer = new ol.layer.Tile({
-        maxZoom: OCEAN_MAX_ZOOM,
         source: new ol.source.XYZ({
-            url: ESRI_TILE_URL + 'Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}',
+            url: ESRI_TILE_URL + 'Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
             attributions: ESRI_ATTRIBUTION,
-            maxZoom: OCEAN_MAX_ZOOM
+            maxZoom: ESRI_MAX_ZOOM
         })
     });
     map.addLayer(baseLayer);
 
-    // Ocean Base carries no place names, so the grey canvas reference layer
-    // supplies them. Street Map has its own labels and needs no companion.
+    // Hillshade is drawn with a multiply blend rather than plain opacity: the
+    // service renders sea as white, so alpha blending would lighten the water
+    // and flatten the land/sea contrast, while multiply leaves white alone and
+    // darkens only the terrain shadows.
+    const hillshadeLayer = new ol.layer.Tile({
+        source: new ol.source.XYZ({
+            url: ESRI_TILE_URL + 'Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}',
+            maxZoom: ESRI_MAX_ZOOM
+        })
+    });
+    hillshadeLayer.on('prerender', function(event) {
+        event.context.globalCompositeOperation = 'multiply';
+    });
+    hillshadeLayer.on('postrender', function(event) {
+        event.context.globalCompositeOperation = 'source-over';
+    });
+    map.addLayer(hillshadeLayer);
+
+    // The base carries no place names, the reference layer supplies them.
     const labelLayer = new ol.layer.Tile({
-        maxZoom: OCEAN_MAX_ZOOM,
         source: new ol.source.XYZ({
             url: ESRI_TILE_URL + 'Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
-            maxZoom: 16
+            maxZoom: ESRI_MAX_ZOOM
         })
     });
     map.addLayer(labelLayer);
-
-    const closeZoomLayer = new ol.layer.Tile({
-        minZoom: OCEAN_MAX_ZOOM,
-        source: new ol.source.XYZ({
-            url: ESRI_TILE_URL + 'World_Street_Map/MapServer/tile/{z}/{y}/{x}',
-            attributions: ESRI_ATTRIBUTION,
-            maxZoom: 19
-        })
-    });
-    map.addLayer(closeZoomLayer);
 
     const mapTooltip = document.getElementById('map-tooltip');
     const overlay = new ol.Overlay({
