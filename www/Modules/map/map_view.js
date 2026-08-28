@@ -24,9 +24,19 @@
     // ------------------------------
     // Map Setup
     // ------------------------------
+    const ESRI_TILE_URL = 'https://services.arcgisonline.com/ArcGIS/rest/services/';
+    const ESRI_ATTRIBUTION = 'Tiles &copy; <a href="https://www.esri.com">Esri</a> &mdash; Esri, GEBCO, NOAA, Garmin, HERE, &copy; OpenStreetMap contributors';
+
+    // Esri Ocean Base is only cached to z13 (above that the service returns a
+    // "map data not yet available" placeholder), so it covers the national and
+    // regional view and Esri Street Map -- same cream palette, tiles to z19 --
+    // takes over past z13. Layer maxZoom is inclusive, minZoom exclusive, so
+    // the two partition the zoom range with no gap and no overlap.
+    const OCEAN_MAX_ZOOM = 13;
+
     const map = new ol.Map({
         target: 'map',
-        controls: [],
+        controls: [new ol.control.Attribution({ collapsible: true })],
         view: new ol.View({
             center: ol.proj.fromLonLat([-4.0, 54]),
             zoom: 6,
@@ -35,16 +45,35 @@
     });
 
     const baseLayer = new ol.layer.Tile({
-        source: new ol.source.OSM()
+        maxZoom: OCEAN_MAX_ZOOM,
+        source: new ol.source.XYZ({
+            url: ESRI_TILE_URL + 'Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}',
+            attributions: ESRI_ATTRIBUTION,
+            maxZoom: OCEAN_MAX_ZOOM
+        })
     });
     map.addLayer(baseLayer);
 
-    const darkLayer = new ol.layer.Tile({
+    // Ocean Base carries no place names, so the grey canvas reference layer
+    // supplies them. Street Map has its own labels and needs no companion.
+    const labelLayer = new ol.layer.Tile({
+        maxZoom: OCEAN_MAX_ZOOM,
         source: new ol.source.XYZ({
-            url: 'https://{a-c}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png'
+            url: ESRI_TILE_URL + 'Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
+            maxZoom: 16
         })
     });
-    map.addLayer(darkLayer);
+    map.addLayer(labelLayer);
+
+    const closeZoomLayer = new ol.layer.Tile({
+        minZoom: OCEAN_MAX_ZOOM,
+        source: new ol.source.XYZ({
+            url: ESRI_TILE_URL + 'World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+            attributions: ESRI_ATTRIBUTION,
+            maxZoom: 19
+        })
+    });
+    map.addLayer(closeZoomLayer);
 
     const mapTooltip = document.getElementById('map-tooltip');
     const overlay = new ol.Overlay({

@@ -2488,12 +2488,20 @@ global $path;
 
         new ol.Map({
             target: "installer-map",
-            controls: [],
+            controls: [new ol.control.Attribution({ collapsible: true })],
             interactions: [],
             layers: [
                 new ol.layer.Tile({
                     source: new ol.source.XYZ({
-                        url: "https://{a-c}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"
+                        url: "https://services.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}",
+                        attributions: 'Tiles &copy; <a href="https://www.esri.com">Esri</a> &mdash; Esri, GEBCO, NOAA, Garmin, HERE, &copy; OpenStreetMap contributors',
+                        maxZoom: 13
+                    })
+                }),
+                new ol.layer.Tile({
+                    source: new ol.source.XYZ({
+                        url: "https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}",
+                        maxZoom: 16
                     })
                 }),
                 new ol.layer.Vector({ source: markerSource })
