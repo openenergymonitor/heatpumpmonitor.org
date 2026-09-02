@@ -33,6 +33,26 @@ if (!isset($settings['emoncms_host'])) {
     $settings['emoncms_host'] = "https://emoncms.org";
 }
 
+// ----------------------------------------------------------------------------------
+// Maintenance mode, set by the "maintenance" entry in settings.php:
+//
+//   "off"      normal operation
+//   "offline"  nothing accepted, every request gets a 503 and browsers get
+//              offline.html
+//   "silent"   as offline, but the 503s carry no body and browsers get a blank
+//              page. For a standby server that should not announce itself.
+//
+// Answered here, before mysql and redis are connected, so that it still works
+// while the databases are stopped, which is when it is most needed. CLI is
+// exempt: the maintenance window is exactly when the update and import scripts
+// need to run. See Lib/maintenance.php.
+// ----------------------------------------------------------------------------------
+if (PHP_SAPI !== 'cli' && isset($settings['maintenance']['mode']) && $settings['maintenance']['mode'] != 'off') {
+    require_once __DIR__ . "/maintenance.php";
+    $maintenance = maintenance_config($settings);
+    if ($maintenance && !maintenance_bypass($maintenance)) maintenance_respond($maintenance);
+}
+
 $mysqli = @new mysqli(
     $settings["sql"]["server"],
     $settings["sql"]["username"],

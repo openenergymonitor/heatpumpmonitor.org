@@ -51,6 +51,19 @@ $settings = array(
     "public_mode_enabled"=>true,
     "read_only_mode"=>false,
 
+    // Maintenance mode, see Lib/maintenance.php. MAINTENANCE_MODE is "off"
+    // (the default), "offline" to stop the site with a message, or "silent" to
+    // stop it saying nothing at all. MAINTENANCE_UNTIL is when the site is
+    // expected back ("2026-09-02 18:00"), driving the countdown on the page.
+    // MAINTENANCE_ACCESS_OVERRIDE is a random string that lets an admin
+    // through, sent as the X-Access-Override header.
+    "maintenance"=>array(
+        "mode" => getenv("MAINTENANCE_MODE") ?: "off",
+        "message" => getenv("MAINTENANCE_MESSAGE") ?: "HeatpumpMonitor.org is being updated, back shortly",
+        "until" => getenv("MAINTENANCE_UNTIL") ?: "",
+        "access_override" => getenv("MAINTENANCE_ACCESS_OVERRIDE") ?: ""
+    ),
+
     "admin_emails"=>array(
         // array("email" => "hello@example.com"),
     )

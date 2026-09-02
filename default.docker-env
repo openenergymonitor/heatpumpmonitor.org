@@ -14,6 +14,13 @@ EMONCMS_MYSQL_DATABASE=emoncms
 EMONCMS_MYSQL_USER=emoncms
 EMONCMS_MYSQL_PASSWORD=emoncms
 
+# Maintenance mode, see www/Lib/maintenance.php. "off" (default), "offline" to
+# stop the site with a message, or "silent" to stop it saying nothing at all.
+MAINTENANCE_MODE=off
+# MAINTENANCE_MESSAGE=HeatpumpMonitor.org is being updated, back shortly
+# MAINTENANCE_UNTIL=2026-09-02 18:00
+# MAINTENANCE_ACCESS_OVERRIDE=
+
 # Compose-only (put in .env beside docker-compose.yml, not required in this file):
 # TESTDATASET_PATH=/absolute/path/to/testdataset   # default ../testdataset
 # TESTDATASET_EMONCMS_USER_ID=1                   # Emoncms user id for test feeds (default 1 = admin)

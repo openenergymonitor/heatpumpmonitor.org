@@ -57,6 +57,22 @@ $settings = array(
     "public_mode_enabled"=>true,
     "read_only_mode"=>false,
 
+    // Maintenance mode, see Lib/maintenance.php. "mode" is "off" (or absent)
+    // for normal operation, "offline" to stop the site with a message, or
+    // "silent" to stop it saying nothing at all. "until" is when the site is
+    // expected back, written as a person would write it, and drives the
+    // countdown on the maintenance page. "access_override" is a random string
+    // that lets an admin through while the site is down, sent as the
+    // X-Access-Override header. Answered before any database connection, so it
+    // still works while mysql is stopped.
+    //
+    // "maintenance"=>array(
+    //     "mode" => "off",
+    //     "message" => "HeatpumpMonitor.org is being updated, back shortly",
+    //     "until" => "2026-09-02 18:00",
+    //     "access_override" => ""
+    // ),
+
     "admin_emails"=>array(
         // array("email" => "hello@example.com"),
     )
