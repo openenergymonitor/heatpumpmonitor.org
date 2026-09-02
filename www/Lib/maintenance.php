@@ -128,6 +128,17 @@ function maintenance_wants_json()
     return false;
 }
 
+// Base path for the logo and favicon on the maintenance page, the equivalent
+// of core.php's $path but without the protocol and host, and without needing
+// core.php, which is not loaded this early. SCRIPT_NAME is set by the web
+// server, not the client, and every request is rewritten to index.php, so this
+// is "/" at the domain root and "/heatpumpmonitor/" in a sub directory.
+function maintenance_path()
+{
+    $script = isset($_SERVER['SCRIPT_NAME']) ? (string) $_SERVER['SCRIPT_NAME'] : '';
+    return rtrim(str_replace('\\', '/', dirname($script)), '/') . '/';
+}
+
 function maintenance_respond($m)
 {
     http_response_code(503);
@@ -135,17 +146,16 @@ function maintenance_respond($m)
     header('Cache-Control: no-store');
 
     // index.php sends the site's security headers, but it never runs during
-    // maintenance, so the equivalents are repeated here. The page is a single
-    // self contained file: no stylesheet, script or image is fetched, the
-    // logo is inlined, and the only thing it needs to be allowed to do is run
-    // its own inline style and countdown script.
+    // maintenance, so the equivalents are repeated here. The page carries its
+    // own style and countdown script inline and loads nothing but the logo and
+    // favicon from theme/, so everything else stays denied.
     header('X-Content-Type-Options: nosniff');
     header('Referrer-Policy: strict-origin-when-cross-origin');
     header("Content-Security-Policy: "
         ."default-src 'none'; "
         ."style-src 'unsafe-inline'; "
         ."script-src 'unsafe-inline'; "
-        ."img-src data:; "
+        ."img-src 'self'; "
         ."base-uri 'none'; "
         ."form-action 'none'; "
         ."frame-ancestors 'self'");
@@ -192,8 +202,12 @@ function maintenance_respond($m)
 
     header('Content-Type: text/html');
     print str_replace(
-        array('{{message}}', '{{until}}'),
-        array(htmlspecialchars($m['message'], ENT_QUOTES, 'UTF-8'), (int) $m['until']),
+        array('{{message}}', '{{until}}', '{{path}}'),
+        array(
+            htmlspecialchars($m['message'], ENT_QUOTES, 'UTF-8'),
+            (int) $m['until'],
+            htmlspecialchars(maintenance_path(), ENT_QUOTES, 'UTF-8')
+        ),
         $template
     );
     exit();
