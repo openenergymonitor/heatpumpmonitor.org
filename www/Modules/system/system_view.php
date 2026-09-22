@@ -297,8 +297,15 @@ global $settings, $session, $path;
                 </div>
                 <select v-else class="form-select"  style="width:100%" v-model="new_app_selection" @change="load_app">
                     <option value="">PLEASE SELECT</option>
-                    <option v-for="(app,index) in available_apps" :value="app.id" :disabled="app.in_use==1">{{ app.username }}: {{ app.name }} {{ app.in_use_msg }}</option>
+                    <option v-for="(app,index) in available_apps" :value="app.id" :disabled="app.in_use==1 && app.id!=system.app_id">{{ app.username }}: {{ app.name }} {{ app.in_use_msg }}</option>
                 </select>
+                <div v-if="readkey_mismatch" class="alert alert-warning mt-3 mb-0">
+                    <b>Read API key has changed on Emoncms.org.</b> The key stored here for this app no longer matches the Emoncms.org account. Data loading will fail until it is updated.
+                    <div class="mt-2">
+                        <button class="btn btn-warning btn-sm" @click="refresh_readkey">Refresh API key</button>
+                        <span class="ms-2">then click <b>Save</b> below.</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -848,6 +855,22 @@ global $settings, $session, $path;
 
         },
         computed: {
+            // The entry in available_apps matching the app currently linked to this system
+            linked_app() {
+                if (!this.system.app_id) return null;
+                for (var appx in this.available_apps) {
+                    if (this.available_apps[appx].id == this.system.app_id) {
+                        return this.available_apps[appx];
+                    }
+                }
+                return null;
+            },
+            // True when the readkey stored on heatpumpmonitor differs from the
+            // current read API key of the emoncms.org account that owns the app
+            readkey_mismatch() {
+                if (!this.linked_app) return false;
+                return this.system.readkey != this.linked_app.readkey;
+            },
             current_stats() {
                 if (this.stats_period == 'all') return this.all;
                 return this.period_stats[this.stats_period];
@@ -1094,11 +1117,20 @@ global $settings, $session, $path;
                         app.system.readkey = selected_app.readkey;
                     }
                 }
-                
+
                 this.$nextTick(() => {
                     this.init_autocomplete();
                 });
 
+            },
+
+            // Reload app_id, readkey and url for the currently linked app from
+            // the available apps list (fetched live from emoncms.org). Used when
+            // the user has regenerated their read API key on emoncms.org.
+            refresh_readkey: function() {
+                if (!this.linked_app) return;
+                this.new_app_selection = this.linked_app.id;
+                this.load_app();
             },
 
             init_autocomplete: function() {
@@ -1645,6 +1677,11 @@ global $settings, $session, $path;
                 for (var appx in response.data) {
                     if (app.system.app_id == response.data[appx].id) {
                         app.new_app_selection = response.data[appx].id;
+                        if (app.system.readkey != response.data[appx].readkey) {
+                            response.data[appx].in_use_msg = ' (current - API key changed)';
+                        } else {
+                            response.data[appx].in_use_msg = ' (current)';
+                        }
                         continue;
                     }
 
