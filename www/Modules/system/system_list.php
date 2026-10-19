@@ -124,6 +124,23 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         padding: 6px 12px;
     }
 
+    .card-title-text {
+        font-size: 18px;
+        white-space: nowrap;
+    }
+
+    /* below xl the sidebar cards sit side by side when collapsed */
+    @media (max-width: 1199.98px) {
+        .card-header.compact-header {
+            padding: 6px 8px;
+        }
+
+        .card-header.compact-header .card-title-text {
+            font-size: 16px;
+            margin-right: 4px;
+        }
+    }
+
     .add-filters-card {
         overflow: visible !important;
         max-height: 780px;
@@ -171,16 +188,18 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             <div class="row">
                 <div class="col-12 col-sm-12 col-md-6 col-lg-6 col-xl-8">
 
-                    <h3 v-if="mode=='user'">My Systems</h3>
-                    <h3 v-if="mode=='admin'">Admin Systems</h3>
+                    <div v-if="mode!='public'" class="d-flex justify-content-between align-items-center mb-2">
+                        <h3 class="mb-0">{{ mode=='admin' ? 'Admin Systems' : 'My Systems' }}</h3>
+                        <button class="btn btn-primary d-md-none" @click="create"><i class="fa fa-plus"></i> Add new system</button>
+                    </div>
 
                     <p v-if="mode=='user'">Add, edit and view systems associated with your account and sub-accounts.</p>
                     <p v-if="mode=='admin'">Add, edit and view all systems</p>
                     
+                    <button v-if="mode!='public'" class="btn btn-primary d-none d-md-inline-block" @click="create">Add new system</button>
+
                     <p v-if="mode=='public' && showContent">If you're monitoring a heat pump with <a href="https://shop.openenergymonitor.com/level-3-heat-pump-monitoring-bundle-emonhp/">OpenEnergyMonitor</a> login to add your system.</p>
                     <p v-if="mode=='public' && showContent">Join the discussion on the <a href="https://community.openenergymonitor.org/c/hardware/heatpump/47">Forum</a> and read more about our <a href="https://docs.openenergymonitor.org/heatpumpmonitor">findings so far</a>.</p>
-                    
-                    <button v-if="mode!='public'" class="btn btn-primary" @click="create">Add new system</button>
                 </div>
 
                         
@@ -231,18 +250,27 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
                 <div class="sticky-top">
 
-                    <ul class="list-group mt-3">
+                    <div class="btn-group w-100 mt-3 d-xl-none" role="group">
+                        <button type="button" :class="['btn', selected_template=='topofthescops' ? 'btn-primary' : 'bg-white text-dark']" @click="template_view('topofthescops')"><i class="fa fa-trophy"></i> SCOP</button>
+                        <button type="button" :class="['btn border-start', selected_template=='heatpumpfabric' ? 'btn-primary' : 'bg-white text-dark']" @click="template_view('heatpumpfabric')"><i class="fas fa-house-damage"></i> Fabric</button>
+                        <button type="button" :class="['btn border-start', selected_template=='costs' ? 'btn-primary' : 'bg-white text-dark']" @click="template_view('costs')"><i class="fas fa-pound-sign"></i> Costs</button>
+                    </div>
+
+                    <ul class="list-group mt-3 d-none d-xl-block">
                         <li @click="template_view('topofthescops')" :class="'list-group-item list-group-item-action '+(selected_template=='topofthescops'?'active':'')" style="cursor:pointer"><i class="fa fa-trophy" style="margin: 0px 10px 0px 5px"></i> Top of the SCOPs</li>
-                        <li @click="template_view('heatpumpfabric')" :class="'list-group-item list-group-item-action '+(selected_template=='heatpumpfabric'?'active':'')" style="cursor:pointer"><i class="fas fa-house-damage" style="margin: 0px 10px 0px 5px"></i> Heatpump + Fabric</li>
+                        <li @click="template_view('heatpumpfabric')" :class="'list-group-item list-group-item-action '+(selected_template=='heatpumpfabric'?'active':'')" style="cursor:pointer"><i class="fas fa-house-damage" style="margin: 0px 10px 0px 5px"></i> Fabric</li>
                         <li @click="template_view('costs')" :class="'list-group-item list-group-item-action '+(selected_template=='costs'?'active':'')" style="cursor:pointer"><i class="fas fa-pound-sign" style="margin: 0px 15px 0px 8px"></i> Costs</li>
                     </ul>
                     
-                    <div class="card mt-3 add-fields-card">
-                        <div class="card-header">
-                        <button class="btn btn-sm btn-secondary" style="float:right; margin-right:-8px" @click="show_field_selector = !show_field_selector">
-                            <i :class="{'fas fa-minus': show_field_selector, 'fas fa-plus': !show_field_selector}"></i>
-                        </button>
-                        <div style="margin-top:2px; font-size:18px">Columns</div>
+                    <!-- Columns, Filters and Show systems with: share a single line on narrower screens while all are collapsed -->
+                    <div class="row g-2 mt-1">
+                    <div :class="compact_cards ? 'col-4 col-xl-12' : 'col-12'">
+                    <div class="card add-fields-card">
+                        <div :class="['card-header d-flex justify-content-between align-items-center', {'compact-header': compact_cards}]">
+                            <div class="card-title-text">Columns</div>
+                            <button class="btn btn-sm btn-secondary" @click="show_field_selector = !show_field_selector">
+                                <i :class="{'fas fa-minus': show_field_selector, 'fas fa-plus': !show_field_selector}"></i>
+                            </button>
                         </div>
                         <div class="collapse show" :class="{ 'd-none': !show_field_selector, 'd-md-block': show_field_selector }">
                             <div style="padding:10px">
@@ -275,14 +303,16 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             </div>
                         </div>
                     </div>
+                    </div>
 
-                    <div class="card mt-3 add-filters-card">
-                        <div class="card-header">
-                            <button class="btn btn-sm btn-secondary" style="float:right; margin-right:-8px" @click="addFilterPart">
+                    <div :class="compact_cards ? 'col-4 col-xl-12' : 'col-12'">
+                    <div class="card add-filters-card">
+                        <div :class="['card-header d-flex justify-content-between align-items-center', {'compact-header': compact_cards}]">
+                            <div class="card-title-text">Filters</div>
+                            <button class="btn btn-sm btn-secondary" @click="addFilterPart">
                                 <i class="fa fa-plus"></i>
                                 <i class="fa fa-filter"></i>
                             </button>
-                            <div style="margin-top:2px; font-size:18px">Filters</div>
                         </div>
                         <div>
                             <ul class="list-group list-group-flush">
@@ -331,12 +361,17 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             </ul>
                         </div>
                     </div>
+                    </div>
 
-                    <ul class="list-group mt-3">
-                      <li class="list-group-item">
-                      <b>Show systems with</b>
-                      </li>
-                      
+                    <div :class="compact_cards ? 'col-4 col-xl-12' : 'col-12'">
+                    <div class="card">
+                        <div :class="['card-header d-flex justify-content-between align-items-center', {'compact-header': compact_cards}]">
+                            <div class="card-title-text"><span v-if="compact_cards" class="d-xl-none">Show</span><span :class="{'d-none d-xl-inline': compact_cards}">Show systems with</span></div>
+                            <button class="btn btn-sm btn-secondary" @click="show_system_types = !show_system_types">
+                                <i :class="show_system_types ? 'fas fa-minus' : 'fas fa-plus'"></i>
+                            </button>
+                        </div>
+                        <ul class="list-group list-group-flush" v-show="show_system_types">
                       <li class="list-group-item">
                         <div style="color:#666; float:right"> (<span v-html="num_mid"></span>)</div>
                         <input class="form-check-input me-1" type="checkbox" value="" id="show_mid_id" v-model="show_mid" @change="filter_systems">
@@ -357,8 +392,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         <input class="form-check-input me-1" type="checkbox" value="" id="show_flagged_id" v-model="show_errors" @change="filter_systems">
                         <label class="form-check-label stretched-link" for="show_flagged_id">Metering errors </label>
                       </li>
-                    </ul>
-                    
+                        </ul>
+                    </div>
+                    </div>
+                    </div>
+
                 </div>
             </div>
             <div class="col-12 col-sm-12 col-md-12 col-lg-12 col-xl-10 mt-3">
@@ -464,45 +502,54 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 <table v-else id="custom" class="table table-striped table-sm mt-3">
                     <tr>
                         <th v-if="showContent" style="width:40px"></th>
-                        <th v-if="mode!='public'" @click="sort('id', 'asc')" style="cursor:pointer">ID</th>
+                        <th v-if="mode!='public' && !(mode=='user' && !showContent)" @click="sort('id', 'asc')" style="cursor:pointer">ID</th>
                         <th v-if="mode=='admin' || mode=='user'" @click="sort('name', 'asc')" style="cursor:pointer">User
                             <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='name'"></i>
                         </th>
                         <th v-for="column in selected_columns" @click="sort(column, 'desc')" style="cursor:pointer" :title="columns[column].helper"><span v-html="columns[column].heading"></span>
                             <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn==column"></i>
                         </th>
-                        <th v-if="mode!='public' && public_mode_enabled" @click="sort('share', 'desc')" style="cursor:pointer">Share
+                        <th v-if="mode!='public' && public_mode_enabled && !showContent" @click="sort('published', 'desc')" style="cursor:pointer"><i class="fas fa-globe" title="Status"></i>
+                            <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='published'"></i>
+                        </th>
+                        <th v-if="mode!='public' && public_mode_enabled && showContent" @click="sort('share', 'desc')" style="cursor:pointer">Share
                             <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='share'"></i>
                         </th>
-                        <th v-if="mode!='public' && public_mode_enabled" @click="sort('published', 'desc')" style="cursor:pointer">Published
+                        <th v-if="mode!='public' && public_mode_enabled && showContent" @click="sort('published', 'desc')" style="cursor:pointer">Published
                             <i :class="currentSortDir == 'asc' ? 'fa fa-arrow-up' : 'fa fa-arrow-down'" v-if="currentSortColumn=='published'"></i>
                         </th>
                         <th v-if="mode=='public'" :style="(showContent)?'width:80px':'width:20px'">View</th>
                         <th v-if="mode!='public'" :style="(showContent)?'width:120px':'width:20px'"></th>
 
                     </tr>
-                    <tr v-for="(system,index) in fSystems">
+                    <tr v-for="(system,index) in fSystems" :class="{ 'align-middle': !showContent }">
                         <td v-if="showContent">{{ index + 1 }}</td>
-                        <td v-if="mode!='public'">{{ system.id }}</td>
+                        <td v-if="mode!='public' && !(mode=='user' && !showContent)">{{ system.id }}</td>
                         <td v-if="mode=='admin' || mode=='user'"><span style="color:#888">{{ system.username }}</span></td>
                         <td v-for="column in selected_columns" v-html="column_format(system,column)" v-bind:class="sinceClass(system,column)" style=""></td>
-                        <td v-if="mode!='public' && public_mode_enabled">
+                        <td v-if="mode!='public' && public_mode_enabled && !showContent">
+                            <i v-if="system.share && system.published" class="fas fa-globe text-success" style="font-size:1.2em" title="Public"></i>
+                            <i v-if="!system.share" class="fas fa-lock text-danger" style="font-size:1.2em" title="Private"></i>
+                            <i v-if="system.share && !system.published && !system.data_flag" class="fas fa-hourglass-half text-warning" style="font-size:1.2em" title="Waiting for review"></i>
+                            <i v-if="system.share && !system.published && system.data_flag" class="fas fa-eye-slash text-secondary" style="font-size:1.2em" title="Not published"></i>
+                        </td>
+                        <td v-if="mode!='public' && public_mode_enabled && showContent">
                             <span v-if="system.share" class="badge bg-success">Shared</span>
                             <span v-if="!system.share" class="badge bg-danger">Private</span>
                         </td>
-                        <td v-if="mode!='public' && public_mode_enabled">
+                        <td v-if="mode!='public' && public_mode_enabled && showContent">
                             <span v-if="system.published" class="badge bg-success">Published</span>
                             <span v-if="system.share && !system.published && !system.data_flag" class="badge bg-warning">Waiting for review</span>
                             <span v-if="system.share && !system.published && system.data_flag" class="badge bg-secondary">Not published</span>
                         </td>
-                        <td>
+                        <td style="white-space:nowrap">
                             <!--View button-->
                             <a :href="'<?php echo $path;?>system/view?id='+system.id" v-if="mode=='public'">
                                 <button class="btn btn-primary btn-sm" title="Summary"><i class="fa fa-list-alt" style="color: #ffffff;"></i></button>
                             </a>
 
                             <!--Dashboard-->
-                            <a :href="'<?php echo $path;?>dashboard?id='+system.id+((!system.share || !system.published) && system.readkey ? '&readkey='+system.readkey : '')" target="_blank" v-if="showContent">
+                            <a :href="'<?php echo $path;?>dashboard?id='+system.id+((!system.share || !system.published) && system.readkey ? '&readkey='+system.readkey : '')" target="_blank" v-if="showContent || mode!='public'">
                                 <button class="btn btn-secondary btn-sm" title="Dashboard"><i class="fa fa-chart-bar" style="color: #ffffff;"></i></button>
                             </a>
 
@@ -512,7 +559,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                             </a>
 
                             <!--Delete button-->
-                            <button v-if="mode!='public'" class="btn btn-danger btn-sm" @click="remove(system.id)" title="Delete"><i class="fa fa-trash" style="color: #ffffff;"></i></button>
+                            <button v-if="mode!='public' && showContent" class="btn btn-danger btn-sm" @click="remove(system.id)" title="Delete"><i class="fa fa-trash" style="color: #ffffff;"></i></button>
 
 
                         </td>
@@ -974,6 +1021,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             columnOptions: [],
             minDays: minDays,
             showContent: true,
+            show_system_types: false,
             show_field_selector: false,
             column_to_add: null,
             custom_headings: custom_headings,
@@ -1661,7 +1709,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     var model = system['hp_model'] ? String(system['hp_model']).replace(/[&<>"']/g, function(m) {
                         return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];
                     }) : '';
-                    var makeModel = manufacturer + ' ' + model;
+                    // On mobile in user mode show just the model to save space
+                    var makeModel = (this.mode=='user' && !this.showContent) ? model : manufacturer + ' ' + model;
                     // If we have a heatpump_url, make it a link
                     if (system['heatpump_url']) {
                         return '<a href="' + system['heatpump_url'] + '">' + makeModel + '</a>';
@@ -1775,7 +1824,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 if (key=='photos') {
                     var photos = "";
                     if (system['photo_count'] && system['photo_count'] > 0) {
-                        photos += "<a href='javascript:void(0)' onclick='app.openSystemPhotos(" + system['id'] + ")' style='color: #0d6efd; font-size: 1.2em; text-decoration: none;' title='View system photos (" + system['photo_count'] + ")'><i class='fas fa-camera'></i></a>";
+                        photos += "<a href='javascript:void(0)' onclick='app.openSystemPhotos(" + system['id'] + ")' style='color: #0d6efd; font-size: 1.2em; line-height: 1; text-decoration: none;' title='View system photos (" + system['photo_count'] + ")'><i class='fas fa-camera'></i></a>";
                     }
                     return photos;
                 }
@@ -2330,6 +2379,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         },
 
         computed: {
+            // Columns, Filters and Show systems with cards share one line when all are collapsed
+            compact_cards: function () {
+                return !this.show_field_selector && !this.show_system_types && this.filter_query_parts.length == 0;
+            },
             // options for the "Add column" searchable dropdown, grouped and ordered
             // the same as the filter column dropdown, minus already selected columns
             addFieldOptions: function () {
@@ -2478,7 +2531,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         // User mode
         } else if (app.mode == 'user') {
             if (width<800) {
-                app.selected_columns = template_views[app.selected_template]['narrow'];
+                app.selected_columns = template_views[app.selected_template]['narrow'].filter(function(c) {
+                    return c!='installer_logo' && c!='training' && c!='learnmore';
+                });
+                app.columns['hp_make_model'].heading = "Model";
                 app.showContent = false;
                 if (first) app.show_field_selector = false;
                 app.columns['training'].heading = "";
@@ -2487,6 +2543,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 app.selected_columns = template_views[app.selected_template]['wide'];
                 app.showContent = true;
                 app.columns['training'].heading = "Training";
+                app.columns['hp_make_model'].heading = "Make & Model";
             }
         // Admin mode
         } else {
