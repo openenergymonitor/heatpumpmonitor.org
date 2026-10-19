@@ -283,6 +283,7 @@ up the newest `heatpumpmonitor_all_fields_*.csv` automatically.
 | `sim_results.csv` | July 2026 simulator sweep, used throughout these docs |
 | `sim_carnot_2026-10.csv`, `sim_arotherm_2026-10.csv` | October 2026 sweeps on the current simulator, carnot and Arotherm+ datasheet models (section 4) |
 | `analysis/sim_model_comparison.py` | runs the same tests on the sweeps and the fleet |
+| `twins/` | simulated datasheet twins of the fleet's Arotherm+ systems: `twin_targets.py` builds the targets, `twins.js` calibrates and runs the twins (needs the tools repo), `compare_twins.py` compares them with the real systems |
 | `modulation_features.csv` | histogram features |
 | `hstar_fleet.csv`, `hstar_fleet_hist.csv` | raw feed scan results, one row per system |
 | `hstar_hist.csv` | per-system heat histograms, 113 MB, not in git; regenerate with `feed_scan_5.php` |

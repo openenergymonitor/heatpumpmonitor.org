@@ -159,12 +159,70 @@ badge (median P 1.01 against 1.06 in the sim). One weather year, and the
 fit underpredicts the 5 kW unit by 10–16% at mild outside temperatures
 (+10 to +20 °C).
 
+## Twins of the real Arotherms
+
+The houses in that sweep were random, so the next step was to simulate
+each real Arotherm instead. `twins/twins.js` builds a twin for each of the
+validated Arotherm+ systems with the same badge, room temperature, DHW
+target, cylinder size and flow rate (from its running output and
+flow−return ΔT), and the Llanberis weather shifted to its mean outside
+temperature (median −2.5 K). It then calibrates heat loss, DHW volume and
+design flow temperature until the twin matches the system's annual space
+heat, water heat and heat-weighted flow temperature. 126 of 132 converged,
+mostly within 3–5 simulated years. The calibrated heat losses (median
+3.6 kW) sit close to the fleet's measured ones (4.0 kW).
+`twins/compare_twins.py` then compares each system with its twin.
+
+![real Arotherms against their datasheet twins](figures/twins.png)
+
+**The twins get the temperatures right but not the load.** Weighted
+flow−outside ΔT correlates at 0.99 between real systems and their twins.
+But the twins run more gently and more uniformly: median P 1.06 against
+1.01, sd 0.020 against 0.038, correlation only 0.56. Running the twins'
+hot water at full output instead of the app's 50% eco limit barely moved
+this (1.062 to 1.058). So real systems deliver their space heating in a
+harder, burstier way than a simulated house held at a constant setpoint
+by smooth PI control. Schedules, setbacks, zoning and the real controls
+aren't in the twins.
+
+**Absolute SPF is close.** The twins come out 7.5% low (real/twin median
+1.075), most of it in the 5 kW units (1.10), which matches the fit's known
+10–16% under-prediction for that unit at mild temperatures. As an SPF
+predictor the twins do no better than ΔT (cv R² 0.52 against 0.53).
+
+**The P test, system by system:**
+
+| | Slope | ± 95% |
+|---|---|---|
+| Twins: twin quality vs twin P | +0.36 | 0.16 |
+| Real: real quality vs real P | −0.02 | 0.15 |
+| Real quality vs twin P | −0.06 | 0.28 |
+
+Matched to the fleet's own houses, the datasheet predicts a smaller load
+effect than the random sweep did (+0.36 rather than +0.77). Applied to the
+real spread of P, that's about 0.12 SPF per standard deviation, against
+at most 0.04 allowed by the real data's interval. So the conclusion holds
+in a weaker form: the datasheet's load benefit should be visible across
+real Arotherms and isn't.
+
+**Real quality does partly follow the twins.** Regressing real SPF/H_fixed
+on the twin's gives a slope of +0.42 ± 0.28. The datasheet's other
+variation in efficiency, mostly with temperature lift and flow
+temperature, shows up in reality at about half size. It's the load part
+specifically that's missing.
+
+Nothing else stands out in the real/twin gap. Its strongest correlate is
+badge size (−0.29: larger units fall further short of their datasheet),
+then the twin's P (−0.21), heat loss per kW of badge (+0.17) and starts per
+day (−0.16). DHW share and climate offset don't matter.
+
 ## How big a lever was it anyway?
 
-Moderate, if the datasheet held. P has an sd of 4.7% across the fleet.
+Modest, if the datasheet held. P has an sd of 4.7% across the fleet.
 Under the carnot model that's worth about ±0.19 SPF, and under the
-Arotherm datasheet about ±0.27, against a fleet SPF sd of 0.49: roughly
-15–30% of the variance. In practice it's about zero. Temperatures explain
+Arotherm datasheet between ±0.12 (twins of real houses) and ±0.27
+(random houses), against a fleet SPF sd of 0.49. In practice it's about
+zero. Temperatures explain
 about 0.60 of the variance and the rest is machine and install quality
 plus noise.
 
