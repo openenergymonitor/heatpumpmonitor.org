@@ -182,6 +182,11 @@ class Home
 
         $systems = $this->system_stats->combined_meta_stats_query($query);
 
+        // Recent tariff unit rates for the time-of-use section, using the same
+        // minimum data lengths as the system list (72 of 90, 24 of 30 days)
+        $rates_last90 = $this->period_unit_rates("system_stats_last90_v2", 72);
+        $rates_last30 = $this->period_unit_rates("system_stats_last30_v2", 24);
+
         $output_systems = array();
         foreach ($systems as $system) {
 
@@ -222,10 +227,44 @@ class Home
                 'unit_rate_go' => $system->unit_rate_go !== null ? round($system->unit_rate_go, 2) : null,
                 'combined_cop' => round($system->combined_cop, 2),
                 'combined_elec_kwh' => round($system->combined_elec_kwh),
-                'combined_heat_kwh' => round($system->combined_heat_kwh)
+                'combined_heat_kwh' => round($system->combined_heat_kwh),
+                // [agile, cosy, go] or null where the period has too little data
+                'unit_rates_last90' => isset($rates_last90[$system->id]) ? $rates_last90[$system->id] : null,
+                'unit_rates_last30' => isset($rates_last30[$system->id]) ? $rates_last30[$system->id] : null
             );
         }
         return $output_systems;
+    }
+
+    // Agile, Cosy and Go unit rates per system id from a recent stats table,
+    // as [agile, cosy, go], for systems with at least $min_days of data
+    private function period_unit_rates($stats_table, $min_days)
+    {
+        $systems = $this->system_stats->combined_meta_stats_query(array(
+            'meta_filters' => array(
+                'mid_metering' => 1,
+                'metering_boundary_code' => 4
+            ),
+            'meta_fields' => array('id'),
+            'stats_fields' => array(
+                'combined_data_length',
+                'unit_rate_agile',
+                'unit_rate_cosy',
+                'unit_rate_go'
+            ),
+            'stats_table' => $stats_table
+        ));
+
+        $rates = array();
+        foreach ($systems as $system) {
+            if ($system->combined_data_length / 86400 < $min_days) continue;
+            $r = array();
+            foreach (array('unit_rate_agile', 'unit_rate_cosy', 'unit_rate_go') as $field) {
+                $r[] = $system->$field !== null && $system->$field > 0 ? round($system->$field, 2) : null;
+            }
+            $rates[(int) $system->id] = $r;
+        }
+        return $rates;
     }
 
     // Count of all MID metered systems, any metering boundary and any data

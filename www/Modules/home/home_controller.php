@@ -16,7 +16,7 @@ function home_controller() {
         return view("Modules/home/home_view.php", array(
             "userid"=>$session['userid'],
             "eligible_systems" => $home->eligible_systems(),
-            "cooling_systems" => $home->cooling_systems(),
+            "cooling_systems" => array(), // $home->cooling_systems(), disabled outside the cooling season
             "mid_metered_count" => $home->mid_metered_count(),
             "hero_map" => $home->hero_map()
         ));

@@ -723,6 +723,14 @@ global $path;
     outline: 3px solid rgba(68, 179, 226, 0.55);
     outline-offset: 2px;
 }
+/* Tariff + period toggles side by side, wrapping on narrow screens */
+.hpm-seg-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-left: auto;
+}
+.hpm-seg-group .hpm-seg { margin-left: 0; }
 /* Compact variant for the segmented control inside a leaderboard header */
 .hpm-leaderboard-head { flex-wrap: wrap; align-items: center; }
 .hpm-leaderboard-head .hpm-seg { padding: 0.2rem; }
@@ -1053,6 +1061,7 @@ global $path;
         </div>
     </section>
 
+    <?php if (false): // cooling panel disabled outside the cooling season ?>
     <!-- ============ Featured data story ============ -->
     <!-- Live cooling activity over the last 30 days, from the server-embedded cooling_systems dataset -->
     <section class="hpm-section hpm-section-sky pt-0">
@@ -1111,6 +1120,7 @@ global $path;
             </div>
         </div>
     </section>
+    <?php endif; ?>
 
 
     <!-- ============ 01 · Homes like yours ============ -->
@@ -1294,14 +1304,19 @@ global $path;
             <div class="hpm-eyebrow"><span class="hpm-eyebrow-num">02</span> Time of use tariffs</div>
             <h2 class="hpm-display mb-3">How much can you save with <span class="hpm-accent">time-of-use tariffs?</span></h2>
             <p class="hpm-lead mb-5">
-                The price of electricity is an important factor in the running cost of a heat pump. Time-of-use tariffs offer lower prices at certain times of day. The following explores how much HeatpumpMonitor systems would have paid on different tariffs over the last 12 months, and how they compare to the &approx;{{ PRICE_CAP.toFixed(0) }}p price cap. 
+                The price of electricity is an important factor in the running cost of a heat pump. Time-of-use tariffs offer lower prices at certain times of day. The following explores how much HeatpumpMonitor systems would have paid on different tariffs over the last 12 months, or for a more recent picture the last 3 months or month, and how they compare to the &approx;{{ PRICE_CAP.toFixed(0) }}p price cap. 
             </p>
 
             <div v-if="!finderLoading && !finderError">
                 <div class="hpm-results-head">
-                    <h3>What HeatpumpMonitor systems would pay on {{ tariffDef.name }}</h3>
-                    <div class="hpm-seg" role="group" aria-label="Choose tariff">
-                        <button v-for="td in tariffDefs" type="button" :class="{active: tariff===td.key}" @click="tariff=td.key">{{ td.short }}</button>
+                    <h3>What HeatpumpMonitor systems would pay on {{ tariffDef.name }} <span class="hpm-results-count">{{ tariffPeriodDef.heading }}</span></h3>
+                    <div class="hpm-seg-group">
+                        <div class="hpm-seg" role="group" aria-label="Choose tariff">
+                            <button v-for="td in tariffDefs" type="button" :class="{active: tariff===td.key}" @click="tariff=td.key">{{ td.short }}</button>
+                        </div>
+                        <div class="hpm-seg" role="group" aria-label="Choose analysis period">
+                            <button v-for="pd in tariffPeriodDefs" type="button" :class="{active: tariffPeriod===pd.key}" @click="tariffPeriod=pd.key">{{ pd.short }}</button>
+                        </div>
                     </div>
                 </div>
 
@@ -1315,6 +1330,7 @@ global $path;
                     <div class="col-md-4">
                         <div class="hpm-stat-card">
                             <div class="hpm-stat-value hpm-stat-teal" v-if="tariffVsCap >= 1">&minus;{{ tariffVsCap.toFixed(0) }}%</div>
+                            <div class="hpm-stat-value" v-else-if="tariffVsCap <= -1">+{{ (-tariffVsCap).toFixed(0) }}%</div>
                             <div class="hpm-stat-value" v-else>&approx; cap</div>
                             <div class="hpm-stat-label">the median system vs the &approx;{{ PRICE_CAP.toFixed(0) }}p price cap</div>
                         </div>
@@ -1331,9 +1347,9 @@ global $path;
                     <div class="col-lg-7">
                         <div class="hpm-chart-card">
                             <h3>{{ tariffDef.name }}: effective unit price</h3>
-                            <div class="hpm-chart-sub">{{ tariffDef.sub }} &middot; count of systems per 0.5p band &middot; hover for detail</div>
+                            <div class="hpm-chart-sub">{{ tariffDef.sub }} &middot; {{ tariffPeriodDef.label }} &middot; count of systems per 0.5p band &middot; hover for detail</div>
                             <svg class="hpm-hist" viewBox="0 0 680 350" role="img"
-                                 :aria-label="'Histogram of effective unit prices on ' + tariffDef.name + ' across ' + tariffStats.n + ' systems. The median is ' + tariffStats.median.toFixed(1) + ' pence, against a price cap of about ' + PRICE_CAP.toFixed(0) + ' pence.'">
+                                 :aria-label="'Histogram of effective unit prices on ' + tariffDef.name + ' over the ' + tariffPeriodDef.label + ' across ' + tariffStats.n + ' systems. The median is ' + tariffStats.median.toFixed(1) + ' pence, against a price cap of about ' + PRICE_CAP.toFixed(0) + ' pence.'">
                                 <rect class="iqr" :x="histX(tariffStats.q1)" y="18" :width="histX(tariffStats.q3) - histX(tariffStats.q1)" height="282"></rect>
                                 <g>
                                     <line v-for="t in histYTicks" class="grid" x1="50" :y1="histY(t)" x2="660" :y2="histY(t)"></line>
@@ -1380,11 +1396,11 @@ global $path;
                                     <a class="hpm-leader-link" :href="path + 'system/view?id=' + h.id">
                                         <span class="hpm-rank">{{ i + 1 }}</span>
                                         <span><span class="hpm-place">{{ h.location }}</span><br><span class="hpm-model">{{ homeSubtitle(h) }}</span></span>
-                                        <span class="hpm-val"><span class="hpm-kwh">{{ rateOf(h).toFixed(1) }}<small>p</small></span><br><span class="hpm-temp">&approx;&pound;{{ fmt(rateOf(h) * h.elec / 100) }}/yr &middot; SPF {{ h.cop.toFixed(1) }}</span></span>
+                                        <span class="hpm-val"><span class="hpm-kwh">{{ rateOf(h).toFixed(1) }}<small>p</small></span><br><span class="hpm-temp"><span :title="tariffPeriod === 'last365' ? '' : 'Annual electricity use priced at this rate'">&approx;&pound;{{ fmt(rateOf(h) * h.elec / 100) }}/yr</span> &middot; SPF {{ h.cop.toFixed(1) }}</span></span>
                                     </a>
                                 </li>
                             </ol>
-                            <a class="hpm-leaderboard-foot" :href="path + 'system/list?mode=costs&tariff=' + tariff">
+                            <a class="hpm-leaderboard-foot" :href="path + 'system/list?mode=costs&tariff=' + tariff + '&period=' + tariffPeriod + '&minDays=' + tariffPeriodDef.minDays">
                                 Explore all {{ tariffStats.n }} in cost mode <i class="bi bi-arrow-right"></i>
                             </a>
                         </div>
@@ -1410,7 +1426,7 @@ global $path;
             </div>
 
             <p class="hpm-finder-footnote"> 
-                The Agile tariff is currently showing savings with likely no or minimal need for demand shifting, but some owners are achieving even lower rates by running their heat pumps at cheaper times of day. Many owners prefer to run their heat pumps for comfort rather than cost which is a perfectly valid way of running a heat pump. Battery storage can also be used to shift demand rather than running the heat pump at a different times of day.
+                Over the last 12 months Agile offered savings against the price cap with little or no need for demand shifting. More recently Agile prices have risen, and over the last 3 months and month the typical Agile system has paid more than the price cap, while Cosy has been the cheapest of the three for most systems. Owners running their heat pumps at cheaper times of day, or using battery storage to shift demand, are still achieving much lower rates. Shorter periods also reflect the season: outside the heating season most electricity goes on hot water, which is easier to time. Many owners prefer to run their heat pumps for comfort rather than cost, which is a perfectly valid way of running a heat pump.
             </p>
 
             <!--
@@ -1802,6 +1818,14 @@ global $path;
             PRICE_CAP: 26.11,
             tariff: "agile",
             tariffRank: "lowest",
+            // Period the tariff analysis is based on; minDays matches the
+            // system list defaults and the filter in home_model.php
+            tariffPeriod: "last365",
+            tariffPeriodDefs: [
+                { key: "last365", short: "12 months", label: "last 12 months", heading: "over the last year", minDays: 330 },
+                { key: "last90", short: "3 months", label: "last 3 months", heading: "over the last 3 months", minDays: 72 },
+                { key: "last30", short: "1 month", label: "last month", heading: "over the last month", minDays: 24 }
+            ],
             tariffDefs: [
                 { key: "agile", short: "Agile", name: "Octopus Agile", sub: "Half-hourly wholesale-linked pricing" },
                 { key: "cosy", short: "Cosy", name: "Octopus Cosy", sub: "Three cheap windows each day" },
@@ -1826,6 +1850,12 @@ global $path;
                     agile: s.unit_rate_agile,
                     cosy: s.unit_rate_cosy,
                     go: s.unit_rate_go,
+                    // Tariff unit rates by analysis period, [agile, cosy, go]
+                    tou: {
+                        last365: [s.unit_rate_agile, s.unit_rate_cosy, s.unit_rate_go],
+                        last90: s.unit_rates_last90,
+                        last30: s.unit_rates_last30
+                    },
                     cop: s.combined_cop,
                     elec: s.combined_elec_kwh,
                     heat: s.combined_heat_kwh
@@ -1986,9 +2016,13 @@ global $path;
                 var key = this.tariff;
                 return this.tariffDefs.filter(function(t) { return t.key === key; })[0];
             },
+            tariffPeriodDef: function() {
+                var key = this.tariffPeriod;
+                return this.tariffPeriodDefs.filter(function(p) { return p.key === key; })[0];
+            },
             tariffValues: function() {
-                var key = this.tariff;
-                return this.homes.map(function(h) { return h[key]; })
+                var rateOf = this.rateOf.bind(this);
+                return this.homes.map(rateOf)
                     .filter(function(v) { return v !== null && v > 0; })
                     .sort(function(a, b) { return a - b; });
             },
@@ -2017,24 +2051,26 @@ global $path;
                 }[this.tariffRank];
             },
             tariffTopFive: function() {
-                var key = this.tariff;
+                var rateOf = this.rateOf.bind(this);
                 var mode = this.tariffRank;
                 var median = this.tariffStats.median;
-                var g = this.homes.filter(function(h) { return h[key] !== null && h[key] > 0; });
+                var g = this.homes.filter(function(h) { var r = rateOf(h); return r !== null && r > 0; });
                 if (mode === "median") {
-                    g.sort(function(a, b) { return Math.abs(a[key] - median) - Math.abs(b[key] - median); });
-                    return g.slice(0, 5).sort(function(a, b) { return a[key] - b[key]; });
+                    g.sort(function(a, b) { return Math.abs(rateOf(a) - median) - Math.abs(rateOf(b) - median); });
+                    return g.slice(0, 5).sort(function(a, b) { return rateOf(a) - rateOf(b); });
                 }
-                g.sort(function(a, b) { return mode === "lowest" ? (a[key] - b[key]) : (b[key] - a[key]); });
+                g.sort(function(a, b) { return mode === "lowest" ? (rateOf(a) - rateOf(b)) : (rateOf(b) - rateOf(a)); });
                 return g.slice(0, 5);
             },
-            // Shared price axis across all three tariffs, so toggling shows the
-            // distribution move relative to the price cap. Outliers fold into
-            // the top band.
+            // Shared price axis across all three tariffs and periods, so
+            // toggling shows the distribution move relative to the price cap.
+            // Outliers fold into the top band.
             histDomain: function() {
                 var all = [];
                 this.homes.forEach(function(h) {
-                    [h.agile, h.cosy, h.go].forEach(function(v) { if (v !== null && v > 0) all.push(v); });
+                    ["last365", "last90", "last30"].forEach(function(p) {
+                        (h.tou[p] || []).forEach(function(v) { if (v !== null && v > 0) all.push(v); });
+                    });
                 });
                 if (!all.length) return { lo: 10, hi: 32 };
                 var lo = Math.floor(Math.min.apply(null, all));
@@ -2355,8 +2391,11 @@ global $path;
             },
             // Estimated annual running cost in £ on the selected tariff
             costOf: function(h) { return h.elec * this.costRate(h) / 100; },
-            // Effective unit rate of a system on the selected tariff
-            rateOf: function(h) { return h[this.tariff]; },
+            // Effective unit rate of a system on the selected tariff and period
+            rateOf: function(h) {
+                var rates = h.tou[this.tariffPeriod];
+                return rates ? rates[["agile", "cosy", "go"].indexOf(this.tariff)] : null;
+            },
             // Linear-interpolated quantile of a sorted array
             quantile: function(sorted, p) {
                 var idx = (sorted.length - 1) * p;
