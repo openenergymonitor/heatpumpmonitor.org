@@ -10,10 +10,16 @@ Usage:
 
 import sys
 import glob
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from scipy import stats
+
+# The project folder (analysis/performance_prediction/): data files live here
+# and figures go to docs/figures/, wherever the scripts are run from
+ROOT = Path(__file__).resolve().parent.parent
+FIGURES = ROOT / "docs" / "figures"
 
 DAY = 86400
 
@@ -22,7 +28,7 @@ REFERENCE = {"slope": -0.1054, "intercept": 6.8762, "r2": 0.547, "pi90": 0.53}
 
 
 def find_csv():
-    matches = sorted(glob.glob("/var/www/hpmon_ai2/heatpumpmonitor_all_fields_*.csv"))
+    matches = sorted(glob.glob(str(ROOT / "heatpumpmonitor_all_fields_*.csv")))
     if not matches:
         sys.exit("No heatpumpmonitor_all_fields_*.csv found")
     return matches[-1]
@@ -126,7 +132,7 @@ def main():
 
     fit = linfit(f["weighted_flowT_minus_outsideT"], f["combined_cop"])
     report_fit("combined_cop vs weighted_flowT_minus_outsideT", fit, ref=REFERENCE)
-    plot_fit(fit, "/var/www/hpmon_ai2/docs/figures/cop_vs_flow_minus_outside.png",
+    plot_fit(fit, FIGURES / "cop_vs_flow_minus_outside.png",
              "SPF H4 vs weighted flow − outside temperature")
 
     # Sensitivity: same fit without the cooling filter (boundary 4, ASHP, 330d, MID)

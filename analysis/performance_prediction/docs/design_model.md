@@ -8,7 +8,7 @@ predict SPF before anything is installed?
 **In principle yes, but only if the design sheet describes the system
 that actually gets run, and in this fleet it mostly doesn't.**
 
-The model is in `analysis/design_model.py`, and there's an interactive
+The model is in `scripts/design_model.py`, and there's an interactive
 version at `design_spf_tool/index.html`. The two agree to within 0.3%.
 
 ## How it works
@@ -95,7 +95,8 @@ Same model, same method, 225 real systems:
 | Weighted ΔT (a year of monitoring) | 0.59 | ±0.50 |
 | H\*_design from declared parameters | 0.08 | ±0.74 |
 | … with heat loss corrected | 0.06 | ±0.72 |
-| … with the curve anchored on a measured coldest-day flowT | 0.21 | ±0.65 |
+| … with the curve anchored on a measured coldest-day flowT | 0.13 | ±0.69 |
+| … the same, leaving out the DHW block | 0.21 | ±0.65 |
 | Coldest-day ΔT on its own | 0.42 | ±0.65 |
 | Coldest-day ΔT + DHW share + capacity ratio | 0.42 | ±0.62 |
 

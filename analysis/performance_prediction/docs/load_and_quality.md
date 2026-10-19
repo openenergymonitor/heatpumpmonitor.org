@@ -113,7 +113,7 @@ minimum from the fit, flow rate sized for the badge output. The same 400
 houses were also run with the old `carnot_variable` model for comparison.
 About two thirds pass the comfort filter in each case. Then the same
 tests were run on both sweeps and on the fleet
-(`analysis/sim_model_comparison.py`):
+(`scripts/sim_model_comparison.py`):
 
 | | n | P test slope | SPF ~ ΔT, cv R² | SPF ~ H\*, cv R² |
 |---|---|---|---|---|
@@ -295,5 +295,5 @@ Practical notes:
 
 *Files: `scripts/feed_scan/feed_scan_2.php` (episode detector),
 `feed_scan_4.php` (fleet H\* scan), `feed_scan_5.php` (histograms);
-`analyse_hstar_fleet.py`, `analyse_hstar_offsets.py`; `hstar_fleet.csv`,
+`scripts/analyse_hstar_fleet.py`, `analyse_hstar_offsets.py`; `hstar_fleet.csv`,
 `hstar_fleet_hist.csv`, `hstar_hist.csv`.*

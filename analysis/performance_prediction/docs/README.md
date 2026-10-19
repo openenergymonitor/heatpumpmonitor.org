@@ -266,23 +266,33 @@ A few useful side results:
 
 ## Files
 
-Run the Python scripts from `analysis/performance_prediction/`. They pick
-up the newest `heatpumpmonitor_all_fields_*.csv` automatically.
+Set up once from `analysis/performance_prediction/`:
+
+```
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+```
+
+Then run any script with `.venv/bin/python scripts/<name>.py`. Scripts find
+the data relative to themselves, so the working directory doesn't matter,
+and they pick up the newest `heatpumpmonitor_all_fields_*.csv`. Figures are
+written to `docs/figures/`.
 
 | Path | What it is |
 |---|---|
-| `analysis/hpmon_analysis.py` | loader, standard filter, linear fit with PI (section 1) |
-| `analysis/residual_analysis.py`, `residual_plots.py` | residual tests and CV harness (section 2) |
-| `analysis/fetch_histograms.py`, `modulation_analysis.py`, `lowload_plots.py` | histogram features (section 3); the fetch cache isn't kept |
-| `analysis/sim_vs_real.py`, `metric_comparison.py`, `prc_carnot_offsets.py` | simulator comparisons (sections 4–5) |
-| `analysis/design_model.py`, `design_model_plots.py` | design sheet model |
-| `analyse_hstar_fleet.py`, `analyse_hstar_offsets.py` | H\* fleet test and offset search |
+| `scripts/hpmon_analysis.py` | loader, standard filter, linear fit with PI (section 1) |
+| `scripts/residual_analysis.py`, `residual_plots.py` | residual tests and CV harness (section 2) |
+| `scripts/fetch_histograms.py`, `modulation_analysis.py`, `lowload_plots.py` | histogram features (section 3); run `fetch_histograms.py` first, as the cache in `histograms/` isn't kept in git. A fetch in October 2026 differed for two systems (one no longer returns data), which moves the low-load correlation from −0.33 to −0.35; `modulation_features.csv` keeps the July values |
+| `scripts/sim_vs_real.py`, `metric_comparison.py`, `prc_carnot_offsets.py` | simulator comparisons (sections 4–5) |
+| `scripts/design_model.py`, `design_model_plots.py` | design sheet model |
+| `scripts/analyse_hstar_fleet.py`, `analyse_hstar_offsets.py` | H\* fleet test and offset search |
 | tools repo, `www/tools/dynamic_heatpump/` | the simulator; `sweep.js` there runs the Monte Carlo sweep |
 | `design_spf_tool/index.html` | interactive design sheet model |
 | `heatpumpmonitor_all_fields_*.csv` | fleet export |
+| `llanberis2024.csv` | the simulator's weather year, used by the design model (a copy from the tools repo) |
 | `sim_results.csv` | July 2026 simulator sweep, used throughout these docs |
 | `sim_carnot_2026-10.csv`, `sim_arotherm_2026-10.csv` | October 2026 sweeps on the current simulator, carnot and Arotherm+ datasheet models (section 4) |
-| `analysis/sim_model_comparison.py` | runs the same tests on the sweeps and the fleet |
+| `scripts/sim_model_comparison.py` | runs the same tests on the sweeps and the fleet |
 | `twins/` | simulated datasheet twins of the fleet's Arotherm+ systems: `twin_targets.py` builds the targets, `twins.js` calibrates and runs the twins (needs the tools repo), `compare_twins.py` compares them with the real systems |
 | `modulation_features.csv` | histogram features |
 | `hstar_fleet.csv`, `hstar_fleet_hist.csv` | raw feed scan results, one row per system |

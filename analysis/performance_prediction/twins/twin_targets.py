@@ -14,8 +14,10 @@ import csv
 import glob
 import json
 import statistics
+from pathlib import Path
 
-FLEET_CSV = "hstar_fleet_hist.csv"
+ROOT = Path(__file__).resolve().parent.parent
+FLEET_CSV = ROOT / "hstar_fleet_hist.csv"
 LLANBERIS_MEAN_OUTSIDE_T = 10.18      # annual mean of llanberis2024.csv
 AROTHERM_BADGES = {3.5, 5.0, 7.0, 10.0, 12.0}
 
@@ -47,7 +49,7 @@ def validated_arotherms():
 
 def main():
     scan = validated_arotherms()
-    export = sorted(glob.glob("heatpumpmonitor_all_fields_*.csv"))[-1]
+    export = sorted(glob.glob(str(ROOT / "heatpumpmonitor_all_fields_*.csv")))[-1]
     rows = {r["id"]: r for r in csv.DictReader(open(export)) if r["id"] in scan}
 
     # Systems that record a space/water split give the DHW share for those that don't

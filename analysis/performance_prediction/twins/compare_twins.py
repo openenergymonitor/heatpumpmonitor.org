@@ -12,10 +12,12 @@ Usage (from analysis/performance_prediction/):
 
 import csv
 import sys
+from pathlib import Path
 
 import numpy as np
 
-FLEET_CSV = "hstar_fleet_hist.csv"
+ROOT = Path(__file__).resolve().parent.parent
+FLEET_CSV = ROOT / "hstar_fleet_hist.csv"
 
 
 def fit(x, y):
@@ -48,7 +50,7 @@ def main():
     if "--fig" in args:
         fig_path = args[args.index("--fig") + 1]
         del args[args.index("--fig"):args.index("--fig") + 2]
-    twins_csv = args[0] if args else "twins/twins.csv"
+    twins_csv = args[0] if args else ROOT / "twins" / "twins.csv"
 
     fleet = {r["id"]: r for r in csv.DictReader(open(FLEET_CSV))}
     twins = [t for t in csv.DictReader(open(twins_csv)) if t["converged"] == "1"]

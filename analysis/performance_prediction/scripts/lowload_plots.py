@@ -10,8 +10,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 
-sys.path.insert(0, "/var/www/hpmon_ai2/analysis")
-from hpmon_analysis import load, standard_filter, find_csv, linfit
+from hpmon_analysis import load, standard_filter, find_csv, linfit, ROOT, FIGURES
 from residual_analysis import num
 
 BLUE, RED, GRAY, INK = "#2a78d6", "#e34948", "#9a9892", "#0b0b0b"
@@ -20,7 +19,7 @@ SEQ = LinearSegmentedColormap.from_list("blues", ["#dbe9f9", "#2a78d6", "#0c2d5c
 df = load(find_csv())
 f = standard_filter(df, verbose=False)
 f = f[f.weighted_flowT_minus_outsideT.notna() & f.combined_cop.notna()].reset_index(drop=True)
-M = pd.read_csv("/var/www/hpmon_ai2/modulation_features.csv")
+M = pd.read_csv(ROOT / "modulation_features.csv")
 t = f.join(M.drop(columns="id"))
 t["dT"] = num(t.weighted_flowT_minus_outsideT)
 base = linfit(t.dT, num(t.combined_cop))
@@ -76,7 +75,7 @@ for col, (label, color, systems) in enumerate(examples):
     ax = fig.add_subplot(gs[1, col])
     ax.grid(alpha=0.22); ax.set_axisbelow(True)
     for (sid, desc), ls in zip(systems, ["-", "--"]):
-        d = json.loads(open(f"/var/www/hpmon_ai2/histograms/{sid}_heat.json").read())
+        d = json.loads(open(ROOT / "histograms" / f"{sid}_heat.json").read())
         p = d["min"] + d["div"] * (np.arange(len(d["data"])) + 0.5)
         kwh = np.asarray(d["data"])
         rated = float(f.loc[f.id == sid, "hp_output"].iloc[0]) * 1000
@@ -96,6 +95,6 @@ for col, (label, color, systems) in enumerate(examples):
 
 fig.suptitle("Heat delivered at low load factor drags SPF below what temperatures predict"
              f"  (n={len(t)} ASHPs)", fontsize=13)
-out = "/var/www/hpmon_ai2/docs/figures/lowload_effect.png"
+out = FIGURES / "lowload_effect.png"
 fig.savefig(out, dpi=140, bbox_inches="tight")
 print("saved", out)

@@ -17,11 +17,10 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
-sys.path.insert(0, "/var/www/hpmon_ai2/analysis")
-from hpmon_analysis import load, standard_filter, find_csv
+from hpmon_analysis import load, standard_filter, find_csv, ROOT
 from residual_analysis import num
 
-s = pd.read_csv("/var/www/hpmon_ai2/sim_results.csv")
+s = pd.read_csv(ROOT / "sim_results.csv")
 s = s[s.degree_hours_below_setpoint < 2500].reset_index(drop=True)
 
 prc_fixed = s.spf / s.H_carnot

@@ -17,11 +17,10 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
-sys.path.insert(0, "/var/www/hpmon_ai2/analysis")
-from hpmon_analysis import load, standard_filter, find_csv, linfit
+from hpmon_analysis import load, standard_filter, find_csv, linfit, ROOT
 from residual_analysis import build_features, num, cv_eval
 
-CACHE = Path("/var/www/hpmon_ai2/histograms")
+CACHE = ROOT / "histograms"
 STANDBY_W = 120   # below this: standby + circulation pumps, not compressor
 
 
@@ -134,7 +133,7 @@ def main():
 
     M.insert(0, "id", f.id.values)
     M["resid"] = resid
-    M.to_csv("/var/www/hpmon_ai2/modulation_features.csv", index=False)
+    M.to_csv(ROOT / "modulation_features.csv", index=False)
     print("\nsaved modulation_features.csv")
 
 

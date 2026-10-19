@@ -21,8 +21,7 @@ import sys
 import numpy as np
 import pandas as pd
 
-sys.path.insert(0, "/var/www/hpmon_ai2/analysis")
-from hpmon_analysis import load, standard_filter, find_csv, linfit
+from hpmon_analysis import load, standard_filter, find_csv, linfit, ROOT
 from residual_analysis import num, cv_eval
 from sklearn.linear_model import LinearRegression
 from sklearn.pipeline import make_pipeline
@@ -36,7 +35,7 @@ def cv_report(X, y, name, folds=5):
 
 
 # ================= SIMULATED FLEET =================
-s = pd.read_csv("/var/www/hpmon_ai2/sim_results.csv")
+s = pd.read_csv(ROOT / "sim_results.csv")
 s = s[s.degree_hours_below_setpoint < 2500].reset_index(drop=True)
 s["dhw_frac"] = s.dhw_heat_kwh / s.heat_kwh
 y = s.spf
@@ -75,7 +74,7 @@ R["H_carnot"] = yr / (num(f.combined_prc_carnot) / 100)        # elec cancels: t
 R["runtime_frac"] = num(f.running_data_length) / num(f.combined_data_length)
 R["starts_per_day"] = num(f.combined_starts) / (num(f.combined_data_length) / 86400)
 R["dhw_frac"] = num(f.water_heat_kwh) / (num(f.space_heat_kwh) + num(f.water_heat_kwh))
-M = pd.read_csv("/var/www/hpmon_ai2/modulation_features.csv")
+M = pd.read_csv(ROOT / "modulation_features.csv")
 R["heat_frac_below_40pct"] = M.heat_frac_below_40pct.to_numpy()
 R["mean_load_factor"] = num(f.running_heat_mean) / (num(f.hp_output) * 1000)
 R["annual_heat_kwh"] = num(f.combined_heat_kwh)

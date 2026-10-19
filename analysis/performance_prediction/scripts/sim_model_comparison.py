@@ -16,17 +16,18 @@ like-for-like comparison with a sweep run on the Arotherm+ datasheet fit
 See docs/load_and_quality.md.
 
 Usage:
-  python3 analysis/sim_model_comparison.py carnot=sw_carnot_variable.csv \
+  python3 scripts/sim_model_comparison.py carnot=sw_carnot_variable.csv \
       arotherm=sw_generic_v2.csv [--fig docs/figures/sim_model_ptest.png]
 """
 
 import csv
 import sys
+from pathlib import Path
 
 import numpy as np
 
 COMFORT_MAX_DEGREE_HOURS = 2500
-FLEET_CSV = "hstar_fleet_hist.csv"
+FLEET_CSV = Path(__file__).resolve().parent.parent / "hstar_fleet_hist.csv"
 
 
 def load_sim(path):

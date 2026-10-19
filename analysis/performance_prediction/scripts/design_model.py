@@ -35,8 +35,7 @@ import sys
 import numpy as np
 import pandas as pd
 
-sys.path.insert(0, "/var/www/hpmon_ai2/analysis")
-from hpmon_analysis import load, standard_filter, find_csv, linfit
+from hpmon_analysis import load, standard_filter, find_csv, linfit, ROOT
 from residual_analysis import num, cv_eval
 from sklearn.linear_model import LinearRegression
 from sklearn.pipeline import make_pipeline
@@ -46,7 +45,7 @@ from sklearn.impute import SimpleImputer
 def load_weather():
     """Half-hourly outside temperature and solar irradiance, Llanberis 2024."""
     ts, sol = [], []
-    with open("/var/www/hpmon_ai2/dynamic_heatpump/llanberis2024.csv") as fh:
+    with open(ROOT / "llanberis2024.csv") as fh:
         for line in fh:
             c = line.strip().split(",")
             if len(c) >= 5:
@@ -57,7 +56,7 @@ def load_weather():
 WEATHER, SOLAR = load_weather()
 
 # ------------------------------------------------------- the design model
-A_COND, B_EVAP = 3.0, 8.0        # H* convention (doc 05)
+A_COND, B_EVAP = 3.0, 8.0        # H* convention (docs/README.md, section 5)
 RAD_EXP = 1.3                    # radiator equation exponent (as the simulator)
 MINMOD = 0.25                    # global constant (coarse grid on the sim)
 # gains defaults mirror the dynamic model: metabolic + lighting/appliances (W)
@@ -104,7 +103,7 @@ def design_hstar(u_wk, room, rad50_w, dt_sys, capacity_w,
     utilised and anything beyond is discarded (the closed-form equivalent of
     the dynamic model's mass + overheating-utilisation behaviour).
 
-    defrost_D=0 gives the pure (defrost-free) H* metric of doc 05. With
+    defrost_D=0 gives the pure (defrost-free) H* metric (docs/README.md, section 5). With
     defrost_D>0 the COP is derated by D*frost_w(T) and the returned value is
     the defrost-adjusted harmonic, so SPF = eta_bench * design_hstar(...,
     defrost_D=DEFROST_D) with eta_bench the defrost-free machine quality.
@@ -153,7 +152,7 @@ def cv_report(X, y, name, folds=5):
 
 def main():
     # ============ 1. SIMULATED FLEET (exact design params) ============
-    s = pd.read_csv("/var/www/hpmon_ai2/sim_results.csv")
+    s = pd.read_csv(ROOT / "sim_results.csv")
     s = s[s.degree_hours_below_setpoint < 2500].reset_index(drop=True)
     s["dhw_frac"] = s.dhw_heat_kwh / s.heat_kwh
     y = s.spf

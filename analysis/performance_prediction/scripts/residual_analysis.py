@@ -19,7 +19,6 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
-sys.path.insert(0, "/var/www/hpmon_ai2/analysis")
 from hpmon_analysis import load, standard_filter, find_csv, linfit
 
 DAY = 86400

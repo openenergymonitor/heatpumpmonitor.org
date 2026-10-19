@@ -248,7 +248,7 @@ footer a { color: inherit; }
         <div class="field">
           <label for="be">Evaporator offset <small>K/load</small></label>
           <input id="be" type="number" v-model.number="p.bEvap" min="0" max="16" step="0.5">
-          <div class="hint">H* convention: +3 / −8 K per unit load ratio (doc 05)</div>
+          <div class="hint">H* convention: +3 / −8 K per unit load ratio (see the analysis README, section 5)</div>
         </div>
       </fieldset>
     </div>
@@ -344,7 +344,7 @@ footer a { color: inherit; }
     frosting band (−2…+2 °C, fading by +6 °C), calibrated to fleet and field measurements
     (~0.15–0.2 SPF/yr); H* itself stays defrost-free. Radiator exponent 1.3. Validated against a
     dynamic simulation fleet to ±0.2 SPF (90%) with truthful inputs; see
-    docs/08_design_parameter_model.md. Assumes constant room setpoint, open-loop hydraulics and
+    docs/design_model.md. Assumes constant room setpoint, open-loop hydraulics and
     weather compensation commissioned to actual demand.
   </footer>
 </div>
@@ -371,7 +371,7 @@ function frostW(t) {
   return Math.max(0.4, 1 - (-2 - t) * 0.075);
 }
 
-// The design-parameter model (analysis/design_model.py, doc 08), closed form.
+// The design-parameter model (scripts/design_model.py, docs/design_model.md), closed form.
 // Space demand per sample group: U*(room - smoothedT) - internal gains -
 // smoothed solar * aperture * 0.9, clipped to [0, capacity].
 function computeModel(p) {
@@ -386,7 +386,7 @@ function computeModel(p) {
   const eta = p.eta / 100;
   const D = p.defrostD / 100;
 
-  // Two accumulators: the pure H* metric is defrost-free (doc 05 convention);
+  // Two accumulators: the pure H* metric is defrost-free (as in the analysis README, section 5);
   // electricity and predicted COP include the frost-band derating.
   let spaceH = 0, spaceIE = 0, spaceIEd = 0, totalHours = 0, sumInvCd = 0, sumInvCdD = 0;
   const rows = [];
@@ -618,7 +618,7 @@ Vue.createApp({
       // HeatpumpMonitor.org fleet (2026-07-15 export, 225 filtered systems):
       // annual heat 13,035 vs fleet median 13,205 kWh, and the operating
       // curve passes through the median coldest-day observation
-      // (37.3 C flow at -1.8 C outside). See docs/08.
+      // (37.3 C flow at -1.8 C outside). See docs/design_model.md.
       p: {
         heatLoss: 4.2, designTemp: -1.5, room: 20,
         metabolicGains: 120, lacGains: 240, solarScale: 4,

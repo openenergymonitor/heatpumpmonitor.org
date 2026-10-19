@@ -9,8 +9,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-sys.path.insert(0, "/var/www/hpmon_ai2/analysis")
-from hpmon_analysis import load, standard_filter, find_csv, linfit
+from hpmon_analysis import load, standard_filter, find_csv, linfit, ROOT, FIGURES
 from residual_analysis import num
 from scipy import stats
 
@@ -23,7 +22,7 @@ f = f[f.weighted_flowT_minus_outsideT.notna() & f.combined_cop.notna()]
 real = linfit(f.weighted_flowT_minus_outsideT, num(f.combined_cop))
 
 # --- simulated fleet ---
-s = pd.read_csv("/var/www/hpmon_ai2/sim_results.csv")
+s = pd.read_csv(ROOT / "sim_results.csv")
 n0 = len(s)
 # comfort filter: exclude designs that badly fail to heat the home
 s = s[s.degree_hours_below_setpoint < 2500].copy()
@@ -79,5 +78,5 @@ ax.set_ylabel("SPF")
 ax.set_title("Physics simulator (fixed 47% carnot machine) vs measured fleet")
 ax.legend(frameon=False, loc="upper right")
 fig.tight_layout()
-fig.savefig("/var/www/hpmon_ai2/docs/figures/sim_vs_real.png", dpi=140)
+fig.savefig(FIGURES / "sim_vs_real.png", dpi=140)
 print("\nsaved sim_vs_real.png")

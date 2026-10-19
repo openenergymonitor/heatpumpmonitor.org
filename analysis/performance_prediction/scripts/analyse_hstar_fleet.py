@@ -4,9 +4,9 @@
 Filters to air source systems, validates the feed-scan weighted temperatures
 against the recorded stats, and compares how well weighted dT, fixed-offset
 harmonic Carnot (H) and load-dependent H* predict SPF across the fleet.
-See analysis/performance_prediction/docs/05_harmonic_carnot_metric.md
+See docs/README.md, section 5.
 
-Usage: python3 analyse_hstar_fleet.py [hstar_fleet.csv]
+Usage: python3 scripts/analyse_hstar_fleet.py [hstar_fleet.csv]
 
 Pure stdlib, no dependencies.
 """
@@ -20,7 +20,7 @@ import sys
 # almost all cooling systems: the published pipeline inverts cooling's
 # negative heat to positive and includes it in combined_cop and the weighted
 # temperature sums, while the feed scan excludes it (h > 0). A few others
-# have very low quality_outsideT. See docs/09_hstar_fleet_results.md.
+# have very low quality_outsideT. See docs/README.md, section 5.
 WINDOW_MISMATCH_K = 0.5
 
 
@@ -99,7 +99,7 @@ def analyse(rows, label):
 
 
 def main():
-    path = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(__file__), "hstar_fleet.csv")
+    path = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "hstar_fleet.csv")
     with open(path, newline="") as f:
         raw = list(csv.DictReader(f))
     print(f"{path}: {len(raw)} systems")
@@ -161,7 +161,7 @@ def main():
     good = [r for r in rows if not mismatched(r)]
     if bad:
         print(f"\nMismatch systems (|calc dT - rec dT| > {WINDOW_MISMATCH_K}K), "
-              f"mostly cooling systems (see docs/09):")
+              f"mostly cooling systems (see docs/README.md, section 5):")
         for r in sorted(bad, key=lambda r: -abs(r["w_dT"] - r["rec_dT"])):
             print(f"  {r['id']:>5s}  dT calc {r['w_dT']:5.2f} rec {r['rec_dT']:5.2f}  "
                   f"SPF {r['spf']:4.2f} rec COP {r['rec_cop'] if r['rec_cop'] is not None else float('nan'):4.2f}  "

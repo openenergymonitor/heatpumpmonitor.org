@@ -11,10 +11,9 @@ import time
 import urllib.request
 from pathlib import Path
 
-sys.path.insert(0, "/var/www/hpmon_ai2/analysis")
-from hpmon_analysis import load, standard_filter, find_csv
+from hpmon_analysis import load, standard_filter, find_csv, ROOT
 
-CACHE = Path("/var/www/hpmon_ai2/histograms")
+CACHE = ROOT / "histograms"
 CACHE.mkdir(exist_ok=True)
 START, END = 1752534000, 1784070000   # same last-365d window as the CSV export
 

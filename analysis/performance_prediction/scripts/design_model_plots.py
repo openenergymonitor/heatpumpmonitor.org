@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Figures for doc 08: the design-parameter model.
+"""Figures for docs/design_model.md: the design-parameter model.
 
 Panel A: the commissioning gap — declared design flow temp vs the flow temp
          systems actually operate at (heat-weighted annual mean).
@@ -14,8 +14,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-sys.path.insert(0, "/var/www/hpmon_ai2/analysis")
-from hpmon_analysis import load, standard_filter, find_csv
+from hpmon_analysis import load, standard_filter, find_csv, FIGURES
 from residual_analysis import num
 from scipy import stats
 
@@ -89,6 +88,6 @@ ax2.legend(handles=h, frameon=False, loc="center right",
            bbox_to_anchor=(0.99, 0.47), fontsize=9.5)
 
 fig.tight_layout()
-out = "/var/www/hpmon_ai2/docs/figures/design_model.png"
+out = FIGURES / "design_model.png"
 fig.savefig(out, dpi=140, bbox_inches="tight")
 print("saved", out)

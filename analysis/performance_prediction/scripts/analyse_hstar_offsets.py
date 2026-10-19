@@ -12,7 +12,7 @@ metric of the family
 then grid-searches (a0, b0, a1, b1) for the best cross-validated R2 of
 SPF ~ H across the fleet. Reference points: (0,0,0,0) is 1/weighted-Carnot of
 the raw temps, (2,6,0,0) is the published fixed-offset convention, (0,0,3,8)
-is H* from doc 05.
+is H* (docs/README.md, section 5).
 
 The search runs twice with two load-ratio definitions:
   badge:     r = heat / hp_output  (rated capacity, as stored in the histogram)
@@ -25,10 +25,10 @@ still assumes the machine gets pushed near its real limit sometimes (DHW runs
 usually do this) and ignores capacity droop in cold air.
 
 Requires numpy. Usage:
-  python3 analyse_hstar_offsets.py [hstar_hist.csv] [hstar_fleet_hist.csv]
+  python3 scripts/analyse_hstar_offsets.py [hstar_hist.csv] [hstar_fleet_hist.csv]
 
 Validation-clean systems only (|calc dT - rec dT| <= 0.5 K and
-|window SPF - recorded COP| <= 0.25), same as the doc 09 analysis.
+|window SPF - recorded COP| <= 0.25), same as analyse_hstar_fleet.py.
 """
 
 import csv
@@ -138,7 +138,7 @@ def cv_r2(x, y, folds=FOLDS, seed=SEED):
 
 
 def main():
-    base = os.path.dirname(os.path.abspath(__file__))
+    base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     hist_path = sys.argv[1] if len(sys.argv) > 1 else os.path.join(base, "hstar_hist.csv")
     summary_path = sys.argv[2] if len(sys.argv) > 2 else os.path.join(base, "hstar_fleet_hist.csv")
 
