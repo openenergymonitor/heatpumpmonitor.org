@@ -142,10 +142,14 @@ https://heatpumpmonitor.org/histogram/kwh_at_power_heat?id=<id>&start=<t>&end=<t
 
 ## 4. The simulator: how much scatter does physics alone make?
 
-A Node harness (`sim_harness/`) runs the unmodified dynamic_heatpump tool
-over 400 randomised house and system designs, all with the same machine
-(47% of Carnot). After dropping designs that failed on comfort, 293
-remained.
+A Node harness ran the unmodified dynamic_heatpump tool over 400
+randomised house and system designs, all with the same machine (47% of
+Carnot). After dropping designs that failed on comfort, 293 remained.
+These results (`sim_results.csv`) came from the July 2026 version of the
+simulator (tools repo commit `3c8d156`). The harness has since moved
+upstream as `sweep.js` in the
+[tools repo](https://github.com/openenergymonitor/tools); see the note at
+the end of this section.
 
 That synthetic fleet scatters **±0.32** around its own SPF ~ ΔT line, about
 two thirds of the real fleet's ±0.51, with no variation in machines,
@@ -161,6 +165,25 @@ which real ones aren't. Treat the ±0.32 as the simulator's answer, not the
 fleet's.
 
 ![sim vs real](figures/sim_vs_real.png)
+
+**Re-run on the current simulator (October 2026).** Since July the
+simulator has gained frost and defrost, primary pipework losses and a new
+cylinder model, and emitters are now sized from a design flow temperature.
+A 400-scenario sweep with `sweep.js` (design flow temperature 35–55 °C,
+other ranges as before) gives:
+
+| SPF against | July sim | October sim |
+|---|---|---|
+| Weighted ΔT | R² 0.63, ±0.33 | R² 0.56, ±0.39 |
+| Harmonic Carnot, fixed offsets | R² 0.64, ±0.32 | R² 0.57, ±0.38 |
+| H\* | R² 0.90, ±0.16 | R² 0.70, ±0.32 |
+
+H\*'s lead in the simulator is now much smaller. Several things changed at
+once, so this doesn't say which change matters, but it fits the fleet
+result in section 5: the July simulator flattered H\*. Only 243 of the 400
+scenarios now pass the comfort filter (against 293), and the median DHW
+share is 21%, above the fleet's 14%, so the scenario ranges could do with
+re-tuning to the fleet.
 
 ## 5. H\*: a promising metric that didn't survive real data
 
@@ -254,11 +277,12 @@ up the newest `heatpumpmonitor_all_fields_*.csv` automatically.
 | `analysis/sim_vs_real.py`, `metric_comparison.py`, `prc_carnot_offsets.py` | simulator comparisons (sections 4–5) |
 | `analysis/design_model.py`, `design_model_plots.py` | design sheet model |
 | `analyse_hstar_fleet.py`, `analyse_hstar_offsets.py` | H\* fleet test and offset search |
-| `sim_harness/` | Node harness around the simulator |
-| `dynamic_heatpump/` | simulator source, unmodified |
+| tools repo, `www/tools/dynamic_heatpump/` | the simulator; `sweep.js` there runs the Monte Carlo sweep |
 | `design_spf_tool/index.html` | interactive design sheet model |
 | `heatpumpmonitor_all_fields_*.csv` | fleet export |
-| `sim_results.csv`, `modulation_features.csv` | simulator sweep and histogram features |
+| `sim_results.csv` | July 2026 simulator sweep, used throughout these docs |
+| `sim_results_2026-10.csv` | the October 2026 re-run on the current simulator (section 4) |
+| `modulation_features.csv` | histogram features |
 | `hstar_fleet.csv`, `hstar_fleet_hist.csv` | raw feed scan results, one row per system |
 | `hstar_hist.csv` | per-system heat histograms, 113 MB, not in git; regenerate with `feed_scan_5.php` |
 | `scripts/feed_scan/` (repo root) | the PHP feed scanners |
