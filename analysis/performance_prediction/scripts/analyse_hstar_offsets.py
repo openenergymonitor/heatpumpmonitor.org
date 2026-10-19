@@ -12,7 +12,7 @@ metric of the family
 then grid-searches (a0, b0, a1, b1) for the best cross-validated R2 of
 SPF ~ H across the fleet. Reference points: (0,0,0,0) is 1/weighted-Carnot of
 the raw temps, (2,6,0,0) is the published fixed-offset convention, (0,0,3,8)
-is H* (docs/README.md, section 5).
+is H* (docs/README.md, section 4).
 
 The search runs twice with two load-ratio definitions:
   badge:     r = heat / hp_output  (rated capacity, as stored in the histogram)

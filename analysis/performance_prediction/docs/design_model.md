@@ -71,8 +71,8 @@ tail of underperforming systems.
 
 ## In the simulator, with truthful inputs
 
-On the simulator's 293 designs, where the design parameters are known
-exactly:
+On the July simulator sweep (293 designs, see README section 4), where
+the design parameters are known exactly:
 
 | Predictor | Needs | cv R² | 90% PI |
 |---|---|---|---|
@@ -86,6 +86,10 @@ to only about ±0.1. One thing does matter: modelling gains explicitly.
 An early version that folded gains into a 1 K offset overestimated annual
 space heat by 47% against the simulator and 2.3× against the fleet.
 
+The model hasn't been re-tested on the October simulator, which adds
+defrost and pipework losses. H\* itself does less well there (±0.25 to
+±0.33), so expect the design model to as well.
+
 ## On the real fleet
 
 Same model, same method, 225 real systems:
@@ -97,10 +101,9 @@ Same model, same method, 225 real systems:
 | … with heat loss corrected | 0.06 | ±0.72 |
 | … with the curve anchored on a measured coldest-day flowT | 0.13 | ±0.69 |
 | … the same, leaving out the DHW block | 0.21 | ±0.65 |
-| Coldest-day ΔT on its own | 0.42 | ±0.65 |
-| Coldest-day ΔT + DHW share + capacity ratio | 0.42 | ±0.62 |
 
-It falls apart, and the inputs are why:
+It falls apart, and even coldest-day ΔT on its own does better (cv R²
+0.42, see the regression below). The inputs are why:
 
 - **Declared design flow temperature barely tracks reality (r = 0.33).**
   Declared median 45 °C, operated heat-weighted median 34.8 °C, with 5.3 K
@@ -162,8 +165,9 @@ temperature adds nothing at all (p = 0.92).
 
 ## Defrost
 
-The simulator doesn't model defrost, so it was originally hidden inside
-η. Two estimates from
+The July simulator the model was tuned on has no defrost, so the model
+adds it separately rather than leaving it hidden inside η. Two estimates
+from
 [OEM forum thread 29547](https://community.openenergymonitor.org/t/what-scop-can-you-expect-from-a-system-that-runs-at-55c-and-50c-flow-temperatures-on-the-coldest-days/29547/18)
 agree:
 
@@ -172,7 +176,7 @@ agree:
 - One system measured COP 0.5–0.6 below its no-defrost trend over a cold,
   damp month. That annualises to 0.17–0.21 SPF.
 
-The model now cuts COP by up to 13% in frosting conditions: full penalty
+The model cuts COP by up to 13% in frosting conditions: full penalty
 between −2 and +2 °C, fading to zero by +6 °C, and tapering in drier air
 below −2 °C. That gives 0.16 SPF for the default system.
 
@@ -184,8 +188,8 @@ are too similar in climate for this to separate systems much (r = 0.10).
 ## What to take from this
 
 - If systems ran as designed, a design-sheet model would be nearly as good
-  as a year of measured H\* in the simulator (±0.21 vs ±0.16), and a
-  simple closed form is enough.
+  as a year of measured H\* in the July simulator (±0.21 vs ±0.16), and
+  a simple closed form is enough.
 - On today's metadata it does worse than measured ΔT, because declared
   parameters describe intent, not operation.
 - **The leverage is in commissioning data.** If we recorded the

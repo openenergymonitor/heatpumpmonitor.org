@@ -56,7 +56,7 @@ def load_weather():
 WEATHER, SOLAR = load_weather()
 
 # ------------------------------------------------------- the design model
-A_COND, B_EVAP = 3.0, 8.0        # H* convention (docs/README.md, section 5)
+A_COND, B_EVAP = 3.0, 8.0        # H* convention (docs/README.md, section 4)
 RAD_EXP = 1.3                    # radiator equation exponent (as the simulator)
 MINMOD = 0.25                    # global constant (coarse grid on the sim)
 # gains defaults mirror the dynamic model: metabolic + lighting/appliances (W)
@@ -103,7 +103,7 @@ def design_hstar(u_wk, room, rad50_w, dt_sys, capacity_w,
     utilised and anything beyond is discarded (the closed-form equivalent of
     the dynamic model's mass + overheating-utilisation behaviour).
 
-    defrost_D=0 gives the pure (defrost-free) H* metric (docs/README.md, section 5). With
+    defrost_D=0 gives the pure (defrost-free) H* metric (docs/README.md, section 4). With
     defrost_D>0 the COP is derated by D*frost_w(T) and the returned value is
     the defrost-adjusted harmonic, so SPF = eta_bench * design_hstar(...,
     defrost_D=DEFROST_D) with eta_bench the defrost-free machine quality.

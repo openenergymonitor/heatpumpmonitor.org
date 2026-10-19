@@ -163,7 +163,7 @@ def main():
     t = m.t_test("ln_heat + ln_cap = 0")
     print(f"    test ln_heat + ln_cap = 0 (pure UR): p = {float(t.pvalue):.3g}")
     m2 = smf.ols("cop ~ W + heat_mwh + ln_cap", s).fit()
-    print("  same with heat in MWh (linear, as in README §2):")
+    print("  same with heat in MWh (linear):")
     show(m2, ["heat_mwh", "ln_cap"])
 
     table("2b. utilisation vs low-load share and standby", [

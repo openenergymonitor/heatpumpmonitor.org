@@ -3,7 +3,7 @@
 ---
 
 *Note from Trystan: This performance prediction project was largely generated using Claude code (Model: Fable - effort high).
-Appart from this brief introduction the document text is all written by claude as will be clear!*
+Apart from this brief introduction the document text is all written by claude as will be clear!*
 
 *This analysis attempts to progress my earlier manual analysis of the HeatpumpMonitor.org dataset as documented here: [https://docs.openenergymonitor.org/heatpumpmonitor/index.html](https://docs.openenergymonitor.org/heatpumpmonitor/index.html). I think it has uncovered a number of useful ideas!*
 
@@ -25,8 +25,10 @@ along the way are useful in their own right.
 
 **Data.** The HeatpumpMonitor.org all-fields export from 2026-07-15,
 filtered to 225 air source, MID-metered, boundary H4 systems with at least
-330 days of data and no cooling. Later work scanned the raw 10 s feeds for
-229 systems. The dynamic_heatpump simulator was used as a testbed.
+330 days of data and no cooling. Later work scanned the raw 10 s feeds of
+254 air source systems, 229 of which passed a cross-check against the
+published stats (section 4). The dynamic_heatpump simulator was used as a
+testbed.
 
 Other docs in this folder:
 
@@ -37,60 +39,66 @@ Other docs in this folder:
 
 ## Where things stand
 
-All figures are 90% prediction intervals on held-out systems.
+On the real fleet, cross-validated on held-out systems:
 
-| Predictor | 90% PI | Notes |
-|---|---|---|
-| Weighted ΔT | ±0.51 | the baseline, R² 0.60 |
-| ΔT + every safe published stat | ±0.45 | ceiling for the published table |
-| ΔT + heat demand + low-load share | ±0.46 | best small model |
-| H\* metric, real fleet | ±0.58 | worse than ΔT, not adopted |
-| H\* metric, simulator | ±0.16 | didn't transfer to the fleet |
-| Design sheet model, real fleet | ±0.74 | limited by the inputs |
-| Design sheet model, simulator | ±0.21 | with truthful inputs |
-| Metering error alone | ±0.10 | the floor |
+| Predictor | cv R² | 90% PI | Notes |
+|---|---|---|---|
+| Weighted ΔT | 0.59 | ±0.50 | the baseline |
+| ΔT + log annual heat | 0.64 | ±0.47 | best found, nothing else adds to it |
+| H\* metric | 0.47 | ±0.58 | worse than ΔT (n = 229) |
+| Design sheet model | 0.08 | ±0.74 | limited by the inputs |
+| Metering error alone | | ±0.10 | the floor |
+
+In the simulator, where every machine follows its COP model exactly and
+the design inputs are true, both H\* (±0.16 to ±0.33 depending on the
+simulator version) and the design sheet model (±0.21) beat ΔT. Neither
+result carried over to the fleet.
 
 ## 1. The baseline still holds
 
 The published fit was SPF = −0.105·ΔT + 6.88 (R² 0.55). On the current
-data it comes out as **SPF = −0.110·ΔT + 7.04, R² 0.60, ±0.51**, so the
-relationship has, if anything, got slightly stronger. Quadratic, log-log
-and Carnot-of-the-mean forms were all tried and none beat the straight
-line. The problem isn't the shape of the fit, it's how much a single
-averaged ΔT can tell you.
+data it comes out as **SPF = −0.110·ΔT + 7.04, R² 0.60** (cross-validated
+0.59, ±0.50), so the relationship has, if anything, got slightly stronger.
+Quadratic, log-log and Carnot-of-the-mean forms were all tried and none
+beat the straight line. The problem isn't the shape of the fit, it's how
+much a single averaged ΔT can tell you.
 
 Filter counts: boundary H4 gives 268 systems, air source 263, no cooling
 228, ≥330 days 226, with both COP and ΔT present 225. The cooling filter
 is the big cut. Without it the fit still holds but weakens (n = 258,
 R² 0.46), because the published weighted stats count summer cooling heat
-as heat (section 5). Coldest-day measures barely notice the filter.
+as heat (section 4). Coldest-day measures barely notice the filter.
 
 ![baseline fit](figures/cop_vs_flow_minus_outside.png)
 
 ## 2. What the published stats can add
 
-Three ideas for the scatter were tested against the published per-system
-stats.
+**Annual heat demand** is the strongest residual correlate (ρ = 0.36:
+bigger homes beat the line), and the only addition that helps. Adding log
+annual heat to ΔT gives cv R² 0.64, ±0.47:
+
+```
+SPF = 6.53 − 0.114·ΔT + 0.25·ln(annual heat, MWh)
+```
+
+Doubling annual heat is worth about +0.17 SPF. Why isn't clear. Bigger
+homes have a smaller standby share and steadier running, and primary
+pipework losses, which have no field in the data, would also matter less.
+These can't be separated from the annual data.
 
 **Standby electricity** is real and can be removed exactly, since
 `combined_cop = running_cop / (1 + standby_elec / running_elec)`. It
 costs a median 0.10 COP (worst case 0.38). Taking it out only lifts R²
-from 0.60 to 0.63, though.
+from 0.60 to 0.63, though, and it adds nothing once annual heat is in.
+
+**Utilisation** (annual heat ÷ badge capacity × 8760 h) also improves on
+ΔT (cv R² 0.62), but only through its annual heat part. Fitting log
+annual heat and log capacity separately gives +0.30 ± 0.12 for heat and
+−0.11 ± 0.14 for capacity, so how big the machine is relative to the
+house adds little.
 
 **Modulation** can't be seen in annual means. The mean load while running
 correlates with the residual at only ρ = 0.19.
-
-**Primary pipework losses** have no field in the data. The strongest
-residual correlate is annual heat demand (ρ = 0.36: bigger homes beat the
-line), but that's mixed up with standby and steadier running too, so it
-can't be pinned on pipework.
-
-**Utilisation** (annual heat ÷ badge capacity × 8760 h) also improves on
-ΔT, to R² 0.63. But it's the annual heat part doing the work. Fitting
-log annual heat and log capacity separately gives +0.30 ± 0.12 for heat
-and −0.11 ± 0.14 for capacity, so how big the machine is relative to the
-house adds little. Log annual heat on its own does better than
-utilisation (cv R² 0.64 against 0.62).
 
 Make matters a little. Mitsubishi averages about 0.2 above the line and
 Samsung, Grant and Daikin about 0.13 below, but the scatter within each
@@ -104,13 +112,9 @@ and refrigerant add nothing once ΔT is in. Some of these do help a model
 built on coldest-day temperatures, because there they stand in for the
 operating temperature (see [design_model.md](design_model.md)).
 
-Throwing every safe field into a cross-validated model gets to cv R² 0.64,
-±0.45. Gradient boosting did worse than linear regression (0.55): with
-225 systems, a bigger model just overfits. The best small model is:
-
-```
-SPF = 6.93 − 0.115·ΔT + 0.117·(annual heat, MWh) − 1.63·(standby fraction of elec)
-```
+Throwing every safe field into a cross-validated linear model does worse
+than the two-term model (cv R² 0.61, ±0.47), and gradient boosting worse
+again (0.55). With 225 systems a bigger model just overfits.
 
 The prediction interval scales with √(1 − R²), so getting to ±0.25 would
 need R² ≈ 0.90 and ±0.10 would need about 0.98. Better models won't get
@@ -128,22 +132,22 @@ tariff ÷ COP, so they leak too.
 ## 3. Systems that live at low load do worse
 
 Power histograms from the heatpumpmonitor.org API (heat delivered at each
-output power) gave the strongest single residual signal found anywhere in
-this work: **the share of annual heat delivered below 40% of rated
-output** (ρ = −0.33 with the ΔT residual). Systems that do a lot of their
-work at low output underperform what their temperatures predict. This
-isn't just small homes in disguise: controlling for annual demand still
-leaves −0.28.
+output power) gave the next strongest residual signal after annual heat:
+**the share of annual heat delivered below 40% of rated output**
+(ρ = −0.33 with the ΔT residual). Systems that do a lot of their work at
+low output underperform what their temperatures predict. This isn't just
+small homes in disguise: controlling for annual demand still leaves −0.28.
 
 The typical system delivers only 10% of its heat below 40% of rated
 output, but the top 15% deliver 40–72% there and sit about 0.23 COP below
 the rest. It reads as oversizing showing up in operation. Below minimum
 modulation the machine has to cycle, and fixed losses become a bigger
-share. Adding it to ΔT and heat demand gives cv R² 0.65, ±0.46.
+share.
 
-It's a weak signal in a regression, though. With ΔT and log annual heat
-in the model its coefficient is −0.18 ± 0.22 (p = 0.11), and it adds
-nothing on top of utilisation, which it correlates with at −0.50.
+It's a weak signal in a regression, though. Added to ΔT and log annual
+heat its coefficient is −0.18 ± 0.22 (p = 0.11) and cv R² doesn't
+improve. It adds nothing on top of utilisation either, which it
+correlates with at −0.50.
 
 What this effect actually *is* is still open (see
 [load_and_quality.md](load_and_quality.md)). The H\* work below showed
@@ -155,65 +159,46 @@ in cold weather, which ΔT already accounts for.
 
 ![low load effect](figures/lowload_effect.png)
 
-The API endpoint, for reference (it needs a non-default User-Agent;
-`Python-urllib` gets a 403):
+These figures use the histograms fetched in July 2026, kept in
+`modulation_features.csv`. A re-fetch in October differed for two systems
+(one no longer returns data), which moves the correlation to −0.35.
 
-```
-https://heatpumpmonitor.org/histogram/kwh_at_power_heat?id=<id>&start=<t>&end=<t>&x_min=0&x_max=30000
-```
+## 4. The simulator and H\*
 
-## 4. The simulator: how much scatter does physics alone make?
+A Node harness, now `sweep.js` in the
+[tools repo](https://github.com/openenergymonitor/tools), runs the
+unmodified dynamic_heatpump tool over 400 randomised house and system
+designs and drops those that fail on comfort. It has been run on two
+versions of the simulator:
 
-A Node harness ran the unmodified dynamic_heatpump tool over 400
-randomised house and system designs, all with the same machine (47% of
-Carnot). After dropping designs that failed on comfort, 293 remained.
-These results (`sim_results.csv`) came from the July 2026 version of the
-simulator (tools repo commit `3c8d156`). The harness has since moved
-upstream as `sweep.js` in the
-[tools repo](https://github.com/openenergymonitor/tools); see the note at
-the end of this section.
+- **July 2026** (tools commit `3c8d156`, `sim_results.csv`, 293 designs
+  kept). Every design has the same machine at 47% of Carnot, with no
+  defrost or pipework losses. The metric search and the design model used
+  this sweep.
+- **October 2026** (`sim_carnot_2026-10.csv`, `sim_arotherm_2026-10.csv`).
+  The simulator now has frost and defrost, primary pipework losses, a new
+  cylinder model, and emitters sized from a design flow temperature
+  (35–55 °C here). The same 400 houses were run with the carnot model and
+  with Vaillant Arotherm+ units sized by badge, using a COP model fitted
+  to the datasheet (`generic_v2`, speed based). DHW volume is trimmed so
+  the median DHW share matches the fleet's 14%.
 
-That synthetic fleet scatters **±0.32** around its own SPF ~ ΔT line, about
-two thirds of the real fleet's ±0.51, with no variation in machines,
-installs or metering. Its residual is almost entirely explained by how
-well each design uses the machine (r = 0.97 with achieved % of Carnot),
-driven by heat demand, capacity and DHW share, much like the real fleet.
-
-At the time this suggested most of the real scatter was operating pattern
-that ΔT throws away. The fleet test in section 5 showed that was too
-optimistic. Every simulated machine follows its COP model exactly, which
-real ones don't. Treat the ±0.32 as the simulator's answer, not the
-fleet's.
+**Identical machines still scatter.** The simulated fleets scatter ±0.34
+to ±0.40 around their own SPF ~ ΔT line, with no variation in machines,
+installs or metering. In the July sweep that residual is almost entirely
+how well each design uses the machine (r = 0.97 with achieved % of
+Carnot), driven by heat demand, capacity and DHW share, much like the real
+fleet. But every simulated machine follows its COP model exactly, which
+real ones don't, so this shows how much operating pattern *could* matter,
+not how much it does.
 
 ![sim vs real](figures/sim_vs_real.png)
 
-**Re-run on the current simulator (October 2026).** Since July the
-simulator has gained frost and defrost, primary pipework losses and a new
-cylinder model, emitters are sized from a design flow temperature, and
-there's a COP model fitted to the Vaillant Arotherm+ datasheet
-(`generic_v2`, speed based). The same 400 houses were run with the old
-carnot model and with Arotherm+ units sized by badge (`sweep.js`, design
-flow temperature 35–55 °C, DHW volume trimmed so the median DHW share
-matches the fleet's 14%). Cross-validated:
-
-| SPF against | July sim | Oct, carnot | Oct, Arotherm+ datasheet |
-|---|---|---|---|
-| Weighted ΔT | R² 0.63, ±0.34 | R² 0.61, ±0.40 | R² 0.77, ±0.34 |
-| Harmonic Carnot, fixed offsets | R² 0.64, ±0.32 | R² 0.63, ±0.40 | R² 0.78, ±0.32 |
-| H\* | R² 0.90, ±0.16 | R² 0.72, ±0.33 | R² 0.87, ±0.25 |
-
-With either model H\* still beats ΔT in the simulator, as it never did on
-the real fleet. The Arotherm run says why that matters: its datasheet
-predicts a strong load effect that real Arotherms don't show. That's
-written up in [load_and_quality.md](load_and_quality.md).
-
-## 5. H\*: a promising metric that didn't survive real data
-
-Using the simulator as ground truth, we searched for a better annual
-metric than ΔT. The winner was **H\***: an ideal Carnot COP averaged the
-right way (heat-weighted harmonic mean, because electricity is the sum of
-heat/COP), with the condensing and evaporating temperatures pushed apart
-as the machine works harder:
+**H\*.** Using the July sweep as ground truth, we searched for a better
+annual metric than ΔT. The winner was H\*: an ideal Carnot COP averaged
+the right way (heat-weighted harmonic mean, because electricity is the sum
+of heat/COP), with the condensing and evaporating temperatures pushed
+apart as the machine works harder:
 
 ```
 r      = heat / rated capacity            (instantaneous load ratio)
@@ -225,19 +210,23 @@ H* = Σ heat / Σ (heat / carnot)           (running samples only)
 ```
 
 It needs no electricity data, so it's an honest predictor rather than a
-restatement of COP. In the simulator it took R² from 0.63 to 0.90 and
-halved the interval to ±0.16.
+restatement of COP.
 
 ![metric collapse](figures/metric_collapse.png)
 
-On the real fleet it did worse than ΔT. `scripts/feed_scan/feed_scan_4.php`
-computed H\* from the raw 10 s feeds for 229 validated air source systems:
+On the real fleet it did worse than ΔT. `feed_scan_4.php` (in
+`scripts/feed_scan/` at the repo root) computed it from the raw 10 s feeds
+for the 229 validated systems. Cross-validated:
 
-| Metric (n = 229) | R² | 90% PI | Simulator said |
-|---|---|---|---|
-| Weighted ΔT | 0.60 | ±0.51 | 0.63 |
-| Harmonic Carnot, fixed +2/−6 | 0.58 | ±0.53 | 0.64 |
-| H\* (+3r/−8r) | 0.48 | ±0.58 | 0.90 |
+| SPF against | July sim | Oct sim, carnot | Oct sim, Arotherm+ | Real fleet |
+|---|---|---|---|---|
+| Weighted ΔT | 0.63, ±0.34 | 0.61, ±0.40 | 0.77, ±0.34 | 0.59, ±0.50 |
+| Harmonic Carnot, fixed +2/−6 | 0.64, ±0.32 | 0.63, ±0.40 | 0.78, ±0.32 | 0.57, ±0.52 |
+| H\* (+3r/−8r) | 0.90, ±0.16 | 0.72, ±0.33 | 0.87, ±0.25 | 0.47, ±0.58 |
+
+H\* beats ΔT in every version of the simulator, most of all in the July
+one with its identical, defrost-free machines. On the fleet it's the worst
+of the three.
 
 To rule out the coefficients simply being wrong, `feed_scan_5.php`
 exported a per-system histogram of heat by flowT, outsideT and load, so any
@@ -246,10 +235,11 @@ capacity taken either from the badge or from each system's own observed
 peak) found that **the best load coefficient is zero**, and no member of
 the family beats plain ΔT. That closes the metric search.
 
-The interesting part is *why* it failed. It's covered in
-[load_and_quality.md](load_and_quality.md).
+Why it failed is the subject of [load_and_quality.md](load_and_quality.md).
+In short, the Arotherm+ datasheet predicts a strong load effect, and real
+Arotherms don't show it.
 
-A few useful side results:
+Side results:
 
 - **The two pipelines agree.** The raw feed scan and the published weighted
   stats match to a few hundredths of a K for about 90% of systems. The 25
@@ -260,16 +250,15 @@ A few useful side results:
   is a median 1.33× the badge (IQR 1.09–1.67). A handful of 5 kW systems
   show 26–49 kW peaks, which must be heat-meter spikes and are worth a
   data QA pass.
-- **Published % of Carnot reads slightly high and flatters oversized
-  systems.** In the simulator, where every machine is identical, the fixed
-  +2/−6 convention reads about 3 points high and up to about 5 points
-  higher for low-load systems. In the fleet SPF/H\* has no less spread than
-  the published score (sd 0.041 vs 0.037), so it isn't a fairer ranking.
-  It does make the load effect visible, which the published score hides.
+- **Published % of Carnot reads slightly high.** In the July simulator,
+  where every machine is identical, the fixed +2/−6 convention reads about
+  3 points high, and up to 5 points for low-load systems. Swapping in H\*
+  doesn't give a fairer ranking on the fleet (sd of SPF/H\* 0.041 against
+  0.037).
 - **Ground source is out.** H\* uses outside air for the evaporator, which
   is wrong for a ground loop.
 
-## 6. Ideas not yet tried
+## 5. Ideas not yet tried
 
 - **Daily records instead of annual ones.** The fleet is about 80,000
   system-days, not 225 data points. A pooled model of daily COP against
@@ -280,7 +269,8 @@ A few useful side results:
   top of the ΔT fit, with SHAP values to explain each system's gap.
 - **Fit the simulator to individual homes.** The fitted % of Carnot would
   be a cleaned-up machine quality score, and whatever the fit can't
-  explain points at unmodelled effects.
+  explain points at unmodelled effects. The Arotherm twins in
+  [load_and_quality.md](load_and_quality.md) are a first step.
 - **Metadata worth adding:** glycol concentration, primary pipework length,
   and the as-commissioned weather compensation curve (see
   [design_model.md](design_model.md)).
@@ -309,6 +299,13 @@ Traps in the all-fields export:
 - Logging periods vary (330–365 days), so annualise kWh before comparing
   systems.
 
+The histogram API endpoint needs a non-default User-Agent (`Python-urllib`
+gets a 403):
+
+```
+https://heatpumpmonitor.org/histogram/kwh_at_power_heat?id=<id>&start=<t>&end=<t>&x_min=0&x_max=30000
+```
+
 ## Files
 
 Set up once from `analysis/performance_prediction/`:
@@ -327,20 +324,23 @@ written to `docs/figures/`.
 |---|---|
 | `scripts/hpmon_analysis.py` | loader, standard filter, linear fit with PI (section 1) |
 | `scripts/residual_analysis.py`, `residual_plots.py` | residual tests and CV harness (section 2) |
-| `scripts/fetch_histograms.py`, `modulation_analysis.py`, `lowload_plots.py` | histogram features (section 3); run `fetch_histograms.py` first, as the cache in `histograms/` isn't kept in git. A fetch in October 2026 differed for two systems (one no longer returns data), which moves the low-load correlation from −0.33 to −0.35; `modulation_features.csv` keeps the July values |
-| `scripts/sim_vs_real.py`, `metric_comparison.py`, `prc_carnot_offsets.py` | simulator comparisons (sections 4–5) |
-| `scripts/regression_analysis.py` | regression tests: utilisation, install and control categories, the coldest-day model (section 2 and design_model.md) |
+| `scripts/regression_analysis.py` | utilisation, install and control categories, the coldest-day model (section 2 and design_model.md) |
+| `scripts/fetch_histograms.py`, `modulation_analysis.py`, `lowload_plots.py` | histogram features (section 3). Run `fetch_histograms.py` first, as the cache in `histograms/` isn't kept in git. `modulation_analysis.py` rewrites `modulation_features.csv` from the cache |
+| `scripts/sim_vs_real.py`, `metric_comparison.py`, `prc_carnot_offsets.py` | July simulator comparisons (section 4) |
+| `scripts/analyse_hstar_fleet.py`, `analyse_hstar_offsets.py` | H\* fleet test and offset search (section 4) |
+| `scripts/sim_model_comparison.py` | the same tests on the October sweeps and the fleet (section 4, load_and_quality.md) |
 | `scripts/design_model.py`, `design_model_plots.py` | design sheet model |
-| `scripts/analyse_hstar_fleet.py`, `analyse_hstar_offsets.py` | H\* fleet test and offset search |
-| tools repo, `www/tools/dynamic_heatpump/` | the simulator; `sweep.js` there runs the Monte Carlo sweep |
+| `twins/` | simulated datasheet twins of the fleet's Arotherm+ systems: `twin_targets.py` builds the targets, `twins.js` calibrates and runs the twins (needs the tools repo), `compare_twins.py` compares them with the real systems |
 | `design_spf_tool/index.html` | interactive design sheet model |
 | `heatpumpmonitor_all_fields_*.csv` | fleet export |
-| `llanberis2024.csv` | the simulator's weather year, used by the design model (a copy from the tools repo) |
-| `sim_results.csv` | July 2026 simulator sweep, used throughout these docs |
-| `sim_carnot_2026-10.csv`, `sim_arotherm_2026-10.csv` | October 2026 sweeps on the current simulator, carnot and Arotherm+ datasheet models (section 4) |
-| `scripts/sim_model_comparison.py` | runs the same tests on the sweeps and the fleet |
-| `twins/` | simulated datasheet twins of the fleet's Arotherm+ systems: `twin_targets.py` builds the targets, `twins.js` calibrates and runs the twins (needs the tools repo), `compare_twins.py` compares them with the real systems |
-| `modulation_features.csv` | histogram features |
+| `modulation_features.csv` | histogram features, July 2026 fetch |
 | `hstar_fleet.csv`, `hstar_fleet_hist.csv` | raw feed scan results, one row per system |
 | `hstar_hist.csv` | per-system heat histograms, 113 MB, not in git; regenerate with `feed_scan_5.php` |
+| `sim_results.csv` | July 2026 simulator sweep |
+| `sim_carnot_2026-10.csv`, `sim_arotherm_2026-10.csv` | October 2026 sweeps, carnot and Arotherm+ datasheet models |
+| `llanberis2024.csv` | the simulator's weather year, used by the design model (a copy from the tools repo) |
+| tools repo, `www/tools/dynamic_heatpump/` | the simulator; `sweep.js` there runs the Monte Carlo sweep |
 | `scripts/feed_scan/` (repo root) | the PHP feed scanners |
+
+`metric_collapse.png`, `hstar_p_test.png` and `utilisation_vs_rbar.png`
+were made during the original analysis and have no script here.

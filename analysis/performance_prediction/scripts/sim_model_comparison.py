@@ -16,8 +16,8 @@ like-for-like comparison with a sweep run on the Arotherm+ datasheet fit
 See docs/load_and_quality.md.
 
 Usage:
-  python3 scripts/sim_model_comparison.py carnot=sw_carnot_variable.csv \
-      arotherm=sw_generic_v2.csv [--fig docs/figures/sim_model_ptest.png]
+  python3 scripts/sim_model_comparison.py carnot=sim_carnot_2026-10.csv \
+      arotherm=sim_arotherm_2026-10.csv [--fig docs/figures/sim_model_ptest.png]
 """
 
 import csv

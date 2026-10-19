@@ -4,7 +4,7 @@
 
 Manufacturer data says a heat pump is much more efficient at low
 compressor speed than flat out, at the same water and air temperatures.
-The H\* metric (see [README.md](README.md), section 5) builds that in, and
+The H\* metric (see [README.md](README.md), section 4) builds that in, and
 on the real fleet it made prediction worse. This doc sets out what we know
 about why, and how we could find out.
 
@@ -19,9 +19,6 @@ These get mixed up easily, so to be precise:
 - **Utilisation**: annual heat divided by capacity × hours in the year,
   off-time included. Fleet median 0.22. A system that rarely runs but
   goes flat out when it does has low utilisation and high r̄.
-  Utilisation does improve on ΔT (README section 2), but only through
-  annual heat. The capacity half of it adds nothing (−0.11 ± 0.14), so
-  it's no evidence of a sizing effect.
 - **H_fixed**: heat-weighted harmonic Carnot COP with fixed +2/−6 K
   offsets. This only accounts for temperatures.
 - **H\***: the same, with offsets that grow with load (+3r/−8r K).
@@ -60,7 +57,7 @@ under-performance the load model predicts isn't there.
 machines would show, and the fleet is flat.*
 
 Other checks agree. Adding mean load ratio to ΔT doesn't help (cv R²
-0.588 vs 0.595), and in a fit with both H_fixed and H\*, H\* gets a
+0.59 either way), and in a fit with both H_fixed and H\*, H\* gets a
 coefficient of about zero.
 
 ## Two explanations
@@ -76,9 +73,9 @@ From annual data we can't tell these apart:
 
 A simulator using the same load model as H\* can't decide between these,
 since it would just give back what we put in. A simulator using a real
-machine's datasheet can. That test is in the next section, and it rules
-out the weakest form of explanation 2: the datasheet itself predicts a
-large load effect.
+machine's datasheet can. That test is further down (what the Arotherm
+datasheet predicts), and it rules out the weakest form of explanation 2:
+the datasheet itself predicts a large load effect.
 
 ### What's been ruled out as the cancelling effect
 
@@ -113,18 +110,17 @@ behaved like their datasheet.
 nearest badge size to the sampled sizing, maximum output and a 30 rps
 minimum from the fit, flow rate sized for the badge output. The same 400
 houses were also run with the old `carnot_variable` model for comparison.
-About two thirds pass the comfort filter in each case. Then the same
-tests were run on both sweeps and on the fleet
-(`scripts/sim_model_comparison.py`):
+About two thirds pass the comfort filter in each case. Then the P test was
+run on both sweeps and on the fleet (`scripts/sim_model_comparison.py`;
+the cv R² for each is in README section 4). The fleet's Arotherms are the
+133 of 150 scanned that pass the raw scan's cross-check:
 
-| | n | P test slope | SPF ~ ΔT, cv R² | SPF ~ H\*, cv R² |
-|---|---|---|---|---|
-| Fleet, all | 229 | +0.05 ± 0.10 | 0.59 | 0.47 |
-| **Fleet, Arotherm+ only** | **133** | **−0.01 ± 0.14** | 0.55 | 0.44 |
-| Sim, carnot_variable | 272 | +0.46 | 0.61 | 0.72 |
-| **Sim, Arotherm+ datasheet** | **267** | **+0.77** | 0.77 | 0.87 |
-
-(± is the 95% interval on the slope.)
+| | n | P test slope (± 95%) |
+|---|---|---|
+| Fleet, all | 229 | +0.05 ± 0.10 |
+| **Fleet, Arotherm+ only** | **133** | **−0.01 ± 0.14** |
+| Sim, carnot_variable | 272 | +0.46 ± 0.10 |
+| **Sim, Arotherm+ datasheet** | **267** | **+0.77 ± 0.09** |
 
 ![P test: fleet against simulated fleets](figures/sim_model_ptest.png)
 
@@ -152,7 +148,7 @@ What this means:
   sharper: the question is now specifically whether Arotherms in the field
   reach their datasheet COP at low speed.
 - **The stable-episode experiment below answers exactly that,** and the
-  133 validated Arotherms are the right population for it.
+  validated Arotherms are the right population for it.
 
 Caveats: the simulator's cycling below minimum output is simple, and real
 starts and stops may cost more than it assumes. The sim's houses aren't
@@ -165,7 +161,8 @@ fit underpredicts the 5 kW unit by 10–16% at mild outside temperatures
 
 The houses in that sweep were random, so the next step was to simulate
 each real Arotherm instead. `twins/twins.js` builds a twin for each of the
-validated Arotherm+ systems with the same badge, room temperature, DHW
+132 validated Arotherm+ systems (the 133 above, less one 24 kW entry that
+isn't an Arotherm+ size) with the same badge, room temperature, DHW
 target, cylinder size and flow rate (from its running output and
 flow−return ΔT), and the Llanberis weather shifted to its mean outside
 temperature (median −2.5 K). It then calibrates heat loss, DHW volume and
@@ -220,13 +217,12 @@ day (−0.16). DHW share and climate offset don't matter.
 
 ## How big a lever was it anyway?
 
-Modest, if the datasheet held. P has an sd of 4.7% across the fleet.
-Under the carnot model that's worth about ±0.19 SPF, and under the
-Arotherm datasheet between ±0.12 (twins of real houses) and ±0.27
+Modest, even if the datasheet held. P has an sd of 4.7% across the
+fleet. Under the carnot model one sd of P is worth about 0.19 SPF, and
+under the Arotherm datasheet between 0.12 (twins of real houses) and 0.27
 (random houses), against a fleet SPF sd of 0.49. In practice it's about
-zero. Temperatures explain
-about 0.60 of the variance and the rest is machine and install quality
-plus noise.
+zero. Temperatures explain about 0.60 of the variance and the rest is
+machine and install quality plus noise.
 
 The simulated fleets don't spread load more widely than the real one
 (sd of P 0.024–0.035 in the sims, 0.047 in the fleet), so that isn't why
@@ -235,8 +231,10 @@ follows its COP model exactly.
 
 ## The experiment: measure the compressor map in the field
 
-The fleet has **150 Arotherm+ systems** in the clean scan (58 × 5 kW,
-64 × 7 kW, 12 × 10 kW, 9 × 12 kW, 6 × 3.5 kW), and Vaillant publishes COP
+The fleet has **132 validated Arotherm+ systems** (55 × 5 kW, 56 × 7 kW,
+11 × 10 kW, 7 × 12 kW, 3 × 3.5 kW; 150 Arotherm entries before the
+cross-check), and
+Vaillant publishes COP
 per compressor speed. That's a ground truth we can check field data
 against.
 
@@ -295,7 +293,8 @@ Practical notes:
 
 ---
 
-*Files: `scripts/feed_scan/feed_scan_2.php` (episode detector),
-`feed_scan_4.php` (fleet H\* scan), `feed_scan_5.php` (histograms);
-`scripts/analyse_hstar_fleet.py`, `analyse_hstar_offsets.py`; `hstar_fleet.csv`,
-`hstar_fleet_hist.csv`, `hstar_hist.csv`.*
+*Files: in `scripts/feed_scan/` at the repo root, `feed_scan_2.php`
+(episode detector), `feed_scan_4.php` (fleet H\* scan) and
+`feed_scan_5.php` (histograms); here, `scripts/analyse_hstar_fleet.py`,
+`analyse_hstar_offsets.py`, `scripts/sim_model_comparison.py`, `twins/`,
+`hstar_fleet.csv`, `hstar_fleet_hist.csv` and `hstar_hist.csv`.*
