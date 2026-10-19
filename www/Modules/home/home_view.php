@@ -42,36 +42,32 @@ global $path;
 .hpm-section { padding: 4.5rem 0; }
 .hpm-section-sky { background: var(--hpm-sky); }
 
-.hpm-eyebrow {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 1rem;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--hpm-muted);
-}
-.hpm-eyebrow-num {
+/* section number badge, inline at the start of each section heading */
+.hpm-section-num {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 2rem;
-    height: 2rem;
-    border-radius: 0.6rem;
+    min-width: 2.1em;
+    height: 2.1em;
+    margin-right: 0.75em;
+    padding: 0 0.35em;
+    border-radius: 0.55em;
     background: var(--hpm-panel-1);
     color: #fff;
-    font-size: 0.8125rem;
+    font-size: 0.42em;
+    font-weight: 700;
     letter-spacing: 0.05em;
+    vertical-align: middle;
+    position: relative;
+    top: -0.15em;
 }
 
 .hpm-display {
     font-weight: 800;
     letter-spacing: -0.02em;
     line-height: 1.08;
-    font-size: clamp(2rem, 4.2vw, 3rem);
-    max-width: 22ch;
+    font-size: clamp(1.6rem, 3vw, 2.25rem);
+    max-width: 35ch;
 }
 .hpm-display .hpm-accent { color: var(--hpm-blue-deep); }
 
@@ -1180,10 +1176,9 @@ global $path;
          filtered client-side for instant response to the chips. -->
     <section class="hpm-section">
         <div class="container">
-            <div class="hpm-eyebrow"><span class="hpm-eyebrow-num">01</span> Running costs</div>
-            <h2 class="hpm-display mb-3">What do heat pumps <span class="hpm-accent">cost to run</span> in different homes?</h2>
+            <h2 class="hpm-display mb-3"><span class="hpm-section-num" aria-hidden="true">01</span>Explore systems by <span class="hpm-accent">running cost</span></h2>
             <p class="hpm-lead mb-4">
-                The running cost of a heat pump is the product of three things: the <b>heat demand</b> of the home, the <b>efficiency</b> of the heat pump installation (SPF), and the <b>price of electricity</b>. The following explores real-world examples of heat pump homes on HeatpumpMonitor to see how these factors combine.
+                Find homes like yours and see what they actually pay to heat. Cost comes down to three things: <b>heat demand</b>, <b>efficiency</b> (SPF) and the <b>price of electricity</b>.
             </p>
 
             <!-- Filters: one compact row of dropdown pills -->
@@ -1312,15 +1307,14 @@ global $path;
          tariff prices. Background: community.openenergymonitor.org/t/30110 -->
     <section class="hpm-section hpm-section-sky">
         <div class="container">
-            <div class="hpm-eyebrow"><span class="hpm-eyebrow-num">02</span> Time of use tariffs</div>
-            <h2 class="hpm-display mb-3">How much can you save with <span class="hpm-accent">time-of-use tariffs?</span></h2>
+            <h2 class="hpm-display mb-3"><span class="hpm-section-num" aria-hidden="true">02</span>Explore systems by <span class="hpm-accent">tariff</span></h2>
             <p class="hpm-lead mb-5">
-                The price of electricity is an important factor in the running cost of a heat pump. Time-of-use tariffs offer lower prices at certain times of day. The following explores how much HeatpumpMonitor systems would have paid on different tariffs over the last 12 months, or for a more recent picture the last 3 months or month, and how they compare to the &approx;{{ PRICE_CAP.toFixed(0) }}p price cap. 
+                The unit price each system would have paid on Agile, Cosy and Go, based on its own half-hourly electricity use, compared with the &approx;{{ PRICE_CAP.toFixed(0) }}p price cap.
             </p>
 
             <div v-if="!finderLoading && !finderError">
                 <div class="hpm-results-head">
-                    <h3>What HeatpumpMonitor systems would pay on {{ tariffDef.name }} <span class="hpm-results-count">{{ tariffPeriodDef.heading }}</span></h3>
+                    <h3>Unit price on {{ tariffDef.name }} <span class="hpm-results-count">{{ tariffPeriodDef.heading }}</span></h3>
                     <div class="hpm-seg-group">
                         <div class="hpm-seg" role="group" aria-label="Choose tariff">
                             <button v-for="td in tariffDefs" type="button" :class="{active: tariff===td.key}" @click="tariff=td.key">{{ td.short }}</button>
@@ -1437,7 +1431,7 @@ global $path;
             </div>
 
             <p class="hpm-finder-footnote"> 
-                Over the last 12 months Agile offered savings against the price cap with little or no need for demand shifting. More recently Agile prices have risen, and over the last 3 months and month the typical Agile system has paid more than the price cap, while Cosy has been the cheapest of the three for most systems. Owners running their heat pumps at cheaper times of day, or using battery storage to shift demand, are still achieving much lower rates. Shorter periods also reflect the season: outside the heating season most electricity goes on hot water, which is easier to time. Many owners prefer to run their heat pumps for comfort rather than cost, which is a perfectly valid way of running a heat pump.
+                Owners who time their heating and hot water, or use a battery, pay well below the median. Many run their heat pump for comfort rather than cost, which is a perfectly valid choice.
             </p>
 
             <!--
@@ -1461,10 +1455,9 @@ global $path;
          dataset used by the sections above and below. -->
     <section class="hpm-section">
         <div class="container">
-            <div class="hpm-eyebrow"><span class="hpm-eyebrow-num">03</span> Performance distribution</div>
-            <h2 class="hpm-display mb-3">How <span class="hpm-accent">efficient</span> are HeatpumpMonitor systems?</h2>
+            <h2 class="hpm-display mb-3"><span class="hpm-section-num" aria-hidden="true">03</span>Explore systems by <span class="hpm-accent">efficiency</span></h2>
             <p class="hpm-lead mb-5">
-                The seasonal performance factor (SPF) is the headline efficiency figure for a heat pump: the units of heat delivered per unit of electricity consumed over a full year, space heating and hot water combined. The following chart shows the performance distribution for systems on HeatpumpMonitor.
+                SPF is the heat delivered per unit of electricity over a full year, heating and hot water combined. Use the ranking to highlight the top, middle or bottom systems.
             </p>
 
             <div v-if="!finderLoading && !finderError">
@@ -1576,10 +1569,9 @@ global $path;
 
     <section class="hpm-section hpm-section-sky">
         <div class="container">
-            <div class="hpm-eyebrow"><span class="hpm-eyebrow-num">04</span> Installation map</div>
-            <h2 class="hpm-display mb-3">Find an installer</h2>
+            <h2 class="hpm-display mb-3"><span class="hpm-section-num" aria-hidden="true">04</span>Explore systems <span class="hpm-accent">near you</span></h2>
             <p class="hpm-lead mb-4">
-               Use our map to find systems and installers near you.
+                Find systems and their installers near you. Locations are approximate.
             </p>
 
             <div class="hpm-map-embed">
@@ -1588,10 +1580,6 @@ global $path;
                     <span class="hpm-btn hpm-btn-primary">Open the full map <i class="bi bi-arrows-fullscreen"></i></span>
                 </a>
             </div>
-            <p class="hpm-finder-footnote">
-                Locations are approximate. On the full map you can search by place name, filter
-                systems and click through to each system and its installer.
-            </p>
 
             <div id="installer-strip-label" class="hpm-installer-strip-label" style="display:none;">Installers with the most MID-metered systems</div>
             <div id="installer-strip" class="hpm-installer-strip"></div>
@@ -1603,11 +1591,7 @@ global $path;
     
     <section class="hpm-section">
         <div class="container">
-            <div class="hpm-eyebrow"><span class="hpm-eyebrow-num">05</span> Tools &amp; data</div>
-            <h2 class="hpm-display mb-3">Explore in more <span class="hpm-accent">detail</span></h2>
-            <p class="hpm-lead mb-5">
-                In addition to the main system list there are a number of useful tools available to explore the data in more detail.
-            </p>
+            <h2 class="hpm-display mb-5"><span class="hpm-section-num" aria-hidden="true">05</span>Explore in more <span class="hpm-accent">detail</span></h2>
             <div class="row g-4">
                 <div class="col-md-6 col-xl-3">
                     <a class="hpm-explore-card" href="<?php echo $path; ?>system/list">
@@ -1652,10 +1636,9 @@ global $path;
 
     <section class="hpm-section hpm-section-sky">
         <div class="container">
-            <div class="hpm-eyebrow"><span class="hpm-eyebrow-num">06</span> Community</div>
-            <h2 class="hpm-display mb-3">Join the <span class="hpm-accent">community</span></h2>
+            <h2 class="hpm-display mb-3"><span class="hpm-section-num" aria-hidden="true">06</span>Join the <span class="hpm-accent">community</span></h2>
             <p class="hpm-lead mb-5">
-                Join the discussion on the OpenEnergyMonitor community forum. Ask questions, share your experiences and learn from other heat pump owners and installers.
+                Ask questions and share experiences with other heat pump owners and installers on the OpenEnergyMonitor forum.
             </p>
 
             <div class="hpm-forum-card" v-if="forum.length">
@@ -1706,8 +1689,7 @@ global $path;
 
     <section class="hpm-section" id="join-in">
         <div class="container">
-            <div class="hpm-eyebrow"><span class="hpm-eyebrow-num">07</span> Join in</div>
-            <h2 class="hpm-display mb-3">Monitor your heat pump. <span class="hpm-accent">Share your data.</span></h2>
+            <h2 class="hpm-display mb-3"><span class="hpm-section-num" aria-hidden="true">07</span>Monitor your heat pump. <span class="hpm-accent">Share your data.</span></h2>
             <p class="hpm-lead mb-5">
                 Monitor your own heat pump to see how it performs. Add your system to the open data resource and help others learn from your real world experience.
             </p>
