@@ -33,11 +33,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     </tr>
                     <tr>
                         <td>Total number of systems</th>
-                        <td><a :href="path+'?filter=query:hp_model:'+encodeURIComponent(heatpump.name)+',hp_output:'+heatpump.capacity+',refrigerant:'+heatpump.refrigerant+'&minDays=0&other=1&hpint=1&errors=1'" target="_blank">{{ heatpump.stats.number_of_systems }}</a></td>
+                        <td><a :href="path+'system/list?filter=query:hp_model:'+encodeURIComponent(heatpump.name)+',hp_output:'+heatpump.capacity+',refrigerant:'+heatpump.refrigerant+'&minDays=0&other=1&hpint=1&errors=1'" target="_blank">{{ heatpump.stats.number_of_systems }}</a></td>
                     </tr>
                     <tr>
                         <td>Number of systems with 1 year of data</th>
-                        <td><a :href="path+'?filter=query:hp_model:'+encodeURIComponent(heatpump.name)+',hp_output:'+heatpump.capacity+',refrigerant:'+heatpump.refrigerant+'&other=1&hpint=1&errors=1'" target="_blank">{{ heatpump.stats.number_of_systems_last365 }}</a></td>
+                        <td><a :href="path+'system/list?filter=query:hp_model:'+encodeURIComponent(heatpump.name)+',hp_output:'+heatpump.capacity+',refrigerant:'+heatpump.refrigerant+'&other=1&hpint=1&errors=1'" target="_blank">{{ heatpump.stats.number_of_systems_last365 }}</a></td>
                     </tr>
                     <tr>
                         <td>Average SPF H4</th>
