@@ -625,20 +625,6 @@ global $path;
 .hpm-closing p { max-width: 62ch; }
 
 /* ---- homes-like-yours finder ---- */
-.hpm-finder-card {
-    background: var(--hpm-card);
-    border: 1px solid var(--hpm-line);
-    border-radius: 1rem;
-    padding: 1.1rem 1.75rem;
-    box-shadow: 0 4px 16px rgba(20, 52, 74, 0.05);
-}
-.hpm-filter-row {
-    display: flex;
-    align-items: baseline;
-    gap: 1.25rem;
-    padding: 0.7rem 0;
-}
-.hpm-filter-row + .hpm-filter-row { border-top: 1px solid var(--hpm-sky); }
 .hpm-filter-label {
     flex: 0 0 7.5rem;
     font-size: 0.8125rem;
@@ -647,33 +633,85 @@ global $path;
     text-transform: uppercase;
     color: var(--hpm-muted);
 }
-.hpm-chip-set {
+.hpm-filter-bar {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.6rem;
+}
+.hpm-filter-pill {
+    position: relative;
+    display: inline-flex;
+    align-items: baseline;
     gap: 0.45rem;
-}
-.hpm-chip-toggle {
+    margin: 0;
+    padding: 0.4rem 1.9rem 0.4rem 0.95rem;
     border: 1px solid var(--hpm-line);
-    background: var(--hpm-card);
-    color: var(--hpm-ink-soft);
     border-radius: 2rem;
-    padding: 0.28rem 0.9rem;
-    font-size: 0.9063rem;
-    font-weight: 600;
-    line-height: 1.4;
+    background: var(--hpm-card);
+    white-space: nowrap;
     cursor: pointer;
-    transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+    transition: background-color 0.12s ease, border-color 0.12s ease;
 }
-.hpm-chip-toggle:hover { border-color: var(--hpm-blue); color: var(--hpm-blue-deep); }
-.hpm-chip-toggle.active {
-    background: var(--hpm-blue-deep);
-    border-color: var(--hpm-blue-deep);
-    color: #fff;
+.hpm-filter-pill::after {
+    content: "";
+    position: absolute;
+    right: 0.85rem;
+    top: 50%;
+    width: 0.42rem;
+    height: 0.42rem;
+    margin-top: -0.3rem;
+    border-right: 2px solid var(--hpm-ink-soft);
+    border-bottom: 2px solid var(--hpm-ink-soft);
+    transform: rotate(45deg);
+    pointer-events: none;
 }
-.hpm-chip-toggle:focus-visible {
+.hpm-filter-pill:hover { border-color: var(--hpm-blue); }
+.hpm-filter-pill:focus-within {
     outline: 3px solid rgba(68, 179, 226, 0.55);
     outline-offset: 2px;
 }
+.hpm-filter-pill-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--hpm-ink-soft);
+}
+.hpm-filter-pill-value {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--hpm-ink);
+}
+/* Native select stretched invisibly over the pill: the pill sizes to the
+   chosen value, and a click anywhere opens the browser's own option list. */
+.hpm-filter-pill select {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    font-size: 1rem;
+}
+.hpm-filter-pill.active {
+    background: var(--hpm-blue-deep);
+    border-color: var(--hpm-blue-deep);
+}
+.hpm-filter-pill.active .hpm-filter-pill-label { color: rgba(255, 255, 255, 0.9); }
+.hpm-filter-pill.active .hpm-filter-pill-value { color: #fff; }
+.hpm-filter-pill.active::after { border-color: #fff; }
+.hpm-filter-bar .hpm-finder-clear { margin-left: 0.2rem; white-space: nowrap; }
+.hpm-filter-count {
+    margin: 0 0.6rem 0 0;
+    font-size: 1.25rem;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+}
+.hpm-filter-count .hpm-results-count { color: var(--hpm-blue-deep); }
+.hpm-filter-bar .hpm-filter-tariff { margin-left: auto; }
+
 .hpm-finder-clear {
     background: none;
     border: none;
@@ -967,14 +1005,28 @@ global $path;
     .hpm-hero { padding: 3.5rem 0 3rem; }
     .hpm-hero-map-card { height: 24rem; }
     .hpm-featured { padding: 1.75rem; border-radius: 1.1rem; }
-    .hpm-filter-row { flex-direction: column; gap: 0.5rem; }
-    .hpm-filter-label { flex: none; }
     .hpm-seg { margin-left: 0; }
     .hpm-map-canvas { height: 21rem; }
     .hpm-map-cta { padding: 1.25rem; }
     .hpm-forum-cols { display: none; }
     .hpm-forum-row { grid-template-columns: minmax(0, 1fr) auto auto; gap: 0.75rem; }
     .hpm-forum-posters, .hpm-forum-views { display: none; }
+}
+
+/* Laptop-width screens (e.g. 13" at 150% scaling): the sections below the
+   hero use fixed rem sizes that read as oversized here, so scale them down.
+   max-width is widened by 1/zoom so the content still lines up with the hero. */
+@media (min-width: 992px) and (max-width: 1799.98px) {
+    .hpm-section > .container,
+    .hpm-closing > .container { zoom: 0.88; max-width: calc(960px / 0.88); }
+}
+@media (min-width: 1200px) and (max-width: 1799.98px) {
+    .hpm-section > .container,
+    .hpm-closing > .container { max-width: calc(1140px / 0.88); }
+}
+@media (min-width: 1400px) and (max-width: 1799.98px) {
+    .hpm-section > .container,
+    .hpm-closing > .container { max-width: calc(1320px / 0.88); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1130,73 +1182,29 @@ global $path;
         <div class="container">
             <div class="hpm-eyebrow"><span class="hpm-eyebrow-num">01</span> Running costs</div>
             <h2 class="hpm-display mb-3">What do heat pumps <span class="hpm-accent">cost to run</span> in different homes?</h2>
-            <p class="hpm-lead mb-5">
+            <p class="hpm-lead mb-4">
                 The running cost of a heat pump is the product of three things: the <b>heat demand</b> of the home, the <b>efficiency</b> of the heat pump installation (SPF), and the <b>price of electricity</b>. The following explores real-world examples of heat pump homes on HeatpumpMonitor to see how these factors combine.
             </p>
 
-            <!-- Filters -->
-            <div class="hpm-finder-card">
-                <div class="hpm-filter-row">
-                    <span class="hpm-filter-label">Property</span>
-                    <div class="hpm-chip-set">
-                        <button type="button" v-for="o in finderOptions.property"
-                                :class="['hpm-chip-toggle', {active: finder.property===o}]"
-                                @click="finder.property=o">{{ o }}</button>
-                    </div>
-                </div>
-                <div class="hpm-filter-row">
-                    <span class="hpm-filter-label">Floor area</span>
-                    <div class="hpm-chip-set">
-                        <button type="button" v-for="o in finderOptions.floor"
-                                :class="['hpm-chip-toggle', {active: finder.floor===o}]"
-                                @click="finder.floor=o">{{ o }}</button>
-                    </div>
-                </div>
-                <div class="hpm-filter-row">
-                    <span class="hpm-filter-label">Age of build</span>
-                    <div class="hpm-chip-set">
-                        <button type="button" v-for="o in finderOptions.age"
-                                :class="['hpm-chip-toggle', {active: finder.age===o}]"
-                                @click="finder.age=o">{{ o }}</button>
-                    </div>
-                </div>
-                <div class="hpm-filter-row">
-                    <span class="hpm-filter-label">Insulation</span>
-                    <div class="hpm-chip-set">
-                        <button type="button" v-for="o in finderOptions.insulation"
-                                :class="['hpm-chip-toggle', {active: finder.insulation===o}]"
-                                @click="finder.insulation=o">{{ o }}</button>
-                    </div>
-                </div>
-                <div class="hpm-filter-row">
-                    <span class="hpm-filter-label">Heat pump</span>
-                    <div class="hpm-chip-set">
-                        <button type="button" v-for="o in finderOptions.hp"
-                                :class="['hpm-chip-toggle', {active: finder.hp===o}]"
-                                @click="finder.hp=o">{{ o }}</button>
-                    </div>
+            <!-- Filters: one compact row of dropdown pills -->
+            <div class="hpm-filter-bar">
+                <h3 class="hpm-filter-count"><span class="hpm-results-count">{{ matches.length }}</span> home{{ matches.length===1 ? '' : 's' }}</h3>
+                <label v-for="f in finderFields" :key="f.key"
+                       :class="['hpm-filter-pill', {active: finder[f.key] !== 'Any'}]">
+                    <span class="hpm-filter-pill-label">{{ f.label }}</span>
+                    <span class="hpm-filter-pill-value">{{ finder[f.key] }}</span>
+                    <select v-model="finder[f.key]" :aria-label="f.label">
+                        <option v-for="o in finderOptions[f.key]" :value="o">{{ o }}</option>
+                    </select>
+                </label>
+                <button v-if="finderActive" class="hpm-finder-clear" @click="clearFinder"><i class="bi bi-x-circle"></i> Clear</button>
+                <div class="hpm-seg hpm-filter-tariff" role="group" aria-label="Choose tariff for cost estimates">
+                    <button v-for="td in costTariffDefs" type="button" :class="{active: costTariff===td.key}" @click="costTariff=td.key">{{ td.short }}</button>
                 </div>
             </div>
 
             <!-- Results -->
-            <div v-if="matches.length" style="min-height: 1px;">
-                <div class="hpm-results-head">
-                    <h3><span class="hpm-results-count">{{ matches.length }}</span> matching home{{ matches.length===1 ? '' : 's' }}</h3>
-                    <button v-if="finderActive" class="hpm-finder-clear" @click="clearFinder"><i class="bi bi-x-circle"></i> Clear filters</button>
-                    <div class="d-flex flex-wrap gap-2" style="margin-left:auto;">
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="hpm-filter-label" style="flex:none;">Tariff</span>
-                            <div class="hpm-seg" role="group" aria-label="Choose tariff for cost estimates" style="margin-left:0;">
-                                <button v-for="td in costTariffDefs" type="button" :class="{active: costTariff===td.key}" @click="costTariff=td.key">{{ td.short }}</button>
-                            </div>
-                        </div>
-                        <div class="hpm-seg" role="group" aria-label="Show cheapest or highest cost homes" style="margin-left:0;">
-                            <button type="button" :class="{active: showCheapest}" @click="showCheapest=true">Cheapest to run</button>
-                            <button type="button" :class="{active: !showCheapest}" @click="showCheapest=false">Highest cost</button>
-                        </div>
-                    </div>
-                </div>
-
+            <div v-if="matches.length" class="mt-4" style="min-height: 1px;">
                 <div class="row g-3 mb-4">
                     <div class="col-6 col-lg-3">
                         <div class="hpm-stat-card">
@@ -1258,7 +1266,10 @@ global $path;
                         <div class="hpm-leaderboard">
                             <div class="hpm-leaderboard-head">
                                 <h3>{{ showCheapest ? 'Cheapest to run' : 'Highest running cost' }}</h3>
-                                <span>est. &pound;/yr</span>
+                                <div class="hpm-seg" role="group" aria-label="Show cheapest or highest cost homes">
+                                    <button type="button" :class="{active: showCheapest}" @click="showCheapest=true">Cheapest</button>
+                                    <button type="button" :class="{active: !showCheapest}" @click="showCheapest=false">Highest</button>
+                                </div>
                             </div>
                             <ol>
                                 <li v-for="(h, i) in fabricTopFour" style="padding:0;">
@@ -1804,6 +1815,13 @@ global $path;
                 { key: "cosy", short: "Cosy", name: "Octopus Cosy" },
                 { key: "go", short: "Go", name: "Octopus Go" },
                 { key: "cap", short: "Price cap", name: "the price cap" }
+            ],
+            finderFields: [
+                { key: "property", label: "Property" },
+                { key: "floor", label: "Floor area" },
+                { key: "age", label: "Age of build" },
+                { key: "insulation", label: "Insulation" },
+                { key: "hp", label: "Heat pump" }
             ],
             finderOptions: {
                 property: ["Any", "Detached", "Semi-detached", "End-terrace", "Mid-terrace", "Bungalow", "Flat"],
