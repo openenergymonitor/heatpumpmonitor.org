@@ -159,31 +159,31 @@ driven by heat demand, capacity and DHW share, much like the real fleet.
 
 At the time this suggested most of the real scatter was operating pattern
 that ΔT throws away. The fleet test in section 5 showed that was too
-optimistic. The simulator's designs span sizing and load far more widely
-than real installs do, and its machines are identical by construction,
-which real ones aren't. Treat the ±0.32 as the simulator's answer, not the
+optimistic. Every simulated machine follows its COP model exactly, which
+real ones don't. Treat the ±0.32 as the simulator's answer, not the
 fleet's.
 
 ![sim vs real](figures/sim_vs_real.png)
 
 **Re-run on the current simulator (October 2026).** Since July the
 simulator has gained frost and defrost, primary pipework losses and a new
-cylinder model, and emitters are now sized from a design flow temperature.
-A 400-scenario sweep with `sweep.js` (design flow temperature 35–55 °C,
-other ranges as before) gives:
+cylinder model, emitters are sized from a design flow temperature, and
+there's a COP model fitted to the Vaillant Arotherm+ datasheet
+(`generic_v2`, speed based). The same 400 houses were run with the old
+carnot model and with Arotherm+ units sized by badge (`sweep.js`, design
+flow temperature 35–55 °C, DHW volume trimmed so the median DHW share
+matches the fleet's 14%). Cross-validated:
 
-| SPF against | July sim | October sim |
-|---|---|---|
-| Weighted ΔT | R² 0.63, ±0.33 | R² 0.56, ±0.39 |
-| Harmonic Carnot, fixed offsets | R² 0.64, ±0.32 | R² 0.57, ±0.38 |
-| H\* | R² 0.90, ±0.16 | R² 0.70, ±0.32 |
+| SPF against | July sim | Oct, carnot | Oct, Arotherm+ datasheet |
+|---|---|---|---|
+| Weighted ΔT | R² 0.63, ±0.34 | R² 0.61, ±0.40 | R² 0.77, ±0.34 |
+| Harmonic Carnot, fixed offsets | R² 0.64, ±0.32 | R² 0.63, ±0.40 | R² 0.78, ±0.32 |
+| H\* | R² 0.90, ±0.16 | R² 0.72, ±0.33 | R² 0.87, ±0.25 |
 
-H\*'s lead in the simulator is now much smaller. Several things changed at
-once, so this doesn't say which change matters, but it fits the fleet
-result in section 5: the July simulator flattered H\*. Only 243 of the 400
-scenarios now pass the comfort filter (against 293), and the median DHW
-share is 21%, above the fleet's 14%, so the scenario ranges could do with
-re-tuning to the fleet.
+With either model H\* still beats ΔT in the simulator, as it never did on
+the real fleet. The Arotherm run says why that matters: its datasheet
+predicts a strong load effect that real Arotherms don't show. That's
+written up in [load_and_quality.md](load_and_quality.md).
 
 ## 5. H\*: a promising metric that didn't survive real data
 
@@ -281,7 +281,8 @@ up the newest `heatpumpmonitor_all_fields_*.csv` automatically.
 | `design_spf_tool/index.html` | interactive design sheet model |
 | `heatpumpmonitor_all_fields_*.csv` | fleet export |
 | `sim_results.csv` | July 2026 simulator sweep, used throughout these docs |
-| `sim_results_2026-10.csv` | the October 2026 re-run on the current simulator (section 4) |
+| `sim_carnot_2026-10.csv`, `sim_arotherm_2026-10.csv` | October 2026 sweeps on the current simulator, carnot and Arotherm+ datasheet models (section 4) |
+| `analysis/sim_model_comparison.py` | runs the same tests on the sweeps and the fleet |
 | `modulation_features.csv` | histogram features |
 | `hstar_fleet.csv`, `hstar_fleet_hist.csv` | raw feed scan results, one row per system |
 | `hstar_hist.csv` | per-system heat histograms, 113 MB, not in git; regenerate with `feed_scan_5.php` |

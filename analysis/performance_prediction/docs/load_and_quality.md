@@ -72,9 +72,11 @@ From annual data we can't tell these apart:
    steady-state benefit is worth over a real year of operation, so flat
    simply means flat.
 
-The simulator can't decide between these, because it *is* the load model.
-That's why it saw a big gain from H\*: its machines were identical by
-construction.
+A simulator using the same load model as H\* can't decide between these,
+since it would just give back what we put in. A simulator using a real
+machine's datasheet can. That test is in the next section, and it rules
+out the weakest form of explanation 2: the datasheet itself predicts a
+large load effect.
 
 ### What's been ruled out as the cancelling effect
 
@@ -97,15 +99,79 @@ construction.
   flow rates and water ΔT differ from the test conditions. This would be
   explanation 2.
 
+## What the Arotherm datasheet predicts
+
+The tools repo simulator now has a COP model fitted to the Vaillant
+Arotherm+ datasheet (`generic_v2`: efficiency as a function of inferred
+compressor speed, about 7% error against the tables). So we can simulate a
+fleet of Arotherms and ask what the P test *should* show if real machines
+behaved like their datasheet.
+
+`sweep.js --cop-model generic_v2` ran 400 houses with Arotherm+ units: the
+nearest badge size to the sampled sizing, maximum output and a 30 rps
+minimum from the fit, flow rate sized for the badge output. The same 400
+houses were also run with the old `carnot_variable` model for comparison.
+About two thirds pass the comfort filter in each case. Then the same
+tests were run on both sweeps and on the fleet
+(`analysis/sim_model_comparison.py`):
+
+| | n | P test slope | SPF ~ ΔT, cv R² | SPF ~ H\*, cv R² |
+|---|---|---|---|---|
+| Fleet, all | 229 | +0.05 ± 0.10 | 0.59 | 0.47 |
+| **Fleet, Arotherm+ only** | **133** | **−0.01 ± 0.14** | 0.55 | 0.44 |
+| Sim, carnot_variable | 272 | +0.46 | 0.61 | 0.72 |
+| **Sim, Arotherm+ datasheet** | **267** | **+0.77** | 0.77 | 0.87 |
+
+(± is the 95% interval on the slope.)
+
+![P test: fleet against simulated fleets](figures/sim_model_ptest.png)
+
+The datasheet predicts a *steeper* load effect than the carnot model, not
+a flatter one. At the fleet Arotherms' own spread of P, a slope of 0.77 is
+worth about 0.27 SPF per standard deviation, so a gently run Arotherm
+should beat a hard-run one by around half an SPF at the same temperatures.
+The 133 real Arotherms show nothing (−0.01 ± 0.14). Same hardware, same
+test, and the datasheet prediction is far outside the fleet's interval.
+
+The low-load share points the same way. In the carnot sim, systems with
+more heat below 40% of rated output beat the ΔT line (ρ = +0.36), the
+opposite of the fleet (ρ = −0.33). The Arotherm sim can't test this: its
+minimum output is a fixed 25% of maximum, or 44% of badge, so almost no
+heat is delivered below 40% of badge. Real units go lower in cold weather,
+when the same 30 rps delivers less heat.
+
+What this means:
+
+- **The effect is in the datasheet.** "The load model overstates the
+  part-load benefit" isn't the answer, at least not if real machines
+  follow the datasheet.
+- **So either real machines don't follow their datasheet at part load, or
+  something cancels the benefit.** That's explanations 1 and 2 again, but
+  sharper: the question is now specifically whether Arotherms in the field
+  reach their datasheet COP at low speed.
+- **The stable-episode experiment below answers exactly that,** and the
+  133 validated Arotherms are the right population for it.
+
+Caveats: the simulator's cycling below minimum output is simple, and real
+starts and stops may cost more than it assumes. The sim's houses aren't
+matched to the fleet: the fleet Arotherms run harder relative to their
+badge (median P 1.01 against 1.06 in the sim). One weather year, and the
+fit underpredicts the 5 kW unit by 10–16% at mild outside temperatures
+(+10 to +20 °C).
+
 ## How big a lever was it anyway?
 
-Not huge, even before the cancellation. P has an sd of 4.7%, worth about
-±0.19 SPF, against a fleet SPF sd of 0.49, so at most about 15% of the
-variance. Real installs sit in a narrow band of load. The simulator's
-designs spread far wider, which is why it overstated the effect. Roughly,
-temperatures explain 0.60 of the variance, load explains about 0.15 at
-best and about zero in practice, and the rest is machine and install
-quality plus noise.
+Moderate, if the datasheet held. P has an sd of 4.7% across the fleet.
+Under the carnot model that's worth about ±0.19 SPF, and under the
+Arotherm datasheet about ±0.27, against a fleet SPF sd of 0.49: roughly
+15–30% of the variance. In practice it's about zero. Temperatures explain
+about 0.60 of the variance and the rest is machine and install quality
+plus noise.
+
+The simulated fleets don't spread load more widely than the real one
+(sd of P 0.024–0.035 in the sims, 0.047 in the fleet), so that isn't why
+the simulator rated H\* so highly. It's that every simulated machine
+follows its COP model exactly.
 
 ## The experiment: measure the compressor map in the field
 
