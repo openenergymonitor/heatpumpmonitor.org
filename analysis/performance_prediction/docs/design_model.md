@@ -128,6 +128,36 @@ r = 0.73 (±2.4 K). The remaining 2.4 K is behaviour and weather the
 design sheet can't know, and at −0.11 SPF per K that alone costs about
 ±0.3 SPF.
 
+A single coldest day is a noisy measure of how a system runs. SPF falls
+0.068 per K of coldest-day lift (flow − outside) against 0.109 per K of
+weighted ΔT, a ratio of 0.63, and the two correlate at 0.82. So about a
+third of the coldest-day figure is day-to-day noise.
+
+### A plain regression instead
+
+Skipping the physics and regressing SPF on coldest-day inputs does a bit
+better (`scripts/regression_analysis.py`, n = 224):
+
+| Model | cv R² | 90% PI |
+|---|---|---|
+| Coldest-day lift | 0.42 | ±0.65 |
+| + log utilisation | 0.47 | ±0.60 |
+| + DHW share | 0.48 | ±0.60 |
+| + emitter type (UFH/radiators, new/old) | 0.50 | ±0.56 |
+
+```
+SPF ≈ 7.27 − 0.070·lift + 0.31·ln(utilisation) − 0.67·DHW share   (before emitter type)
+```
+
+Utilisation needs annual heat, which a designer only has as an estimate
+(declared heat loss × 0.76 × degree-days). Emitter type helps here but
+not on top of weighted ΔT (README section 2): old emitters mean higher
+running temperatures than the coldest day shows, and weighted ΔT already
+captures that. The same goes for DHW control type and DHW target
+temperature. That makes them reasonable design-stage stand-ins for
+operating temperature, but not separate effects. Declared design flow
+temperature adds nothing at all (p = 0.92).
+
 ![design model](figures/design_model.png)
 
 ## Defrost

@@ -61,7 +61,9 @@ averaged ΔT can tell you.
 
 Filter counts: boundary H4 gives 268 systems, air source 263, no cooling
 228, ≥330 days 226, with both COP and ΔT present 225. The cooling filter
-is the big cut. Without it the fit still holds (n = 258, R² 0.46).
+is the big cut. Without it the fit still holds but weakens (n = 258,
+R² 0.46), because the published weighted stats count summer cooling heat
+as heat (section 5). Coldest-day measures barely notice the filter.
 
 ![baseline fit](figures/cop_vs_flow_minus_outside.png)
 
@@ -83,9 +85,24 @@ residual correlate is annual heat demand (ρ = 0.36: bigger homes beat the
 line), but that's mixed up with standby and steadier running too, so it
 can't be pinned on pipework.
 
+**Utilisation** (annual heat ÷ badge capacity × 8760 h) also improves on
+ΔT, to R² 0.63. But it's the annual heat part doing the work. Fitting
+log annual heat and log capacity separately gives +0.30 ± 0.12 for heat
+and −0.11 ± 0.14 for capacity, so how big the machine is relative to the
+house adds little. Log annual heat on its own does better than
+utilisation (cv R² 0.64 against 0.62).
+
 Make matters a little. Mitsubishi averages about 0.2 above the line and
 Samsung, Grant and Daikin about 0.13 below, but the scatter within each
-make is large.
+make is large (as a group, p = 0.04, cv R² +0.01).
+
+Of the install and control fields, only space heat control type shows
+anything: the 11 systems on weather compensation with significant room
+influence sit 0.22 below the line (p = 0.01 as a group, though cv R²
+doesn't improve). Emitter type, DHW control type, DHW target temperature
+and refrigerant add nothing once ΔT is in. Some of these do help a model
+built on coldest-day temperatures, because there they stand in for the
+operating temperature (see [design_model.md](design_model.md)).
 
 Throwing every safe field into a cross-validated model gets to cv R² 0.64,
 ±0.45. Gradient boosting did worse than linear regression (0.55): with
@@ -103,7 +120,8 @@ there. We'd need better inputs.
 which was fake. If a model gets both heat-side and electricity-side
 quantities it can reconstruct COP from their ratio. Keep them apart,
 treat `prc_carnot`, `water_cop` and `running_cop` as restatements of the
-target, and always score on held-out systems.
+target, and always score on held-out systems. The unit cost fields are
+tariff ÷ COP, so they leak too.
 
 ![residual investigation](figures/residual_investigation.png)
 
@@ -122,6 +140,10 @@ output, but the top 15% deliver 40–72% there and sit about 0.23 COP below
 the rest. It reads as oversizing showing up in operation. Below minimum
 modulation the machine has to cycle, and fixed losses become a bigger
 share. Adding it to ΔT and heat demand gives cv R² 0.65, ±0.46.
+
+It's a weak signal in a regression, though. With ΔT and log annual heat
+in the model its coefficient is −0.18 ± 0.22 (p = 0.11), and it adds
+nothing on top of utilisation, which it correlates with at −0.50.
 
 What this effect actually *is* is still open (see
 [load_and_quality.md](load_and_quality.md)). The H\* work below showed
@@ -263,6 +285,29 @@ A few useful side results:
   and the as-commissioned weather compensation curve (see
   [design_model.md](design_model.md)).
 - **Publish a standby-corrected SPF.** It's an exact calculation.
+- **Installer as a category.** Probably more informative than make, but
+  most installers have only a handful of systems.
+- **Defrost exposure from weather data.** Humidity and frost hours joined
+  by location, since the defrost penalty varies between sites at the same
+  temperature.
+
+## Data notes
+
+Traps in the all-fields export:
+
+- `weighted_average_flow_minus_outside` and `weighted_flow_temp` are
+  sparse legacy fields with 0 for missing. Use `weighted_flowT_minus_outsideT`
+  and `weighted_flowT`.
+- `heat_loss` is mostly kW but some values are in W (up to 6063) and one
+  is negative. Divide values over 100 by 1000 and drop anything under
+  0.5 kW.
+- `measured_heat_loss`, `dhw_target_temperature`, `flow_temp`,
+  `hp_max_output` and `measured_mean_flow_temp_coldest_day` use 0 for
+  missing.
+- About 10% of systems report zero `water_heat_kwh`, probably unmetered
+  rather than no hot water.
+- Logging periods vary (330–365 days), so annualise kWh before comparing
+  systems.
 
 ## Files
 
@@ -284,6 +329,7 @@ written to `docs/figures/`.
 | `scripts/residual_analysis.py`, `residual_plots.py` | residual tests and CV harness (section 2) |
 | `scripts/fetch_histograms.py`, `modulation_analysis.py`, `lowload_plots.py` | histogram features (section 3); run `fetch_histograms.py` first, as the cache in `histograms/` isn't kept in git. A fetch in October 2026 differed for two systems (one no longer returns data), which moves the low-load correlation from −0.33 to −0.35; `modulation_features.csv` keeps the July values |
 | `scripts/sim_vs_real.py`, `metric_comparison.py`, `prc_carnot_offsets.py` | simulator comparisons (sections 4–5) |
+| `scripts/regression_analysis.py` | regression tests: utilisation, install and control categories, the coldest-day model (section 2 and design_model.md) |
 | `scripts/design_model.py`, `design_model_plots.py` | design sheet model |
 | `scripts/analyse_hstar_fleet.py`, `analyse_hstar_offsets.py` | H\* fleet test and offset search |
 | tools repo, `www/tools/dynamic_heatpump/` | the simulator; `sweep.js` there runs the Monte Carlo sweep |

@@ -17,9 +17,11 @@ These get mixed up easily, so to be precise:
   sd 0.15. (The *time*-weighted mean while running is lower: median 0.51,
   IQR 0.43–0.59.)
 - **Utilisation**: annual heat divided by capacity × hours in the year,
-  off-time included. Fleet median 0.22. It isn't used anywhere below.
-  A system that rarely runs but goes flat out when it does has low
-  utilisation and high r̄.
+  off-time included. Fleet median 0.22. A system that rarely runs but
+  goes flat out when it does has low utilisation and high r̄.
+  Utilisation does improve on ΔT (README section 2), but only through
+  annual heat. The capacity half of it adds nothing (−0.11 ± 0.14), so
+  it's no evidence of a sizing effect.
 - **H_fixed**: heat-weighted harmonic Carnot COP with fixed +2/−6 K
   offsets. This only accounts for temperatures.
 - **H\***: the same, with offsets that grow with load (+3r/−8r K).
