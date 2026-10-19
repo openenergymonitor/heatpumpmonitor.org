@@ -68,7 +68,7 @@ ax = axes[1, 1]
 from sklearn.linear_model import LinearRegression
 from sklearn.pipeline import make_pipeline
 from sklearn.impute import SimpleImputer
-cols = ["dT", "annual_heat_kwh", "standby_elec_frac"] + [c for c in X if c.startswith("make_")]
+cols = ["dT", "ln_heat_mwh"]
 r = cv_eval(X[cols], y, make_pipeline(SimpleImputer(strategy="median"), LinearRegression()))
 ax.scatter(r["oof"], y, s=16, alpha=0.55, color=BLUE, edgecolors="none")
 lims = [y.min() - 0.15, y.max() + 0.15]
@@ -76,7 +76,7 @@ ax.plot(lims, lims, color=GRAY, lw=1)
 ax.plot(lims, [v + r["cv_pi90"] for v in lims], color=RED, lw=1, ls="--")
 ax.plot(lims, [v - r["cv_pi90"] for v in lims], color=RED, lw=1, ls="--")
 ax.set_xlim(lims); ax.set_ylim(lims)
-ax.set_xlabel("Predicted SPF (held-out, dT + heat demand + standby + make)")
+ax.set_xlabel("Predicted SPF (held-out, dT + log annual heat)")
 ax.set_ylabel("Measured SPF H4")
 ax.set_title(f"Best honest model: cv R²={r['cv_r2']:.2f}, 90% of homes within ±{r['cv_pi90']:.2f}",
              fontsize=11)

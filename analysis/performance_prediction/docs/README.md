@@ -166,7 +166,8 @@ These figures use the histograms fetched in July 2026, kept in
 ## 4. The simulator and H\*
 
 A Node harness, now `sweep.js` in the
-[tools repo](https://github.com/openenergymonitor/tools), runs the
+[tools repo](https://github.com/openenergymonitor/tools) (branch
+`dynamic-heatpump-sweep`, not yet on main), runs the
 unmodified dynamic_heatpump tool over 400 randomised house and system
 designs and drops those that fail on comfort. It has been run on two
 versions of the simulator:
@@ -175,7 +176,8 @@ versions of the simulator:
   kept). Every design has the same machine at 47% of Carnot, with no
   defrost or pipework losses. The metric search and the design model used
   this sweep.
-- **October 2026** (`sim_carnot_2026-10.csv`, `sim_arotherm_2026-10.csv`).
+- **October 2026** (tools commit `e522457`, `sim_carnot_2026-10.csv`,
+  `sim_arotherm_2026-10.csv`).
   The simulator now has frost and defrost, primary pipework losses, a new
   cylinder model, and emitters sized from a design flow temperature
   (35–55 °C here). The same 400 houses were run with the carnot model and
@@ -326,11 +328,12 @@ written to `docs/figures/`.
 | `scripts/residual_analysis.py`, `residual_plots.py` | residual tests and CV harness (section 2) |
 | `scripts/regression_analysis.py` | utilisation, install and control categories, the coldest-day model (section 2 and design_model.md) |
 | `scripts/fetch_histograms.py`, `modulation_analysis.py`, `lowload_plots.py` | histogram features (section 3). Run `fetch_histograms.py` first, as the cache in `histograms/` isn't kept in git. `modulation_analysis.py` rewrites `modulation_features.csv` from the cache |
-| `scripts/sim_vs_real.py`, `metric_comparison.py`, `prc_carnot_offsets.py` | July simulator comparisons (section 4) |
+| `scripts/sim_vs_real.py`, `metric_comparison.py`, `prc_carnot_offsets.py`, `metric_collapse_plot.py` | July simulator comparisons (section 4) |
 | `scripts/analyse_hstar_fleet.py`, `analyse_hstar_offsets.py` | H\* fleet test and offset search (section 4) |
+| `scripts/hstar_plots.py` | P test and utilisation figures (load_and_quality.md); needs `hstar_hist.csv` |
 | `scripts/sim_model_comparison.py` | the same tests on the October sweeps and the fleet (section 4, load_and_quality.md) |
 | `scripts/design_model.py`, `design_model_plots.py` | design sheet model |
-| `twins/` | simulated datasheet twins of the fleet's Arotherm+ systems: `twin_targets.py` builds the targets, `twins.js` calibrates and runs the twins (needs the tools repo), `compare_twins.py` compares them with the real systems |
+| `twins/` | simulated datasheet twins of the fleet's Arotherm+ systems: `twin_targets.py` builds the targets, `twins.js` calibrates and runs the twins (needs the tools repo at `176ae57` or later), `compare_twins.py` compares them with the real systems |
 | `design_spf_tool/index.html` | interactive design sheet model |
 | `heatpumpmonitor_all_fields_*.csv` | fleet export |
 | `modulation_features.csv` | histogram features, July 2026 fetch |
@@ -339,8 +342,5 @@ written to `docs/figures/`.
 | `sim_results.csv` | July 2026 simulator sweep |
 | `sim_carnot_2026-10.csv`, `sim_arotherm_2026-10.csv` | October 2026 sweeps, carnot and Arotherm+ datasheet models |
 | `llanberis2024.csv` | the simulator's weather year, used by the design model (a copy from the tools repo) |
-| tools repo, `www/tools/dynamic_heatpump/` | the simulator; `sweep.js` there runs the Monte Carlo sweep |
+| tools repo, `www/tools/dynamic_heatpump/` | the simulator; `sweep.js` there runs the Monte Carlo sweep (branch `dynamic-heatpump-sweep`) |
 | `scripts/feed_scan/` (repo root) | the PHP feed scanners |
-
-`metric_collapse.png`, `hstar_p_test.png` and `utilisation_vs_rbar.png`
-were made during the original analysis and have no script here.

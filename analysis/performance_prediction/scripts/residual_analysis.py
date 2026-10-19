@@ -68,6 +68,7 @@ def build_features(f):
 
     # --- demand / DHW ---
     X["annual_heat_kwh"] = num(f.combined_heat_kwh)
+    X["ln_heat_mwh"] = np.log(num(f.combined_heat_kwh) * 365 / days / 1000)   # annualised
     X["heat_kwh_per_m2"] = num(f.combined_heat_kwh_per_m2).replace(0, np.nan)
     X["dhw_frac"] = num(f.water_heat_kwh) / (num(f.space_heat_kwh) + num(f.water_heat_kwh))
     X["water_cop"] = num(f.water_cop)
@@ -175,6 +176,7 @@ def main():
         "dT + flow_return_dT": ["dT", "flow_return_dT"],
         "dT + load_factor": ["dT", "load_factor"],
         "dT + annual_heat_kwh": ["dT", "annual_heat_kwh"],
+        "dT + ln annual heat (best small model)": ["dT", "ln_heat_mwh"],
         "dT + standby_elec_frac": ["dT", "standby_elec_frac"],
         "dT + runtime/standby": ["dT", "runtime_frac", "standby_power_w", "standby_elec_frac"],
         "dT + cycling": ["dT", "starts_per_run_hour", "starts_per_day"],
@@ -211,8 +213,9 @@ def main():
               f"90%|err|={r['cv_pi90']:.2f}")
 
     # ---------- interpretable OLS for the best small model ----------
+    # dT + ln(annual heat, MWh): nothing else adds to it under CV (README section 2)
     import statsmodels.api as sm
-    cols = ["dT", "annual_heat_kwh", "standby_elec_frac", "load_factor"]
+    cols = ["dT", "ln_heat_mwh"]
     Xo = X[cols].dropna()
     yo = y.loc[Xo.index]
     Xs = (Xo - Xo.mean()) / Xo.std()

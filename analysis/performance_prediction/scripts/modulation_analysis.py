@@ -121,7 +121,7 @@ def main():
                            "heat_frac_below_40pct"] if c in XA]
     sets = {
         "dT only": ["dT"],
-        "dT + heat_kwh (prev best pair)": ["dT", "annual_heat_kwh"],
+        "dT + ln heat (best pair)": ["dT", "ln_heat_mwh"],
         "dT + modulation": ["dT"] + top_mod,
         "dT + heat_kwh + modulation": ["dT", "annual_heat_kwh"] + top_mod,
         "dT + heat + standby + modulation": ["dT", "annual_heat_kwh", "standby_elec_frac"] + top_mod,
@@ -131,10 +131,15 @@ def main():
         r = cv_eval(XA[cols], y, make_pipeline(SimpleImputer(strategy="median"), LinearRegression()))
         print(f"{name:40s} cv_R2={r['cv_r2']:.3f}  cv_RMSE={r['cv_rmse']:.3f}  90%|err|={r['cv_pi90']:.2f}")
 
-    M.insert(0, "id", f.id.values)
-    M["resid"] = resid
-    M.to_csv(ROOT / "modulation_features.csv", index=False)
-    print("\nsaved modulation_features.csv")
+    # modulation_features.csv is committed with the July 2026 fetch, which the
+    # docs and the downstream scripts use. Only overwrite it when asked.
+    if "--save" in sys.argv:
+        M.insert(0, "id", f.id.values)
+        M["resid"] = resid
+        M.to_csv(ROOT / "modulation_features.csv", index=False)
+        print("\nsaved modulation_features.csv")
+    else:
+        print("\nmodulation_features.csv not changed (pass --save to overwrite it)")
 
 
 if __name__ == "__main__":
