@@ -9,6 +9,8 @@ the measured flowT, outsideT and heat output. Per system this gives:
   min_penalty  field / datasheet at minimum speed (inferred < 30 rps), over level
   min_share    share of steady running at minimum speed
   rise         field / datasheet at 70-120 rps, over level (a size check)
+  ramp_share   share of steady-or-ramp running where flowT changes fast (ramp state),
+               mostly DHW warm-ups the flag or guess misses
   steps        the SPF ladder from the datasheet replay to the measured SPF
 
 replay_fleet.sh runs every system at its declared capacity and one Arotherm+
@@ -47,9 +49,6 @@ SPIKE_COP = 8          # beyond-range heat above this COP is meter spikes
 UPSIZE_BEYOND_H = 10   # sustained beyond-range hours that suggest a bigger unit
 UPSIZE_REMOVED = 0.7   # share of them the upsized run has to remove
 
-STEPS = ["steady", "startup", "dhw", "defrost", "post_dhw", "beyond", "off", "unclass"]
-
-
 def pool(cells):
     return {k: sum(c[k] for c in cells) for k in cells[0]}
 
@@ -71,6 +70,7 @@ def metrics(d):
     level = ratio(band([1, 2, 3, 4]), MIN_LEVEL_H)
     lo, hi = band([0]), band([5, 6])
     steady, beyond, off = st["steady"], st["beyond"], st["off"]
+    ramp = st.get("ramp", {"n": 0})
 
     beyond_cop = beyond["hpos"] / beyond["e"] if beyond["e"] > 0 else np.inf
     ladder = [x["spf"] for x in d["ladder"]]
@@ -88,6 +88,7 @@ def metrics(d):
         "min_share": lo["n"] / steady["n"] if steady["n"] else np.nan,
         "rise": ratio(hi, MIN_CELL_H) / level,
         "steady_h": hours(steady),
+        "ramp_share": ramp["n"] / (steady["n"] + ramp["n"]) if steady["n"] + ramp["n"] else np.nan,
         "steady_flowT": steady["hflowT"] / steady["hpos"] if steady["hpos"] else np.nan,
         "steady_dTfr": steady["sdT"] / steady["ndT"] if steady["ndT"] else np.nan,
         "beyond_h": hours(beyond),
@@ -100,8 +101,8 @@ def metrics(d):
         "dhw_flag_dead": d["has_dhw"] and st["dhw"]["n"] == 0,
         "dhw_guessed": (not d["has_dhw"]) and d.get("dhw_guess", True),
     }
-    for k, step in enumerate(STEPS):
-        r["step_" + step] = ladder[k + 1] - ladder[k]
+    for prev, cur in zip(d["ladder"], d["ladder"][1:]):
+        r["step_" + cur["step"]] = cur["spf"] - prev["spf"]
     r["step_other"] = ladder[-1] - ladder[1]
     return r
 
@@ -199,13 +200,14 @@ def main():
     describe(G.rise, "70-120 rps vs level")
     describe(G.standby_w, "standby W", "{:.1f}")
     describe(G.defrosts_per_day, "defrosts a day", "{:.1f}")
-    for step in ["steady", "startup", "dhw", "defrost", "off", "other"]:
+    describe(G.ramp_share, "flowT ramps, share of steady")
+    for step in ["steady", "ramp", "startup", "dhw", "defrost", "off", "other"]:
         describe(G["step_" + step], "SPF step: " + step, "{:+.2f}")
 
     # 2. Which part tracks quality?
     print("\nSpearman rho with quality (SPF / H_fixed)")
-    for col in ["level", "min_penalty", "min_share", "rise", "replay_spf", "step_steady", "step_startup",
-                "step_dhw", "step_defrost", "step_off", "standby_w", "starts_per_day", "median_run_min",
+    for col in ["level", "min_penalty", "min_share", "rise", "replay_spf", "step_steady", "step_ramp", "step_startup",
+                "ramp_share", "step_dhw", "step_defrost", "step_off", "standby_w", "starts_per_day", "median_run_min",
                 "defrosts_per_day", "steady_dTfr", "steady_flowT", "flow_rate"]:
         rho, p, n = spearman(G[col].astype(float), G.quality)
         print(f"  {col:20} rho {rho:+.2f}  p {p:.3f}  n {n}")
@@ -256,7 +258,7 @@ def main():
 
     # 4. Table and CSV
     cols = ["qnom", "upsized", "spf", "quality", "replay_spf", "level", "min_penalty", "min_share", "rise",
-            "step_steady", "step_other", "standby_w", "starts_per_day", "defrosts_per_day", "steady_dTfr",
+            "step_steady", "step_ramp", "step_other", "ramp_share", "standby_w", "starts_per_day", "defrosts_per_day", "steady_dTfr",
             "beyond_real_h", "has_dhw", "dhw_flag_dead"]
     print("\nPer system, poorest quality first")
     with pd.option_context("display.max_rows", 500, "display.width", 250, "display.float_format", "{:.2f}".format):

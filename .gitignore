@@ -44,7 +44,9 @@ scripts/feed_scan/*.csv
 scripts/feed_scan/replay_*.json
 scripts/feed_scan/replay_*.txt
 scripts/feed_scan/replay/
+scripts/feed_scan/replay_preramp/
 scripts/feed_scan/pumponly/
 scripts/feed_scan/dhwcal/
+scripts/feed_scan/lowmod/
 analysis/performance_prediction/.venv/
 analysis/performance_prediction/histograms/

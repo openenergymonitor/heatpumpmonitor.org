@@ -9,6 +9,10 @@
 // electricity with the measured electricity, split by operating state:
 //
 //   steady     space heating with the compressor running, outside the windows below
+//   ramp       steady space heating while flowT changes faster than RAMP_KH across a
+//              centred RAMP_WINDOW_S: the water and the unit between compressor and
+//              meter store heat on the way up and give it back on the way down, and
+//              most fast rises are the start of a DHW reheat the flag or guess misses
 //   startup    first TRANSIENT_S after a compressor start
 //   dhw        heatpump_dhw flag set (without the feed: flowT above DHW_GUESS_FLOWT)
 //   defrost    running with negative heat, plus RECOVERY_S after each defrost
@@ -20,7 +24,7 @@
 //   unclass    elec and heat present but flowT or outsideT missing
 //
 // The model is only compared where metered heat is the compressor's output:
-// steady, startup, dhw and defrost. post_dhw and beyond heat stays in the
+// steady, ramp, startup, dhw and defrost. post_dhw and beyond heat stays in the
 // measured totals.
 //
 // A defrost is a run of negative heat while running (gaps under
@@ -90,6 +94,8 @@ define('TRANSIENT_S', 600);        // after a start or a DHW to space switch (s)
 define('RPS_BEYOND', 130);         // fit tops out at 120 rps, plus margin for the speed inference
 define('DHW_GUESS_FLOWT', 45);     // DHW when there's no flag feed (degC)
 define('RECOVERY_S', 600);         // after a defrost, counted as defrost (s)
+define('RAMP_WINDOW_S', 300);      // centred window for the flowT rate of change (s)
+define('RAMP_KH', 8);              // flowT changing faster than this is a ramp (K/h)
 define('DEFROST_MERGE_S', 60);     // negative heat runs closer than this are one run
 define('DEFROST_MIN_WH', 50);      // smaller negative heat runs are meter blips
 define('MIN_CELL_H', 5);           // table cells with fewer hours are left blank
@@ -210,8 +216,8 @@ if (!$has_dhw && $dhw_guess) {
 print "Parity check against the JS fit: ok\n";
 
 // 2. Scan
-$STATES = array("steady", "startup", "dhw", "defrost", "post_dhw", "beyond", "off", "unclass");
-$MODEL_STATES = array("steady", "startup", "dhw", "defrost");
+$STATES = array("steady", "ramp", "startup", "dhw", "defrost", "post_dhw", "beyond", "off", "unclass");
+$MODEL_STATES = array("steady", "ramp", "startup", "dhw", "defrost");
 $acc = array();
 foreach ($STATES as $st) $acc[$st] = new_acc();
 
@@ -268,6 +274,10 @@ while ($i < $npoints) {
         $data[$f] = load_block($fh[$f], $meta[$keys[$f]], $block_t0, $block_n);
         fill_nulls($data[$f], $block_n, $fill[$f]);
     }
+
+    // the state machine runs sample by sample; the ramp test needs flowT either
+    // side of each sample, so samples are accumulated in a second pass per block
+    $B = array_fill(0, $block_n, null);
 
     for ($j = 0; $j < $block_n; $j++, $i++) {
         $elec = $data[$K["heatpump_elec"]][$j];
@@ -362,16 +372,27 @@ while ($i < $npoints) {
         }
         $dTfr = ($returnT == $returnT) ? $flowT - $returnT : NAN;
 
+        $B[$j] = array($st, $h, $elec, $em, $flowT, $dTfr,
+            $rps !== null ? bin_index($outsideT, $OUT_EDGES) : -1,
+            $rps !== null ? bin_index($rps, $RPS_EDGES) : -1,
+            $since_start < 1e8 ? bin_index($since_start / 60, $START_EDGES) : -1);
+    }
+
+    $flowT_b = $data[$K["heatpump_flowT"]];
+    for ($j = 0; $j < $block_n; $j++) {
+        if ($B[$j] === null) continue;
+        list($st, $h, $elec, $em, $flowT, $dTfr, $ob, $rb, $sb) = $B[$j];
+        if ($st == "steady" && is_ramp($flowT_b, $j, $block_n)) $st = "ramp";
+
         add($acc[$st], $h, $elec, $em, $flowT, $dTfr);
 
-        if ($st == "steady" && $rps !== null) {
-            $ob = bin_index($outsideT, $OUT_EDGES);
-            add($map[$ob][bin_index($rps, $RPS_EDGES)], $h, $elec, $em, $flowT, $dTfr);
+        if ($st == "steady" && $ob >= 0) {
+            add($map[$ob][$rb], $h, $elec, $em, $flowT, $dTfr);
             $hour = intdiv(($block_t0 + $j * 10 + $tz_offset) % 86400, 3600);
             add($tod[$ob][tod_index($hour)], $h, $elec, $em, $flowT, $dTfr);
         }
-        if (($st == "steady" || $st == "startup") && $since_start < 1e8) {
-            add($since_start_tab[bin_index($since_start / 60, $START_EDGES)], $h, $elec, $em, $flowT, $dTfr);
+        if (($st == "steady" || $st == "ramp" || $st == "startup") && $sb >= 0) {
+            add($since_start_tab[$sb], $h, $elec, $em, $flowT, $dTfr);
         }
     }
     print ".";
@@ -449,6 +470,7 @@ $prev = ratio($H, $E);
 $tab[] = array("datasheet replay, compressor heat", fmt($prev, 3), "");
 $steps = array(
     "steady" => "+ steady space heating as measured",
+    "ramp" => "+ flowT ramps as measured",
     "startup" => "+ start-ups as measured",
     "dhw" => "+ DHW as measured",
     "defrost" => "+ defrost and recovery",
@@ -604,7 +626,7 @@ $out = array(
     'system_id' => $system_id, 'hp_manufacturer' => $s->hp_manufacturer, 'hp_model' => $s->hp_model,
     'qnom_kw' => $qnom, 'window_start' => $window_start, 'window_end' => $window_end, 'days' => $days,
     'starting_power' => $starting_power, 'has_dhw' => $has_dhw,
-    'transient_s' => TRANSIENT_S, 'recovery_s' => RECOVERY_S, 'defrost_min_wh' => DEFROST_MIN_WH,
+    'transient_s' => TRANSIENT_S, 'recovery_s' => RECOVERY_S, 'ramp_window_s' => RAMP_WINDOW_S, 'ramp_kh' => RAMP_KH, 'defrost_min_wh' => DEFROST_MIN_WH,
     'spf' => $spf, 'published_spf' => $rec ? (float) $rec->combined_cop : null,
     'ladder' => $ladder, 'constancy' => $constancy,
     'starts' => $starts, 'run_lengths_s' => $run_lengths,
@@ -647,6 +669,19 @@ function add(&$a, $h, $e, $em, $flowT, $dTfr)
         $a['sdT'] += $dTfr;
         $a['ndT']++;
     }
+}
+
+// flowT changing faster than RAMP_KH across a window of RAMP_WINDOW_S centred on
+// sample $j (clipped at the block edges, needing at least half the window)
+function is_ramp($flowT, $j, $n)
+{
+    $half = intdiv(RAMP_WINDOW_S, 20);
+    $a0 = max($j - $half, 0);
+    $a1 = min($j + $half, $n - 1);
+    if ($a1 - $a0 < $half) return false;
+    $d = $flowT[$a1] - $flowT[$a0];
+    if (!($d == $d)) return false;
+    return abs($d) * 360 / ($a1 - $a0) >= RAMP_KH;
 }
 
 // Mean measured minus model electricity, W
