@@ -195,6 +195,40 @@ min-speed penalty and quality fit by model, the level by size, whether the
 models rank the systems the same way, the within-size links, and the
 example systems.
 
+### Step 7. Heat meter check from hot water reheats: `scripts/feed_scan/feed_scan_8.php`
+
+```
+php scripts/feed_scan/feed_scan_8.php <id> [days] [--out=dir] [--volume=L]
+scripts/feed_scan/dhwcal_fleet.sh "" 3
+```
+
+This checks the heat meter against the cylinder, without the electricity
+meter or the datasheet. It needs a cylinder temperature feed
+(`heatpump_dhwT`, in °C) and a cylinder volume, from the system metadata
+or `--volume`.
+
+Reheats are runs of the DHW flag (or flowT above 45 °C without one). Early
+in a reheat the cylinder sensor often reads flat while kW go in, because
+the heated zone hasn't reached it yet. So comparing start and end
+temperatures mostly measures where the sensor sits. Instead each reheat is
+split into 10 min windows, counted back from the end. While the whole
+cylinder heats up together, heat in ≈ volume × 1.163 Wh/(L·K) × rate of
+rise, so each window gives
+
+    ratio = mean heat / (volume × 1.163 × cylinder slope in K/h)
+
+A window counts when the compressor runs throughout with steady heat and
+no immersion, the cylinder rises at least 2 K/h with no step (a draw), and
+the cylinder and return temperatures rise together (slopes within a third
+of each other), as they do once the cylinder is mixed and the coil return
+follows it. The scan also reports the last 10 min of each reheat, the
+ratio by window position from the end, and the old start-to-peak ratio.
+
+Standing losses and the heat taken by the coil, steel and pipes push the
+ratio a little above 1; water below the coil that doesn't heat pushes it
+below. So it's a calibration figure to compare between systems, or to
+follow over time in one system, rather than one to hold to exactly 1.
+
 ## Part 2: results
 
 ### Data checks
@@ -276,7 +310,8 @@ Correcting the level for the measured offset leaves its spread unchanged
 links survive the correction.
 
 The flow side of the heat meter isn't tested by this. A flow reading a
-few percent off would scale the heat directly.
+few percent off would scale the heat directly. The hot water check below
+looks at it where a cylinder sensor allows.
 
 ### Is it pump power?
 
@@ -332,6 +367,43 @@ delay term works better: a median of 0.9 min, giving a loop volume of
 own water. It's a usable per-system input for the simulator's pipework
 model. Neither volume nor UA goes with the level (rho 0.02).
 
+### Is it the heat meter's flow measurement?
+
+A flow meter reading low would take the same share off every watt of
+metered heat, and the replay can't tell that from a machine below spec.
+The hot water check (step 7) can, but only 10 of the 132 systems have a
+cylinder temperature feed, and none of the poorest five.
+
+| System | Cylinder | Start-to-peak | Rate method: median (IQR), windows | Level |
+|---|---|---|---|---|
+| 643 | 250 L | 0.66 | 0.83 (0.72–0.97), 501 | 1.07 |
+| 342 | 250 L | 1.74 | 1.03 (0.99–1.08), 829 | 0.98 |
+| 284 | 300 L | 1.02 | 1.05 (0.99–1.13), 1538 | 0.96 |
+| 696 | 237 L | 1.08 | 1.12 (1.06–1.19), 487 | 0.90 |
+| 272 | 400 L | 1.84 | 1.14 (1.03–1.23), 420 | 0.89 |
+| 690 | 110 L | 2.86 | 1.16 (1.04–2.96), 165 | 0.97 |
+| 280 | 300 L | 0.81 | 1.19 (0.97–1.27), 28 | 0.97 |
+| 315 | 300 L | 0.91 | 1.26 (1.17–1.39), 32 | 0.95 |
+| 75 | 200 L | 2.06 | 1.59 (1.49–1.71), 271 | 0.96 |
+
+363 (rate 0.87) fails the SPF cross-check and has no level.
+
+The start-to-peak ratio runs from 0.66 to 2.86 and mostly says where the
+sensor sits. The rate method pulls six of the eight systems with plenty of
+windows into 0.83 to 1.16, and for most of them the ratio settles over the
+last 10–20 min of a reheat. 75 still reads 1.59, which looks like a wrong
+volume or a sensor in a slow zone rather than a meter 60% high, and 690's
+110 L is doubtful too. 280 and 315 have too few windows to lean on.
+
+A correct meter seems to read about 1.05–1.15 on this check. The two
+lowest-level systems in the set, 272 and 696 (level 0.89–0.90, about
+11–12% missing heat), read 1.12–1.14: at or above the others, not 11%
+below. Across the eight, lower level goes with a higher ratio, the
+opposite of a flow under-read (Spearman −0.55, p 0.16). So for these
+systems the gap to the datasheet isn't the heat meter. With eight systems,
+nominal volumes and none of the poorest five, that's a hint rather than a
+result.
+
 ### What's left
 
 On the temperature side the level spread is real, not a measurement
@@ -340,21 +412,26 @@ ordinary ~5% gap to the datasheet. Neither explains the poorest systems,
 which run 150–240 W over the datasheet with ordinary pump-only power and
 small pump-only dT.
 
-For those, two explanations remain:
+For those, three explanations remain:
 
 1. something else on the electricity meter while the compressor runs
 2. the unit itself running about 20% below spec
+3. the heat meter's flow reading 20–36% low, which the hot water check
+   can't reach on these systems and doesn't support on the ones it can
 
 A separate load would show as steps or a fixed block that doesn't follow
 compressor speed; a unit fault would scale with output. Comparing measured
 and datasheet electricity minute by minute over a few steady runs on 741
-or 371 should separate them.
+or 371 should separate them. The compressor's minimum speed gives a test
+of the third that every system can take: at the floor of its electricity
+use, a system with a flow under-read would show normal electricity and
+heat well below the datasheet's minimum output.
 
 Also open:
 
 - why systems that spend more time at minimum speed are below the
-  datasheet at every speed
-- the heat meter's flow measurement, which nothing here tests
+  datasheet at every speed (a flow under-read would cause this too, since
+  inferred speed comes from metered heat)
 
 ### Sensitivity to the COP model
 
