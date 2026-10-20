@@ -41,5 +41,9 @@ __pycache__/
 analysis/performance_prediction/hstar_hist.csv
 scripts/feed_scan/*.tsv
 scripts/feed_scan/*.csv
+scripts/feed_scan/replay_*.json
+scripts/feed_scan/replay_*.txt
+scripts/feed_scan/replay/
+scripts/feed_scan/pumponly/
 analysis/performance_prediction/.venv/
 analysis/performance_prediction/histograms/
