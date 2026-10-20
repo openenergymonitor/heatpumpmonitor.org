@@ -639,3 +639,40 @@ they're average for their size. 59, 160 and 584 score 1.03–1.11, but
 only after being re-run as 7 kW: they're examples of a wrong declared
 size rather than over-performance.
 
+
+### What the lowest systems could reach
+
+If the lowest systems had a level of 1.0, or the fleet median of 0.964,
+their SPF would change as below. It's worked out two ways, depending on
+where the shortfall is. If the unit is below spec, fixing it cuts the
+electricity in every running state (steady, ramp, start-up, DHW, defrost)
+by the level factor, and standby and the other states stay as measured.
+If the heat meter under-reads, all metered heat is low by the same factor,
+so the SPF is the measured SPF divided by the level. The two agree
+closely, because 90–98% of each system's electricity goes through the
+compressor.
+
+| System | Size | Level | SPF now | Unit fixed, at level 1.0 | Unit fixed, at fleet median | Meter corrected, at level 1.0 | Meter corrected, at fleet median | Peer level | Up to peers |
+|---|---|---|---|---|---|---|---|---|---|
+| 371 | 5 kW | 0.74 | 3.46 | 4.66 | 4.49 | 4.70 | 4.53 | 0.80 | 4.30 |
+| 269 | 5 kW | 0.81 | 4.02 | 4.93 | 4.76 | 4.98 | 4.80 | 0.87 | 4.56 |
+| 51 | 7 kW | 0.86 | 4.23 | 4.90 | 4.73 | 4.92 | 4.75 | 0.89 | 4.74 |
+| 372 | 7 kW | 0.86 | 3.93 | 4.55 | 4.39 | 4.57 | 4.40 | 0.90 | 4.38 |
+| 384 | 5 kW | 0.86 | 3.78 | 4.39 | 4.24 | 4.42 | 4.26 | 0.91 | 4.15 |
+| 516 | 5 kW | 0.86 | 3.99 | 4.60 | 4.44 | 4.64 | 4.47 | 0.92 | 4.33 |
+| 611 | 5 kW | 0.86 | 4.30 | 4.96 | 4.78 | 4.99 | 4.81 | 0.93 | 4.61 |
+| 741 | 7 kW | 0.86 | 3.80 | 4.34 | 4.20 | 4.40 | 4.25 | 0.88 | 4.28 |
+| 238 | 5 kW | 0.90 | 4.08 | 4.53 | 4.37 | 4.56 | 4.39 | 0.95 | 4.27 |
+
+The last column takes out the fit's flattery of low flowT. It brings each
+system up to the median of its peers (same size, outside temperature,
+speed and flowT) instead of up to the datasheet, using the peer level from
+the section on the datasheet below 35 °C, with the unit fixed. Correcting
+the meter instead gives up to 0.06 more. This is probably the fairer
+estimate for systems that run cool, like 371 and 269 at about 27 °C.
+
+All columns apply the 30–70 rps figure to DHW, defrost and minimum speed
+as well. That fits 371 and 269, whose shortfall is about the same at
+every speed; for the others it's an assumption. If the cause is the heat
+meter, nothing about the system needs fixing: the real SPF would already
+be about this, and only the published figure would be wrong.
