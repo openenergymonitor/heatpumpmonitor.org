@@ -411,18 +411,32 @@ What does:
 
 All figures are steady space heating at 30–70 rps, comparing field and
 datasheet at the same flow temperature, outside temperature and output.
-Level is shown for each COP model. The datasheet COP and extra electricity
-are from v2.
+Level is shown for each COP model. The datasheet COP and watts are from
+v2.
+
+The gap is given two ways. Extra electricity is measured electricity
+minus heat / datasheet COP: the electricity used beyond what the
+datasheet needs for the metered heat. Missing heat is measured
+electricity × datasheet COP minus measured heat: the heat the datasheet
+says that electricity should have made, minus what the meter saw. They
+describe the same level (missing heat = extra electricity × datasheet
+COP), but they point at different sides. A fault on the electricity side
+(a pump, controls, another load on the meter) would add a roughly fixed
+number of electrical watts. A fault on the heat side (losses before the
+meter, a flow meter under-reading) would take away heat watts or a share
+of the heat.
 
 **Poorest**
 
-| System | Size | Level v2 / generic / unit | Field COP vs datasheet | Extra electricity | SPF | Notes |
-|---|---|---|---|---|---|---|
-| 371 | 5 kW | 0.73 / 0.71 / 0.72 | 3.56 vs 4.85 | +204 W | 3.46 | Worst. Low flowT (29 °C) should favour it |
-| 741 | 7 kW | 0.81 / 0.80 / 0.82 | 3.40 vs 4.22 | +239 W | 3.80 | Biggest absolute gap. Pump about 33 W |
-| 269 | 5 kW | 0.78 / 0.75 / 0.76 | 3.83 vs 4.94 | +164 W | 4.02 | No DHW flag, DHW guessed |
-| 516 | 5 kW | 0.80 / 0.78 / 0.79 | 3.78 vs 4.73 | +153 W | 3.99 | DHW flag feed never set |
-| 238 | 5 kW | 0.83 / 0.82 / 0.83 | 3.91 vs 4.70 | +125 W | 4.08 | No DHW flag, DHW guessed |
+| System | Size | Level v2 / generic / unit | Field COP vs datasheet | Extra electricity | Missing heat | SPF | Notes |
+|---|---|---|---|---|---|---|---|
+| 371 | 5 kW | 0.73 / 0.71 / 0.72 | 3.56 vs 4.85 | +204 W | 990 W (36%) | 3.46 | Worst. Low flowT (29 °C) should favour it |
+| 741 | 7 kW | 0.81 / 0.80 / 0.82 | 3.40 vs 4.22 | +239 W | 1010 W (24%) | 3.80 | Biggest absolute gap. Pump about 33 W |
+| 269 | 5 kW | 0.78 / 0.75 / 0.76 | 3.83 vs 4.94 | +164 W | 810 W (29%) | 4.02 | No DHW flag, DHW guessed |
+| 516 | 5 kW | 0.80 / 0.78 / 0.79 | 3.78 vs 4.73 | +153 W | 725 W (25%) | 3.99 | DHW flag feed never set |
+| 238 | 5 kW | 0.83 / 0.82 / 0.83 | 3.91 vs 4.70 | +125 W | 585 W (20%) | 4.08 | No DHW flag, DHW guessed |
+
+Missing heat is shown in watts and as a share of the metered heat.
 
 All five spend 55–72% of steady running at minimum speed (fleet median
 38%) and start 6–8 times a day. Three of them still have an SPF around
@@ -430,13 +444,16 @@ All five spend 55–72% of steady running at minimum speed (fleet median
 
 **Better than the datasheet**
 
-| System | Size | Level v2 / generic / unit | Field COP vs datasheet | Electricity vs datasheet | SPF | Notes |
-|---|---|---|---|---|---|---|
-| 260 | 7 kW | 1.04 / 1.02 / 1.03 | 4.94 vs 4.74 | −37 W | 4.29 | |
-| 654 | 7 kW | 1.03 / 1.01 / 1.03 | 4.75 vs 4.62 | −26 W | 4.33 | Most data in the fleet (3350 h) |
-| 409 | 7 kW | 1.04 / 1.03 / 1.05 | 4.14 vs 3.99 | −40 W | 3.27 | Good machine, poor system: flowT 40 °C |
-| 211 | 7 kW | 1.03 / 1.01 / 1.05 | 3.61 vs 3.52 | −25 W | 3.22 | The same: flowT 40 °C |
-| 335 | 5 kW | 1.01 / 0.99 / 1.02 | 4.22 vs 4.19 | −5 W | 4.27 | The best 5 kW system |
+| System | Size | Level v2 / generic / unit | Field COP vs datasheet | Electricity vs datasheet | Heat vs datasheet | SPF | Notes |
+|---|---|---|---|---|---|---|---|
+| 260 | 7 kW | 1.04 / 1.02 / 1.03 | 4.94 vs 4.74 | −37 W | +176 W (4%) | 4.29 | |
+| 654 | 7 kW | 1.03 / 1.01 / 1.03 | 4.75 vs 4.62 | −26 W | +118 W (3%) | 4.33 | Most data in the fleet (3350 h) |
+| 409 | 7 kW | 1.04 / 1.03 / 1.05 | 4.14 vs 3.99 | −40 W | +161 W (4%) | 3.27 | Good machine, poor system: flowT 40 °C |
+| 211 | 7 kW | 1.03 / 1.01 / 1.05 | 3.61 vs 3.52 | −25 W | +87 W (3%) | 3.22 | The same: flowT 40 °C |
+| 335 | 5 kW | 1.01 / 0.99 / 1.02 | 4.22 vs 4.19 | −5 W | +21 W (1%) | 4.27 | The best 5 kW system |
+
+Heat vs datasheet is the metered heat minus what the datasheet says the
+measured electricity should make.
 
 These are above 1.0 in every model, or close to it under the
 capacity-normalised fit. Apart from 211 (48%) and 335 (46%) they spend

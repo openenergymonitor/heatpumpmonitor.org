@@ -86,6 +86,7 @@ def load():
     D["xw"] = D.e - D.em                  # extra W at 30-70 rps
     D["cop_field"] = D.h / D.e
     D["cop_ds"] = D.h / D.em
+    D["missing_heat"] = D.xw * D.cop_ds   # the same gap in heat W: elec x datasheet COP - heat
     D["meter_ok"] = D.k.between(*K_RANGE)
     return D
 
@@ -142,7 +143,6 @@ def loop(D):
     G["tau"] = -G.fit_drift                                  # min, return to flow sensor
     G["vol"] = G.tau * G.po_flow                             # L
     G["water_out"] = G.flowT - G.dT / 2 - G.outT
-    G["missing_heat"] = G.xw * G.cop_ds                      # W of heat the datasheet expects
     G["UA_needed"] = G.missing_heat / G.water_out
     print(f"  {len(G)} systems")
     print(f"  delay, min           {spread(G.tau, '{:+.2f}')}")
@@ -155,7 +155,7 @@ def loop(D):
 
 def examples(D):
     print("\n4. Examples (30-70 rps steady running)")
-    cols = ["qnom", "declared_qnom", "spf", "level", "cop_field", "cop_ds", "xw", "flowT",
+    cols = ["qnom", "declared_qnom", "spf", "level", "cop_field", "cop_ds", "xw", "missing_heat", "flowT",
             "min_share", "starts_per_day", "has_dhw", "dhw_flag_dead"]
     with pd.option_context("display.width", 250, "display.float_format", "{:.2f}".format):
         print("  lowest level")
