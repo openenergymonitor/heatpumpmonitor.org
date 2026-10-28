@@ -10,6 +10,15 @@ class System
     private $host;
     public $schema_meta;
 
+    // Links a system (sm) to its heat pump model (hm) by manufacturer, model,
+    // capacity and refrigerant. hp_output is a FLOAT column, so it's cast as well:
+    // 11.2 is stored as 11.1999998 and wouldn't equal a DECIMAL 11.20
+    const HEATPUMP_MODEL_JOIN = "LEFT JOIN manufacturers m ON sm.hp_manufacturer = m.name
+                  LEFT JOIN heatpump_model hm ON m.id = hm.manufacturer_id
+                      AND sm.hp_model = hm.name
+                      AND CAST(hm.capacity AS DECIMAL(10,2)) = CAST(sm.hp_output AS DECIMAL(10,2))
+                      AND (hm.refrigerant = sm.refrigerant OR sm.refrigerant IS NULL OR hm.refrigerant IS NULL)";
+
     public function __construct($mysqli)
     {
         $this->mysqli = $mysqli;
@@ -45,11 +54,7 @@ class System
                       FROM system_images 
                       GROUP BY system_id
                   ) pc ON sm.id = pc.system_id 
-                  LEFT JOIN manufacturers m ON sm.hp_manufacturer = m.name
-                  LEFT JOIN heatpump_model hm ON m.id = hm.manufacturer_id 
-                      AND sm.hp_model = hm.name
-                      AND CAST(hm.capacity AS DECIMAL(10,2)) = sm.hp_output
-                      AND (hm.refrigerant = sm.refrigerant OR sm.refrigerant IS NULL OR hm.refrigerant IS NULL)";
+                  " . self::HEATPUMP_MODEL_JOIN;
         
         if ($where) {
             $query .= " WHERE $where";

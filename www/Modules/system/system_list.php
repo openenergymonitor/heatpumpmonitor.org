@@ -846,6 +846,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     columns['mcs031_space_spf'].heading = "MCS 031<br>SH SPF";
     columns['mcs031_spf'].heading = "MCS 031<br>SPF";
     columns['mcs031_spf_ratio'].heading = "SPF ÷<br>MCS 031";
+    columns['scop_space'].heading = "SCOP<br>SH";
+    columns['scop_spf'].heading = "SCOP<br>SPF";
+    columns['scop_spf_ratio'].heading = "SPF ÷<br>SCOP";
     // columns['electricity_tariff_unit_rate_all'].heading = "Elec<br>p/kWh";
 
     // snapshot of the standard headings, used to restore when a custom title is removed
@@ -1920,8 +1923,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     return val.toFixed(0) + '%';
                 }
 
-                // Design estimates: 0 where MCS 031 doesn't apply to the system
-                if (key == 'mcs031_space_spf' || key == 'mcs031_spf' || key == 'mcs031_spf_ratio') {
+                // Design estimates: 0 where the method doesn't apply to the system
+                if (key == 'mcs031_space_spf' || key == 'mcs031_spf' || key == 'mcs031_spf_ratio'
+                    || key == 'scop_space' || key == 'scop_spf' || key == 'scop_spf_ratio') {
                     if (val == null || val == 0) return '';
                     return val.toFixed(key == 'mcs031_space_spf' ? 1 : 2);
                 }

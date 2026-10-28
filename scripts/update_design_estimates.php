@@ -1,8 +1,9 @@
 <?php
 
-// Recompute the MCS 031 design estimate fields in system_meta
-// (mcs031_space_spf, mcs031_spf, mcs031_spf_ratio). They are normally kept up
-// to date on save and by the nightly stats update; use this to backfill.
+// Recompute the design estimate fields in system_meta (mcs031_space_spf,
+// mcs031_spf, mcs031_spf_ratio, scop_space, scop_spf, scop_spf_ratio). They
+// are normally kept up to date on save and by the nightly stats update; use
+// this to backfill, or after scripts/update_mcs_scop.php.
 //
 // php scripts/update_design_estimates.php [systemid]
 

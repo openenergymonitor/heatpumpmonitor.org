@@ -246,15 +246,30 @@ global $settings, $session, $path;
                         <td>{{ mcs031.water_spf | toFixed(1) }}</td>
                         <td>{{ mcs031.combined_spf | toFixed(1) }}</td>
                     </tr>
+                    <tr v-if="scop">
+                        <td style="text-align:left">Manufacturer SCOP <span v-tooltip tabindex="0" style="color:#666; cursor:pointer" :title="scop_note"><i class="bi bi-info-circle"></i></span></td>
+                        <td>{{ scop.space_scop | toFixed(1) }}</td>
+                        <td><span v-if="scop.water_scop">{{ scop.water_scop | toFixed(1) }}<span v-if="scop.dhw_target_assumed">*</span></span><span v-else>–</span></td>
+                        <td><span v-if="scop.combined_spf">{{ scop.combined_spf | toFixed(1) }}</span><span v-else>–</span></td>
+                    </tr>
                 </table>
                 <p class="mb-2" v-if="!mcs031.combined_spf">
                     MCS 031 <span v-tooltip tabindex="0" style="color:#666; cursor:pointer" :title="mcs031_note"><i class="bi bi-info-circle"></i></span> space heating SPF at the {{ mcs031.design_flow }} °C design flow temperature: <b>{{ mcs031.space_spf | toFixed(1) }}</b>. Hot water isn't metered separately on this system, so there is no combined comparison.
+                </p>
+                <p class="mb-2" v-if="!mcs031.combined_spf && scop">
+                    Manufacturer SCOP <span v-tooltip tabindex="0" style="color:#666; cursor:pointer" :title="scop_note"><i class="bi bi-info-circle"></i></span> at the {{ scop.design_flow }} °C design flow temperature: <b>{{ scop.space_scop | toFixed(1) }}</b>.
+                </p>
+                <p class="mb-2" style="font-size:14px; color:#666" v-if="mcs031.combined_spf && scop && scop.water_scop && scop.dhw_target_assumed">
+                    * Hot water target not recorded, {{ scop.dhw_target }} °C assumed.
                 </p>
                 <p class="mb-2" style="font-size:14px; color:#666" v-if="mcs031.existing_radiators">
                     With existing radiators MCS 031 defaults to a 60 °C flow temperature (SPF {{ mcs031.space_spf_default_flow | toFixed(1) }}) unless a room-by-room heat loss justifies lower.
                 </p>
                 <p class="mb-0" style="font-size:14px; color:#666" v-if="mcs031_fleet">
                     Fleet ({{ mcs031_fleet.n }} MID-metered {{ mcs031.source.toLowerCase() }} systems): measured {{ mcs031_fleet.mean_measured | toFixed(1) }} vs MCS 031 {{ mcs031_fleet.mean_estimated | toFixed(1) }}.
+                </p>
+                <p class="mb-0" style="font-size:14px; color:#666" v-if="scop && scop_fleet">
+                    Fleet ({{ scop_fleet.n }} MID-metered systems with a manufacturer SCOP): measured {{ scop_fleet.mean_measured | toFixed(1) }} vs manufacturer SCOP {{ scop_fleet.mean_estimated | toFixed(1) }}.
                 </p>
             </div>
         </div>
@@ -949,6 +964,26 @@ global $settings, $session, $path;
             mcs031_fleet() {
                 if (!this.mcs031 || !this.estimates.mcs031_fleet) return null;
                 let fleet = this.estimates.mcs031_fleet.by_source[this.mcs031.source];
+                return fleet && fleet.n >= 10 ? fleet : null;
+            },
+            scop() {
+                return this.estimates ? this.estimates.scop : null;
+            },
+            scop_note() {
+                let e = this.scop;
+                if (!e) return '';
+                let note = 'SCOP declared to MCS for this heat pump model (' + e.model_number + ', ' + e.certification_number + '), average climate. '
+                    + 'Space heating is read at the ' + e.design_flow + ' °C design flow temperature, '
+                    + 'hot water at the ' + e.dhw_target + ' °C hot water target + 5 K. ';
+                if (e.dhw_target_assumed) note += 'The hot water target isn\'t recorded for this system, so ' + e.dhw_target + ' °C is assumed. ';
+                note += 'Values are interpolated between the declared temperatures (' + e.scop_min_flow + ' to ' + e.scop_max_flow + ' °C), '
+                    + 'with no estimate above ' + e.scop_max_flow + ' °C. '
+                    + 'Fleet figures are averages over public MID-metered systems with a year of data and metered hot water, updated daily. '
+                    + 'Measured figures use the H4 boundary.';
+                return note;
+            },
+            scop_fleet() {
+                let fleet = this.estimates ? this.estimates.scop_fleet : null;
                 return fleet && fleet.n >= 10 ? fleet : null;
             },
             // Annual estimates, so only alongside the last 365 days when that period is a full SPF

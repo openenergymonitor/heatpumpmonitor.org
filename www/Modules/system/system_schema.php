@@ -830,6 +830,33 @@ $schema['system_meta'] = array(
         'helper' => 'Measured SPF over the last 365 days divided by the MCS 031 estimate for the same heat'
     ),
 
+    'scop_space' => array(
+        'type' => 'float',
+        'editable' => false,
+        'optional' => true,
+        'name' => 'Manufacturer SCOP at design flow temperature',
+        'group' => 'Design estimates',
+        'helper' => 'SCOP declared to MCS for this heat pump model at the declared design flow temperature'
+    ),
+
+    'scop_spf' => array(
+        'type' => 'float',
+        'editable' => false,
+        'optional' => true,
+        'name' => 'Manufacturer SCOP estimate (last 365 days)',
+        'group' => 'Design estimates',
+        'helper' => 'Manufacturer SCOP at the design flow temperature for space heating and at the hot water target + 5 K, applied to the measured heat over the last 365 days'
+    ),
+
+    'scop_spf_ratio' => array(
+        'type' => 'float',
+        'editable' => false,
+        'optional' => true,
+        'name' => 'Measured SPF ÷ manufacturer SCOP estimate (last 365 days)',
+        'group' => 'Design estimates',
+        'helper' => 'Measured SPF over the last 365 days divided by the manufacturer SCOP estimate for the same heat'
+    ),
+
     'measured_mean_flow_temp_coldest_day' => array(
         'type' => 'float', 
         'editable' => true, 

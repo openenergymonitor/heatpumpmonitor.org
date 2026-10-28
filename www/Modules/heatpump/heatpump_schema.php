@@ -14,7 +14,17 @@ $schema['heatpump_model'] = array(
     'img' => array('type' => 'varchar(255)', 'Null' => true, 'default' => null),
     'img_width' => array('type' => 'int(11)', 'Null' => true, 'default' => null),
     'img_height' => array('type' => 'int(11)', 'Null' => true, 'default' => null),
-    'img_thumbnails' => array('type' => 'json', 'Null' => true, 'default' => null)
+    'img_thumbnails' => array('type' => 'json', 'Null' => true, 'default' => null),
+
+    // Matching product in the MCS product directory, chosen by an admin
+    // (mcs_directory.php). mcs_scop is the declared SCOP by flow temperature,
+    // {"35": 4.88, ...}, refreshed by scripts/update_mcs_scop.php
+    'mcs_product_id' => array('type' => 'int(11)', 'Null' => true, 'default' => null),
+    'mcs_certification_number' => array('type' => 'varchar(64)', 'Null' => true, 'default' => null),
+    'mcs_model_number' => array('type' => 'varchar(255)', 'Null' => true, 'default' => null),
+    'mcs_certified_to' => array('type' => 'varchar(10)', 'Null' => true, 'default' => null),
+    'mcs_scop' => array('type' => 'json', 'Null' => true, 'default' => null),
+    'mcs_scop_updated' => array('type' => 'int(11)', 'Null' => true, 'default' => null)
 );
 
 $schema['heatpump_max_cap_test'] = array(

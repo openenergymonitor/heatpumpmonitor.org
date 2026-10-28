@@ -120,6 +120,38 @@ function heatpump_controller() {
         return $heatpump_model->delete_image($heatpump_id);
     }
 
+    // Search the MCS product directory for the admin product selection
+    if ($route->action == "mcs_search" && $session['admin']) {
+        $route->format = "json";
+        $term = trim(get("q", true));
+        if (strlen($term) < 3) return array("success" => false, "message" => "Search term too short");
+        require_once "Modules/heatpump/mcs_directory.php";
+        $mcs = new McsDirectory();
+        $products = $mcs->search($term);
+        if ($products === false) return array("success" => false, "message" => "Could not read the MCS product directory");
+        return array("success" => true, "products" => $products);
+    }
+
+    // Choose an MCS product for a model. The product is fetched again from the
+    // directory rather than taken from the request
+    if ($route->action == "mcs_select" && $session['admin']) {
+        $route->format = "json";
+        $id = (int) post("id", true);
+        $product_id = (int) post("product_id", true);
+        $term = trim(post("search", true));
+        require_once "Modules/heatpump/mcs_directory.php";
+        $mcs = new McsDirectory();
+        $product = $mcs->find($product_id, $term);
+        if ($product === false) return array("success" => false, "message" => "Could not read the MCS product directory");
+        if ($product === null) return array("success" => false, "message" => "MCS product not found");
+        return $heatpump_model->set_mcs_product($id, $product);
+    }
+
+    if ($route->action == "mcs_clear" && $session['admin']) {
+        $route->format = "json";
+        return $heatpump_model->set_mcs_product((int) post("id", true), null);
+    }
+
     if ($route->action == "populate" && $session['admin']) {
         $route->format = "json";
         return $heatpump_model->populate_table();

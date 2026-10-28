@@ -251,7 +251,9 @@ function system_controller() {
         return array(
             "success"=>true,
             "mcs031"=>$estimates->mcs031($meta, $stats),
-            "mcs031_fleet"=>$estimates->mcs031_fleet_summary()
+            "mcs031_fleet"=>$estimates->mcs031_fleet_summary(),
+            "scop"=>$estimates->scop($meta, $stats),
+            "scop_fleet"=>$estimates->scop_fleet_summary()
         );
     }
 

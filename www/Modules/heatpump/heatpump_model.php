@@ -294,7 +294,7 @@ class Heatpump
             WHERE 
                 sm.hp_manufacturer LIKE ?
                 AND sm.hp_model LIKE ? 
-                AND sm.hp_output = ? 
+                AND CAST(sm.hp_output AS DECIMAL(10,2)) = CAST(? AS DECIMAL(10,2)) 
                 AND sm.refrigerant LIKE ?
                 AND sm.published = '1' 
                 AND sm.share = '1'
@@ -477,6 +477,71 @@ class Heatpump
         );
     }
     
+    /*
+     * Store the MCS product chosen for a heatpump model, as returned by
+     * McsDirectory::product(), or clear it when $product is null
+     *
+     * @param int $id
+     * @param array|null $product
+     * @return array
+     */
+    public function set_mcs_product($id, $product) {
+        $id = (int) $id;
+
+        try {
+            return $this->save_mcs_product($id, $product);
+        } catch (mysqli_sql_exception $e) {
+            return array("success" => false, "message" => "Failed to save MCS product: " . $e->getMessage());
+        }
+    }
+
+    private function save_mcs_product($id, $product) {
+
+        if ($product === null) {
+            $stmt = $this->mysqli->prepare("UPDATE heatpump_model SET mcs_product_id = NULL, mcs_certification_number = NULL, mcs_model_number = NULL, mcs_certified_to = NULL, mcs_scop = NULL, mcs_scop_updated = NULL WHERE id = ?");
+            if (!$stmt) return array("success" => false, "message" => "MCS columns missing, run update_database.php");
+            $stmt->bind_param("i", $id);
+        } else {
+            $stmt = $this->mysqli->prepare("UPDATE heatpump_model SET mcs_product_id = ?, mcs_certification_number = ?, mcs_model_number = ?, mcs_certified_to = ?, mcs_scop = ?, mcs_scop_updated = ? WHERE id = ?");
+            if (!$stmt) return array("success" => false, "message" => "MCS columns missing, run update_database.php");
+            $product_id = (int) $product['product_id'];
+            $certified_to = $product['certified_to'] ? $product['certified_to'] : null;
+            $scop = count($product['scop']) ? json_encode((object) $product['scop']) : null;
+            $updated = time();
+            $stmt->bind_param("issssii", $product_id, $product['certification_number'], $product['model_number'], $certified_to, $scop, $updated, $id);
+        }
+
+        if ($stmt->execute()) {
+            $affected = $stmt->affected_rows;
+            $stmt->close();
+            if (!$affected && !$this->get($id, false)) {
+                return array("success" => false, "message" => "Heat pump model not found");
+            }
+            return array("success" => true, "message" => $product === null ? "MCS product cleared" : "MCS product saved");
+        } else {
+            $error = $stmt->error;
+            $stmt->close();
+            return array("success" => false, "message" => "Failed to save MCS product: " . $error);
+        }
+    }
+
+    /*
+     * Heatpump models with an MCS product chosen, for the refresh script
+     *
+     * @return array
+     */
+    public function get_mcs_linked() {
+        try {
+            $result = $this->mysqli->query("SELECT id, name, capacity, mcs_product_id, mcs_certification_number, mcs_model_number FROM heatpump_model WHERE mcs_product_id IS NOT NULL ORDER BY id");
+        } catch (mysqli_sql_exception $e) {
+            return array();
+        }
+        if (!$result) return array();
+        $rows = array();
+        while ($row = $result->fetch_assoc()) $rows[] = $row;
+        return $rows;
+    }
+
     /*
      * Upload image for heatpump model
      * 

@@ -107,6 +107,73 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             </div>
         </div>
 
+        <div class="row" v-if="heatpump.mcs_product_id || mode=='admin'">
+            <div class="col">
+                <h4>MCS product</h4>
+                <div v-if="heatpump.mcs_product_id">
+                    <table id="custom" class="table table-striped mt-3">
+                        <tr>
+                            <td>Model number</td>
+                            <td>{{ heatpump.mcs_model_number }}</td>
+                        </tr>
+                        <tr>
+                            <td>Certification number</td>
+                            <td>{{ heatpump.mcs_certification_number }}</td>
+                        </tr>
+                        <tr>
+                            <td>Certified until</td>
+                            <td>{{ heatpump.mcs_certified_to || 'Not given' }}</td>
+                        </tr>
+                    </table>
+                    <table id="custom" class="table table-sm mt-2" style="text-align:center" v-if="mcs_scop_rows.length">
+                        <tr>
+                            <th style="text-align:left">Flow temperature</th>
+                            <td v-for="row in mcs_scop_rows">{{ row.flow }} °C</td>
+                        </tr>
+                        <tr>
+                            <th style="text-align:left">SCOP (average climate)</th>
+                            <td v-for="row in mcs_scop_rows">{{ row.scop | toFixed(2) }}</td>
+                        </tr>
+                    </table>
+                    <p style="font-size:14px; color:#666">
+                        Declared by the manufacturer for this model number; other variants of this model may be listed separately.
+                        Search for {{ heatpump.mcs_certification_number }} in the <a href="https://mcscertified.com/product-directory/" target="_blank" rel="noopener">MCS product directory</a>.
+                    </p>
+                </div>
+                <p v-else style="color:#666">No MCS product chosen for this model.</p>
+
+                <div v-if="mode=='admin'" class="mb-4">
+                    <div class="input-group" style="max-width:600px">
+                        <input type="text" class="form-control" v-model="mcs_search_term" placeholder="Search the MCS directory: model, model number or certification number" @keyup.enter="mcs_search">
+                        <button class="btn btn-primary" @click="mcs_search" :disabled="mcs_searching">Search</button>
+                        <button class="btn btn-outline-danger" @click="mcs_clear" v-if="heatpump.mcs_product_id">Clear</button>
+                    </div>
+                    <p class="mt-2" v-if="mcs_searching">Searching...</p>
+                    <p class="mt-2 text-danger" v-if="mcs_error">{{ mcs_error }}</p>
+                    <table class="table table-sm mt-2" v-if="mcs_results.length">
+                        <tr>
+                            <th>Model number</th>
+                            <th>Certification number</th>
+                            <th>Certified until</th>
+                            <th>35 °C</th>
+                            <th>45 °C</th>
+                            <th>55 °C</th>
+                            <th></th>
+                        </tr>
+                        <tr v-for="p in mcs_results" :class="{ 'table-success': p.product_id == heatpump.mcs_product_id }">
+                            <td>{{ p.model_number }}<br><span style="font-size:12px; color:#666">{{ p.manufacturer }}</span></td>
+                            <td>{{ p.certification_number }}</td>
+                            <td>{{ p.certified_to }}</td>
+                            <td>{{ p.scop[35] }}</td>
+                            <td>{{ p.scop[45] }}</td>
+                            <td>{{ p.scop[55] }}</td>
+                            <td><button class="btn btn-success btn-sm" @click="mcs_select(p)" v-if="p.product_id != heatpump.mcs_product_id">Select</button></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <div class="row">
             <div class="col">
             
@@ -465,7 +532,13 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             },
             reloading_test_data: false,
             reload_success: false,
-            reload_error: null
+            reload_error: null,
+
+            // MCS product selection (admin)
+            mcs_search_term: '',
+            mcs_searching: false,
+            mcs_results: [],
+            mcs_error: null
         },
         created: function() {
             this.load_heatpump();
@@ -511,6 +584,55 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 $.get(this.path+'heatpump/get?id='+this.id)
                     .done(response => {
                         this.heatpump = response;
+                    });
+            },
+            mcs_search: function() {
+                if (this.mcs_search_term.trim().length < 3) return;
+                this.mcs_searching = true;
+                this.mcs_error = null;
+                this.mcs_results = [];
+                $.get(this.path + 'heatpump/mcs_search', { q: this.mcs_search_term.trim() })
+                    .done(response => {
+                        if (response.success) {
+                            this.mcs_results = response.products;
+                            if (!response.products.length) this.mcs_error = 'No air source heat pumps found';
+                        } else {
+                            this.mcs_error = response.message;
+                        }
+                    })
+                    .fail(() => {
+                        this.mcs_error = 'Search failed';
+                    })
+                    .always(() => {
+                        this.mcs_searching = false;
+                    });
+            },
+            mcs_select: function(product) {
+                $.post(this.path + 'heatpump/mcs_select', {
+                    id: this.heatpump.id,
+                    product_id: product.product_id,
+                    search: product.certification_number || product.model_number
+                })
+                .done(response => {
+                    if (response.success) {
+                        this.load_heatpump();
+                    } else {
+                        alert('Error: ' + response.message);
+                    }
+                })
+                .fail(() => {
+                    alert('Failed to save MCS product');
+                });
+            },
+            mcs_clear: function() {
+                if (!confirm('Clear the MCS product for this model?')) return;
+                $.post(this.path + 'heatpump/mcs_clear', { id: this.heatpump.id })
+                    .done(response => {
+                        if (response.success) {
+                            this.load_heatpump();
+                        } else {
+                            alert('Error: ' + response.message);
+                        }
                     });
             },
             load_cap_test_list: function(type) {
@@ -780,6 +902,16 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             }
         },
         computed: {
+            // Declared SCOP every 5 °C
+            mcs_scop_rows: function() {
+                if (!this.heatpump.mcs_scop) return [];
+                let scop = this.heatpump.mcs_scop;
+                if (typeof scop === 'string') {
+                    try { scop = JSON.parse(scop); } catch (e) { return []; }
+                }
+                return Object.keys(scop).map(Number).filter(t => t % 5 == 0).sort((a, b) => a - b)
+                    .map(t => ({ flow: t, scop: scop[t] }));
+            },
             unapprovedMaxTestsCount: function() {
                 return this.max_cap_tests.filter(test => test.review_status != 1).length;
             },
