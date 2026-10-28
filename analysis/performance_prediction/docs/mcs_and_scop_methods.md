@@ -30,6 +30,10 @@ The main comparison uses the 78 systems that meter hot water separately.
 For the rest, all heat counts as space heat, which flatters both SCOP
 methods.
 
+Once the site had a SCOP table for each heat pump model, the comparison
+was repeated across all models with the site's own calculation (see
+[All models](#all-models)). The conclusions hold.
+
 ## Results
 
 Measured SPF H4 averages 4.08.
@@ -85,6 +89,58 @@ the measured mean DHW flow temperature is much worse (+0.87): a seasonal
 space heating figure isn't a hot water figure, and the +5 K offset is
 doing real work.
 
+## All models
+
+The site now stores the MCS SCOP table for 56 heat pump models (see [On
+the site](#on-the-site)), so the comparison can be run beyond the
+Arotherm+. This uses the site data from 28 October 2026 and the site's
+calculation, which doesn't extrapolate and needs metered hot water.
+
+Of the 282 systems in the standard filter, 240 have a model with a SCOP
+table and a declared design flow temperature. 96 of those don't meter hot
+water separately and 16 have a hot water target above 50 °C, beyond the
+55 °C top of the table, which leaves 128. 28 of these have no hot water
+target recorded, so 50 °C is used. Measured SPF H4 averages 4.02.
+
+| Method | Mean | Bias | MAE | R² | r² rescaled | ±90% | Within 10% | Beat it |
+|---|---|---|---|---|---|---|---|---|
+| Manufacturer SCOP at design flow | 3.91 | −0.11 | 0.36 | 0.24 | 0.29 | ±0.72 | 60% | 61% |
+| MCS 031 | 3.12 | −0.90 | 0.90 | −2.95 | 0.16 | ±0.80 | 12% | 98% |
+| Weighted ΔT | 4.00 | −0.02 | 0.26 | 0.57 | 0.58 | ±0.55 | 77% | 52% |
+
+ΔT is a leave-one-out fit over the 282 systems.
+
+| Model | n | Measured | SCOP | MCS 031 | Design flow | Measured space flow |
+|---|---|---|---|---|---|---|
+| Vaillant Arotherm+ | 93 | 4.13 | 3.96 | 3.17 | 40 | 31.8 |
+| Daikin Altherma 3 | 11 | 3.54 | 3.57 | 2.96 | 50 | 36.4 |
+| Viessmann Vitocal 150A | 8 | 3.91 | 3.94 | 3.12 | 41 | 32.1 |
+| Grant Aerona HP290 | 5 | 3.75 | 4.07 | 3.05 | 43 | 34.4 |
+| Other (Ecodan, Samsung Gen 6/7, Cosy, Arotherm Split) | 11 | 3.77 | 3.74 | 2.97 | 45 | 33.4 |
+
+Design and measured flow are medians.
+
+**The Arotherm+ is the low case for SCOP.** On the Arotherm+, SCOP comes
+out 0.17 low. On the other 35 systems it's 0.05 high on average and
+ranks them worse (r² 0.15 against 0.28). The Grant Aerona systems are
+0.31 below their SCOP estimate, and within the Altherma 3 group the SCOP
+estimate doesn't rank systems at all (r 0.02). The groups are small,
+though.
+
+**MCS 031 is low for every model**, by 0.97 on the Arotherm+ and 0.72 on
+the others. 2 of the 128 systems come in below it. Measured SPF is a
+median 23% above MCS 031 (from 12% below to 64% above).
+
+**The space/water split is the same as on the Arotherm+.** Declared
+design flow is a median 10 K above the measured mean space heating flow
+(32 °C), and more for the other models (12 K). Space COP is 4.36 measured
+against 4.04 from SCOP at the design flow and 4.47 at the measured flow.
+Hot water COP is 3.02 measured (p10–p90 2.2–3.8) against 3.41 from SCOP
+at target + 5 K, which still doesn't rank systems (r 0.17).
+
+Where the hot water target is blank and 50 °C is used, SCOP comes out
+0.09 high on average, against 0.17 low where a target is given.
+
 ## Examples
 
 Measured SPF H4 against each prediction, picking the lowest, median and
@@ -112,15 +168,17 @@ apart in practice.
 
 ## What to take from this
 
-- MCS 031 issue 5.0 underestimates every one of these systems, by a
-  median 28% (2% to 65%), so it doesn't work as an estimate of what a
-  system will achieve.
-- Manufacturer SCOP gets the fleet average about right (3.9 against 4.1
-  measured), but only because two errors cancel. Declared design flow
-  temperatures are about 10 K higher than systems actually run at, and at
-  the temperatures they do run at, SCOP is 0.3–0.45 too high. For
-  individual systems it's a weak guide: about a third are more than 10%
-  out.
+- MCS 031 issue 5.0 underestimates every one of the Arotherm+ systems, by
+  a median 28% (2% to 65%), and 98% of systems across all models, by a
+  median 23%. It doesn't work as an estimate of what a system will
+  achieve.
+- Manufacturer SCOP gets the fleet average about right (3.9 against 4.0
+  measured across all models), but only because two errors cancel.
+  Declared design flow temperatures are about 10 K higher than systems
+  actually run at, and at the temperatures they do run at, SCOP is too
+  high. For individual systems it's a weak guide: 40% are more than 10%
+  out. How close the average comes depends on the model: 0.17 low for the
+  Arotherm+, about right for the rest.
 - Neither design-stage method ranks systems as well as measured ΔT,
   which is the same conclusion as [design_model.md](design_model.md):
   the declared design flow temperature is the weak input.
@@ -162,9 +220,14 @@ Points of the method worth knowing:
 
 ## Caveats
 
-- Arotherm+ only. `scripts/fetch_mcs_scop.py "Vitocal 150" "Ecodan"`
-  prints tables for other makes, but per-make numbers in the fleet are
-  small.
+- Outside the Arotherm+, the numbers per model are small (11 or fewer
+  scored systems each).
+- Each model has one MCS product chosen for it, and the site can't tell
+  which variant a system has. For most models the variants declare the
+  same SCOP, but not all: Vitocal 150A 230 V and 400 V units differ by
+  0.2–0.4, and the older Samsung Gen 6 certificate declares about 0.15
+  more than the current one. The choices are in
+  `scripts/mcs_product_map.csv` (repo root).
 - The measured space flow is the time mean while running, not heat
   weighted, so it reads perhaps 1–2 K low. That moves the "at measured
   flow" figures by about 0.1, not the conclusions.
@@ -174,9 +237,35 @@ Points of the method worth knowing:
 - The tests don't use MCS 031's EPC-based demand, which is a separate
   source of error in the electricity estimate.
 
+## On the site
+
+System pages show a "Manufacturer SCOP" row under MCS 031, and the list
+page has `scop_space`, `scop_spf` and `scop_spf_ratio` next to the MCS
+031 columns. The SCOP table comes from the MCS product chosen for the
+system's heat pump model on its heat pump page (`heatpump_model.mcs_*`,
+refreshed by `scripts/update_mcs_scop.php`). The calculation is in
+`DesignEstimates::scop()` and differs from the analysis in three ways:
+
+- **No extrapolation.** Above the highest declared temperature there is
+  no value. Most air source tables stop at 55 °C, so a hot water target
+  above 50 °C gives no hot water SCOP and no combined figure. That
+  applies to 11 of the 78 Arotherm+ systems used above, and 16 of 144
+  across all models.
+- **No metered hot water, no combined figure**, as for MCS 031. The
+  analysis counted all heat as space heat for those systems.
+- **A blank hot water target** is taken as 50 °C, as in the analysis,
+  but the page says so.
+
+With the same inputs the site gives the same SCOP blend as
+`scop_mcs031_comparison.py` for the other 67 systems (to 3 dp). The
+fleet line is the mean across all models with a SCOP table, using the
+same filters as the MCS 031 fleet line.
+
 ## Files
 
 | Path | What it is |
 |---|---|
 | `scripts/fetch_mcs_scop.py` | pulls SCOP tables from the MCS product directory, writes `mcs_scop_arotherm_plus.csv` |
 | `scripts/scop_mcs031_comparison.py` | the comparison, writes `scop_mcs031_comparison.csv` (one row per system) |
+| `scripts/scop_fleet_comparison.py` | the all-models comparison from the site data, writes `heatpumpmonitor_scop_fleet_<date>.csv` (cached input, `--fetch` to refresh) and `scop_fleet_comparison.csv` |
+| `scripts/update_mcs_scop.php` (repo root) | refreshes the site's per-model SCOP tables; `--map scripts/mcs_product_map.csv` applies the chosen products |
