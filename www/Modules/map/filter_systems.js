@@ -42,6 +42,8 @@ var SystemFilter = {
                 return row.ultimaterenewables === 1;
             } else if (this.filterKey === 'HA') {
                 return row.heatingacademy === 1;
+            } else if (this.filterKey === 'GUILD') {
+                return row.guild === 1;
             } else if (this.filterKey === 'HG4') {
                 return row.heatgeek === 1 && row.combined_cop > 4; // Special filter
             } else {

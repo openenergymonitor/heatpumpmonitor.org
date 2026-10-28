@@ -134,6 +134,15 @@ $schema['system_meta'] = array(
         //'basic' => true
     ),
     
+    'guild' => array(
+        'type' => 'tinyint(1)', 
+        'editable' => true, 
+        'optional' => true, 
+        'name' => 'Guild of Heating Engineers', 
+        'group' => 'Training',
+        //'basic' => true
+    ),
+    
     'betateach' => array(
         'type' => 'varchar(256)',
         'filter_regex' => 'url',

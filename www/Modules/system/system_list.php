@@ -977,6 +977,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         if (system['heatgeek'] == 1) training_count++;
         if (system['ultimaterenewables'] == 1) training_count++;
         if (system['heatingacademy'] == 1) training_count++;
+        if (system['guild'] == 1) training_count++;
         systems[z]['training'] = training_count;
     }
 
@@ -1800,6 +1801,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     if (system['heatingacademy']==1) {
                         training += "<a href='https://heatingacademynorthampton.co.uk'><img class='heatingacademylogo' src='"+path+"theme/img/HA2.png' title='Heating Academy Hydronics'/></a>";
                     }
+                    if (system['guild']==1) {
+                        training += "<a href='https://www.betateach.co.uk/c/guild'><img class='guildlogo' src='"+path+"theme/img/guild.svg' title='Guild of Heating Engineers'/></a>";
+                    }
                     return training;
                 }
                 
@@ -2092,6 +2096,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         return row.ultimaterenewables === 1;
                     } else if (this.filterKey === 'HA') {
                         return row.heatingacademy === 1;
+                    } else if (this.filterKey === 'GUILD') {
+                        return row.guild === 1;
                     } else if (this.filterKey === 'HG4') {
                         return row.heatgeek === 1 && row.combined_cop > 4; // Special filter
                     } else {

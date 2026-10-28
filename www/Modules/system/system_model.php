@@ -291,7 +291,8 @@ class System
                 "installer_url",
                 "installer_logo",
                 "heatgeek",
-                "heatingacademy"
+                "heatingacademy",
+                "guild"
             );
 
             foreach ($fields_to_copy as $field) {
