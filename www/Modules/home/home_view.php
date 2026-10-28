@@ -802,7 +802,39 @@ global $path;
     color: inherit;
     text-decoration: none;
 }
-.hpm-leader-link:hover { background: var(--hpm-sky); color: inherit; }
+.hpm-leader-link:hover { color: inherit; }
+/* Row = system link + installer badge link (links can't nest). The badge is
+   positioned over a spacer in the row link, after the rank:
+   left = link padding 1.4rem + rank 1.7rem + gap 1rem */
+.hpm-leaderboard li.hpm-leader-row { position: relative; padding: 0; gap: 0; }
+.hpm-leaderboard li.hpm-leader-row:hover { background: var(--hpm-sky); }
+.hpm-installer-slot { flex: 0 0 2rem; }
+.hpm-installer-badge {
+    position: absolute;
+    left: 4.1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    background: #fff;
+    border: 1px solid var(--hpm-line);
+    box-shadow: 0 1px 3px rgba(20, 52, 74, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    color: var(--hpm-blue-deep);
+    font-weight: 700;
+    text-decoration: none;
+}
+.hpm-installer-badge:hover { border-color: var(--hpm-blue-deep); color: var(--hpm-blue-deep); }
+/* Logos are 16px favicons; 18px matches the system list */
+.hpm-installer-badge img {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+}
 
 .hpm-finder-empty {
     background: var(--hpm-card);
@@ -1152,12 +1184,14 @@ global $path;
                                 <span>last 30 days &middot; COP</span>
                             </div>
                             <ol>
-                                <li v-for="(h, i) in coolingTop" style="padding:0;">
+                                <li v-for="(h, i) in coolingTop" class="hpm-leader-row">
                                     <a class="hpm-leader-link" :href="path + 'system/view?id=' + h.id">
                                         <span class="hpm-rank">{{ i + 1 }}</span>
+                                        <span class="hpm-installer-slot"></span>
                                         <span><span class="hpm-place">{{ h.location }}</span><br><span class="hpm-model">{{ homeSubtitle(h) }}</span></span>
                                         <span class="hpm-val"><span class="hpm-kwh">{{ (h.heat / h.floor).toFixed(1) }}<span class="hpm-unit"> kWh/m&sup2;</span></span><br><span class="hpm-temp">{{ h.cop ? "COP " + h.cop.toFixed(1) : "—" }}</span></span>
                                     </a>
+                                    <a v-if="h.installer" class="hpm-installer-badge" :href="h.installer_url || null" target="_blank" rel="noopener" :title="h.installer"><img v-if="h.installer_logo && !brokenLogos[h.installer_logo]" :src="path + 'theme/img/installers/' + h.installer_logo" :alt="h.installer" loading="lazy" @error="$set(brokenLogos, h.installer_logo, true)"><span v-else>{{ h.installer.charAt(0).toUpperCase() }}</span></a>
                                 </li>
                             </ol>
                         </div>
@@ -1267,12 +1301,14 @@ global $path;
                                 </div>
                             </div>
                             <ol>
-                                <li v-for="(h, i) in fabricTopFour" style="padding:0;">
+                                <li v-for="(h, i) in fabricTopFour" class="hpm-leader-row">
                                     <a class="hpm-leader-link" :href="path + 'system/view?id=' + h.id">
                                         <span class="hpm-rank">{{ i + 1 }}</span>
+                                        <span class="hpm-installer-slot"></span>
                                         <span><span class="hpm-place">{{ h.location }}</span><br><span class="hpm-model">{{ homeSubtitle(h) }}</span></span>
                                         <span class="hpm-val"><span class="hpm-kwh">&pound;{{ fmt(costOf(h)) }}</span><br><span class="hpm-temp">{{ fmt(h.elec) }} kWh elec &times; {{ costRate(h).toFixed(1) }}p</span><br><span class="hpm-temp">{{ fmt(h.heat) }} kWh heat &middot; SPF {{ h.cop.toFixed(1) }}</span></span>
                                     </a>
+                                    <a v-if="h.installer" class="hpm-installer-badge" :href="h.installer_url || null" target="_blank" rel="noopener" :title="h.installer"><img v-if="h.installer_logo && !brokenLogos[h.installer_logo]" :src="path + 'theme/img/installers/' + h.installer_logo" :alt="h.installer" loading="lazy" @error="$set(brokenLogos, h.installer_logo, true)"><span v-else>{{ h.installer.charAt(0).toUpperCase() }}</span></a>
                                 </li>
                             </ol>
                             <a class="hpm-leaderboard-foot" href="<?php echo $path; ?>system/list?mode=costs&tariff=agile">
@@ -1397,12 +1433,14 @@ global $path;
                                 </div>
                             </div>
                             <ol>
-                                <li v-for="(h, i) in tariffTopFive" style="padding:0;">
+                                <li v-for="(h, i) in tariffTopFive" class="hpm-leader-row">
                                     <a class="hpm-leader-link" :href="path + 'system/view?id=' + h.id">
                                         <span class="hpm-rank">{{ i + 1 }}</span>
+                                        <span class="hpm-installer-slot"></span>
                                         <span><span class="hpm-place">{{ h.location }}</span><br><span class="hpm-model">{{ homeSubtitle(h) }}</span></span>
                                         <span class="hpm-val"><span class="hpm-kwh">{{ rateOf(h).toFixed(1) }}<small>p</small></span><br><span class="hpm-temp"><span :title="tariffPeriod === 'last365' ? '' : 'Annual electricity use priced at this rate'">&approx;&pound;{{ fmt(rateOf(h) * h.elec / 100) }}/yr</span> &middot; SPF {{ h.cop.toFixed(1) }}</span></span>
                                     </a>
+                                    <a v-if="h.installer" class="hpm-installer-badge" :href="h.installer_url || null" target="_blank" rel="noopener" :title="h.installer"><img v-if="h.installer_logo && !brokenLogos[h.installer_logo]" :src="path + 'theme/img/installers/' + h.installer_logo" :alt="h.installer" loading="lazy" @error="$set(brokenLogos, h.installer_logo, true)"><span v-else>{{ h.installer.charAt(0).toUpperCase() }}</span></a>
                                 </li>
                             </ol>
                             <a class="hpm-leaderboard-foot" :href="path + 'system/list?mode=costs&tariff=' + tariff + '&period=' + tariffPeriod + '&minDays=' + tariffPeriodDef.minDays">
@@ -1527,12 +1565,14 @@ global $path;
                             </div>
                         </div>
                         <ol>
-                            <li v-for="r in spfLeaders" style="padding:0;">
+                            <li v-for="r in spfLeaders" class="hpm-leader-row">
                                 <a class="hpm-leader-link" :href="path + 'system/view?id=' + r.h.id">
                                     <span class="hpm-rank">{{ r.rank }}</span>
+                                    <span class="hpm-installer-slot"></span>
                                     <span><span class="hpm-place">{{ r.h.location }}<template v-if="r.h.hp"> &middot; <span :style="{color: hpTypeColor(r.h)}">{{ hpTypeLabel(r.h) }}</span></template></span><br><span class="hpm-model">{{ homeSubtitle(r.h) }}</span></span>
                                     <span class="hpm-val"><span class="hpm-kwh">{{ r.h.cop.toFixed(2) }}</span><br><span class="hpm-temp">SPF</span></span>
                                 </a>
+                                <a v-if="r.h.installer" class="hpm-installer-badge" :href="r.h.installer_url || null" target="_blank" rel="noopener" :title="r.h.installer"><img v-if="r.h.installer_logo && !brokenLogos[r.h.installer_logo]" :src="path + 'theme/img/installers/' + r.h.installer_logo" :alt="r.h.installer" loading="lazy" @error="$set(brokenLogos, r.h.installer_logo, true)"><span v-else>{{ r.h.installer.charAt(0).toUpperCase() }}</span></a>
                             </li>
                         </ol>
                         <div class="hpm-leaderboard-note" v-if="spfLeaderNote">
@@ -1791,6 +1831,8 @@ global $path;
             forumError: false,
             finder: Object.assign({}, FINDER_DEFAULTS),
             showCheapest: true,
+            // Installer logo filenames that failed to load; the badge falls back to an initial
+            brokenLogos: {},
             costTariff: "agile",
             costTariffDefs: [
                 { key: "agile", short: "Agile", name: "Octopus Agile" },
@@ -1846,6 +1888,9 @@ global $path;
                     property: s.property,
                     age: s.age,
                     insulation: s.insulation,
+                    installer: s.installer || "",
+                    installer_url: s.installer_url || "",
+                    installer_logo: s.installer_logo || "",
                     hp: s.hp_type,
                     agile: s.unit_rate_agile,
                     cosy: s.unit_rate_cosy,
@@ -1871,6 +1916,9 @@ global $path;
                     model: s.hp_model || "",
                     capacity: s.hp_output,
                     floor: s.floor_area,
+                    installer: s.installer || "",
+                    installer_url: s.installer_url || "",
+                    installer_logo: s.installer_logo || "",
                     cop: s.cooling_cop,
                     elec: s.cooling_elec_kwh,
                     heat: s.cooling_heat_kwh
