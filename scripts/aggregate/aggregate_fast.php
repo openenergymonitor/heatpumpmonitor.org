@@ -55,6 +55,7 @@ $limits = array("outsideT_min" => -40, "outsideT_max" => 50, "heat_max" => 10000
 $virtual_supported = array(53, 55, 56, 57, 58, 2, 3, 24, 25, 63);
 
 $t_begin = microtime(true);
+$exit_code = 0;
 
 if (isset($opts["dataset"])) {
     // Synthetic benchmark: system list from manifest.json, feeds/app from its database
@@ -69,6 +70,8 @@ if (isset($opts["dataset"])) {
     $phpfina_dir = "$dataset/phpfina/";
     $phptimeseries_dir = "$dataset/phptimeseries/";
     $settings = array('log' => array('enabled' => false));
+    // a test --post needs $aggregate_host/$aggregate_apikey, e.g. for a local emoncms
+    if (file_exists("$dataset/config.php")) require "$dataset/config.php";
 } else {
     require "$dir/../config.php";
     chdir("$dir/../../www");
@@ -231,19 +234,32 @@ if (isset($opts["post"])) {
     }
     $total_dp = ($end - $start) / $interval;
     $chunk = 7 * 1440;
+    $failed = array();
     foreach ($outputs as $g => $feeds) {
         foreach ($feeds as $name => $feedid) {
             $values = unpack("e*", file_get_contents("$workdir/out/$g/$name.f64"));
-            echo "Feed $feedid ($g:".$output_feed_names[$name].")\n";
+            $nchunks = (int) ceil($total_dp / $chunk);
+            $ok = 0;
             for ($c = 0; $c < $total_dp; $c += $chunk) {
                 $data = array();
                 for ($i = $c; $i < min($c + $chunk, $total_dp); $i++) {
                     $v = $values[$i + 1];
                     $data[] = array($start + $i * $interval, is_nan($v) ? null : $v);
                 }
-                echo http_request2("POST","$server/feed/post.json?id=$feedid",array("data"=>json_encode($data),"apikey"=>$apikey));
+                if (post_feed_data($server, $apikey, $feedid, $data)) {
+                    $ok++;
+                } else {
+                    $failed[] = "$g:".$output_feed_names[$name]." ($feedid) ".date("Y-m-d H:i", $start + $c * $interval)
+                              ." to ".date("Y-m-d H:i", $start + min($c + $chunk, $total_dp) * $interval);
+                }
             }
+            echo "Feed $feedid ($g:".$output_feed_names[$name]."): posted $ok/$nchunks\n";
+            unset($values);
         }
+    }
+    if (count($failed)) {
+        echo "\nERROR: ".count($failed)." posts failed after retries, re-run these ranges:\n  ".implode("\n  ", $failed)."\n";
+        $exit_code = 1;
     }
 }
 
@@ -255,6 +271,7 @@ if (!$keep_workdir) {
     @rmdir("$workdir/out");
     rmdir($workdir);
 }
+exit($exit_code);
 
 // --------------------------------------------------------------------------------
 

@@ -49,7 +49,18 @@ function resolve_output_feeds($server, $apikey, $tag, $names, $interval) {
     return $ids;
 }
 
-function http_request2($method, $url, $data)
+// Post [[time,value],...] to a feed, retrying; true once emoncms reports success
+function post_feed_data($server, $apikey, $feedid, $data, $attempts = 3) {
+    for ($a = 1; $a <= $attempts; $a++) {
+        $result = json_decode(http_request2("POST", "$server/feed/post.json?id=$feedid",
+            array("data" => json_encode($data), "apikey" => $apikey), 60));
+        if (!empty($result->success)) return true;
+        if ($a < $attempts) sleep(5 * $a);
+    }
+    return false;
+}
+
+function http_request2($method, $url, $data, $timeout = 5)
 {
     $options = array();
     if ($method=="GET") {
@@ -62,7 +73,7 @@ function http_request2($method, $url, $data)
     $options[CURLOPT_URL] = $url;
     $options[CURLOPT_RETURNTRANSFER] = 1;
     $options[CURLOPT_CONNECTTIMEOUT] = 2;
-    $options[CURLOPT_TIMEOUT] = 5;
+    $options[CURLOPT_TIMEOUT] = $timeout;
     $curl = curl_init();
     curl_setopt_array($curl, $options);
     $resp = curl_exec($curl);

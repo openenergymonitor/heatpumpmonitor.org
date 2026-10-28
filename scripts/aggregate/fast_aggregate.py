@@ -28,7 +28,7 @@ each feed is still read once and the sums are kept per group.
   python3 fast_aggregate.py plan.json --out DIR [--workers N]
 """
 import argparse, json, os, sys, time
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, as_completed
 import numpy as np
 
 INTERVAL = 60
@@ -359,21 +359,31 @@ def process_systems(args):
 
 def run(plan, workers):
     systems = plan["systems"]
-    # interleaved chunks, several per worker so slow chunks even out
-    nchunks = max(1, min(len(systems), workers * 4))
-    chunks = [systems[i::nchunks] for i in range(nchunks)] if workers > 1 else [systems]
-    if workers > 1:
-        with ProcessPoolExecutor(workers) as ex:
-            results = list(ex.map(process_systems, [(plan, c) for c in chunks]))
-    else:
-        results = [process_systems((plan, systems))]
+    accs, flagged = None, {}
 
-    accs = results[0][0]
-    flagged = dict(results[0][1])
-    for a, f in results[1:]:
-        for g in accs:
-            for k in ACC_KEYS: accs[g][k] += a[g][k]
+    def add(result):
+        nonlocal accs
+        a, f = result
         flagged.update(f)
+        if accs is None:
+            accs = a
+        else:
+            for g in accs:
+                for k in ACC_KEYS: accs[g][k] += a[g][k]
+
+    if workers > 1:
+        # one interleaved chunk per worker: each returns full-length sums for every
+        # group (hundreds of MB over years), so fewer chunks and adding each in as it
+        # arrives keeps memory to a few copies
+        nchunks = max(1, min(len(systems), workers))
+        with ProcessPoolExecutor(workers) as ex:
+            futures = [ex.submit(process_systems, (plan, systems[i::nchunks])) for i in range(nchunks)]
+            for fut in as_completed(futures):
+                add(fut.result())
+                futures.remove(fut)
+                del fut
+    else:
+        add(process_systems((plan, systems)))
 
     series = {}
     for g, acc in accs.items():

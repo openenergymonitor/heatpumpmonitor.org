@@ -35,6 +35,10 @@ in days). Each window gets its own cooling detection and elec feed range check,
 which is what running the original once per week would do. Results are posted in
 7-day chunks. Needs `python3` with numpy. `--workers` defaults to the CPU count.
 
+On a multi-year range each worker uses roughly 1 GB (2022 to 2026, both groups),
+so set `--workers` to fit the memory. Each post is retried up to 3 times; any
+range that still fails is listed at the end and the exit code is 1.
+
 ## Synthetic benchmark (`synth/`)
 
 ```
