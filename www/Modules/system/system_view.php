@@ -230,26 +230,26 @@ global $settings, $session, $path;
                 <table class="table table-sm mb-2" style="text-align:center" v-if="mcs031.combined_spf">
                     <tr>
                         <th></th>
-                        <th>Space heating</th>
-                        <th>Hot water</th>
+                        <th style="color:#e8730e"><svg style="display:inline-block; width:1em; height:1em; fill:currentColor; vertical-align:-0.125em"><use xlink:href="#icon-radiator"></use></svg> Space heating</th>
+                        <th style="color:#3a87ad"><svg style="display:inline-block; width:1em; height:1em; fill:currentColor; vertical-align:-0.125em"><use xlink:href="#icon-shower"></use></svg> Hot water</th>
                         <th>Combined</th>
                     </tr>
-                    <tr>
-                        <td style="text-align:left">Measured (last 365 days)</td>
-                        <td>{{ current_stats.space_cop | toFixed(1) }}</td>
-                        <td>{{ current_stats.water_cop | toFixed(1) }}</td>
+                    <tr style="font-weight:bold">
+                        <td style="text-align:left">Measured (last 365 days<span v-if="system.measured_mean_flow_temp_coldest_day > 0">, {{ system.measured_mean_flow_temp_coldest_day | toFixed(1) }} °C <a v-if="coldest_day_url" :href="coldest_day_url" target="_blank">coldest day</a><template v-else>coldest day</template> flow</span>)</td>
+                        <td style="color:#e8730e">{{ current_stats.space_cop | toFixed(1) }}</td>
+                        <td style="color:#3a87ad">{{ current_stats.water_cop | toFixed(1) }}</td>
                         <td>{{ current_stats.combined_cop | toFixed(1) }}</td>
                     </tr>
                     <tr>
                         <td style="text-align:left">MCS 031 <span v-tooltip tabindex="0" style="color:#666; cursor:pointer" :title="mcs031_note"><i class="bi bi-info-circle"></i></span> ({{ mcs031.design_flow }} °C design flow)</td>
-                        <td>{{ mcs031.space_spf | toFixed(1) }}</td>
-                        <td>{{ mcs031.water_spf | toFixed(1) }}</td>
+                        <td style="color:#e8730e">{{ mcs031.space_spf | toFixed(1) }}</td>
+                        <td style="color:#3a87ad">{{ mcs031.water_spf | toFixed(1) }}</td>
                         <td>{{ mcs031.combined_spf | toFixed(1) }}</td>
                     </tr>
                     <tr v-if="scop">
-                        <td style="text-align:left">Manufacturer SCOP <span v-tooltip tabindex="0" style="color:#666; cursor:pointer" :title="scop_note"><i class="bi bi-info-circle"></i></span></td>
-                        <td>{{ scop.space_scop | toFixed(1) }}</td>
-                        <td><span v-if="scop.water_scop">{{ scop.water_scop | toFixed(1) }}<span v-if="scop.dhw_target_assumed">*</span></span><span v-else>–</span></td>
+                        <td style="text-align:left"><a :href="path + 'heatpump/view?id=' + scop.model_id" title="SCOP table for this heat pump model">Manufacturer SCOP</a> <span v-tooltip tabindex="0" style="color:#666; cursor:pointer" :title="scop_note"><i class="bi bi-info-circle"></i></span> ({{ scop.design_flow }} °C design flow)</td>
+                        <td style="color:#e8730e">{{ scop.space_scop | toFixed(1) }}</td>
+                        <td style="color:#3a87ad"><span v-if="scop.water_scop">{{ scop.water_scop | toFixed(1) }}<span v-if="scop.dhw_target_assumed">*</span></span><span v-else>–</span></td>
                         <td><span v-if="scop.combined_spf">{{ scop.combined_spf | toFixed(1) }}</span><span v-else>–</span></td>
                     </tr>
                 </table>
@@ -257,7 +257,7 @@ global $settings, $session, $path;
                     MCS 031 <span v-tooltip tabindex="0" style="color:#666; cursor:pointer" :title="mcs031_note"><i class="bi bi-info-circle"></i></span> space heating SPF at the {{ mcs031.design_flow }} °C design flow temperature: <b>{{ mcs031.space_spf | toFixed(1) }}</b>. Hot water isn't metered separately on this system, so there is no combined comparison.
                 </p>
                 <p class="mb-2" v-if="!mcs031.combined_spf && scop">
-                    Manufacturer SCOP <span v-tooltip tabindex="0" style="color:#666; cursor:pointer" :title="scop_note"><i class="bi bi-info-circle"></i></span> at the {{ scop.design_flow }} °C design flow temperature: <b>{{ scop.space_scop | toFixed(1) }}</b>.
+                    <a :href="path + 'heatpump/view?id=' + scop.model_id" title="SCOP table for this heat pump model">Manufacturer SCOP</a> <span v-tooltip tabindex="0" style="color:#666; cursor:pointer" :title="scop_note"><i class="bi bi-info-circle"></i></span> at the {{ scop.design_flow }} °C design flow temperature: <b>{{ scop.space_scop | toFixed(1) }}</b>.
                 </p>
                 <p class="mb-2" style="font-size:14px; color:#666" v-if="mcs031.combined_spf && scop && scop.water_scop && scop.dhw_target_assumed">
                     * Hot water target not recorded, {{ scop.dhw_target }} °C assumed.
@@ -968,6 +968,12 @@ global $settings, $session, $path;
             },
             scop() {
                 return this.estimates ? this.estimates.scop : null;
+            },
+            // Dashboard power graph for the coldest day the measured flow temperature comes from
+            coldest_day_url() {
+                let start = this.system.measured_coldest_day_timestamp;
+                if (!(start > 0)) return null;
+                return this.path + 'dashboard?id=' + this.system.id + '&mode=power&start=' + start + '&end=' + (start + 86400);
             },
             scop_note() {
                 let e = this.scop;

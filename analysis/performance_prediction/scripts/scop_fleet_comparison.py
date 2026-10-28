@@ -77,7 +77,7 @@ def scop_at(table, flow):
 def main():
     base = sys.argv[sys.argv.index("--url") + 1] if "--url" in sys.argv else "https://heatpumpmonitor.org"
     df, path = load("--fetch" in sys.argv, base)
-    # dhw_target_temperature is no longer in the schema, so the site doesn't typecast it
+    # dhw_target_temperature was out of the schema until Oct 2026, so older snapshots have it as text
     df["dhw_target_temperature"] = pd.to_numeric(df.dhw_target_temperature, errors="coerce").fillna(0)
     print(f"{path}: {len(df)} public systems, {df.mcs_scop.notna().sum()} linked to a model with a SCOP table")
 

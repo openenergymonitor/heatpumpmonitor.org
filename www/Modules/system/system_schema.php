@@ -398,6 +398,16 @@ $schema['system_meta'] = array(
         'unit' => 'litres'
     ),
 
+    'dhw_target_temperature' => array(
+        'type' => 'float',
+        'editable' => true,
+        'optional' => true,
+        'name' => 'DHW target temperature',
+        'helper' => 'Cylinder temperature the heat pump heats to, if applicable',
+        'group' => 'Hot water',
+        'unit' => '°C'
+    ),
+
 
     'legionella_frequency' => array(
         'type' => 'varchar(32)', 
@@ -903,6 +913,17 @@ $schema['system_meta'] = array(
         'helper' => '',
         'unit' => '°C',
         'dp' => 2
+    ),
+
+    // Start of the coldest day the measurements above come from, set by scripts/coldest_day.php
+    'measured_coldest_day_timestamp' => array(
+        'type' => 'int(11)',
+        'editable' => false,
+        'optional' => true,
+        'show' => false,
+        'name' => 'Coldest day',
+        'group' => 'Measurements',
+        'helper' => 'Start of the coldest day in the last year, as a unix timestamp'
     )
 );
 

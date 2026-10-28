@@ -42,7 +42,7 @@ class DesignEstimates
     const MIN_DAYS_FLEET = 330;
 
     // Hot water is read off the SCOP table at the target + 5 K. The target was
-    // taken off the form in Dec 2025, so it's assumed where blank (as in the analysis)
+    // off the form from Dec 2025 to Oct 2026, so it's assumed where blank (as in the analysis)
     const SCOP_DHW_LIFT = 5;
     const SCOP_DEFAULT_DHW_TARGET = 50;
 
@@ -361,19 +361,12 @@ class DesignEstimates
 
         $tables = $this->scop_tables();
 
-        // dhw_target_temperature is no longer in the schema, so it can't be
-        // selected through combined_meta_stats_query
-        $dhw_targets = array();
-        if ($result = $this->try_sql("query", "SELECT id, dhw_target_temperature FROM system_meta")) {
-            while ($row = $result->fetch_object()) $dhw_targets[$row->id] = $row->dhw_target_temperature;
-        }
-
         $systems = $this->system_stats->combined_meta_stats_query(array(
             'meta_filters' => array(
                 'mid_metering' => 1,
                 'metering_boundary_code' => 4
             ),
-            'meta_fields' => array('hp_hybrid', 'flow_temp'),
+            'meta_fields' => array('hp_hybrid', 'flow_temp', 'dhw_target_temperature'),
             'stats_fields' => array(
                 'combined_cop', 'combined_data_length', 'space_heat_kwh', 'water_heat_kwh', 'cooling_heat_kwh'
             ),
@@ -385,7 +378,6 @@ class DesignEstimates
             if (!isset($tables[$s->id])) continue;
             if ($s->combined_cop === null || $s->combined_data_length < self::MIN_DAYS_FLEET * 86400) continue;
             if (abs((float) $s->cooling_heat_kwh) >= 1) continue;
-            $s->dhw_target_temperature = isset($dhw_targets[$s->id]) ? $dhw_targets[$s->id] : null;
             $e = $this->scop($s, $s, $tables[$s->id]);
             if ($e === null || !isset($e['combined_spf'])) continue;
             $rows[] = array((float) $s->combined_cop, $e['combined_spf']);
@@ -397,8 +389,8 @@ class DesignEstimates
             $summary['mean_estimated'] = array_sum(array_column($rows, 1)) / count($rows);
         }
 
-        // Not cached until there are SCOP tables, so mapping models shows up straight away
-        if ($this->redis && count($tables)) {
+        // Not cached while empty, e.g. part way through mapping models to MCS products
+        if ($this->redis && count($rows)) {
             $timezone = new DateTimeZone('Europe/London');
             $now = new DateTime('now', $timezone);
             $expires = new DateTime('today 07:00', $timezone);

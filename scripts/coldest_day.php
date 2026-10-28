@@ -2,8 +2,8 @@
 define('EMONCMS_EXEC', 1);
 $dir = dirname(__FILE__);
 chdir("$dir/../www");
+require "core.php";
 
-// test
 require "Lib/load_database.php";
 
 require("Modules/user/user_model.php");
@@ -51,6 +51,7 @@ foreach ($data as $row) {
         // clear any existing values in system_meta for this system
         if ($apply_changes) {
             $mysqli->query("UPDATE system_meta SET measured_outside_temp_coldest_day = NULL, measured_room_temp_coldest_day = NULL, measured_mean_flow_temp_coldest_day = NULL WHERE `id` = '$systemid'");
+            set_coldest_day_timestamp($mysqli, $systemid, null);
         }
 
         continue;
@@ -88,10 +89,23 @@ foreach ($data as $row) {
             } else {
                 echo " Skipping flow temp update - invalid value: $flowT\n";
             }
+
+            set_coldest_day_timestamp($mysqli, $systemid, (int) $row->timestamp);
         }
     }
 
     //die;
+}
+
+// Separate so the temperatures still update before update_database.php has
+// added measured_coldest_day_timestamp
+function set_coldest_day_timestamp($mysqli, $systemid, $timestamp) {
+    $value = $timestamp === null ? "NULL" : "'" . (int) $timestamp . "'";
+    try {
+        $mysqli->query("UPDATE system_meta SET measured_coldest_day_timestamp = $value WHERE `id` = '" . (int) $systemid . "'");
+    } catch (mysqli_sql_exception $e) {
+        echo " Skipping coldest day timestamp - run update_database.php\n";
+    }
 }
 
 function echo_status($new, $old, $variable_name) {
