@@ -4,13 +4,16 @@
 // emoncms Feed model. Only the metadata sources differ: the system list comes
 // from manifest.json, feeds/app from the synthetic database, and nothing is posted.
 //
-// php baseline.php DATASET_DIR START END OUT.json
+// php baseline.php DATASET_DIR START END OUT.json [mid]
+//
+// mid: only systems with mid_metering set, as the "mid" group of aggregate_fast.php
 
 define('EMONCMS_EXEC', 1);
 $dataset = rtrim($argv[1], "/");
 $start = (int) $argv[2];
 $end = (int) $argv[3];
 $outfile = $argv[4];
+$mid_only = isset($argv[5]) && $argv[5] == "mid";
 
 $manifest = json_decode(file_get_contents("$dataset/manifest.json"));
 $interval = 60;
@@ -60,6 +63,7 @@ $outside_temp_numsys = array_fill(0, $total_dp, 0);
 foreach ($manifest->systems as $row) {
     if (!$row->share) continue;
     if (!$row->published) continue;
+    if ($mid_only && empty($row->mid_metering)) continue;
 
     $systemid = $row->id;
     $count_all++;

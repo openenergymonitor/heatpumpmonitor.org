@@ -22,6 +22,9 @@ into windows (default 7 days) for cooling detection and the elec feed range
 check, so a multi-year reprocess gives the same result as running the original
 script on each consecutive 7-day window.
 
+Systems can belong to several groups (e.g. all systems and MID metered only);
+each feed is still read once and the sums are kept per group.
+
   python3 fast_aggregate.py plan.json --out DIR [--workers N]
 """
 import argparse, json, os, sys, time
@@ -271,6 +274,9 @@ def cooling_flags(heat):
     return flags
 
 
+ACC_KEYS = ("elec", "heat", "numsys", "elec_kw", "heat_kw", "capacity", "nkw", "out_sum", "out_n")
+
+
 def process_systems(args):
     plan, systems = args
     reader = FeedReader(plan)
@@ -280,13 +286,16 @@ def process_systems(args):
     lim = plan["limits"]
     N = (end - start) // INTERVAL
 
-    acc = {k: np.zeros(N) for k in ("elec", "heat", "numsys", "elec_kw", "heat_kw", "capacity", "nkw", "out_sum", "out_n")}
+    # one set of sums per group (dataset); each system is read once and added
+    # to every group it belongs to
+    accs = {g: {k: np.zeros(N) for k in ACC_KEYS} for g in plan["groups"]}
     flagged = {}
     windows = [(ws, min(ws + window, end)) for ws in range(start, end, window)]
 
     for sysrow in systems:
         hp_output = float(sysrow.get("hp_output") or 0)
         skip_window = [False] * len(windows)
+        sys_accs = [accs[g] for g in sysrow["groups"]]
 
         if sysrow.get("elec") is not None and sysrow.get("heat") is not None:
             em = sysrow.get("elec_meta") or {}
@@ -324,14 +333,13 @@ def process_systems(args):
                         h[cool[:b - a]] *= -1
 
                     sl = slice(a, b)
-                    acc["elec"][sl] += np.where(good, e, 0.0)
-                    acc["heat"][sl] += np.where(good, h, 0.0)
-                    acc["numsys"][sl] += good
+                    add = {"elec": np.where(good, e, 0.0), "heat": np.where(good, h, 0.0), "numsys": good}
                     if hp_output > 0:
-                        acc["elec_kw"][sl] += np.where(good, e / hp_output, 0.0)
-                        acc["heat_kw"][sl] += np.where(good, h / hp_output, 0.0)
-                        acc["capacity"][sl] += np.where(good, hp_output, 0.0)
-                        acc["nkw"][sl] += good
+                        add.update({"elec_kw": np.where(good, e / hp_output, 0.0), "heat_kw": np.where(good, h / hp_output, 0.0),
+                                    "capacity": np.where(good, hp_output, 0.0), "nkw": good})
+                    for acc in sys_accs:
+                        for k, v in add.items():
+                            acc[k][sl] += v
 
         if sysrow.get("outsideT") is not None:
             if all(skip_window):
@@ -341,10 +349,12 @@ def process_systems(args):
             for w, (ws, we) in enumerate(windows):
                 if skip_window[w]:
                     ok[(ws - start) // INTERVAL:(we - start) // INTERVAL] = False
-            acc["out_sum"] += np.where(ok, o, 0.0)
-            acc["out_n"] += ok
+            o_add = np.where(ok, o, 0.0)
+            for acc in sys_accs:
+                acc["out_sum"] += o_add
+                acc["out_n"] += ok
 
-    return acc, flagged
+    return accs, flagged
 
 
 def run(plan, workers):
@@ -358,21 +368,24 @@ def run(plan, workers):
     else:
         results = [process_systems((plan, systems))]
 
-    acc = results[0][0]
+    accs = results[0][0]
     flagged = dict(results[0][1])
     for a, f in results[1:]:
-        for k in acc: acc[k] += a[k]
+        for g in accs:
+            for k in ACC_KEYS: accs[g][k] += a[g][k]
         flagged.update(f)
 
-    nkw = np.maximum(1, acc["nkw"])
-    with np.errstate(invalid="ignore", divide="ignore"):
-        outsideT = np.where(acc["out_n"] > 0, acc["out_sum"] / acc["out_n"], np.nan)
-    series = {
-        "elec": acc["elec"], "heat": acc["heat"],
-        "elec_kw_nrml": acc["elec_kw"] * acc["capacity"] / nkw,
-        "heat_kw_nrml": acc["heat_kw"] * acc["capacity"] / nkw,
-        "capacity": acc["capacity"], "outsideT": outsideT, "numsys": acc["numsys"],
-    }
+    series = {}
+    for g, acc in accs.items():
+        nkw = np.maximum(1, acc["nkw"])
+        with np.errstate(invalid="ignore", divide="ignore"):
+            outsideT = np.where(acc["out_n"] > 0, acc["out_sum"] / acc["out_n"], np.nan)
+        series[g] = {
+            "elec": acc["elec"], "heat": acc["heat"],
+            "elec_kw_nrml": acc["elec_kw"] * acc["capacity"] / nkw,
+            "heat_kw_nrml": acc["heat_kw"] * acc["capacity"] / nkw,
+            "capacity": acc["capacity"], "outsideT": outsideT, "numsys": acc["numsys"],
+        }
     return series, flagged
 
 
@@ -388,16 +401,20 @@ def main():
         plan = json.load(f)
     series, flagged = run(plan, args.workers)
 
-    os.makedirs(args.out, exist_ok=True)
-    for k in SERIES:
-        series[k].astype("<f8").tofile(os.path.join(args.out, k + ".f64"))
+    # out/<group>/<series>.f64
+    for g in series:
+        os.makedirs(os.path.join(args.out, g), exist_ok=True)
+        for k in SERIES:
+            series[g][k].astype("<f8").tofile(os.path.join(args.out, g, k + ".f64"))
+    counts = {g: sum(g in s["groups"] for s in plan["systems"]) for g in plan["groups"]}
     summary = {"start": plan["start"], "end": plan["end"], "interval": INTERVAL,
-               "count_all": plan.get("count_all", len(plan["systems"])),
+               "count_all": plan.get("count_all", counts),
                "flagged": {str(k): v for k, v in sorted(flagged.items())},
                "seconds": round(time.time() - t0, 3)}
     with open(os.path.join(args.out, "summary.json"), "w") as f:
         json.dump(summary, f)
-    print(f"systems {len(plan['systems'])}  windows {-(-(plan['end'] - plan['start']) // plan.get('window', plan['end'] - plan['start']))}"
+    print(f"systems {len(plan['systems'])} ({', '.join(f'{g} {n}' for g, n in counts.items())})"
+          f"  windows {-(-(plan['end'] - plan['start']) // plan.get('window', plan['end'] - plan['start']))}"
           f"  flagged {len(flagged)}  {summary['seconds']:.2f}s", file=sys.stderr)
 
 

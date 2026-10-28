@@ -130,6 +130,7 @@ def main():
     args = ap.parse_args()
 
     rng = np.random.default_rng(args.seed)
+    rng_mid = np.random.default_rng(args.seed + 1)   # separate, so MID flags don't change the fleet
     datadir = os.path.join(args.out, "phpfina")
     os.makedirs(datadir, exist_ok=True)
     tsdir = os.path.join(args.out, "phptimeseries")
@@ -153,7 +154,8 @@ def main():
         published = int(rng.random() > 0.02)
         if not (share and published): stats["unlisted"] += 1
         systems.append({"id": i, "location": f"Synth{i}", "userid": userid, "app_id": app_id,
-                        "share": share, "published": published, "hp_output": hp_kw})
+                        "share": share, "published": published, "hp_output": hp_kw,
+                        "mid_metering": int(rng_mid.random() < 0.35)})
 
         interval = int(rng.choice([5, 10, 30, 60, 120], p=[0.05, 0.70, 0.05, 0.15, 0.05]))
         fstart, fend = t0, t1

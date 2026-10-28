@@ -2,7 +2,9 @@
 """
 Compare aggregate output from baseline.php (JSON) and fast_aggregate.py (out dir).
 
-  python3 compare.py BASELINE.json FAST_OUT_DIR [--offset MINUTES]
+  python3 compare.py BASELINE.json FAST_OUT_DIR/GROUP [--offset MINUTES]
+
+FAST_OUT_DIR/GROUP is e.g. W/out/live; summary.json is read from its parent.
 
 --offset: index in the fast output where the baseline window starts, for checking
 one window of a multi-week fast run against a single-week baseline.
@@ -34,11 +36,14 @@ for k in ["elec", "heat", "elec_kw_nrml", "heat_kw_nrml", "capacity", "outsideT"
         for i in np.flatnonzero(m)[bad]:
             print(f"    i={i} baseline={b[i]!r} fast={f[i]!r}")
 
-summary = json.load(open(os.path.join(args.fast, "summary.json")))
+summary = json.load(open(os.path.join(args.fast, "..", "summary.json")))
 bf = {str(k): v for k, v in (base["flagged"] or {}).items()}   # PHP encodes an empty array as []
 ff = summary["flagged"]
+# flags are per system across all groups, so a subset group (e.g. mid) only
+# checks the systems the baseline flagged
+same_keys = set(bf) == set(ff) if os.path.basename(os.path.normpath(args.fast)) == "live" else set(bf) <= set(ff)
 if (summary["end"] - summary["start"]) // 60 == len(base["elec"]):
-    cnt_ok = set(bf) == set(ff) and all(bf[k]["count"] == ff[k]["count"] and bf[k]["first"] == ff[k]["first"] and bf[k]["last"] == ff[k]["last"] for k in bf)
+    cnt_ok = same_keys and all(bf[k]["count"] == ff[k]["count"] and bf[k]["first"] == ff[k]["first"] and bf[k]["last"] == ff[k]["last"] for k in bf)
 else:
     # fast run spans several windows: flags are summed over all of them
     cnt_ok = set(bf) <= set(ff)

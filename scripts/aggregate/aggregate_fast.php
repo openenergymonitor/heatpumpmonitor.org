@@ -10,6 +10,11 @@
 // Default: last 7 days to the nearest hour, posted like the original.
 //   php aggregate_fast.php [--post]
 //
+// Each group of systems is aggregated in the same pass and posted to the feeds
+// named in output_feeds.php under the group's name as tag, looked up on the
+// remote emoncms and created there if missing. --groups picks which ones
+// (default "live,mid", all systems and MID metered systems).
+//
 // Reprocess a longer range, cooling detection and range checks per 7-day window:
 //   php aggregate_fast.php --start 2024-11-18 --end 2026-10-26 [--post]
 //
@@ -19,7 +24,8 @@
 define('EMONCMS_EXEC', 1);
 $dir = dirname(__FILE__);
 
-$opts = getopt("", array("start:", "end:", "window:", "post", "workers:", "dataset:", "workdir:", "python:", "quiet", "verbose"));
+$opts = getopt("", array("start:", "end:", "window:", "post", "groups:", "workers:", "dataset:", "workdir:", "python:", "quiet", "verbose"));
+require "$dir/output_feeds.php";
 $interval = 60;
 $window_days = isset($opts["window"]) ? (float) $opts["window"] : 7;
 // Each run gets its own workdir (removed at the end) so the hourly run and a
@@ -30,6 +36,16 @@ $python = isset($opts["python"]) ? $opts["python"] : "python3";
 $workers = isset($opts["workers"]) ? (int) $opts["workers"] : 0;
 $quiet = isset($opts["quiet"]);
 $verbose = isset($opts["verbose"]);
+
+// Groups of systems to aggregate, by tag of the output feeds
+$group_filters = array(
+    "live" => function ($row) { return true; },
+    "mid" => function ($row) { return !empty($row->mid_metering); }
+);
+$groups = explode(",", isset($opts["groups"]) ? $opts["groups"] : "live,mid");
+foreach ($groups as $g) {
+    if (!isset($group_filters[$g])) die("Unknown group '$g', expected one of: ".implode(", ", array_keys($group_filters))."\n");
+}
 @mkdir($workdir, 0700, true);
 
 // Same limits as aggregate_v2_last7.php
@@ -112,15 +128,22 @@ if (!isset($opts["start"]) && !isset($opts["window"])) $window = $end - $start;
 // --------------------------------------------------------------------------------
 $plan_feeds = array();
 $plan_systems = array();
-$count_all = 0;
+$count_all = array_fill_keys($groups, 0);
 $rendered = array();
 
 foreach ($systems as $row) {
     if (!$row->share) continue;
     if (!$row->published) continue;
-    $count_all++;
+    $in_groups = array();
+    foreach ($groups as $g) {
+        if ($group_filters[$g]($row)) {
+            $in_groups[] = $g;
+            $count_all[$g]++;
+        }
+    }
+    if (!count($in_groups)) continue;
 
-    $s = array("id" => (int) $row->id, "location" => $row->location, "userid" => (int) $row->userid,
+    $s = array("id" => (int) $row->id, "groups" => $in_groups, "location" => $row->location, "userid" => (int) $row->userid,
                "app_id" => (int) $row->app_id, "hp_output" => 1*$row->hp_output,
                "elec" => null, "heat" => null, "elec_meta" => null, "outsideT" => null);
 
@@ -156,7 +179,7 @@ foreach ($systems as $row) {
 
 $plan = array(
     "start" => $start, "end" => $end, "interval" => $interval, "window" => $window, "dp" => 0,
-    "limits" => $limits, "phpfina_dir" => $phpfina_dir, "phptimeseries_dir" => $phptimeseries_dir, "count_all" => $count_all,
+    "groups" => $groups, "limits" => $limits, "phpfina_dir" => $phpfina_dir, "phptimeseries_dir" => $phptimeseries_dir, "count_all" => $count_all,
     "feeds" => (object) $plan_feeds, "systems" => $plan_systems
 );
 file_put_contents("$workdir/plan.json", json_encode($plan, JSON_INVALID_UTF8_SUBSTITUTE | JSON_THROW_ON_ERROR));
@@ -172,8 +195,10 @@ if ($rc != 0) die("fast_aggregate.py failed ($rc)\n");
 
 $summary = json_decode(file_get_contents("$workdir/out/summary.json"));
 if (!$quiet) {
-    if ($count_all == 0) echo "No systems found\n";
-    else echo "Total systems: $count_all\n";
+    foreach ($count_all as $g => $n) {
+        if ($n == 0) echo "No systems found ($g)\n";
+        else echo "Total systems ($g): $n\n";
+    }
 
     if (count((array) $summary->flagged)) {
         echo "\nWARNING: systems with implausible data (excluded from aggregate):\n";
@@ -195,22 +220,29 @@ if ($verbose) {
 }
 
 if (isset($opts["post"])) {
-    $host = $aggregate_host;
+    // $aggregate_host is the post.json url, as for aggregate_v2_last7.php
+    $server = preg_replace('#/feed/post\.json$#', '', $aggregate_host);
     $apikey = $aggregate_apikey;
-    $outputs = array("elec" => 476418, "elec_kw_nrml" => 536674, "heat" => 536693, "heat_kw_nrml" => 536694,
-                     "capacity" => 536684, "outsideT" => 536695, "numsys" => 476417);
+    // Resolve every group's feeds before posting any
+    $outputs = array();
+    foreach ($groups as $g) {
+        $outputs[$g] = resolve_output_feeds($server, $apikey, $g, $output_feed_names, $interval);
+        if (!is_array($outputs[$g])) die("Not posted: ".$outputs[$g]."\n");
+    }
     $total_dp = ($end - $start) / $interval;
     $chunk = 7 * 1440;
-    foreach ($outputs as $name => $feedid) {
-        $values = unpack("e*", file_get_contents("$workdir/out/$name.f64"));
-        echo "Feed $feedid ($name)\n";
-        for ($c = 0; $c < $total_dp; $c += $chunk) {
-            $data = array();
-            for ($i = $c; $i < min($c + $chunk, $total_dp); $i++) {
-                $v = $values[$i + 1];
-                $data[] = array($start + $i * $interval, is_nan($v) ? null : $v);
+    foreach ($outputs as $g => $feeds) {
+        foreach ($feeds as $name => $feedid) {
+            $values = unpack("e*", file_get_contents("$workdir/out/$g/$name.f64"));
+            echo "Feed $feedid ($g:".$output_feed_names[$name].")\n";
+            for ($c = 0; $c < $total_dp; $c += $chunk) {
+                $data = array();
+                for ($i = $c; $i < min($c + $chunk, $total_dp); $i++) {
+                    $v = $values[$i + 1];
+                    $data[] = array($start + $i * $interval, is_nan($v) ? null : $v);
+                }
+                echo http_request2("POST","$server/feed/post.json?id=$feedid",array("data"=>json_encode($data),"apikey"=>$apikey));
             }
-            echo http_request2("POST","$host?id=$feedid",array("data"=>json_encode($data),"apikey"=>$apikey));
         }
     }
 }
@@ -218,7 +250,8 @@ if (isset($opts["post"])) {
 if (isset($opts["dataset"])) $redis->flushDB();
 
 if (!$keep_workdir) {
-    foreach (array_merge(glob("$workdir/out/*"), glob("$workdir/*.*")) as $f) unlink($f);
+    foreach (array_merge(glob("$workdir/out/*/*"), glob("$workdir/out/*.*"), glob("$workdir/*.*")) as $f) unlink($f);
+    foreach (glob("$workdir/out/*", GLOB_ONLYDIR) as $d) rmdir($d);
     @rmdir("$workdir/out");
     rmdir($workdir);
 }
@@ -304,28 +337,4 @@ function get_app_config($emoncms_mysqli,$app_id) {
         return false;
     }
     return json_decode($row_app->config);
-}
-
-function http_request2($method, $url, $data)
-{
-    $options = array();
-    if ($method=="GET") {
-        $urlencoded = http_build_query($data);
-        $url = "$url?$urlencoded";
-    } elseif ($method=="POST") {
-        $options[CURLOPT_POST] = 1;
-        $options[CURLOPT_POSTFIELDS] = http_build_query($data);
-    }
-    $options[CURLOPT_URL] = $url;
-    $options[CURLOPT_RETURNTRANSFER] = 1;
-    $options[CURLOPT_CONNECTTIMEOUT] = 2;
-    $options[CURLOPT_TIMEOUT] = 5;
-    $curl = curl_init();
-    curl_setopt_array($curl, $options);
-    $resp = curl_exec($curl);
-    if (PHP_VERSION_ID < 80000) {
-        // phpcs:ignore Generic.PHP.DeprecatedFunctions.Deprecated
-        curl_close($curl);
-    }
-    return $resp;
 }
