@@ -8,6 +8,7 @@ hpmon.log
 www/webhook.php
 sheet.tsv
 www/settings.php
+scripts/config.php
 www/theme/img/installers/*
 www/theme/img/system/*
 www/theme/img/heatpumps/*
