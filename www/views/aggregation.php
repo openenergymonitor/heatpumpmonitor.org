@@ -49,73 +49,71 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         </div>
 
         <!-- Configuration controls -->
-        <div class="row justify-content-center">
-            <div class="col-lg-10 col-xl-9">
-                <div class="row">
-                    <div :class="show_wind ? 'col-lg-4' : 'col-lg-6'">
-                        <div class="input-group mb-3">
-                            <span class="input-group-text">Household heat demand</span>
-                            <input class="form-control" v-model="household_heat_demand_kwh" @change="load" placeholder="">
-                            <span class="input-group-text">kWh/y</span>
-                        </div>
-                    </div>
-                    <div :class="show_wind ? 'col-lg-4' : 'col-lg-6'">
-                        <div class="input-group mb-3">
-                            <span class="input-group-text">Number of households</span>
-                            <input class="form-control" v-model="number_of_households" @change="load" placeholder="">
-                        </div>
-                    </div>
-                    <div class="col-lg-4" v-if="show_wind">
-                        <div class="input-group mb-3">
-                            <span class="input-group-text">UK wind proportion</span>
-                            <input class="form-control" v-model="wind_proportion" @change="load" placeholder="">
-                            <span class="input-group-text">%</span>
-                        </div>
-                    </div>
+        <div class="row">
+            <div class="col-lg-7 mb-3">
+                <div class="input-group">
+                    <span class="input-group-text">Number of households</span>
+                    <input class="form-control" v-model.number="number_of_households" @change="load" placeholder="">
+                    <button type="button" class="btn" :class="number_of_households==1 ? 'btn-primary' : 'btn-outline-primary'" @click="set_households(1)">1 household</button>
+                    <button type="button" class="btn" :class="number_of_households==300000 ? 'btn-primary' : 'btn-outline-primary'" @click="set_households(300000)" title="Rough number of UK households with heat pumps today">300k today</button>
+                    <button type="button" class="btn" :class="number_of_households==30000000 ? 'btn-primary' : 'btn-outline-primary'" @click="set_households(30000000)" title="UK households if heating were fully electrified">30M fully electrified</button>
+                </div>
+                <div class="form-text">Try increasing to 300,000 households (roughly the number of UK homes with heat pumps today) or 30 million (all homes, fully electrified), or enter your own value.</div>
+            </div>
+            <div class="col-lg-5 mb-3">
+                <div class="input-group">
+                    <span class="input-group-text">Household heat demand</span>
+                    <input class="form-control" v-model.number="household_heat_demand_kwh" @change="load" placeholder="">
+                    <span class="input-group-text">kWh/y</span>
+                </div>
+                <div class="form-text" v-if="average_heat_kwh!==null">
+                    The average {{ group=='mid' ? 'MID metered' : '' }} HeatpumpMonitor system supplies around <b>{{ average_heat_kwh.toLocaleString() }} kWh/y</b> of heat
+                    (<a href="#" @click.prevent="set_heat_demand(average_heat_kwh)">use this</a>).
+                    This is higher than the heat demand of a typical UK household.
                 </div>
             </div>
         </div>
 
-        <!-- Display toggles -->
-        <div class="row justify-content-center">
-            <div class="col-lg-10 col-xl-9">
-                <div class="card" style="background-color: #f8f9fa;">
-                    <div class="card-body">
-                        <h6 class="card-title mb-3">Show on chart:</h6>
-                        <div class="row">
-                            <div class="col-lg-3 col-md-3 col-sm-6 col-6 mb-2">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="show_heat" v-model="show_heat" @change="load">
-                                    <label class="form-check-label" for="show_heat">Heat output</label>
-                                </div>
-                            </div>
-                            <div class="col-lg-3 col-md-3 col-sm-6 col-6 mb-2">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="show_wind" v-model="show_wind" @change="load">
-                                    <label class="form-check-label" for="show_wind">Wind generation</label>
-                                </div>
-                            </div>
-                            <div class="col-lg-3 col-md-3 col-sm-6 col-6 mb-2">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="show_cop" v-model="show_cop" @change="load">
-                                    <label class="form-check-label" for="show_cop">COP</label>
-                                </div>
-                            </div>
-                            <div class="col-lg-3 col-md-3 col-sm-6 col-6 mb-2">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="show_outside_temp" v-model="show_outside_temp" @change="load">
-                                    <label class="form-check-label" for="show_outside_temp">Outside temperature</label>
-                                </div>
-                            </div>
-                            <!--
-                            <div class="col-lg-3 col-md-3 col-sm-6 col-6 mb-2">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="show_systems" v-model="show_systems" @change="load">
-                                    <label class="form-check-label" for="show_systems">Number of systems</label>
-                                </div>
-                            </div>
-                            -->
-                        </div>
+        <!-- Display toggles and chart settings -->
+        <div class="card mb-3" style="background-color: #f8f9fa;">
+            <div class="card-body d-flex flex-wrap align-items-center" style="gap:12px 24px">
+                <span class="fw-semibold">Show on chart:</span>
+                <div class="form-check form-check-inline m-0">
+                    <input class="form-check-input" type="checkbox" id="show_heat" v-model="show_heat" @change="load">
+                    <label class="form-check-label" for="show_heat">Heat output</label>
+                </div>
+                <div class="form-check form-check-inline m-0">
+                    <input class="form-check-input" type="checkbox" id="show_wind" v-model="show_wind" @change="load">
+                    <label class="form-check-label" for="show_wind">Wind generation</label>
+                </div>
+                <div class="form-check form-check-inline m-0">
+                    <input class="form-check-input" type="checkbox" id="show_cop" v-model="show_cop" @change="load">
+                    <label class="form-check-label" for="show_cop">COP</label>
+                </div>
+                <div class="form-check form-check-inline m-0">
+                    <input class="form-check-input" type="checkbox" id="show_outside_temp" v-model="show_outside_temp" @change="load">
+                    <label class="form-check-label" for="show_outside_temp">Outside temperature</label>
+                </div>
+                <!--
+                <div class="form-check form-check-inline m-0">
+                    <input class="form-check-input" type="checkbox" id="show_systems" v-model="show_systems" @change="load">
+                    <label class="form-check-label" for="show_systems">Number of systems</label>
+                </div>
+                -->
+                <div class="d-flex flex-wrap ms-auto" style="gap:12px">
+                    <div class="input-group" style="width:auto" v-if="show_wind">
+                        <span class="input-group-text">UK wind proportion</span>
+                        <input class="form-control" style="max-width:90px" v-model="wind_proportion" @change="load" placeholder="">
+                        <span class="input-group-text">%</span>
+                    </div>
+                    <div class="input-group" style="width:auto">
+                        <span class="input-group-text">Minimum interval</span>
+                        <select class="form-select" v-model.number="min_interval" @change="load">
+                            <option :value="60">Auto</option>
+                            <option :value="1800">Half hourly</option>
+                            <option :value="3600">Hourly</option>
+                            <option :value="86400">Daily</option>
+                        </select>
                     </div>
                 </div>
             </div>
@@ -192,11 +190,20 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     var default_scaling = { elec: 3552, heat: 13500 };
     var scaling = {};
     var load_id = 0;
+    var data_interval = null;   // interval (s) of the data currently plotted
+
+    // Human readable interval e.g. 30 min, 1 hour, 2 days
+    function format_interval(seconds) {
+        if (seconds % 86400 == 0) return (seconds/86400) + (seconds==86400 ? " day" : " days");
+        if (seconds % 3600 == 0) return (seconds/3600) + (seconds==3600 ? " hour" : " hours");
+        if (seconds % 60 == 0) return (seconds/60) + " min";
+        return seconds + " s";
+    }
 
     var app = new Vue({
         el: '#app',
         data: {
-            number_of_households: 300000,
+            number_of_households: 1,
             household_heat_demand_kwh: 10000,
             show_wind: false,
             show_heat: false,
@@ -205,11 +212,21 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             show_outside_temp: false,
             show_systems: false,
             average_systems: null,
+            average_heat_kwh: null,
             group: 'mid',
+            min_interval: 60,
             SPF: 3.8
         },
         methods: {
             load: function() {
+                load();
+            },
+            set_heat_demand: function(kwh) {
+                this.household_heat_demand_kwh = kwh;
+                load();
+            },
+            set_households: function(n) {
+                this.number_of_households = n;
                 load();
             },
             set_group: function(group) {
@@ -332,9 +349,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             return;
         }
 
-        view.calc_interval(1200,60);
+        view.calc_interval(1200, app.min_interval);
 
         var group = app.group;
+        var this_interval = view.interval;
         var feeds = feed_groups[group];
         var this_load = ++load_id;
 
@@ -355,6 +373,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 if (this_load != load_id) return;
 
                 var heatpumpmonitor_heat_output = scaling[group].heat;
+                app.average_heat_kwh = Math.round(heatpumpmonitor_heat_output / 100) * 100;
 
                 // auto scale kW, MW, GW
                 // max value is ~2000W unscaled
@@ -365,12 +384,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 } else if (max_value>1e6) {
                     scale = 1e-6;
                     scale_unit = "MW";
-                } else if (max_value>1e3) {
+                } else {
+                    // kW minimum, tooltip shows 0.1 kW resolution
                     scale = 1e-3;
                     scale_unit = "kW";
-                } else {
-                    scale = 1;
-                    scale_unit = "W";
                 }
 
                 var heatpump_elec_data = result[0]['data'];
@@ -446,6 +463,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 series["outsideT"].data = outside_temp_data;
                 series["cop"].data = cop_data;
                 series["systems"].data = number_of_systems_data;
+                data_interval = this_interval;
                 draw();
             }
         });
@@ -591,15 +609,67 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 if (app.show_systems) {
                     str += series["systems"].label + ": " + series["systems"].data[item.dataIndex][1].toFixed(0) + "<br>";
                 }
-                str += date.toLocaleString();
+                str += format_date(date, data_interval);
+                if (data_interval) {
+                    str += "<br>Interval: " + format_interval(data_interval) + " average";
+                }
 
-                tooltip(item.pageX, item.pageY, str, "#fff", "#000");
+                chart_tooltip(item.pageX, item.pageY, str);
             }
         } else {
             $("#tooltip").remove();
             previousPoint = null;
         }
     });
+
+    // e.g. 6th September 2026, with the time added for sub-daily intervals
+    function format_date(date, interval) {
+        var months = ["January", "February", "March", "April", "May", "June", "July",
+                      "August", "September", "October", "November", "December"];
+        var d = date.getDate();
+        var suffix = "th";
+        if (d % 10 == 1 && d != 11) suffix = "st";
+        else if (d % 10 == 2 && d != 12) suffix = "nd";
+        else if (d % 10 == 3 && d != 13) suffix = "rd";
+
+        var str = d + suffix + " " + months[date.getMonth()] + " " + date.getFullYear();
+        if (!interval || interval < 86400) {
+            str += ", " + String(date.getHours()).padStart(2, "0") + ":" + String(date.getMinutes()).padStart(2, "0");
+        }
+        return str;
+    }
+
+    // Tooltip kept within the chart area: above-right of the point by default,
+    // flipped below near the top and to the left near the right hand edge
+    function chart_tooltip(x, y, html) {
+        $("#tooltip").remove();
+        var tip = $("<div id='tooltip'>").html(html).css({
+            position: "absolute",
+            "background-color": "#fff",
+            border: "1px solid #ccc",
+            "border-radius": "4px",
+            "box-shadow": "0 2px 6px rgba(0,0,0,0.15)",
+            padding: "6px 10px",
+            "font-size": "14px",
+            "pointer-events": "none",
+            "z-index": 1000
+        }).appendTo("body");
+
+        var w = tip.outerWidth();
+        var h = tip.outerHeight();
+        var chart = $("#placeholder");
+        var bounds = chart.offset();
+        var gap = 15;
+
+        var left = x + gap;
+        if (left + w > bounds.left + chart.width()) left = x - w - gap;
+        if (left < bounds.left) left = bounds.left;
+
+        var top = y - h - gap;
+        if (top < bounds.top) top = y + gap;
+
+        tip.css({ left: left, top: top });
+    }
 
     // Window resize
     $(window).resize(function() {
