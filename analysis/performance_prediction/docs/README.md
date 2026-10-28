@@ -36,6 +36,8 @@ Other docs in this folder:
 - [design_model.md](design_model.md): predicting SPF from the design sheet
 - [load_and_quality.md](load_and_quality.md): the one open question, and
   the experiment planned to answer it
+- [machine_replay.md](machine_replay.md): each Arotherm+ system's real
+  data replayed through its datasheet, and what the gap is made of
 
 ## Where things stand
 
