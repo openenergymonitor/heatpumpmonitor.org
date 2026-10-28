@@ -1820,7 +1820,7 @@ global $path;
 
             // Homes like yours
             homes: [],
-            spfLeaderMode: "median",
+            spfLeaderMode: "top",
             finderLoading: true,
             finderError: false,
             // Featured story: systems actively cooling over the last 30 days
