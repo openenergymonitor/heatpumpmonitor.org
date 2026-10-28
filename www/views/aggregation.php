@@ -19,6 +19,12 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     <div class="container-fluid" style="margin-top:20px; max-width:1320px">
 
         <div class="row">
+            <div class="col-auto mb-2">
+                <div role="group" class="btn-group" aria-label="Systems included">
+                    <button type="button" class="btn" :class="group=='mid' ? 'btn-primary' : 'btn-outline-primary'" @click="set_group('mid')" title="Systems with MID metering only">MID metered</button>
+                    <button type="button" class="btn" :class="group=='live' ? 'btn-primary' : 'btn-outline-primary'" @click="set_group('live')">All systems</button>
+                </div>
+            </div>
             <div class="col text-end">
 
                 <div role="group" class="btn-group" style="width: 250px; margin-right:20px">
@@ -120,7 +126,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 
                 <div v-if="average_systems!==null" style="font-size:14px; color:#666; margin-bottom:20px">
-                    Average number of systems in window: <b>{{ average_systems }}</b>
+                    Average number of {{ group=='mid' ? 'MID metered systems' : 'systems' }} in window: <b>{{ average_systems }}</b>
                 </div>
 
                 <p>Can you match supply and demand with heat pumps on the grid?</p><p>Explore our simple grid model that uses the above HeatpumpMonitor dataset.</p>
@@ -170,12 +176,22 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
     var scale_unit = "kW";
     var scale = 1;
-    var first_load = true;
 
-    // Used to scale to average UK household heat demand ~9100 kWh/year
-    var heatpumpmonitor_elec_demand = 3552;
-    var heatpumpmonitor_heat_output = 13500;
-    var heatpumpmonitor_cop = 3.8;
+    // Aggregate feeds on emoncms.org for each group of systems, written by
+    // scripts/aggregate/aggregate_fast.php (feed tag = group). The totals are
+    // divided by the number of systems here to give the average per system.
+    var feed_groups = {
+        mid:  { elec: 548548, heat: 548550, outsideT: 548553, numsys: 548554 },
+        live: { elec: 476418, heat: 536693, outsideT: 536695, numsys: 476417 }
+    };
+    var wind_feedid = 97699;   // UK wind generation
+
+    // Average annual electric demand and heat output per system (kWh), used to
+    // scale to the household heat demand. Calculated from the last 12 months of
+    // each group when first shown, these defaults are used if that fails.
+    var default_scaling = { elec: 3552, heat: 13500 };
+    var scaling = {};
+    var load_id = 0;
 
     var app = new Vue({
         el: '#app',
@@ -189,10 +205,15 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             show_outside_temp: false,
             show_systems: false,
             average_systems: null,
+            group: 'mid',
             SPF: 3.8
         },
         methods: {
             load: function() {
+                load();
+            },
+            set_group: function(group) {
+                this.group = group;
                 load();
             },
             zoomin: function() {
@@ -239,23 +260,89 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 
 
-    function load() {
+    // Divide a total series by the number of systems in place, as the emoncms.org
+    // virtual feeds did (source total, divide by source number of systems)
+    function per_system(data, numsys_data) {
+        for (var z in data) {
+            let v = data[z][1];
+            let n = numsys_data[z] ? numsys_data[z][1] : null;
+            data[z][1] = (v===null || n===null || n==0) ? null : v / n;
+        }
+    }
 
-        view.calc_interval(1200,60);
-
+    function load_scaling(group, done) {
+        var feeds = feed_groups[group];
+        var end = Math.floor(Date.now()/1000/3600)*3600*1000;
         $.ajax({
-            // text plain dataType:
-
-            // 476422: HeatpumpMonitor normalised_aggregated_electric_demand
-            // 536709: HeatpumpMonitor normalised_aggregated_heat_output
-            // 97699: UK wind generation
-            // 536695: UK outside temperature
-            // 476417: HeatpumpMonitor number of systems
-
             dataType: "json",
             url: path + "remote-feed",
             data: {
-                'ids': [476422,536709,97699,536695,476417].join(","),
+                'ids': [feeds.elec, feeds.heat, feeds.numsys].join(","),
+                'start': end - 365*24*3600*1000,
+                'end': end,
+                'interval': 3600,
+                'average': 1
+            },
+            success: function(result) {
+                var elec_data = result[0]['data'];
+                var heat_data = result[1]['data'];
+                per_system(elec_data, result[2]['data']);
+                per_system(heat_data, result[2]['data']);
+
+                let elec_sum = 0;
+                let heat_sum = 0;
+                let count = 0;
+                for (var z in elec_data) {
+                    let heatpump_elec = elec_data[z][1];
+                    if (heatpump_elec<0) heatpump_elec = 0;
+                    let heatpump_heat = heat_data[z][1];
+                    if (heatpump_heat<0) heatpump_heat = null;
+                    if (heatpump_elec>0 && heatpump_heat!==null) {
+                        elec_sum += heatpump_elec;
+                        heat_sum += heatpump_heat;
+                        count += 1;
+                    }
+                }
+
+                // hourly data, so count is the number of hours with data
+                if (count>8760*0.9 && count<8760*1.1) {
+                    scaling[group] = {
+                        elec: (elec_sum / count) * 24 * 365 * 0.001,
+                        heat: (heat_sum / count) * 24 * 365 * 0.001
+                    };
+                    console.log(group + ": average per system " + scaling[group].elec.toFixed(0) + " kWh electric, "
+                        + scaling[group].heat.toFixed(0) + " kWh heat, COP " + (scaling[group].heat / scaling[group].elec).toFixed(2));
+                } else {
+                    console.log(group + ": " + count + " hours of data in the last year, using default scaling");
+                    scaling[group] = default_scaling;
+                }
+                done();
+            },
+            error: function() {
+                scaling[group] = default_scaling;
+                done();
+            }
+        });
+    }
+
+    function load() {
+
+        if (!scaling[app.group]) {
+            load_scaling(app.group, load);
+            return;
+        }
+
+        view.calc_interval(1200,60);
+
+        var group = app.group;
+        var feeds = feed_groups[group];
+        var this_load = ++load_id;
+
+        $.ajax({
+            dataType: "json",
+            url: path + "remote-feed",
+            data: {
+                'ids': [feeds.elec, feeds.heat, wind_feedid, feeds.outsideT, feeds.numsys].join(","),
                 'start': view.start,
                 'end': view.end,
                 'interval': view.interval,
@@ -264,48 +351,10 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             async: true,
             success: function(result) {
 
-                // -----------------------------------------------------------------------------------------------------------------------------
-                // 1. Calculate scaling only on first load
-                // -----------------------------------------------------------------------------------------------------------------------------
+                // a later load (e.g. after switching group) has been started
+                if (this_load != load_id) return;
 
-                if (first_load) {
-                    first_load = false;
-                    let heatpumpmonitor_elec_demand_sum = 0;
-                    let heatpumpmonitor_heat_output_sum = 0;
-                    let count = 0;
-
-                    for (var z in result[0]['data']) {
-                        let heatpump_elec = result[0]['data'][z][1];
-                        if (heatpump_elec<0) heatpump_elec = 0;
-
-                        let heatpump_heat = result[1]['data'][z][1];
-                        if (heatpump_heat<0) heatpump_heat = null;
-
-                        if (heatpump_elec>0 && heatpump_heat!==null) {
-                            heatpumpmonitor_elec_demand_sum += heatpump_elec;
-                            heatpumpmonitor_heat_output_sum += heatpump_heat;
-                            count += 1;
-                        }
-                    }
-
-                    let time_period_hours = Math.round((count * view.interval) / 3600);
-                    if (time_period_hours>8760*0.9 && time_period_hours<8760*1.1) {
-                        console.log("Time period is approximately 1 year - calculating scaling values, hours: " + time_period_hours);
-                        heatpumpmonitor_elec_demand = (heatpumpmonitor_elec_demand_sum / count) * 24 * 365 * 0.001;
-                        heatpumpmonitor_heat_output = (heatpumpmonitor_heat_output_sum / count) * 24 * 365 * 0.001;
-                        heatpumpmonitor_cop = heatpumpmonitor_heat_output / heatpumpmonitor_elec_demand;
-
-                        console.log("Time period hours: " + time_period_hours);
-                        console.log("Average heatpumpmonitor electric demand (unscaled): " + heatpumpmonitor_elec_demand.toFixed(3) + " kWh");
-                        console.log("Average heatpumpmonitor heat output (unscaled): " + heatpumpmonitor_heat_output.toFixed(3) + " kWh");
-                        console.log("Average heatpumpmonitor COP: " + heatpumpmonitor_cop.toFixed(3));
-                    } else {
-                        console.log("Time period is not approximately 1 year (" + time_period_hours + " hours) using default scaling values");
-                    }
-                }
-
-                // -----------------------------------------------------------------------------------------------------------------------------
-
+                var heatpumpmonitor_heat_output = scaling[group].heat;
 
                 // auto scale kW, MW, GW
                 // max value is ~2000W unscaled
@@ -329,6 +378,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 var wind_generation_data = result[2]['data'];
                 var outside_temp_data = result[3]['data'];
                 var number_of_systems_data = result[4]['data'];
+
+                per_system(heatpump_elec_data, number_of_systems_data);
+                per_system(heatpump_heat_data, number_of_systems_data);
 
                 // Average number of systems in window
                 var sum_systems = 0;
