@@ -843,6 +843,9 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
     columns['installer_logo'].heading = "";
     columns['mid_metering'].heading = "MID";
+    columns['mcs031_space_spf'].heading = "MCS 031<br>SH SPF";
+    columns['mcs031_spf'].heading = "MCS 031<br>SPF";
+    columns['mcs031_spf_ratio'].heading = "SPF ÷<br>MCS 031";
     // columns['electricity_tariff_unit_rate_all'].heading = "Elec<br>p/kWh";
 
     // snapshot of the standard headings, used to restore when a custom title is removed
@@ -1915,6 +1918,12 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 if (key == 'prc_demand_hot_water') {
                     if (val == null || val == 0 ) return '';
                     return val.toFixed(0) + '%';
+                }
+
+                // Design estimates: 0 where MCS 031 doesn't apply to the system
+                if (key == 'mcs031_space_spf' || key == 'mcs031_spf' || key == 'mcs031_spf_ratio') {
+                    if (val == null || val == 0) return '';
+                    return val.toFixed(key == 'mcs031_space_spf' ? 1 : 2);
                 }
                 
                 return val;

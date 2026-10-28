@@ -693,3 +693,9 @@
     width: 100%;
 }
 
+
+/* Paragraph-length tooltips, e.g. the design-stage estimates note */
+.tooltip-wide .tooltip-inner {
+    max-width: 360px;
+    text-align: left;
+}

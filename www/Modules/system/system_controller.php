@@ -5,7 +5,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 function system_controller() {
 
-    global $session, $route, $user, $system, $mysqli, $system_stats, $system_photos, $settings;
+    global $session, $route, $user, $system, $mysqli, $system_stats, $system_photos, $settings, $redis;
 
     if ($route->action=="new") {
         $route->format = "html";
@@ -230,6 +230,31 @@ function system_controller() {
         }
     }
 
+    // system/estimates?id=: design-stage estimates for this system's last 365 days,
+    // with the same comparison across the fleet
+    if ($route->action=="estimates") {
+        $route->format = "json";
+        $system_id = (int) get("id", true);
+        if (!$system->has_read_access($session['userid'], $system_id)) {
+            return array("success"=>false, "message"=>"Invalid access");
+        }
+        $result = $mysqli->query("SELECT * FROM system_meta WHERE id='$system_id'");
+        if (!$meta = $result->fetch_object()) {
+            return array("success"=>false, "message"=>"System does not exist");
+        }
+        $meta = $system->typecast($meta);
+        $stats = $system_stats->get_last365($session['userid'], $system_id);
+        $stats = isset($stats[$system_id]) ? (object) $stats[$system_id] : null;
+
+        require_once "Modules/system/design_estimates_model.php";
+        $estimates = new DesignEstimates($system_stats, $redis, $mysqli);
+        return array(
+            "success"=>true,
+            "mcs031"=>$estimates->mcs031($meta, $stats),
+            "mcs031_fleet"=>$estimates->mcs031_fleet_summary()
+        );
+    }
+
     if ($route->action=="get") {
         $route->format = "json";
         $systemid = get("id",true);
@@ -243,7 +268,15 @@ function system_controller() {
 
         if ($session['userid']) {
             $input = json_decode(file_get_contents('php://input'));
-            return $system->save($session['userid'],$input->id,$input->data);
+            $result = $system->save($session['userid'],$input->id,$input->data);
+
+            // Design flow temperature, emitters etc. may have changed
+            if (is_array($result) && !empty($result['success']) && !empty($result['systemid'])) {
+                require_once "Modules/system/design_estimates_model.php";
+                $estimates = new DesignEstimates($system_stats, $redis, $mysqli);
+                $estimates->update_meta($result['systemid']);
+            }
+            return $result;
         }
     }
 

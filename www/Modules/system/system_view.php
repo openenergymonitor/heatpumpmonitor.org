@@ -8,7 +8,7 @@ global $settings, $session, $path;
 <script src="<?php echo $path; ?>theme/vendor/jquery-3.6.3/jquery.min.js" integrity="sha384-Ft/vb48LwsAEtgltj7o+6vtS2esTU9PCpDqcXs4OCVQFZu5BqprHtUCZ4kjK+bpE"></script>
 
 <link rel="stylesheet" href="<?php echo $path; ?>Lib/autocomplete.css?v=4">
-<link rel="stylesheet" href="<?php echo $path; ?>Modules/system/system_view.css?v=6">
+<link rel="stylesheet" href="<?php echo $path; ?>Modules/system/system_view.css?v=7">
 
 <script src="<?php echo $path; ?>Lib/autocomplete.js?v=10"></script>
 <script src="<?php echo $path; ?>Modules/system/photo_utils.js?v=1"></script>
@@ -220,6 +220,42 @@ global $settings, $session, $path;
                     </div>
                 </div>
                 <p v-else class="mb-0" style="text-align:center">No data available for this period</p>
+            </div>
+        </div>
+
+        <!-- Design-stage estimates: last 365 days only, see design_estimates_model.php -->
+        <div class="card mt-3" v-if="show_estimates">
+            <h5 class="card-header">Design-stage estimates</h5>
+            <div class="card-body">
+                <table class="table table-sm mb-2" style="text-align:center" v-if="mcs031.combined_spf">
+                    <tr>
+                        <th></th>
+                        <th>Space heating</th>
+                        <th>Hot water</th>
+                        <th>Combined</th>
+                    </tr>
+                    <tr>
+                        <td style="text-align:left">Measured (last 365 days)</td>
+                        <td>{{ current_stats.space_cop | toFixed(1) }}</td>
+                        <td>{{ current_stats.water_cop | toFixed(1) }}</td>
+                        <td>{{ current_stats.combined_cop | toFixed(1) }}</td>
+                    </tr>
+                    <tr>
+                        <td style="text-align:left">MCS 031 <span v-tooltip tabindex="0" style="color:#666; cursor:pointer" :title="mcs031_note"><i class="bi bi-info-circle"></i></span> ({{ mcs031.design_flow }} °C design flow)</td>
+                        <td>{{ mcs031.space_spf | toFixed(1) }}</td>
+                        <td>{{ mcs031.water_spf | toFixed(1) }}</td>
+                        <td>{{ mcs031.combined_spf | toFixed(1) }}</td>
+                    </tr>
+                </table>
+                <p class="mb-2" v-if="!mcs031.combined_spf">
+                    MCS 031 <span v-tooltip tabindex="0" style="color:#666; cursor:pointer" :title="mcs031_note"><i class="bi bi-info-circle"></i></span> space heating SPF at the {{ mcs031.design_flow }} °C design flow temperature: <b>{{ mcs031.space_spf | toFixed(1) }}</b>. Hot water isn't metered separately on this system, so there is no combined comparison.
+                </p>
+                <p class="mb-2" style="font-size:14px; color:#666" v-if="mcs031.existing_radiators">
+                    With existing radiators MCS 031 defaults to a 60 °C flow temperature (SPF {{ mcs031.space_spf_default_flow | toFixed(1) }}) unless a room-by-room heat loss justifies lower.
+                </p>
+                <p class="mb-0" style="font-size:14px; color:#666" v-if="mcs031_fleet">
+                    Fleet ({{ mcs031_fleet.n }} MID-metered {{ mcs031.source.toLowerCase() }} systems): measured {{ mcs031_fleet.mean_measured | toFixed(1) }} vs MCS 031 {{ mcs031_fleet.mean_estimated | toFixed(1) }}.
+                </p>
             </div>
         </div>
 
@@ -832,6 +868,7 @@ global $settings, $session, $path;
             ],
             period_stats: {},
             stats_loading: false,
+            estimates: null,
             schema_groups: schema_groups,
             filtered_schema_groups: {},
 
@@ -896,6 +933,29 @@ global $settings, $session, $path;
                 if (this.has_cooling) total += stats.cooling_heat_kwh;
                 return total;
             },
+            mcs031() {
+                return this.estimates ? this.estimates.mcs031 : null;
+            },
+            mcs031_note() {
+                if (!this.mcs031) return '';
+                return 'MCS 031 is a performance estimate method developed by MCS (' + this.mcs031.method + '). '
+                    + 'It looks up a seasonal performance factor from the design flow temperature and heat pump type, the same for every make and model, '
+                    + 'and divides hot water demand by ' + this.mcs031.water_spf + '. '
+                    + 'Where the cylinder is pasteurised by immersion it adds the electricity for a 50 to 60 °C immersion cycle. '
+                    + 'Fleet figures are averages over public MID-metered systems of the same type with a year of data and metered hot water, updated daily. '
+                    + 'Measured figures use the H4 boundary.';
+            },
+            // Fleet comparison for this system's heat pump type, once there are enough systems to quote
+            mcs031_fleet() {
+                if (!this.mcs031 || !this.estimates.mcs031_fleet) return null;
+                let fleet = this.estimates.mcs031_fleet.by_source[this.mcs031.source];
+                return fleet && fleet.n >= 10 ? fleet : null;
+            },
+            // Annual estimates, so only alongside the last 365 days when that period is a full SPF
+            show_estimates() {
+                return this.mode == 'view' && this.stats_period == 'last365' && this.mcs031
+                    && this.current_stats && this.cop_label == 'SPF';
+            },
             // Show SPF rather than COP when viewing a period long enough to span a full season
             cop_label() {
                 if (this.stats_period != 'all' && this.stats_period != 'last365') return 'COP';
@@ -949,6 +1009,18 @@ global $settings, $session, $path;
                     
                     // Use white text for dark backgrounds (luminance < 0.5), black for light
                     return luminance < 0.5 ? '#fff' : '#000';
+                }
+            }
+        },
+        directives: {
+            // Bootstrap tooltip for elements Vue adds after page load (opens on hover, or tap via focus)
+            tooltip: {
+                inserted: function(el) {
+                    new bootstrap.Tooltip(el, {placement: 'bottom', customClass: 'tooltip-wide'});
+                },
+                unbind: function(el) {
+                    let tooltip = bootstrap.Tooltip.getInstance(el);
+                    if (tooltip) tooltip.dispose();
                 }
             }
         },
@@ -1614,6 +1686,14 @@ global $settings, $session, $path;
                         qualityBound.scrollLeft = qualityBound.scrollWidth;
                     }
                 });
+            })
+            .catch(function(error) {
+                console.log(error);
+            });
+
+        if (app.system.id) axios.get(path + 'system/estimates?id=' + app.system.id)
+            .then(function(response) {
+                app.estimates = response.data.success ? response.data : null;
             })
             .catch(function(error) {
                 console.log(error);

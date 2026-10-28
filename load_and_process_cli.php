@@ -173,6 +173,9 @@ function process_rolling_stats($systemlist, $single_system, $reload) {
     $date->modify("-365 days");
     $start_last365 = $date->getTimestamp();
 
+    require_once "Modules/system/design_estimates_model.php";
+    $design_estimates = new DesignEstimates($system_stats, false, $mysqli);
+
     $processed_systems = 0;
     
     foreach ($systemlist as $row) {
@@ -195,6 +198,9 @@ function process_rolling_stats($systemlist, $single_system, $reload) {
             if ($stats == false) continue;
             $mysqli->query("DELETE FROM system_stats_last365_v2 WHERE id=$systemid");
             $system_stats->save_stats_table('system_stats_last365_v2',$stats);
+
+            // MCS 031 fields in system_meta are based on the last 365 days
+            $design_estimates->update_meta($systemid);
 
             // Last 90 days
             $stats = $system_stats->process_from_daily($systemid,$start_last90,$end);

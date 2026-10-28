@@ -799,6 +799,37 @@ $schema['system_meta'] = array(
         'dp' => 2
     ),
 
+    /* ---------------------------- Design estimates ---------------------------- */
+    // Computed by DesignEstimates (design_estimates_model.php) on save and after
+    // the nightly stats update. Not editable; 0 where the method doesn't apply.
+
+    'mcs031_space_spf' => array(
+        'type' => 'float',
+        'editable' => false,
+        'optional' => true,
+        'name' => 'MCS 031 space heating SPF',
+        'group' => 'Design estimates',
+        'helper' => 'MCS 031 seasonal performance factor at the declared design flow temperature'
+    ),
+
+    'mcs031_spf' => array(
+        'type' => 'float',
+        'editable' => false,
+        'optional' => true,
+        'name' => 'MCS 031 SPF (last 365 days)',
+        'group' => 'Design estimates',
+        'helper' => 'MCS 031 combined space heating and hot water SPF, applied to the measured heat over the last 365 days'
+    ),
+
+    'mcs031_spf_ratio' => array(
+        'type' => 'float',
+        'editable' => false,
+        'optional' => true,
+        'name' => 'Measured SPF ÷ MCS 031 SPF (last 365 days)',
+        'group' => 'Design estimates',
+        'helper' => 'Measured SPF over the last 365 days divided by the MCS 031 estimate for the same heat'
+    ),
+
     'measured_mean_flow_temp_coldest_day' => array(
         'type' => 'float', 
         'editable' => true, 
