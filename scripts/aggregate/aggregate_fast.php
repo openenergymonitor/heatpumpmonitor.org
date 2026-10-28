@@ -19,7 +19,7 @@
 define('EMONCMS_EXEC', 1);
 $dir = dirname(__FILE__);
 
-$opts = getopt("", array("start:", "end:", "window:", "post", "workers:", "dataset:", "workdir:", "python:", "quiet"));
+$opts = getopt("", array("start:", "end:", "window:", "post", "workers:", "dataset:", "workdir:", "python:", "quiet", "verbose"));
 $interval = 60;
 $window_days = isset($opts["window"]) ? (float) $opts["window"] : 7;
 // Each run gets its own workdir (removed at the end) so the hourly run and a
@@ -29,6 +29,7 @@ $workdir = $keep_workdir ? $opts["workdir"] : sys_get_temp_dir()."/hpmon_aggrega
 $python = isset($opts["python"]) ? $opts["python"] : "python3";
 $workers = isset($opts["workers"]) ? (int) $opts["workers"] : 0;
 $quiet = isset($opts["quiet"]);
+$verbose = isset($opts["verbose"]);
 @mkdir($workdir, 0700, true);
 
 // Same limits as aggregate_v2_last7.php
@@ -112,7 +113,7 @@ if (!isset($opts["start"]) && !isset($opts["window"])) $window = $end - $start;
 $plan_feeds = array();
 $plan_systems = array();
 $count_all = 0;
-$rendered = 0;
+$rendered = array();
 
 foreach ($systems as $row) {
     if (!$row->share) continue;
@@ -184,7 +185,14 @@ if (!$quiet) {
         echo "\n";
     }
 }
-fprintf(STDERR, "plan %.2fs (%d feeds rendered by emoncms), total %.2fs\n", $t_plan, $rendered, microtime(true) - $t_begin);
+$t_render = array_sum(array_column($rendered, "seconds"));
+fprintf(STDERR, "plan %.2fs (metadata %.2fs, %d feeds rendered by emoncms %.2fs), total %.2fs\n",
+    $t_plan, $t_plan - $t_render, count($rendered), $t_render, microtime(true) - $t_begin);
+if ($verbose) {
+    foreach ($rendered as $r) {
+        fprintf(STDERR, "  rendered feed %d engine %s %.2fs %s\n", $r["id"], $r["engine"], $r["seconds"], $r["processList"]);
+    }
+}
 
 if (isset($opts["post"])) {
     $host = $aggregate_host;
@@ -258,7 +266,7 @@ function virtual_sources($feedid) {
 // Render a feed exactly as the original script reads it, in max_datapoints sized chunks
 function render_feed($feedid) {
     global $feed, $start, $end, $interval, $workdir, $rendered;
-    $rendered++;
+    $t = microtime(true);
     $path = "$workdir/feed_$feedid.f64";
     $fh = fopen($path, "wb");
     $chunk = 60000 * $interval;
@@ -274,6 +282,8 @@ function render_feed($feedid) {
         fwrite($fh, $bin);
     }
     fclose($fh);
+    $rendered[] = array("id" => $feedid, "engine" => $feed->get_field($feedid, "engine"),
+                        "processList" => (string) $feed->get_processlist($feedid), "seconds" => microtime(true) - $t);
     return $path;
 }
 
