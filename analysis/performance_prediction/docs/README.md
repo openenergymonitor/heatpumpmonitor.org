@@ -38,6 +38,8 @@ Other docs in this folder:
   the experiment planned to answer it
 - [machine_replay.md](machine_replay.md): each Arotherm+ system's real
   data replayed through its datasheet, and what the gap is made of
+- [mcs_and_scop_methods.md](mcs_and_scop_methods.md): how the manufacturer
+  SCOP and MCS 031 estimates compare with measured SPF
 
 ## Where things stand
 
