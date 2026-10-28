@@ -4,7 +4,7 @@
 // This script does the metadata work (system list, app configs, feed engines
 // and meta) through the same emoncms models as the original, writes a plan and
 // hands the data reading and aggregation to fast_aggregate.py (numpy). Feeds
-// that fast_aggregate.py cannot read itself (non PHPFina engines, virtual feeds
+// that fast_aggregate.py cannot read itself (other engines, virtual feeds
 // using other processes) are rendered here with $feed->get_data first.
 //
 // Default: last 7 days to the nearest hour, posted like the original.
@@ -156,7 +156,7 @@ foreach ($systems as $row) {
 
 $plan = array(
     "start" => $start, "end" => $end, "interval" => $interval, "window" => $window, "dp" => 0,
-    "limits" => $limits, "phpfina_dir" => $phpfina_dir, "count_all" => $count_all,
+    "limits" => $limits, "phpfina_dir" => $phpfina_dir, "phptimeseries_dir" => $phptimeseries_dir, "count_all" => $count_all,
     "feeds" => (object) $plan_feeds, "systems" => $plan_systems
 );
 file_put_contents("$workdir/plan.json", json_encode($plan, JSON_INVALID_UTF8_SUBSTITUTE | JSON_THROW_ON_ERROR));
@@ -225,26 +225,26 @@ if (!$keep_workdir) {
 
 // --------------------------------------------------------------------------------
 
-// Add a feed to the plan: PHPFina and simple virtual feeds are read by
+// Add a feed to the plan: PHPFina, PHPTimeSeries and simple virtual feeds are read by
 // fast_aggregate.py, anything else is rendered here through emoncms
 function plan_feed($feedid) {
     global $feed, $plan_feeds;
     if (isset($plan_feeds[$feedid])) return;
 
     $engine = (int) $feed->get_field($feedid, "engine");
-    if ($engine == Engine::PHPFINA) {
-        $plan_feeds[$feedid] = array("engine" => Engine::PHPFINA);
+    if ($engine == Engine::PHPFINA || $engine == Engine::PHPTIMESERIES) {
+        $plan_feeds[$feedid] = array("engine" => $engine);
         return;
     }
     if ($engine == Engine::VIRTUALFEED && $sources = virtual_sources($feedid)) {
         $plan_feeds[$feedid] = array("engine" => Engine::VIRTUALFEED, "processList" => $feed->get_processlist($feedid));
-        foreach ($sources as $source) $plan_feeds[$source] = array("engine" => Engine::PHPFINA);
+        foreach ($sources as $source => $engine) $plan_feeds[$source] = array("engine" => $engine);
         return;
     }
     $plan_feeds[$feedid] = array("engine" => "file", "path" => render_feed($feedid));
 }
 
-// PHPFina source feeds of a virtual feed if fast_aggregate.py can evaluate it, else false
+// Source feeds (id => engine) of a virtual feed if fast_aggregate.py can evaluate it, else false
 function virtual_sources($feedid) {
     global $feed, $virtual_supported;
     $process_list = $feed->get_processlist($feedid);
@@ -256,20 +256,23 @@ function virtual_sources($feedid) {
         if ($i == 0 && (int) $p[0] != 53) return false;
         if (in_array((int) $p[0], array(53, 55, 56, 57, 58))) {
             $source = (int) $p[1];
-            if (!$feed->exist($source) || (int) $feed->get_field($source, "engine") != Engine::PHPFINA) return false;
-            $sources[] = $source;
+            if (!$feed->exist($source)) return false;
+            $engine = (int) $feed->get_field($source, "engine");
+            if ($engine != Engine::PHPFINA && $engine != Engine::PHPTIMESERIES) return false;
+            $sources[$source] = $engine;
         }
     }
     return $sources;
 }
 
-// Render a feed exactly as the original script reads it, in max_datapoints sized chunks
+// Render a feed exactly as the original script reads it: one request per window,
+// as some engines' first datapoint depends on where the request starts
 function render_feed($feedid) {
-    global $feed, $start, $end, $interval, $workdir, $rendered;
+    global $feed, $start, $end, $interval, $window, $workdir, $rendered;
     $t = microtime(true);
     $path = "$workdir/feed_$feedid.f64";
     $fh = fopen($path, "wb");
-    $chunk = 60000 * $interval;
+    $chunk = $window <= 60000 * $interval ? $window : 60000 * $interval;
     for ($cs = $start; $cs < $end; $cs += $chunk) {
         $ce = min($cs + $chunk, $end);
         $n = ($ce - $cs) / $interval + ($ce == $end ? 1 : 0);

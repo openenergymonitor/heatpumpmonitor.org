@@ -8,7 +8,8 @@ Writes, into --out:
   setup.sql                     creates the emoncms-like `feeds` and `app` tables in --db
 
 The fleet deliberately includes the awkward cases the aggregator has to handle:
-mixed feed intervals (5/10/30/60/120 s), feeds starting/ending inside the window
+mixed feed intervals (5/10/30/60/120 s), irregular PHPTimeSeries feeds (with the
+odd duplicate/out of order timestamp), feeds starting/ending inside the window
 or outside it, gaps, defrost blips, cooling-dominated systems, x1000 scaled
 feeds, bad outside temperature sensors, zero hp_output, virtual feeds
 (source + add, source x scale), missing feeds and unshared/unpublished systems.
@@ -29,6 +30,29 @@ def write_phpfina(datadir, feedid, start_time, interval, values):
     with open(os.path.join(datadir, f"{feedid}.meta"), "wb") as f:
         f.write(struct.pack("<IIII", 0, 0, interval, start_time))
     values.astype("<f4").tofile(os.path.join(datadir, f"{feedid}.dat"))
+
+
+def write_phptimeseries(tsdir, feedid, rng, t, values):
+    """Irregular PHPTimeSeries feed (feed_<id>.MYD, 9 byte records: flag, uint32 time,
+    float32 value) from a regular series: jittered timestamps, dropped records, NaN
+    gaps written as missing records except for a few, and in some feeds the odd
+    duplicate or out of order timestamp, as older files can have."""
+    n = len(t)
+    if n < 2:
+        times, vals = t.astype(np.int64), values
+    else:
+        step = t[1] - t[0]
+        times = (t + rng.uniform(-0.3, 0.3, n) * step).astype(np.int64)
+        keep = (rng.random(n) > 0.2) & (~np.isnan(values) | (rng.random(n) < 0.01))
+        times, vals = times[keep], values[keep]
+        times = np.maximum.accumulate(times)
+        times[1:] = np.maximum(times[1:], times[:-1] + 1)   # strictly increasing
+        if rng.random() < 0.3 and len(times) > 10:
+            for i in rng.integers(1, len(times) - 1, 5):
+                times[i] = times[i - 1] if rng.random() < 0.5 else times[i + 1] + 1
+    rec = np.zeros(len(times), dtype=np.dtype([("flag", "u1"), ("time", "<u4"), ("value", "<f4")]))
+    rec["flag"], rec["time"], rec["value"] = 249, times, vals
+    rec.tofile(os.path.join(tsdir, f"feed_{feedid}.MYD"))
 
 
 def weather(t, rng_seed):
@@ -108,13 +132,14 @@ def main():
     rng = np.random.default_rng(args.seed)
     datadir = os.path.join(args.out, "phpfina")
     os.makedirs(datadir, exist_ok=True)
-    os.makedirs(os.path.join(args.out, "phptimeseries"), exist_ok=True)
+    tsdir = os.path.join(args.out, "phptimeseries")
+    os.makedirs(tsdir, exist_ok=True)
 
     t0 = int(datetime.strptime(args.start, "%Y-%m-%d").replace(tzinfo=timezone.utc).timestamp())
     t1 = t0 + int(args.days * 86400)
 
     systems, apps, feeds = [], {}, []
-    stats = {"virtual": 0, "cooling": 0, "scaled": 0, "bad_outsideT": 0, "no_data_in_range": 0,
+    stats = {"phptimeseries": 0, "virtual": 0, "cooling": 0, "scaled": 0, "bad_outsideT": 0, "no_data_in_range": 0,
              "missing_feed": 0, "no_config": 0, "unlisted": 0, "bytes": 0}
 
     for i in range(1, args.systems + 1):
@@ -157,13 +182,18 @@ def main():
 
         config = {}
         kind = rng.random()
+        ts_system = 0.05 <= kind < 0.09
         if kind < 0.03:
             # elec as virtual feed: indoor unit + outdoor unit
             stats["virtual"] += 1
             write_phpfina(datadir, src_a, fstart, interval, (elec * 0.12).astype(np.float32))
-            write_phpfina(datadir, src_b, fstart, interval, (elec * 0.88).astype(np.float32))
-            feeds += [(src_a, userid, 5, ""), (src_b, userid, 5, ""),
-                      (elec_id, userid, 7, f"53:{src_a},55:{src_b}")]
+            if rng.random() < 0.4:
+                write_phptimeseries(tsdir, src_b, rng, t, (elec * 0.88).astype(np.float32))
+                feeds.append((src_b, userid, 2, ""))
+            else:
+                write_phpfina(datadir, src_b, fstart, interval, (elec * 0.88).astype(np.float32))
+                feeds.append((src_b, userid, 5, ""))
+            feeds += [(src_a, userid, 5, ""), (elec_id, userid, 7, f"53:{src_a},55:{src_b}")]
             write_phpfina(datadir, heat_id, fstart, interval, heat.astype(np.float32))
             feeds.append((heat_id, userid, 5, ""))
         elif kind < 0.05:
@@ -173,6 +203,12 @@ def main():
             feeds += [(src_a, userid, 5, ""), (heat_id, userid, 7, f"53:{src_a},2:1000")]
             write_phpfina(datadir, elec_id, fstart, interval, elec.astype(np.float32))
             feeds.append((elec_id, userid, 5, ""))
+        elif ts_system:
+            # older systems logging to PHPTimeSeries
+            stats["phptimeseries"] += 1
+            write_phptimeseries(tsdir, elec_id, rng, t, elec.astype(np.float32))
+            write_phptimeseries(tsdir, heat_id, rng, t, heat.astype(np.float32))
+            feeds += [(elec_id, userid, 2, ""), (heat_id, userid, 2, "")]
         else:
             write_phpfina(datadir, elec_id, fstart, interval, elec.astype(np.float32))
             write_phpfina(datadir, heat_id, fstart, interval, heat.astype(np.float32))
@@ -185,8 +221,12 @@ def main():
             oi = int(rng.choice([10, 60, 300], p=[0.5, 0.3, 0.2]))
             ostart = (fstart // oi) * oi
             ot = np.arange(ostart, fend, oi, dtype=np.float64)
-            write_phpfina(datadir, out_id, ostart, oi, np.interp(ot, t, tout).astype(np.float32))
-            feeds.append((out_id, userid, 5, ""))
+            if ts_system:
+                write_phptimeseries(tsdir, out_id, rng, ot, np.interp(ot, t, tout).astype(np.float32))
+                feeds.append((out_id, userid, 2, ""))
+            else:
+                write_phpfina(datadir, out_id, ostart, oi, np.interp(ot, t, tout).astype(np.float32))
+                feeds.append((out_id, userid, 5, ""))
             config["heatpump_outsideT"] = str(out_id)
 
         r = rng.random()
@@ -199,8 +239,9 @@ def main():
         if rng.random() > 0.005:   # a few systems have no app row at all
             apps[app_id] = {"userid": userid, "config": config}
 
-    for f in os.listdir(datadir):
-        stats["bytes"] += os.path.getsize(os.path.join(datadir, f))
+    for d in (datadir, tsdir):
+        for f in os.listdir(d):
+            stats["bytes"] += os.path.getsize(os.path.join(d, f))
 
     with open(os.path.join(args.out, "manifest.json"), "w") as f:
         json.dump({"start": t0, "end": t1, "db": args.db, "systems": systems,

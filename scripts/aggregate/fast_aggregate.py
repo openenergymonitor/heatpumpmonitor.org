@@ -11,6 +11,7 @@ Data is read the way emoncms Feed::get_data($id,$start,$end,60,1,"UTC","notime",
 false,0,0,false,0) returns it:
   - PHPFina, feed interval < 60:  mean of the non-NaN points in each minute
   - PHPFina, feed interval >= 60: the point at the start of each minute
+  - PHPTimeSeries: PHPTimeSeries::get_data_combined averaging, quirks included
   - virtual feeds made of the simple processes in VIRTUAL_PROCESSES are
     evaluated here; anything else is pre-rendered by the planner through
     emoncms itself (engine "file")
@@ -108,12 +109,86 @@ def read_phpfina(prefix, start, n):
     return out
 
 
+def phptimeseries_search(times, q):
+    """PHPTimeSeries::binarysearch() for every time in q at once, step for step
+    (30 iterations, early exit on an exact match). Index or -1."""
+    npoints = len(times)
+    result = np.full(len(q), -1, dtype=np.int64)
+    if npoints == 0:
+        return result
+    lo = np.full(len(q), -1, dtype=np.int64)
+    hi = np.full(len(q), npoints - 1, dtype=np.int64)
+    active = np.ones(len(q), dtype=bool)
+    for _ in range(30):
+        i = np.flatnonzero(active)
+        if not len(i):
+            break
+        mid = lo[i] + (hi[i] - lo[i] + 1) // 2
+        t = times[mid]
+        found = t == q[i]
+        last = ~found & (hi[i] - lo[i] == 1)
+        result[i[found]] = mid[found]
+        above = last & (t > q[i])
+        result[i[above]] = mid[above]
+        active[i[found | last]] = False
+        step = ~found & ~last
+        right = step & (q[i] > t)
+        lo[i[right]] = mid[right]
+        hi[i[step & ~right]] = mid[step & ~right]
+    return result
+
+
+def read_phptimeseries(path, start, n, restarts=()):
+    """PHPTimeSeries::get_data_combined(average=1) at start + k*60, k < n.
+    The first minute of each request can include the datapoint before it, so a
+    request per window differs from one long one: restarts are the indices
+    where a new request would begin."""
+    out = np.full(n, np.nan)
+    try:
+        rec = np.fromfile(path, dtype=np.dtype([("flag", "u1"), ("time", "<u4"), ("value", "<f4")]))
+    except FileNotFoundError:
+        return out
+    npoints = len(rec)
+    if npoints == 0:
+        return out
+    times = rec["time"].astype(np.int64)
+
+    div_end = start + INTERVAL * (np.arange(n, dtype=np.int64) + 1)
+    first = phptimeseries_search(times, np.array([start], dtype=np.int64))[0]
+    nxt = phptimeseries_search(times, div_end)
+    # past the last datapoint: read to the end; landed after div_end: step back one
+    past = nxt == -1
+    over = ~past & (times[np.maximum(nxt, 0)] > div_end)
+    nxt = np.where(past, npoints, np.where(over, np.maximum(nxt - 1, 0), nxt))
+
+    seg_start = np.concatenate(([npoints if first == -1 else first], nxt[:-1]))
+    restarts = np.asarray([k for k in restarts if 0 < k < n], dtype=np.int64)
+    if len(restarts):
+        found = phptimeseries_search(times, start + INTERVAL * restarts)
+        seg_start[restarts] = np.where(found == -1, npoints, found)
+    seg_end = nxt
+    values = rec["value"].astype(np.float64)
+    valid = ~np.isnan(values)
+    # [start_0, end_0, start_1, end_1, ...]: even reduceat positions are the segment sums
+    idx = np.empty(2 * n, dtype=np.int64)
+    idx[0::2] = seg_start
+    idx[1::2] = seg_end
+    sums = np.add.reduceat(np.append(np.where(valid, values, 0.0), 0.0), idx)[0::2]
+    cnt = np.add.reduceat(np.append(valid.astype(np.int64), 0), idx)[0::2]
+    has = (seg_end > seg_start) & (cnt > 0)
+    out[has] = sums[has] / cnt[has]
+    return out
+
+
 class FeedReader:
     def __init__(self, plan):
         self.feeds = plan["feeds"]
         self.datadir = plan.get("phpfina_dir", "")
+        self.timeseries_dir = plan.get("phptimeseries_dir", "")
         self.start = plan["start"]
         self.n = (plan["end"] - plan["start"]) // INTERVAL + 1   # get_data includes the end point
+        window = plan.get("window", plan["end"] - plan["start"])
+        self.restarts = range(window // INTERVAL, self.n, window // INTERVAL)
 
     def raw(self, feedid):
         """Feed values as get_data returns them before dp rounding, NaN = null."""
@@ -122,6 +197,8 @@ class FeedReader:
             return np.full(self.n, np.nan)
         if f["engine"] == 5:
             return read_phpfina(os.path.join(self.datadir, str(feedid)), self.start, self.n)
+        if f["engine"] == 2:
+            return read_phptimeseries(os.path.join(self.timeseries_dir, f"feed_{feedid}.MYD"), self.start, self.n, self.restarts)
         if f["engine"] == 7:
             return self.virtual(f["processList"])
         if f["engine"] == "file":
@@ -137,8 +214,8 @@ class FeedReader:
             if key.endswith("source_feed") or key == "source_feed_data_time":
                 fid = int(arg)
                 if fid not in cache:
-                    # sources are read with dp=-1 (no rounding); only PHPFina sources
-                    # are accepted by the planner
+                    # sources are read with dp=-1 (no rounding); the planner only
+                    # accepts PHPFina and PHPTimeSeries sources
                     cache[fid] = self.raw(fid)
                 src = cache[fid]
                 if key == "source_feed_data_time":

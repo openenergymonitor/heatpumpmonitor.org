@@ -7,7 +7,7 @@ roughly 15–20x faster. It can also reprocess a long range in a single pass.
   the original (system list, app config, `exist`, `get_meta`, engine and
   processList). It writes `plan.json`, runs the worker, then prints or posts the
   results.
-- `fast_aggregate.py`: the numpy worker. It reads PHPFina files directly and
+- `fast_aggregate.py`: the numpy worker. It reads PHPFina and PHPTimeSeries files directly and
   evaluates simple virtual feeds (source, ± × ÷ source, scale, offset,
   allowpositive/negative, abs). The planner renders any other feed through
   emoncms `get_data` first.
