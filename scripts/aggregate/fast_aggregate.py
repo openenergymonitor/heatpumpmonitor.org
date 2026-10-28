@@ -43,6 +43,13 @@ VIRTUAL_PROCESSES = {
 SERIES = ["elec", "heat", "elec_kw_nrml", "heat_kw_nrml", "capacity", "outsideT", "numsys"]
 
 
+def to_float64(a):
+    """float32 -> float64. Some feeds hold signalling NaNs, which numpy warns
+    about when converting; they still become NaN (missing), as in PHP."""
+    with np.errstate(invalid="ignore"):
+        return a.astype(np.float64)
+
+
 def php_round(x):
     """PHP round($x, 0): half away from zero."""
     t = np.trunc(x)
@@ -84,7 +91,7 @@ def read_phpfina(prefix, start, n):
         idx = pos_start[ok] - lo
         good = idx < len(raw)
         vals = np.full(ok.sum(), np.nan)
-        vals[good] = raw[idx[good]]
+        vals[good] = to_float64(raw[idx[good]])
         out[ok] = vals
         return out
 
@@ -95,7 +102,7 @@ def read_phpfina(prefix, start, n):
     lo, hi = int(ps[0]), int(pe[-1])
     if hi <= lo:
         return out
-    raw = np.fromfile(prefix + ".dat", dtype="<f4", count=hi - lo, offset=4 * lo).astype(np.float64)
+    raw = to_float64(np.fromfile(prefix + ".dat", dtype="<f4", count=hi - lo, offset=4 * lo))
     hi = lo + len(raw)
     ps = np.clip(ps, lo, hi) - lo
     pe = np.clip(pe, lo, hi) - lo
@@ -170,7 +177,7 @@ def read_phptimeseries(path, start, n, restarts=()):
         found = phptimeseries_search(times, start + INTERVAL * restarts)
         seg_start[restarts] = np.where(found == -1, npoints, found)
     seg_end = nxt
-    values = rec["value"].astype(np.float64)
+    values = to_float64(rec["value"])
     valid = ~np.isnan(values)
     # [start_0, end_0, start_1, end_1, ...]: even reduceat positions are the segment sums
     idx = np.empty(2 * n, dtype=np.int64)

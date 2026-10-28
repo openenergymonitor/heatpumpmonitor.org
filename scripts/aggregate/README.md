@@ -35,6 +35,16 @@ in days). Each window gets its own cooling detection and elec feed range check,
 which is what running the original once per week would do. Results are posted in
 7-day chunks. Needs `python3` with numpy. `--workers` defaults to the CPU count.
 
+`--post` writes through `feed/post.json`. On emoncms.org that queues every
+datapoint separately (feedqueue, then storageserver0), and storageserver0 also
+replicates each one to the backup server. Use it for the hourly run.
+
+`--upload` writes 30-day binary blocks straight into the feed files with
+`feed/upload.json`, which is fast enough for years of data. It reads each feed's
+meta first: data before the feed's start is skipped and reported, and a gap after
+the feed's end is filled with NaN. It bypasses replication, so after a reprocess
+copy the output feeds' `.dat` and `.meta` files to the backup server.
+
 On a multi-year range each worker uses roughly 1 GB (2022 to 2026, both groups),
 so set `--workers` to fit the memory. Each post is retried up to 3 times; any
 range that still fails is listed at the end and the exit code is 1.

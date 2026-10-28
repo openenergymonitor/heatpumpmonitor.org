@@ -10,7 +10,7 @@
 // Default: last 7 days to the nearest hour, posted like the original.
 //   php aggregate_fast.php [--post]
 //
-// Each group of systems is aggregated in the same pass and posted to the feeds
+// Each group of systems is aggregated in the same pass and uploaded to the feeds
 // named in output_feeds.php under the group's name as tag, looked up on the
 // remote emoncms and created there if missing. --groups picks which ones
 // (default "live,mid", all systems and MID metered systems).
@@ -24,7 +24,7 @@
 define('EMONCMS_EXEC', 1);
 $dir = dirname(__FILE__);
 
-$opts = getopt("", array("start:", "end:", "window:", "post", "groups:", "workers:", "dataset:", "workdir:", "python:", "quiet", "verbose"));
+$opts = getopt("", array("start:", "end:", "window:", "post", "upload", "groups:", "workers:", "dataset:", "workdir:", "python:", "quiet", "verbose"));
 require "$dir/output_feeds.php";
 $interval = 60;
 $window_days = isset($opts["window"]) ? (float) $opts["window"] : 7;
@@ -222,43 +222,66 @@ if ($verbose) {
     }
 }
 
-if (isset($opts["post"])) {
+// --post goes through feed/post.json: on emoncms.org every datapoint is queued and
+// written individually, and is replicated to the backup server. Right for the
+// hourly run, slow for years of data.
+// --upload writes blocks straight into the feed files with feed/upload.json, for a
+// reprocess. It bypasses replication, so copy the output feeds' files to the backup
+// server afterwards.
+if (isset($opts["post"]) || isset($opts["upload"])) {
     // $aggregate_host is the post.json url, as for aggregate_v2_last7.php
     $server = preg_replace('#/feed/post\.json$#', '', $aggregate_host);
     $apikey = $aggregate_apikey;
-    // Resolve every group's feeds before posting any
+    // Resolve every group's feeds before writing any
     $outputs = array();
     foreach ($groups as $g) {
         $outputs[$g] = resolve_output_feeds($server, $apikey, $g, $output_feed_names, $interval);
         if (!is_array($outputs[$g])) die("Not posted: ".$outputs[$g]."\n");
     }
     $total_dp = ($end - $start) / $interval;
-    $chunk = 7 * 1440;
     $failed = array();
     foreach ($outputs as $g => $feeds) {
         foreach ($feeds as $name => $feedid) {
-            $values = unpack("e*", file_get_contents("$workdir/out/$g/$name.f64"));
+            $label = "$g:".$output_feed_names[$name]." ($feedid)";
+            $values = array_values(unpack("e*", file_get_contents("$workdir/out/$g/$name.f64")));
+
+            if (isset($opts["upload"])) {
+                $r = upload_feed_data($server, $apikey, $feedid, $start, $interval, $values);
+                unset($values);
+                if (!is_array($r)) {
+                    echo "Feed $label: $r\n";
+                    $failed[] = "$label: $r";
+                    continue;
+                }
+                echo "Feed $label: uploaded ".$r["ok"]."/".$r["blocks"]." blocks";
+                if ($r["skipped"]) echo ", skipped ".$r["skipped"]." minutes before the feed's start";
+                echo "\n";
+                foreach ($r["failed"] as $f) $failed[] = "$label ".date("Y-m-d H:i", $f[0])." to ".date("Y-m-d H:i", $f[1]);
+                continue;
+            }
+
+            $chunk = 7 * 1440;
             $nchunks = (int) ceil($total_dp / $chunk);
             $ok = 0;
             for ($c = 0; $c < $total_dp; $c += $chunk) {
                 $data = array();
                 for ($i = $c; $i < min($c + $chunk, $total_dp); $i++) {
-                    $v = $values[$i + 1];
+                    $v = $values[$i];
                     $data[] = array($start + $i * $interval, is_nan($v) ? null : $v);
                 }
                 if (post_feed_data($server, $apikey, $feedid, $data)) {
                     $ok++;
                 } else {
-                    $failed[] = "$g:".$output_feed_names[$name]." ($feedid) ".date("Y-m-d H:i", $start + $c * $interval)
+                    $failed[] = "$label ".date("Y-m-d H:i", $start + $c * $interval)
                               ." to ".date("Y-m-d H:i", $start + min($c + $chunk, $total_dp) * $interval);
                 }
             }
-            echo "Feed $feedid ($g:".$output_feed_names[$name]."): posted $ok/$nchunks\n";
+            echo "Feed $label: posted $ok/$nchunks\n";
             unset($values);
         }
     }
     if (count($failed)) {
-        echo "\nERROR: ".count($failed)." posts failed after retries, re-run these ranges:\n  ".implode("\n  ", $failed)."\n";
+        echo "\nERROR: ".count($failed)." writes failed after retries, re-run these:\n  ".implode("\n  ", $failed)."\n";
         $exit_code = 1;
     }
 }
