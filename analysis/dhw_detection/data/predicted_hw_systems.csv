@@ -674,7 +674,6 @@ system,split,excluded,days_predicted,signals_missing,predicted_share,predicted_c
 1020,train,False,170.0,,0.0409,0.93,170.0,0.0453,0.736,37.4,55.5
 1025,validation,False,155.1,,0.0796,3.18,155.1,0.0844,0.962,2.6,20.6
 1037,test,False,116.1,,0.1541,2.16,116.1,0.159,0.983,0.5,14.2
-1060,train,False,133.1,,0.0239,0.88,133.1,0.024,0.991,0.5,0.9
 1062,no usable flag,False,151.8,,0.103,3.0,0.0,,,0.0,0.0
 1063,train,False,97.1,,0.0516,1.02,97.1,0.0514,0.989,1.6,1.1
 1065,train,False,88.4,,0.041,1.25,88.4,0.0407,0.994,0.8,0.2
@@ -690,7 +689,6 @@ system,split,excluded,days_predicted,signals_missing,predicted_share,predicted_c
 1091,no usable flag,False,134.1,,0.0747,0.78,0.0,,,0.0,0.0
 1093,train,False,146.7,,0.0405,2.88,146.7,0.0393,0.95,9.2,4.9
 1096,train,False,116.1,,0.0495,3.71,115.9,0.0506,0.961,4.0,6.9
-1097,train,False,54.7,,0.0288,0.84,54.7,0.0287,0.998,0.1,0.1
 1099,no usable flag,False,61.2,,0.004,0.16,0.0,,,0.0,0.0
 1120,validation,False,92.9,,0.0762,2.12,92.9,0.2507,0.466,0.2,389.1
 1124,validation,False,155.9,,0.0233,0.65,136.9,0.0195,0.972,1.0,2.6

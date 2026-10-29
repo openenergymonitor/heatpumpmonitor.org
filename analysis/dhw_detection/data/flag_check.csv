@@ -674,7 +674,6 @@ system,split,flag,rescued_for_training,excluded,note
 1020,train,trusted,False,False,
 1025,validation,trusted,False,False,
 1037,test,trusted,False,False,
-1060,train,trusted,False,False,
 1062,no usable flag,none,False,False,
 1063,train,trusted,False,False,
 1065,train,trusted,False,False,
@@ -690,7 +689,6 @@ system,split,flag,rescued_for_training,excluded,note
 1091,no usable flag,none,False,False,
 1093,train,trusted,False,False,
 1096,train,trusted,False,False,
-1097,train,trusted,False,False,
 1099,no usable flag,none,False,False,
 1120,validation,trusted,False,False,"flag trusted, but found later to look wrong (on 6 h a day against 1.8 h predicted); prefer the prediction"
 1124,validation,trusted,False,False,
