@@ -1,0 +1,35 @@
+{
+ "system_id": 350,
+ "start": "2025-01-19 00:00:00+00:00",
+ "settings": {
+  "reporting_steps": {
+   "heatpump_elec": 1,
+   "heatpump_heat": 1,
+   "heatpump_flowT": 1,
+   "heatpump_returnT": 1,
+   "heatpump_flowrate": 1
+  },
+  "scales": {
+   "heatpump_elec": [
+    0.0,
+    1835.066650390625
+   ],
+   "heatpump_heat": [
+    0.0,
+    5900.33349609375
+   ],
+   "heatpump_flowT": [
+    0.0,
+    70.0
+   ],
+   "heatpump_returnT": [
+    0.0,
+    70.0
+   ],
+   "heatpump_flowrate": [
+    0.0,
+    26.627546310424805
+   ]
+  }
+ }
+}
