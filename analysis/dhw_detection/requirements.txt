@@ -1,0 +1,10 @@
+# Install the CPU build of PyTorch first (it is much smaller than the default build on Linux):
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+# then:
+#   pip install -r requirements.txt
+numpy>=1.24
+pandas>=2.0
+pyarrow>=12
+requests>=2.28
+torch>=2.1
+pytest
