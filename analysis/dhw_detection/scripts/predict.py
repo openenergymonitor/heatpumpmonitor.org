@@ -6,17 +6,19 @@ Usage (from analysis/dhw_detection/):
   python3 scripts/predict.py --all               # every public system (a full run)
   python3 scripts/predict.py --all --update      # daily: only the data since the last run
   python3 scripts/predict.py --all --source parquet DIR   # read DIR/system_<id>.parquet instead of the API
+  python3 scripts/predict.py --all --source phpfina MAP   # on the server: read the PHPFina files directly
 
 Options:
   --out DIR       where to write (default: output/ next to this folder's README)
-  --workers N     systems run at once, one process each (default: CPU cores / 4; 1 on a GPU)
+  --workers N     systems run at once, one process each (default: half the CPU cores; 1 on a GPU)
   --device D      cpu or cuda (default: cuda if available, else cpu)
 
 --update keeps each system's stored settings (logging intervals and scales) and re-predicts only from
 24-30 h before the end of the last run, so the result is the same as a full run with those settings.
 A system gets a full run instead when it has no earlier output, its settings came from under 30 days of
 data, or the model has changed. A parquet DIR must hold files in the HPM download layout: a UTC
-'timestamp' index on the 30 s grid and one column per feed.
+'timestamp' index on the 30 s grid and one column per feed. A phpfina MAP is the JSON that
+scripts/feed_map.php writes; a system with a feed that is not PHPFina is fetched through the API.
 
 Writes to --out:
   system_<id>.parquet       one row per 30 s step: dhw_measured, dhw_probability, dhw_predicted, inputs_complete
@@ -43,7 +45,7 @@ HERE = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HERE))
 
 from dhw_detection import FLAG, MODEL_NAME, SIGNALS, cycles, load_models, predict_system, signals_present, summary  # noqa: E402
-from dhw_detection import hpm_api  # noqa: E402
+from dhw_detection import hpm_api, phpfina  # noqa: E402
 from dhw_detection.prepare import STEP  # noqa: E402
 
 FREEZE_AFTER_DAYS = 30  # settings worked out from less data than this are worked out again on the next run
@@ -59,8 +61,17 @@ def load_parquet(system_id, start=None):
     return raw if start is None else raw[raw.index >= start]
 
 
+def load_phpfina(system_id, start=None):
+    feeds = folder["systems"].get(str(system_id), {})
+    if any(f["engine"] != 5 for f in feeds.values()):
+        return hpm_api.load_system(system_id, start)
+    return phpfina.load_system(folder["datadir"], {k: f["id"] for k, f in feeds.items()}, start)
+
+
 def load(system_id, start=None):
-    return hpm_api.load_system(system_id, start) if source == "api" else load_parquet(system_id, start)
+    if source == "api":
+        return hpm_api.load_system(system_id, start)
+    return load_phpfina(system_id, start) if source == "phpfina" else load_parquet(system_id, start)
 
 
 def init(source_, folder_, out_dir_, update_, device, threads):
@@ -68,6 +79,8 @@ def init(source_, folder_, out_dir_, update_, device, threads):
     torch.set_num_threads(threads)
     models = load_models(device)
     source, folder, out_dir, update = source_, folder_, out_dir_, update_
+    if source == "phpfina":
+        folder = json.loads(Path(folder).read_text())
 
 
 def no_nan(x):
@@ -152,7 +165,7 @@ def main():
     pick = ap.add_mutually_exclusive_group(required=True)
     pick.add_argument("--ids", type=int, nargs="+")
     pick.add_argument("--all", action="store_true")
-    ap.add_argument("--source", nargs="+", default=["api"], metavar=("api|parquet", "DIR"))
+    ap.add_argument("--source", nargs="+", default=["api"], metavar=("api|parquet|phpfina", "DIR|MAP"))
     ap.add_argument("--out", type=Path, default=HERE / "output")
     ap.add_argument("--update", action="store_true")
     ap.add_argument("--workers", type=int)
@@ -160,18 +173,21 @@ def main():
     a = ap.parse_args()
 
     source_, folder_ = a.source[0], Path(a.source[1]) if len(a.source) > 1 else None
-    if source_ not in ("api", "parquet") or (source_ == "parquet") != (folder_ is not None):
-        ap.error("--source is 'api' or 'parquet DIR'")
+    if source_ not in ("api", "parquet", "phpfina") or (source_ != "api") != (folder_ is not None):
+        ap.error("--source is 'api', 'parquet DIR' or 'phpfina MAP'")
     a.out.mkdir(parents=True, exist_ok=True)
     if a.ids:
         ids = a.ids
     elif source_ == "api":
         ids = hpm_api.public_system_ids()
+    elif source_ == "phpfina":
+        ids = sorted(int(i) for i in json.loads(folder_.read_text())["systems"])
     else:
         ids = sorted(int(p.stem.split("_")[1]) for p in folder_.glob("system_*.parquet"))
     cores = os.cpu_count() or 1
-    workers = a.workers or (1 if a.device == "cuda" else max(1, cores // 4))
-    threads = max(1, cores // workers)
+    workers = min(len(ids), a.workers or (1 if a.device == "cuda" else max(1, cores // 2)))
+    # On a CPU one thread per process gets the most from each core; a lone process gains up to about four
+    threads = max(1, cores // workers) if a.device == "cuda" else (1 if workers > 1 else min(4, cores))
     args = (source_, folder_, a.out, a.update, a.device, threads)
     print(f"{len(ids)} systems, {workers} worker(s) x {threads} thread(s) on {a.device}, writing to {a.out}", flush=True)
 

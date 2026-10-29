@@ -64,6 +64,8 @@ python3 scripts/predict.py --all --update     # afterwards, e.g. daily: only the
 
 `--update` reuses each system's stored settings and re-predicts only the last day or so, so it takes seconds per system.
 `--source parquet DIR` reads files laid out like the HPM download (`DIR/system_<id>.parquet`) instead of the API.
+`--source phpfina MAP` reads the emoncms PHPFina feed files directly, on the server that holds them; `php scripts/feed_map.php > MAP` writes the feed ids it needs.
+Systems with a feed in another format (PHPTimeSeries; 18 of 844 in October 2026) are still fetched through the API.
 `--workers N` sets how many systems run at once; `--out DIR` sets where results go (default `output/`).
 
 ## What it writes
@@ -83,25 +85,33 @@ The last few hours fill in at the next update.
 
 ## Speed
 
-Measured on a laptop (Intel i7-12700H, 14 cores), CPU only:
+The model costs about 50 CPU-core seconds per system-year of data, so a full run of every system takes about 20 core-hours.
+It goes fastest as one single-threaded process per core, which is what `--workers` does (default: half the cores).
+Measured on a laptop (AMD Ryzen AI 5 340, 6 cores, 12 threads), CPU only, inference alone:
 
-- one process: about 40 s per system-year of data
-- four processes: about 20 s per system-year
-- all 742 systems (1,249 system-years): about 7 hours with four processes
-- daily update: a few seconds per system
-- a GPU (RTX 3080 Ti) does a system-year in about 1 s, but isn't needed
+- one process, one thread: 50 s per system-year
+- 6 processes, one thread each: 14 s per system-year overall
+- 12 processes, one thread each: 11 s per system-year overall
+- 3 processes, four threads each: 16 s per system-year overall
 
-More threads per process don't help beyond about four, so run one process per four cores or so.
+Reading the data adds:
+
+- through the public API: about 47 s per system-year, as much as the model
+- from parquet or PHPFina files: about 0.1 s per system-year
+
+So a full run of all 1,249 system-years in the July 2026 download takes 4-5 hours on those 6 cores, reading files.
+A daily update takes a few seconds per system.
+A GPU (RTX 3080 Ti) does a system-year in about 1 s, but isn't needed.
 Each process needs about 0.3 GB of memory per system-year of the system it is working on (1.3 GB for a 4.5-year history).
-Fetching through the public API adds roughly a minute per system-year.
 
 ## What is in this folder
 
 | Path | What it is |
 |---|---|
-| `dhw_detection/` | The code: `prepare.py` (data onto a 30 s grid, gaps joined, scales), `predict.py` (windows, model, averaging, cycles), `model.py` (the network), `hpm_api.py` (fetching from the public API) |
+| `dhw_detection/` | The code: `prepare.py` (data onto a 30 s grid, gaps joined, scales), `predict.py` (windows, model, averaging, cycles), `model.py` (the network), `hpm_api.py` (fetching from the public API), `phpfina.py` (reading PHPFina files as the API would return them) |
 | `weights/` | The trained model: three copies trained with different random seeds (`p19_gru_rescued`), 384 KB each |
 | `scripts/predict.py` | The command-line tool above |
+| `scripts/feed_map.php` | Lists each public system's feed ids, for `--source phpfina` |
 | `tests/` | Checks, and a three-day test case (system 350) that any port of the processing should reproduce |
 | `data/flag_check.csv` | For each of the 742 systems: its split (train, validation, test or no usable flag) and whether its `heatpump_dhw` flag was judged trustworthy, wrong or unusable |
 | `data/predicted_hw_systems.csv` | The per-system results of the 2026-10-14 run over the July 2026 download |

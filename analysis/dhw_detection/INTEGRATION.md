@@ -29,10 +29,19 @@ Temperatures must be in °C, because they are scaled the same way on every syste
 It was trained on what the public API returns for `/timeseries/data?id=N&feeds=...&start=U&end=U&interval=30&average=1&timeformat=unix`.
 That is, 30 s averages of the stored feed on a grid of whole 30 s steps since 1970.
 `start` and `end` must be unix seconds; date strings shift the grid.
-On the server, the simplest safe route is the same emoncms code that serves that endpoint.
-If you read the phpfina files directly, average them onto the same 30 s grid the same way, and check against the test case (see "Checking a port").
 `dhw_detection/hpm_api.py` fetches exactly this from the public API.
 It was checked against a month of the July 2026 download: every value was identical.
+
+On the server, `dhw_detection/phpfina.py` reads the PHPFina files directly and gives the same values, hundreds of times faster.
+The endpoint reads each feed with emoncms PHPFina `get_data_combined`, with `limitinterval` off. So for each 30 s step t:
+
+- a feed logging faster than every 30 s gives the mean of its non-NaN readings at positions floor((t - start_time) / interval) up to, not including, floor((t + 30 - start_time) / interval);
+- a feed logging every 30 s or slower gives the reading at floor((t - start_time) / interval), if t is within its first and last reading. A 60 s feed shows each reading twice.
+
+`tests/test_phpfina.py` checks the reader against a line-by-line copy of the PHP.
+It was also checked against the live API for seven systems with feeds logging every 5, 10, 15, 20, 30, 60 and 120 s: every input value was identical.
+A few 30 s values of one 10 s hot-water flag differed, at switching points, in a way the PHP above can't produce, so the live emoncms code may differ slightly there; the flag is not a model input.
+PHPTimeSeries feeds (logged at irregular times) are averaged differently and are not read this way; `scripts/predict.py` fetches those systems through the API.
 
 ## The processing, step by step
 
@@ -169,9 +178,12 @@ So its last windows covered a few more real hours, from windows mostly made of m
 ## Speed and hardware
 
 No GPU is needed.
-On a 14-core laptop CPU, one process does about 40 s per system-year and four processes about 20 s per system-year.
-Beyond about four threads per process there is little gain, so `--workers` defaults to one process per four cores.
-A full run of all 742 systems (1,249 system-years) takes about 7 hours there; a daily update, a few minutes.
+The model costs about 50 CPU-core seconds per system-year, and goes fastest as one single-threaded process per core.
+`--workers` defaults to half the cores, one thread each, which leaves room for anything else on the machine.
+On a 6-core laptop CPU (12 threads), 6 processes do about 14 s per system-year and 12 processes about 11 s.
+Fetching through the public API costs about as much again; reading files directly costs almost nothing.
+A full run of all 742 systems (1,249 system-years), reading files, takes 4-5 hours there; a daily update, a few minutes.
+ONNX Runtime ran the network about 1.45 times faster than PyTorch on one thread, within 1e-5 of its output; this code doesn't use it.
 Memory peaks at about 1.3 GB per process for a 4.5-year history (system 1), so allow about 0.3 GB per system-year per process.
 
 ## Model version
