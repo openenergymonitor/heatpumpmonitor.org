@@ -225,8 +225,9 @@ global $settings, $session, $path;
 
         <!-- Design-stage estimates: last 365 days only, see design_estimates_model.php -->
         <div class="card mt-3" v-if="show_estimates">
-            <h5 class="card-header">Design-stage estimates</h5>
-            <div class="card-body">
+            <h5 class="card-header" style="cursor:pointer" @click="estimates_expanded = !estimates_expanded">Measured vs Design-stage estimate <i :class="'bi bi-' + (estimates_expanded ? 'dash' : 'plus') + '-lg float-end'"></i></h5>
+            <div class="card-body" v-if="estimates_expanded">
+                <p class="mb-2">How good are design-stage performance estimates at predicting real world system performance?</p>
                 <table class="table table-sm mb-2" style="text-align:center" v-if="mcs031.combined_spf">
                     <tr>
                         <th></th>
@@ -241,13 +242,13 @@ global $settings, $session, $path;
                         <td>{{ current_stats.combined_cop | toFixed(1) }}</td>
                     </tr>
                     <tr>
-                        <td style="text-align:left">MCS 031 <span v-tooltip tabindex="0" style="color:#666; cursor:pointer" :title="mcs031_note"><i class="bi bi-info-circle"></i></span> ({{ mcs031.design_flow }} °C design flow)</td>
+                        <td style="text-align:left">MCS 031 estimate <span v-tooltip tabindex="0" style="color:#666; cursor:pointer" :title="mcs031_note"><i class="bi bi-info-circle"></i></span> ({{ mcs031.design_flow }} °C design flow)</td>
                         <td style="color:#e8730e">{{ mcs031.space_spf | toFixed(1) }}</td>
                         <td style="color:#3a87ad">{{ mcs031.water_spf | toFixed(1) }}</td>
                         <td>{{ mcs031.combined_spf | toFixed(1) }}</td>
                     </tr>
                     <tr v-if="scop">
-                        <td style="text-align:left"><a :href="path + 'heatpump/view?id=' + scop.model_id" title="SCOP table for this heat pump model">Manufacturer SCOP</a> <span v-tooltip tabindex="0" style="color:#666; cursor:pointer" :title="scop_note"><i class="bi bi-info-circle"></i></span> ({{ scop.design_flow }} °C design flow)</td>
+                        <td style="text-align:left"><a :href="path + 'heatpump/view?id=' + scop.model_id" title="SCOP table for this heat pump model">Manufacturer SCOP estimate</a> <span v-tooltip tabindex="0" style="color:#666; cursor:pointer" :title="scop_note"><i class="bi bi-info-circle"></i></span> ({{ scop.design_flow }} °C design flow)</td>
                         <td style="color:#e8730e">{{ scop.space_scop | toFixed(1) }}</td>
                         <td style="color:#3a87ad"><span v-if="scop.water_scop">{{ scop.water_scop | toFixed(1) }}<span v-if="scop.dhw_target_assumed">*</span></span><span v-else>–</span></td>
                         <td><span v-if="scop.combined_spf">{{ scop.combined_spf | toFixed(1) }}</span><span v-else>–</span></td>
@@ -884,6 +885,7 @@ global $settings, $session, $path;
             period_stats: {},
             stats_loading: false,
             estimates: null,
+            estimates_expanded: false,
             schema_groups: schema_groups,
             filtered_schema_groups: {},
 
