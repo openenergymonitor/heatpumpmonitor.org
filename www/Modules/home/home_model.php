@@ -461,6 +461,85 @@ class Home
         return $output_systems;
     }
 
+    // Systems for the SPF predictors page: measured SPF against the MCS 031
+    // and manufacturer SCOP design estimates (stored in system_meta by
+    // design_estimates_model) and against weighted flowT minus outsideT.
+    // Standard analysis filter: H4 boundary, MID metered, air source, no
+    // cooling, more than 330 days of data. Estimates are null where missing.
+    public function predictors_systems()
+    {
+        $query = array(
+            'meta_filters' => array(
+                'mid_metering' => 1,
+                'metering_boundary_code' => 4
+            ),
+            'meta_fields' => array(
+                'id',
+                'location',
+                'hp_type',
+                'hp_manufacturer',
+                'hp_model',
+                'data_flag',
+                'mcs031_spf',
+                'scop_spf'
+            ),
+            'stats_fields' => array(
+                'combined_elec_kwh',
+                'combined_heat_kwh',
+                'combined_cop',
+                'combined_data_length',
+                'error_air_kwh',
+                'cooling_heat_kwh',
+                'weighted_flowT_minus_outsideT'
+            ),
+            "sort" => array(
+                "field" => "combined_cop",
+                "order" => "desc"
+            ),
+            "stats_table" => "system_stats_last365_v2"
+        );
+
+        // The estimate columns are added by update_database.php; until then,
+        // return the systems without estimates rather than failing
+        try {
+            $systems = $this->system_stats->combined_meta_stats_query($query);
+        } catch (mysqli_sql_exception $e) {
+            $query['meta_fields'] = array_values(array_diff($query['meta_fields'], array('mcs031_spf', 'scop_spf')));
+            $systems = $this->system_stats->combined_meta_stats_query($query);
+        }
+
+        $output_systems = array();
+        foreach ($systems as $system) {
+
+            if ($system->hp_type !== "Air Source") continue;
+            if ($system->combined_cop === null || $system->combined_cop <= 0) continue;
+            if ($system->weighted_flowT_minus_outsideT === null || $system->weighted_flowT_minus_outsideT <= 0) continue;
+
+            // Weighted stats count cooling heat as heat, so cooling systems are left out
+            if ($system->cooling_heat_kwh !== null && abs($system->cooling_heat_kwh) >= 1) continue;
+
+            // combined_data_length in seconds converted to days
+            $days = $system->combined_data_length / 86400;
+            if ($days <= 330) continue;
+
+            $this->auto_flag_air_error($system);
+
+            if ($system->data_flag == 1) continue;
+
+            $output_systems[] = array(
+                'id' => (int) $system->id,
+                'location' => $system->location,
+                'hp_manufacturer' => $system->hp_manufacturer,
+                'hp_model' => $system->hp_model,
+                'cop' => round($system->combined_cop, 2),
+                'mcs031_spf' => isset($system->mcs031_spf) && $system->mcs031_spf > 0 ? round($system->mcs031_spf, 3) : null,
+                'scop_spf' => isset($system->scop_spf) && $system->scop_spf > 0 ? round($system->scop_spf, 3) : null,
+                'dt' => round($system->weighted_flowT_minus_outsideT, 1)
+            );
+        }
+        return $output_systems;
+    }
+
     // Latest topics in the forum's heat pump category, proxied server-side
     // (the Discourse API sends no CORS headers) and cached for 10 minutes.
     public function forum_topics()

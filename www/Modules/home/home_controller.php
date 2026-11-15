@@ -38,6 +38,19 @@ function home_controller() {
         ));
     }
 
+    // SPF predictors: measured SPF vs MCS 031, manufacturer SCOP and weighted ΔT
+    if ($route->action == "predictors") {
+        $route->format = "html";
+        return view("Modules/home/predictors_view.php", array(
+            "predictors_systems" => $home->predictors_systems()
+        ));
+    }
+
+    if ($route->action == "predictors_systems") {
+        $route->format = "json";
+        return $home->predictors_systems();
+    }
+
     // Systems with a recorded installation cost + the stats used by the
     // economics explorer
     if ($route->action == "economics_systems") {

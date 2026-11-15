@@ -107,6 +107,7 @@ if ($route->controller=="") {
 // Redirects
 if ($route->controller=="economics") { $route->controller = "home"; $route->action = "economics"; }
 if ($route->controller=="flowtemp") { $route->controller = "home"; $route->action = "flowtemp"; }
+if ($route->controller=="predictors") { $route->controller = "home"; $route->action = "predictors"; }
 
 
 $output = "";
