@@ -205,6 +205,23 @@ class Home
             if ($system->data_flag == 1) continue;
 
             // Trim the payload to what the home page uses
+            $mcs = isset($system->mcs031_spf) && $system->mcs031_spf > 0 ? (float) $system->mcs031_spf : null;
+            $scop = isset($system->scop_spf) && $system->scop_spf > 0 ? (float) $system->scop_spf : null;
+            $mcs_space = isset($system->mcs031_space_spf) && $system->mcs031_space_spf > 0 ? (float) $system->mcs031_space_spf : null;
+            $scop_space = isset($system->scop_space) && $system->scop_space > 0 ? (float) $system->scop_space : null;
+            $space = (float) $system->space_heat_kwh;
+            $water = (float) $system->water_heat_kwh;
+
+            // Hot water SPF each estimate assumed, backed out of the combined
+            // estimate (it applies the space and water figures to the measured
+            // heat). For MCS 031 this folds in any immersion pasteurisation.
+            $water_spf = function ($combined, $space_spf) use ($space, $water) {
+                if ($combined === null || $space_spf === null || $space <= 0 || $water <= 0) return null;
+                $elec_water = ($space + $water) / $combined - $space / $space_spf;
+                return $elec_water > 0 ? round($water / $elec_water, 2) : null;
+            };
+            $num = function ($v, $dp) { return $v !== null && $v !== '' ? round((float) $v, $dp) : null; };
+
             $output_systems[] = array(
                 'id' => (int) $system->id,
                 'location' => $system->location,
@@ -360,6 +377,23 @@ class Home
             // if ($system->data_flag == 1) continue;
 
             // Trim the payload to what the home page uses
+            $mcs = isset($system->mcs031_spf) && $system->mcs031_spf > 0 ? (float) $system->mcs031_spf : null;
+            $scop = isset($system->scop_spf) && $system->scop_spf > 0 ? (float) $system->scop_spf : null;
+            $mcs_space = isset($system->mcs031_space_spf) && $system->mcs031_space_spf > 0 ? (float) $system->mcs031_space_spf : null;
+            $scop_space = isset($system->scop_space) && $system->scop_space > 0 ? (float) $system->scop_space : null;
+            $space = (float) $system->space_heat_kwh;
+            $water = (float) $system->water_heat_kwh;
+
+            // Hot water SPF each estimate assumed, backed out of the combined
+            // estimate (it applies the space and water figures to the measured
+            // heat). For MCS 031 this folds in any immersion pasteurisation.
+            $water_spf = function ($combined, $space_spf) use ($space, $water) {
+                if ($combined === null || $space_spf === null || $space <= 0 || $water <= 0) return null;
+                $elec_water = ($space + $water) / $combined - $space / $space_spf;
+                return $elec_water > 0 ? round($water / $elec_water, 2) : null;
+            };
+            $num = function ($v, $dp) { return $v !== null && $v !== '' ? round((float) $v, $dp) : null; };
+
             $output_systems[] = array(
                 'id' => (int) $system->id,
                 'location' => $system->location,
@@ -439,6 +473,23 @@ class Home
 
             if ($system->data_flag == 1) continue;
 
+            $mcs = isset($system->mcs031_spf) && $system->mcs031_spf > 0 ? (float) $system->mcs031_spf : null;
+            $scop = isset($system->scop_spf) && $system->scop_spf > 0 ? (float) $system->scop_spf : null;
+            $mcs_space = isset($system->mcs031_space_spf) && $system->mcs031_space_spf > 0 ? (float) $system->mcs031_space_spf : null;
+            $scop_space = isset($system->scop_space) && $system->scop_space > 0 ? (float) $system->scop_space : null;
+            $space = (float) $system->space_heat_kwh;
+            $water = (float) $system->water_heat_kwh;
+
+            // Hot water SPF each estimate assumed, backed out of the combined
+            // estimate (it applies the space and water figures to the measured
+            // heat). For MCS 031 this folds in any immersion pasteurisation.
+            $water_spf = function ($combined, $space_spf) use ($space, $water) {
+                if ($combined === null || $space_spf === null || $space <= 0 || $water <= 0) return null;
+                $elec_water = ($space + $water) / $combined - $space / $space_spf;
+                return $elec_water > 0 ? round($water / $elec_water, 2) : null;
+            };
+            $num = function ($v, $dp) { return $v !== null && $v !== '' ? round((float) $v, $dp) : null; };
+
             $output_systems[] = array(
                 'id' => (int) $system->id,
                 'location' => $system->location,
@@ -481,7 +532,17 @@ class Home
                 'hp_model',
                 'data_flag',
                 'mcs031_spf',
-                'scop_spf'
+                'scop_spf',
+                'mcs031_space_spf',
+                'scop_space',
+                // per-system context for the tooltip
+                'flow_temp',
+                'design_temp',
+                'measured_mean_flow_temp_coldest_day',
+                'new_radiators',
+                'old_radiators',
+                'UFH',
+                'legionella_immersion'
             ),
             'stats_fields' => array(
                 'combined_elec_kwh',
@@ -490,7 +551,11 @@ class Home
                 'combined_data_length',
                 'error_air_kwh',
                 'cooling_heat_kwh',
-                'weighted_flowT_minus_outsideT'
+                'weighted_flowT_minus_outsideT',
+                'space_heat_kwh',
+                'water_heat_kwh',
+                'space_cop',
+                'water_cop'
             ),
             "sort" => array(
                 "field" => "combined_cop",
@@ -504,7 +569,7 @@ class Home
         try {
             $systems = $this->system_stats->combined_meta_stats_query($query);
         } catch (mysqli_sql_exception $e) {
-            $query['meta_fields'] = array_values(array_diff($query['meta_fields'], array('mcs031_spf', 'scop_spf')));
+            $query['meta_fields'] = array_values(array_diff($query['meta_fields'], array('mcs031_spf', 'scop_spf', 'mcs031_space_spf', 'scop_space')));
             $systems = $this->system_stats->combined_meta_stats_query($query);
         }
 
@@ -526,6 +591,23 @@ class Home
 
             if ($system->data_flag == 1) continue;
 
+            $mcs = isset($system->mcs031_spf) && $system->mcs031_spf > 0 ? (float) $system->mcs031_spf : null;
+            $scop = isset($system->scop_spf) && $system->scop_spf > 0 ? (float) $system->scop_spf : null;
+            $mcs_space = isset($system->mcs031_space_spf) && $system->mcs031_space_spf > 0 ? (float) $system->mcs031_space_spf : null;
+            $scop_space = isset($system->scop_space) && $system->scop_space > 0 ? (float) $system->scop_space : null;
+            $space = (float) $system->space_heat_kwh;
+            $water = (float) $system->water_heat_kwh;
+
+            // Hot water SPF each estimate assumed, backed out of the combined
+            // estimate (it applies the space and water figures to the measured
+            // heat). For MCS 031 this folds in any immersion pasteurisation.
+            $water_spf = function ($combined, $space_spf) use ($space, $water) {
+                if ($combined === null || $space_spf === null || $space <= 0 || $water <= 0) return null;
+                $elec_water = ($space + $water) / $combined - $space / $space_spf;
+                return $elec_water > 0 ? round($water / $elec_water, 2) : null;
+            };
+            $num = function ($v, $dp) { return $v !== null && $v !== '' ? round((float) $v, $dp) : null; };
+
             $output_systems[] = array(
                 'id' => (int) $system->id,
                 'location' => $system->location,
@@ -534,7 +616,24 @@ class Home
                 'cop' => round($system->combined_cop, 2),
                 'mcs031_spf' => isset($system->mcs031_spf) && $system->mcs031_spf > 0 ? round($system->mcs031_spf, 3) : null,
                 'scop_spf' => isset($system->scop_spf) && $system->scop_spf > 0 ? round($system->scop_spf, 3) : null,
-                'dt' => round($system->weighted_flowT_minus_outsideT, 1)
+                'dt' => round($system->weighted_flowT_minus_outsideT, 1),
+                // context: design vs measured, split into space heating and hot water
+                'flow_temp' => $num($system->flow_temp, 1),
+                'design_temp' => $num($system->design_temp, 1),
+                'coldest_flow' => $system->measured_mean_flow_temp_coldest_day > 0 ? round($system->measured_mean_flow_temp_coldest_day, 1) : null,
+                'water_share' => $space + $water > 0 ? round($water / ($space + $water), 3) : null,
+                'space_cop' => $system->space_cop > 0 ? round($system->space_cop, 2) : null,
+                'water_cop' => $system->water_cop > 0 ? round($system->water_cop, 2) : null,
+                'mcs_space' => $mcs_space,
+                'mcs_water' => $water_spf($mcs, $mcs_space),
+                'scop_space' => $scop_space !== null ? round($scop_space, 2) : null,
+                'scop_water' => $water_spf($scop, $scop_space),
+                'emitters' => trim(implode(' + ', array_filter(array(
+                    !empty($system->new_radiators) ? 'new radiators' : '',
+                    !empty($system->old_radiators) ? 'existing radiators' : '',
+                    !empty($system->UFH) ? 'UFH' : ''
+                )))),
+                'immersion' => !empty($system->legionella_immersion) ? 1 : 0
             );
         }
         return $output_systems;

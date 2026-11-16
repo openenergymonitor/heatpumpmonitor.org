@@ -34,7 +34,7 @@ global $path;
     --c-meas: var(--hpm-blue-deep);
     --c-mcs: var(--hpm-amber);
     --c-scop: var(--hpm-teal);
-    --c-dt: var(--hpm-ink);
+    --c-dt: #7e57c2;
     --thread: rgba(20, 52, 74, .18);
     --ring: #ffffff;
     --band: rgba(68, 179, 226, .08);
@@ -78,13 +78,22 @@ global $path;
 .hpm-pred .legend { display: flex; flex-wrap: wrap; gap: 6px 22px; font-size: 15px; color: var(--hpm-ink-soft); align-items: center; min-height: 24px; }
 .hpm-pred .legend span { display: flex; align-items: center; gap: 8px; }
 .hpm-pred #chart { flex: 1; min-height: 0; position: relative; }
-.hpm-pred #chart svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-.hpm-pred #chart .empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--muted); }
+.hpm-pred #chart canvas { position: absolute; left: 0; top: 0; }
 .hpm-pred #tip { position: absolute; pointer-events: none; background: var(--hpm-card); border: 1px solid var(--hpm-line); border-radius: .75rem; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: var(--hpm-ink-soft); box-shadow: 0 12px 32px var(--shadow-strong); opacity: 0; transition: opacity .1s; z-index: 5; min-width: 250px; font-variant-numeric: tabular-nums; }
 .hpm-pred #tip .h { font-weight: 700; font-size: 15px; color: var(--hpm-ink); }
 .hpm-pred #tip .m { color: var(--muted); font-size: 13px; }
-.hpm-pred #tip .row { display: flex; justify-content: space-between; gap: 16px; margin: 0; }
-.hpm-pred #tip i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+/* label | value | % vs measured, so the numbers line up row to row.
+   (Not .row: Bootstrap's grid .row adds negative margins and full-width children.) */
+.hpm-pred #tip .tg { display: grid; grid-template-columns: 1fr auto auto; column-gap: 12px; align-items: baseline; margin-top: 6px; }
+.hpm-pred #tip .tl { display: flex; align-items: center; white-space: nowrap; }
+.hpm-pred #tip .tv { text-align: right; color: var(--hpm-ink); font-weight: 600; }
+.hpm-pred #tip .tp { text-align: right; color: var(--muted); font-size: 13px; min-width: 3.2em; }
+.hpm-pred #tip .tn { grid-column: 1 / -1; color: var(--muted); font-size: 13px; }
+.hpm-pred #tip .tc { display: grid; grid-template-columns: 1fr auto auto; column-gap: 14px; align-items: baseline; margin: 8px 0 4px; padding-top: 8px; border-top: 1px solid var(--hpm-line); font-size: 13px; }
+.hpm-pred #tip .tc .tv { font-weight: 600; }
+.hpm-pred #tip .th { text-align: right; color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+.hpm-pred #tip .tx { color: var(--muted); font-size: 13px; line-height: 1.4; max-width: 300px; }
+.hpm-pred #tip .dot { display: inline-block; flex: none; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
 .hpm-pred .note { font-size: 13px; color: var(--muted); }
 
 @media (max-width: 800px) { .hpm-pred-wrap { padding: 16px; } }
@@ -120,6 +129,7 @@ global $path;
   </div>
 </div>
 
+<script src="<?php echo $path; ?>theme/vendor/chart.js-4.4.1/chart.umd.js" integrity="sha384-dug+JxfBvklEQdJ4AYuBBAIScUz0bVN73xpy273gcAwHjb3qI0fXmuYNaNfdyYJG"></script>
 <script>
 var path = "<?php echo $path; ?>";
 
@@ -129,7 +139,7 @@ var path = "<?php echo $path; ?>";
 var predictors_systems = <?php echo json_encode($predictors_systems); ?>;
 
 // [id, location, make & model, measured combined SPF, MCS 031 SPF (0 = none), manufacturer SCOP (0 = none), weighted flowT − outsideT (K)]
-const D=predictors_systems.map(s=>[s.id,(s.location||'').split(',')[0].trim(),((s.hp_manufacturer||'')+' '+(s.hp_model||'')).trim(),s.cop,s.mcs031_spf||0,s.scop_spf||0,s.dt]).sort((a,b)=>b[3]-a[3]);
+const D=predictors_systems.map(s=>[s.id,(s.location||'').split(',')[0].trim(),((s.hp_manufacturer||'')+' '+(s.hp_model||'')).trim(),s.cop,s.mcs031_spf||0,s.scop_spf||0,s.dt,null,s]).sort((a,b)=>b[3]-a[3]);
 
 (function(){
 if(D.length<3){
@@ -156,7 +166,7 @@ const SC=D.filter(d=>d[5]>0);
 
 const root=document.getElementById('hpm-pred');
 const css=n=>getComputedStyle(root).getPropertyValue(n).trim();
-const f2=v=>isFinite(v)?v.toFixed(2):'–', sg=v=>isFinite(v)?(v>=0?'+':'−')+Math.abs(v).toFixed(2):'–', pc=(a,b)=>{const p=Math.round((a/b-1)*100);return (p>=0?'+':'−')+Math.abs(p)+'%'};
+const f2=v=>isFinite(v)?v.toFixed(2):'–', sg=v=>isFinite(v)?(v>=0?'+':'−')+Math.abs(v).toFixed(2):'–', pc=(a,b)=>{const p=-Math.round((a/b-1)*100);return (p>=0?'+':'−')+Math.abs(p)+'%'};
 
 const KP=[
  {key:'mcs',col:'--c-mcs',l:'MCS 031 SPF',v:()=>`R² = ${f2(ST.mcs.r**2)}`,s:()=>`RMSE ${f2(ST.mcs.rmse)} · ${ST.mcs.w10} of ${ST.mcs.n} within ±10%<br>${ST.mcs.beat} of ${ST.mcs.n} beat it · mean ${sg(ST.mcs.bias)}`},
@@ -165,14 +175,10 @@ const KP=[
 ];
 document.getElementById('kpis').innerHTML=KP.map(k=>`<div class="kpi" data-k="${k.key}" style="--k:var(${k.col})" role="button" tabindex="0" title="Show only this comparison"><p class="l">${k.l}</p><p class="v">${k.v()}</p><p class="s">${k.s()}</p></div>`).join('');
 
-const PRED={mcs:{k:4,col:'--c-mcs',name:'MCS 031',sh:'s'},scop:{k:5,col:'--c-scop',name:'Manufacturer SCOP',sh:'t'},dt:{k:7,col:'--c-dt',name:'ΔT fit',sh:'d'}};
+const PRED={mcs:{k:4,col:'--c-mcs',name:'MCS 031',sh:'c'},scop:{k:5,col:'--c-scop',name:'Manufacturer SCOP',sh:'c'},dt:{k:7,col:'--c-dt',name:'ΔT fit',sh:'c'}};
 const ORDER=['all','mcs','scop','dt'];
-let pred='all',mode='gap',W=1000,H=500;
-const P={l:64,r:20,t:14,b:52};
-const NS='http://www.w3.org/2000/svg';
-const el=(t,a)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);return e};
+let pred='all',mode='gap',cj=null,OV=null;
 const chart=document.getElementById('chart'),tip=document.getElementById('tip'),panel=document.querySelector('.panel'),legend=document.getElementById('legend');
-
 const SUB={
  gap:{
   all:()=>`${D.length} systems on HeatpumpMonitor.org, last 365 days. Each vertical thread is one system: measured SPF against three predictors.`,
@@ -190,57 +196,99 @@ const FOOT={
  gap:{all:`Measured = combined SPF (space heating + hot water). ${FILT}`,mcs:'Coloured thread = system fell short of its MCS 031 estimate.',scop:'Coloured thread = system fell short of its manufacturer SCOP.',dt:'Coloured thread = system fell short of the ΔT fit.'},
  scatter:{all:`Above the diagonal = beat the prediction. Dashed lines = ±10%. ${FILT}`,mcs:'Above the diagonal = system beat its MCS 031 estimate. Dashed lines = ±10%.',scop:'Above the diagonal = system beat its manufacturer SCOP. Dashed lines = ±10%.',dt:'Solid line = least-squares fit across all systems; dashed = ±10% of the fit.'}
 };
-
 function sw(c,s,t){const sh=s==='c'?`<circle cx="8" cy="7" r="5.5" fill="${c}"/>`:s==='s'?`<rect x="3" y="2" width="10" height="10" fill="${c}"/>`:s==='d'?`<path d="M8 1L13 7L8 13L3 7Z" fill="${c}"/>`:s==='t'?`<rect x="1" y="5.5" width="14" height="3" fill="${c}"/>`:`<line x1="1" y1="7" x2="15" y2="7" stroke="${c}" stroke-width="2" ${s==='dash'?'stroke-dasharray="3 3"':''}/>`;return `<span><svg width="16" height="14">${sh}</svg>${t}</span>`}
-function text(svg,x,y,s,a){const t=el('text',Object.assign({x,y,'font-size':14,fill:css('--muted')},a||{}));t.textContent=s;svg.append(t);return t}
-function frame(){const r=chart.getBoundingClientRect();W=Math.max(400,r.width);H=Math.max(260,r.height);return el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'})}
-function yAxis(svg,y0,y1,label){const ys=v=>P.t+(H-P.t-P.b)*(1-(v-y0)/(y1-y0));for(let v=Math.ceil(y0*2)/2;v<=y1+1e-9;v+=.5){svg.append(el('line',{x1:P.l,x2:W-P.r,y1:ys(v),y2:ys(v),stroke:css('--grid'),'stroke-width':1}));text(svg,P.l-10,ys(v)+5,v.toFixed(1),{'text-anchor':'end'})}const cy=P.t+(H-P.t-P.b)/2;text(svg,18,cy,label,{transform:`rotate(-90 18 ${cy})`,'text-anchor':'middle','font-size':15});return ys}
-function mark(g,sh,x,y,sz,c){
-  if(sh==='s')g.append(el('rect',{x:x-sz,y:y-sz,width:sz*2,height:sz*2,fill:c}));
-  else if(sh==='t')g.append(el('rect',{x:x-sz*1.6,y:y-sz*.45,width:sz*3.2,height:sz*.9,fill:c}));
-  else if(sh==='d')g.append(el('path',{d:`M${x} ${y-sz*1.4}L${x+sz*1.2} ${y}L${x} ${y+sz*1.4}L${x-sz*1.2} ${y}Z`,fill:c}));
-  else g.append(el('circle',{cx:x,cy:y,r:sz*1.2,fill:c}));
-}
+const alpha=(c,a)=>{if(c[0]==='#'){let h=c.slice(1);if(h.length===3)h=h.replace(/./g,'$&$&');const n=parseInt(h,16);return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`}const m=c.match(/[\d.]+/g);return m?`rgba(${m[0]},${m[1]},${m[2]},${a})`:c};
 
+// Why measured and estimated differ: each estimate is a space heating and a
+// hot water figure applied to the system's measured heat, so show those
+// against measured, plus the design flow temperature the estimates read off.
+function context(c){
+  if(!c)return '';
+  const v=x=>x?x.toFixed(2):'–',deg=x=>(x<0?'−':'')+Math.abs(x).toFixed(Number.isInteger(x)?0:1)+'\u00a0°C';
+  const r=(col,l,s,w)=>`<span class="tl"><span class="dot" style="background:${css(col)}"></span>${l}</span><span class="tv">${v(s)}</span><span class="tv">${v(w)}</span>`;
+  let h=`<div class="tc"><span></span><span class="th">Space</span><span class="th">Water</span>`+r('--c-meas','Measured',c.space_cop,c.water_cop);
+  if(c.mcs_space)h+=r('--c-mcs','MCS 031',c.mcs_space,c.mcs_water);
+  if(c.scop_space)h+=r('--c-scop','SCOP',c.scop_space,c.scop_water);
+  h+='</div>';
+  const n=[];
+  if(c.water_share!=null)n.push(`Hot water ${Math.round(c.water_share*100)}% of heat`);
+  if(c.flow_temp)n.push(`Design flow ${deg(c.flow_temp)}${c.design_temp!=null?` at ${deg(c.design_temp)} outside`:''}`);
+  if(c.coldest_flow)n.push(`Coldest day: ran at ${deg(c.coldest_flow)}`);
+  if(c.emitters)n.push(c.emitters[0].toUpperCase()+c.emitters.slice(1));
+  if(c.immersion&&c.mcs_space)n.push('Immersion pasteurisation, counted in the MCS 031 hot water figure');
+  return h+n.map(t=>`<div class="tx">${t}</div>`).join('');
+}
 function showTip(d,ev){
   const f=d[7];
-  const row=(c,l,v,p)=>`<div class="row"><span><i style="background:${css(c)}"></i>${l}</span><span>${v}${p?` <span class="m">${p}</span>`:''}</span></div>`;
-  tip.innerHTML=`<div class="h">${d[1]}</div><div class="m">${d[2]} · id ${d[0]}</div><div style="margin-top:6px">`+
+  const row=(c,l,v,p)=>`<span class="tl"><span class="dot" style="background:${css(c)}"></span>${l}</span><span class="tv">${v}</span><span class="tp">${p||''}</span>`;
+  const none=t=>`<span class="tn">${t}</span>`;
+  tip.innerHTML=`<div class="h">${d[1]}</div><div class="m">${d[2]} · id ${d[0]}</div><div class="tg">`+
    row('--c-meas','Measured SPF',f2(d[3]))+
-   (d[4]?row('--c-mcs','MCS 031',f2(d[4]),pc(d[3],d[4])):`<div class="row m"><span>No MCS 031 estimate</span></div>`)+
-   (d[5]?row('--c-scop','SCOP',f2(d[5]),pc(d[3],d[5])):`<div class="row m"><span>No SCOP estimate</span></div>`)+
-   row('--c-dt',`ΔT ${d[6].toFixed(1)} K → fit`,f2(f),pc(d[3],f))+`</div>`;
+   (d[4]?row('--c-mcs','MCS 031',f2(d[4]),pc(d[3],d[4])):none('No MCS 031 estimate'))+
+   (d[5]?row('--c-scop','SCOP',f2(d[5]),pc(d[3],d[5])):none('No SCOP estimate'))+
+   row('--c-dt',`ΔT ${d[6].toFixed(1)} K → fit`,f2(f),pc(d[3],f))+`</div>`+context(d[8]);
   const pr=panel.getBoundingClientRect();let x=ev.clientX-pr.left+16,y=ev.clientY-pr.top+16;
   tip.style.opacity=1;const tw=tip.offsetWidth,th=tip.offsetHeight;
-  if(x+tw>pr.width-8)x=ev.clientX-pr.left-tw-16; if(y+th>pr.height-8)y=ev.clientY-pr.top-th-16;
+  if(x+tw>pr.width-8)x=ev.clientX-pr.left-tw-16; if(y+th>pr.height-8)y=Math.max(8,ev.clientY-pr.top-th-16);
   tip.style.left=x+'px';tip.style.top=y+'px';
 }
 const hideTip=()=>tip.style.opacity=0;
 const open=d=>{window.location=path+'system/view?id='+d[0]};
 
+// Chart.js plugin: highlights the hovered column (gaps) and draws the
+// diagonal / fit line, ±10% lines, "beat it" band and outlier labels (scatter).
+const overlay={id:'hpmOverlay',
+  beforeDatasetsDraw(c){
+    if(!OV)return;const {ctx,chartArea:a,scales:{x,y}}=c;
+    ctx.save();ctx.beginPath();ctx.rect(a.left,a.top,a.width,a.height);ctx.clip();
+    if(OV.column){const act=c.getActiveElements();if(act.length){const bw=Math.max(3,a.width/OV.column);ctx.fillStyle=css('--accent');ctx.globalAlpha=.15;ctx.fillRect(x.getPixelForValue(act[0].index)-bw/2,a.top,bw,a.height);ctx.globalAlpha=1}}
+    if(OV.band){ctx.fillStyle=css('--band');ctx.beginPath();OV.band.forEach(([u,v],i)=>ctx[i?'lineTo':'moveTo'](x.getPixelForValue(u),y.getPixelForValue(v)));ctx.closePath();ctx.fill()}
+    (OV.lines||[]).forEach(l=>{ctx.strokeStyle=css('--axis');ctx.lineWidth=l.w;ctx.setLineDash(l.dash?[5,5]:[]);ctx.beginPath();ctx.moveTo(a.left,y.getPixelForValue(l.f(x.min)));ctx.lineTo(a.right,y.getPixelForValue(l.f(x.max)));ctx.stroke()});
+    ctx.restore();
+  },
+  afterDatasetsDraw(c){
+    if(!OV||!OV.labels)return;const {ctx,scales:{x,y}}=c;
+    ctx.save();ctx.fillStyle=css('--muted');ctx.font=`13px ${Chart.defaults.font.family}`;ctx.textBaseline='middle';
+    OV.labels.forEach(l=>ctx.fillText(l.t,x.getPixelForValue(l.x)+OV.r+6,y.getPixelForValue(l.y)));
+    ctx.restore();
+  }
+};
+// ticks on round multiples of the step (Chart.js otherwise anchors them to min)
+const roundTicks=step=>ax=>{const t=[];for(let v=Math.ceil(ax.min/step-1e-9)*step;v<=ax.max+1e-9;v+=step)t.push({value:+v.toFixed(6)});ax.ticks=t};
+function axis(title,extra){return Object.assign({border:{display:false},grid:{color:css('--grid')},ticks:{color:css('--muted'),font:{size:14}},title:{display:true,text:title,color:css('--muted'),font:{size:15}}},extra)}
+function draw(type,datasets,scales,interaction,pick,labels){
+  if(cj)cj.destroy();
+  Chart.defaults.font.family=getComputedStyle(chart).fontFamily;
+  const cv=document.createElement('canvas');chart.replaceChildren(cv);
+  cj=new Chart(cv,{type,data:{labels,datasets},plugins:[overlay],options:{
+    animation:false,responsive:true,maintainAspectRatio:false,layout:{padding:{top:4,right:4}},
+    interaction,scales,plugins:{legend:{display:false},tooltip:{enabled:false}},
+    onHover:(e,els)=>{const d=els.length?pick(els[0]):null;cv.style.cursor=d?'pointer':'default';d&&e.native?showTip(d,e.native):hideTip()},
+    onClick:(e,els)=>{if(els.length)open(pick(els[0]))}}});
+  cv.addEventListener('mouseleave',hideTip);
+}
+
 // Gap view: one vertical thread per system, sorted by measured SPF
 function gaps(){
-  const fp=PRED[pred],S=fp?D.filter(d=>d[fp.k]>0):D;
+  const fp=PRED[pred],S=fp?D.filter(d=>d[fp.k]>0):D,n=S.length;
   legend.innerHTML=fp?sw(css('--c-meas'),'c','Measured SPF')+sw(css(fp.col),fp.sh,fp.name)+sw(css('--thread'),'line','Beat it')+sw(css(fp.col),'line','Fell short')
-    :sw(css('--c-meas'),'c','Measured SPF')+sw(css('--c-mcs'),'s','MCS 031')+sw(css('--c-scop'),'t','Manufacturer SCOP')+sw(css('--c-dt'),'d','ΔT-predicted SPF')+`<span style="color:var(--faint)">Amber thread = fell short of MCS 031</span>`;
-  const svg=frame(),ys=yAxis(svg,1.5,6.5,'SPF'),n=S.length,iw=W-P.l-P.r-12,xs=i=>P.l+6+iw*i/Math.max(1,n-1),sz=Math.max(1,Math.min(fp?3:2.2,iw/n*(fp?.6:.55)));
-  text(svg,P.l+(W-P.l-P.r)/2,H-14,`${n} systems, sorted by measured SPF (highest left)`,{'text-anchor':'middle','font-size':15});
-  const g=el('g',{});svg.append(g);
-  S.forEach((d,i)=>{const x=xs(i),m=d[3];
-    if(fp){const v=d[fp.k];
-      g.append(el('line',{x1:x,x2:x,y1:ys(Math.min(m,v)),y2:ys(Math.max(m,v)),stroke:m<v?css(fp.col):css('--thread'),'stroke-width':Math.max(1,sz*.8)}));
-      mark(g,fp.sh,x,ys(v),sz,css(fp.col));}
-    else{
-      if(d[4]){g.append(el('line',{x1:x,x2:x,y1:ys(Math.min(m,d[4])),y2:ys(Math.max(m,d[4])),stroke:m<d[4]?css('--c-mcs'):css('--thread'),'stroke-width':sz*.7}));mark(g,'s',x,ys(d[4]),sz,css('--c-mcs'));}
-      if(d[5])mark(g,'t',x,ys(d[5]),sz,css('--c-scop'));
-      mark(g,'d',x,ys(d[7]),sz,css('--c-dt'));}
-    mark(g,'c',x,ys(m),sz,css('--c-meas'));});
-  const bw=Math.max(3,iw/n),hl=el('rect',{x:0,y:P.t,width:bw,height:H-P.t-P.b,fill:css('--accent'),opacity:0});svg.insertBefore(hl,g);
-  let cur=null;
-  svg.addEventListener('mousemove',e=>{const r=svg.getBoundingClientRect(),x=(e.clientX-r.left)*W/r.width;if(x<P.l||x>W-P.r){hl.setAttribute('opacity',0);hideTip();cur=null;return}const i=Math.max(0,Math.min(n-1,Math.round((x-P.l-6)/iw*Math.max(1,n-1))));cur=S[i];hl.setAttribute('x',xs(i)-bw/2);hl.setAttribute('opacity',.15);showTip(cur,e)});
-  svg.addEventListener('mouseleave',()=>{hl.setAttribute('opacity',0);hideTip();cur=null});
-  svg.addEventListener('click',()=>cur&&open(cur));svg.style.cursor='pointer';
-  chart.replaceChildren(svg);
+    :sw(css('--c-meas'),'c','Measured SPF')+sw(css('--c-mcs'),'c','MCS 031')+sw(css('--c-scop'),'c','Manufacturer SCOP')+sw(css('--c-dt'),'c','ΔT-predicted SPF')+`<span style="color:var(--faint)">Amber thread = fell short of MCS 031</span>`;
+  const iw=Math.max(400,chart.clientWidth)-90,sz=Math.max(1,Math.min(fp?3:2.2,iw/n*(fp?.6:.55)));
+  // marker sizes match the original SVG marks: square, horizontal tick, diamond, circle
+  const R={c:sz*1.2,s:sz*1.41,t:sz*1.6,d:sz*1.4},STY={c:'circle',s:'rect',t:'line',d:'rectRot'};
+  const pts=(sh,col,data,order)=>{const c=css(col),r=R[sh],bw=sh==='t'?sz*.9:0;return{type:'line',data,order,showLine:false,pointStyle:STY[sh],pointRadius:r,pointHoverRadius:r,pointBackgroundColor:c,pointBorderColor:c,pointBorderWidth:bw,pointHoverBackgroundColor:c,pointHoverBorderColor:c,pointHoverBorderWidth:bw}};
+  const tk=fp?fp.k:4,tc=css(fp?fp.col:'--c-mcs'),th=css('--thread');
+  const ds=[{type:'bar',order:9,barThickness:Math.max(1,sz*(fp?.8:.7)),
+    data:S.map(d=>d[tk]?[Math.min(d[3],d[tk]),Math.max(d[3],d[tk])]:null),
+    backgroundColor:S.map(d=>d[3]<d[tk]?tc:th),hoverBackgroundColor:S.map(d=>d[3]<d[tk]?tc:th)}];
+  if(fp)ds.push(pts(fp.sh,fp.col,S.map(d=>d[fp.k]),5));
+  else ds.push(pts('c','--c-dt',S.map(d=>d[7]),3),pts('c','--c-scop',S.map(d=>d[5]||null),2),pts('c','--c-mcs',S.map(d=>d[4]||null),1));
+  ds.push(pts('c','--c-meas',S.map(d=>d[3]),0));
+  OV={column:n};
+  draw('bar',ds,{
+    x:axis(`${n} systems, sorted by measured SPF (highest left)`,{grid:{display:false},ticks:{display:false}}),
+    y:axis('SPF',{min:1.5,max:6.5,ticks:{color:css('--muted'),font:{size:14},stepSize:.5,callback:v=>v.toFixed(1)}})},
+    {mode:'index',axis:'x',intersect:false},el=>S[el.index],S.map(d=>d[0]));
 }
 
 // Scatter view: measured SPF (y) against predicted (x). ΔT alone is plotted against ΔT in K with its fit line.
@@ -248,24 +296,21 @@ function scatter(){
   const isDT=pred==='dt',keys=pred==='all'?['mcs','scop','dt']:[pred],multi=keys.length>1;
   const ser=keys.map(k=>({k,p:PRED[k],S:D.filter(d=>d[PRED[k].k]>0)}));
   legend.innerHTML=ser.map(s=>sw(css(s.p.col),'c',multi?`${s.p.name} (${s.S.length})`:`${s.S.length} systems`)).join('')+(isDT?sw(css('--axis'),'line','Fit: SPF = '+f2(icpt)+' − '+Math.abs(slope).toFixed(4)+' × ΔT'):sw(css('--axis'),'line','Measured = predicted'))+sw(css('--axis'),'dash','±10%')+(isDT?'':`<span style="color:var(--faint)">Shaded = beat the prediction</span>`);
-  const svg=frame(),y0=1.8,y1=6.2,ys=yAxis(svg,y0,y1,'Measured SPF');
-  const x0=isDT?8:1.8,x1=isDT?43:6.2,xs=v=>P.l+(W-P.l-P.r)*(v-x0)/(x1-x0);
-  const step=isDT?5:.5;for(let v=Math.ceil(x0/step)*step;v<=x1+1e-9;v+=step)text(svg,xs(v),H-P.b+20,isDT?v:v.toFixed(1),{'text-anchor':'middle'});
-  text(svg,P.l+(W-P.l-P.r)/2,H-8,isDT?'Heat-weighted flow − outside temperature (K) · lower is better':multi?'Predicted SPF':PRED[pred].name+' (predicted SPF)',{'text-anchor':'middle','font-size':15});
-  const g=el('g',{});svg.append(g);
-  if(isDT){[1,1.1,.9].forEach(k=>g.append(el('line',{x1:xs(x0),y1:ys(fit(x0)*k),x2:xs(x1),y2:ys(fit(x1)*k),stroke:css('--axis'),'stroke-width':k===1?2:1.2,'stroke-dasharray':k===1?'':'5 5'})))}
-  else{g.append(el('polygon',{points:`${xs(y0)},${ys(y0)} ${xs(y1)},${ys(y1)} ${xs(y0)},${ys(y1)}`,fill:css('--band')}));
-    g.append(el('line',{x1:xs(y0),y1:ys(y0),x2:xs(y1),y2:ys(y1),stroke:css('--axis'),'stroke-width':2}));
-    [1.1,.9].forEach(k=>g.append(el('line',{x1:xs(y0),y1:ys(y0*k),x2:xs(y1),y2:ys(y1*k),stroke:css('--axis'),'stroke-width':1.2,'stroke-dasharray':'5 5'})))}
+  const y0=1.8,y1=6.2,x0=isDT?8:1.8,x1=isDT?43:6.2,W=chart.clientWidth;
   const r=multi?Math.max(3,Math.min(5,W/240)):Math.max(4,Math.min(7,W/170)),op=multi?.6:.72;
-  ser.forEach(s=>s.S.forEach(d=>{const xv=isDT?d[6]:d[s.p.k];if(xv<x0||xv>x1)return;
-    const c=el('circle',{cx:xs(xv),cy:ys(d[3]),r,fill:css(s.p.col),'fill-opacity':op,stroke:css('--ring'),'stroke-width':1,style:'cursor:pointer'});
-    c.addEventListener('mouseenter',e=>{c.setAttribute('r',r*1.6);c.setAttribute('fill-opacity',1);showTip(d,e)});
-    c.addEventListener('mousemove',e=>showTip(d,e));
-    c.addEventListener('mouseleave',()=>{c.setAttribute('r',r);c.setAttribute('fill-opacity',op);hideTip()});
-    c.addEventListener('click',()=>open(d));g.append(c)}));
-  if(isDT){D.filter(d=>d[3]/d[7]<.75).forEach(d=>text(svg,xs(d[6])+r+6,ys(d[3])+5,d[1],{'font-size':13}))}
-  chart.replaceChildren(svg);
+  const ds=ser.map((s,i)=>{const c=css(s.p.col);return{type:'scatter',order:ser.length-i,
+    data:s.S.map(d=>({x:isDT?d[6]:d[s.p.k],y:d[3],d})).filter(p=>p.x>=x0&&p.x<=x1),
+    pointRadius:r,pointHoverRadius:r*1.6,pointBackgroundColor:alpha(c,op),pointHoverBackgroundColor:c,
+    pointBorderColor:css('--ring'),pointHoverBorderColor:css('--ring'),pointBorderWidth:1,pointHoverBorderWidth:1}});
+  OV=isDT?{lines:[{f:fit,w:2},{f:v=>fit(v)*1.1,w:1.2,dash:1},{f:v=>fit(v)*.9,w:1.2,dash:1}],r,
+           labels:D.filter(d=>d[3]/d[7]<.75).map(d=>({x:d[6],y:d[3],t:d[1]}))}
+         :{band:[[y0,y0],[y1,y1],[y0,y1]],lines:[{f:v=>v,w:2},{f:v=>v*1.1,w:1.2,dash:1},{f:v=>v*.9,w:1.2,dash:1}]};
+  const tick=isDT?{}:{callback:v=>v.toFixed(1)};
+  draw('scatter',ds,{
+    x:axis(isDT?'Heat-weighted flow − outside temperature (K) · lower is better':multi?'Predicted SPF':PRED[pred].name+' (predicted SPF)',
+      {type:'linear',min:x0,max:x1,afterBuildTicks:roundTicks(isDT?5:.5),ticks:Object.assign({color:css('--muted'),font:{size:14}},tick)}),
+    y:axis('Measured SPF',{min:y0,max:y1,afterBuildTicks:roundTicks(.5),ticks:{color:css('--muted'),font:{size:14},callback:v=>v.toFixed(1)}})},
+    {mode:'nearest',intersect:true},el=>cj.data.datasets[el.datasetIndex].data[el.index].d);
 }
 
 function render(){
