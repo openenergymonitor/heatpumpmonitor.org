@@ -135,7 +135,9 @@ class HeatpumpTests
         }
     }
 
-    public function delete_cap_test($test_type, $userid, $id) {
+    // $session_admin: the caller's session admin flag. The users table flag
+    // alone is not enough, as a remember me session is given admin=0.
+    public function delete_cap_test($test_type, $userid, $id, $session_admin = false) {
 
         // Validate test type
         if ($test_type !== 'max' && $test_type !== 'min') {
@@ -147,7 +149,7 @@ class HeatpumpTests
         if (!$this->user->userid_exists($userid)) {
             return array("error" => "Invalid user ID");
         }
-        $is_admin = $this->user->is_admin($userid);
+        $is_admin = $session_admin && $this->user->is_admin($userid);
         $is_test_owner = $this->test_owner($test_type, $userid, $id);
 
         // if not test owner or admin, return error

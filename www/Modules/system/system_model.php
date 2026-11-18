@@ -1158,8 +1158,29 @@ class System
         return $count > 0;
     }
 
+    /**
+     * Does $userid hold site admin rights for this request?
+     *
+     * On the web the session decides, not just the users table: a session
+     * resumed from a remember me cookie is deliberately given admin=0 (see
+     * User::create_session), and reading only the stored flag here handed
+     * every system read/write and photo admin path back to it anyway. The
+     * stored flag is still required too, so revoking admin in the users table
+     * takes effect on live sessions straight away. CLI scripts have no session
+     * and keep the plain users table check.
+     *
+     * @param int $userid
+     * @return bool
+     */
     public function is_admin($userid) {
         $userid = (int) $userid;
+        if ($userid < 1) return false;
+
+        if (PHP_SAPI !== 'cli') {
+            global $session;
+            if (empty($session['admin']) || (int) $session['userid'] !== $userid) return false;
+        }
+
         $result = $this->emoncms_mysqli->query("SELECT admin FROM users WHERE id='$userid'");
         if (!$row = $result->fetch_object()) {
             return false;

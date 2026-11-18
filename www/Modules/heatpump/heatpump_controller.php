@@ -288,7 +288,7 @@ function heatpump_controller() {
         if ($route->subaction == "delete" && $session['userid'] > 0) {
             $route->format = "json";
             $id = (int) get("id", true);
-            return $heatpump_tests->delete_cap_test($test_type,$session['userid'], $id);
+            return $heatpump_tests->delete_cap_test($test_type,$session['userid'], $id, !empty($session['admin']));
         }
 
         // Update test status (admin only)
