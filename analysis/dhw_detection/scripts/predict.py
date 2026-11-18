@@ -11,6 +11,8 @@ Usage (from analysis/dhw_detection/):
 Options:
   --out DIR       where to write (default: output/ next to this folder's README)
   --workers N     systems run at once, one process each (default: half the CPU cores; 1 on a GPU)
+  --threads N     threads per worker (default: 1, or up to 4 for a lone worker); --workers 1 --threads 1
+                  keeps the whole run to one core
   --device D      cpu or cuda (default: cuda if available, else cpu)
 
 --update keeps each system's stored settings (logging intervals and scales) and re-predicts only from
@@ -169,6 +171,7 @@ def main():
     ap.add_argument("--out", type=Path, default=HERE / "output")
     ap.add_argument("--update", action="store_true")
     ap.add_argument("--workers", type=int)
+    ap.add_argument("--threads", type=int)
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     a = ap.parse_args()
 
@@ -188,6 +191,8 @@ def main():
     workers = min(len(ids), a.workers or (1 if a.device == "cuda" else max(1, cores // 2)))
     # On a CPU one thread per process gets the most from each core; a lone process gains up to about four
     threads = max(1, cores // workers) if a.device == "cuda" else (1 if workers > 1 else min(4, cores))
+    if a.threads:
+        threads = a.threads
     args = (source_, folder_, a.out, a.update, a.device, threads)
     print(f"{len(ids)} systems, {workers} worker(s) x {threads} thread(s) on {a.device}, writing to {a.out}", flush=True)
 
