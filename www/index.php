@@ -167,6 +167,17 @@ switch ($route->controller) {
         ));
         break;
 
+    case "outsidetemp":
+        $route->format = "html";
+
+        $systemid = 2;
+        if (isset($_GET['id'])) $systemid = (int) $_GET['id'];
+
+        $output = view("views/outsidetemp.php", array(
+            "systemid"=>$systemid
+        ));
+        break;
+
     case "monthly":
         $route->format = "html";
         
