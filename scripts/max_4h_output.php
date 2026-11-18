@@ -1,9 +1,11 @@
 <?php
+// CLI only: this lives outside www/ and must never be served
+if (PHP_SAPI !== 'cli') exit(1);
 
-$dir = dirname(__FILE__);
-chdir("$dir/www");
+chdir(dirname(__DIR__)."/www");
 
 define('EMONCMS_EXEC', 1);
+require "core.php";
 require "Lib/load_database.php";
 
 require("Modules/user/user_model.php");
@@ -11,6 +13,9 @@ $user = new User($mysqli,false);
 
 require ("Modules/system/system_model.php");
 $system = new System($mysqli);
+
+require ("Modules/system/system_stats_model.php");
+$system_stats = new SystemStats($mysqli,$system);
 
 // tabs
 print "location\theatpump output\theatpump model\theat loss survey\theat demand\tdiv 2.9\n";
@@ -21,35 +26,17 @@ foreach ($data as $row) {
     //if ($userid!=26) continue;
     if ($user_data = $user->get($userid)) {
 
-        $url = $row->url;
+        // Feed ids and read key come from the system's emoncms app (app_id +
+        // readkey) on the configured emoncms host. Never from the url field:
+        // users edit it, and it would point these requests at any host,
+        // internal services and file:// included.
+        $config = $system_stats->get_system_config_with_meta($userid, (int) $row->id);
+        if (is_object($config) && isset($config->feeds->heatpump_heat_kwh->feedid)) {
+            $server = $config->server;
+            $feedid = (int) $config->feeds->heatpump_heat_kwh->feedid;
 
-        # decode the url to separate out any args
-        $url_parts = parse_url($url);
-        $server = $url_parts['scheme'] . '://' . $url_parts['host'];
-
-        # check if url was to /app/view instead of username
-        if (preg_match('/^(.*)\/app\/view$/', $url_parts['path'], $matches)) {
-            $url = "$server$matches[1]/app/getconfig";
-        } else {
-            $url = $server.$url_parts['path']."/app/getconfig";
-        }
-
-        # if url has query string, pull out the readkey
-        $readkey = false;
-        if (isset($url_parts['query'])) {
-            parse_str($url_parts['query'], $url_args);
-            if (isset($url_args['readkey'])) {
-                $readkey = $url_args['readkey'];
-                $url .= '?' . $url_parts['query'];
-            }
-        }
-
-        $result = json_decode(file_get_contents($url));
-        if (isset($result->config->heatpump_heat_kwh)) {
-            $feedid = $result->config->heatpump_heat_kwh;
-
-            if (isset($result->config->heatpump_outsideT)) {
-                $outside_temp_feedid = $result->config->heatpump_outsideT;
+            if (isset($config->feeds->heatpump_outsideT->feedid)) {
+                $outside_temp_feedid = (int) $config->feeds->heatpump_outsideT->feedid;
             } else {
                 $outside_temp_feedid = false;
             }
@@ -64,7 +51,7 @@ foreach ($data as $row) {
             
 
             $apikeystr = "";
-            if ($readkey) $apikeystr = "&apikey=$readkey";
+            if ($config->apikey) $apikeystr = "&apikey=".urlencode($config->apikey);
 
             // get start date of feed
             $result = file_get_contents("$server/feed/getmeta.json?id=$feedid$apikeystr");

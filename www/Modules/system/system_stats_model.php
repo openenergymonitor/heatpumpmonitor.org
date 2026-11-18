@@ -134,8 +134,10 @@ class SystemStats
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
         $result = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-        
+        // no curl_close(): a no-op since PHP 8.0 and deprecated in 8.5, where
+        // the notice lands in CLI script output; the handle is freed on scope exit
+        unset($ch);
+
         // 5. Handle the response
         if ($httpCode == 200) {
 
