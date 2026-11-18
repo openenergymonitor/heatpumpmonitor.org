@@ -52,3 +52,5 @@ scripts/feed_scan/lowmod/
 analysis/performance_prediction/.venv/
 analysis/performance_prediction/histograms/
 analysis/dhw_detection/output/
+analysis/dhw_detection/.venv/
+analysis/dhw_detection/feed_map.json
