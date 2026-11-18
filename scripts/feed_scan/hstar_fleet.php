@@ -25,6 +25,12 @@
 // Output: one line per system to stdout + hstar_fleet.csv alongside this script.
 //
 // Usage: php hstar_fleet.php [max_systems]   (0 or omitted = all)
+//        php hstar_fleet.php --system=<id>
+//
+// --system scans one system over the same window and prints a detailed report
+// instead of writing the CSV. The fleet selection filters (MID, H4, air source,
+// data length, data flag) are not applied, but the system must still be public
+// and have a rated capacity (hp_output).
 
 $dir = dirname(__FILE__);
 chdir($dir."/../../www");
@@ -40,7 +46,12 @@ $system = new System($mysqli);
 require ("Modules/system/system_stats_model.php");
 $system_stats = new SystemStats($mysqli,$system);
 
-$max_systems = isset($argv[1]) ? (int) $argv[1] : 0;
+$max_systems = 0;
+$single_id = 0;
+foreach (array_slice($argv, 1) as $a) {
+    if (strpos($a, "--system=") === 0) $single_id = (int) substr($a, 9);
+    else $max_systems = (int) $a;
+}
 
 // H* offset coefficients (K per unit load ratio) and fixed-offset convention (K)
 define('A_COND', 3.0);
@@ -90,7 +101,18 @@ $query = array(
     "stats_table" => "system_stats_last365_v2"
 );
 
+if ($single_id) $query['meta_filters'] = array('id' => $single_id);
+
 $systems = $system_stats->combined_meta_stats_query($query);
+
+if ($single_id) {
+    if (!count($systems)) die("system $single_id not found, or not public\n");
+    $s = $systems[0];
+    if (!($s->hp_output > 0)) die("system $single_id has no rated capacity (hp_output)\n");
+    if ($s->combined_cop !== null) auto_flag_air_error($s);
+    scan_one($mysqli, $emoncms_mysqli, $s);
+    exit(0);
+}
 
 $selected = array();
 foreach ($systems as $s) {
@@ -111,16 +133,9 @@ foreach ($systems as $s) {
     $selected[] = $s;
 }
 
-// Scan window aligned with process_rolling_stats (load_and_process_cli.php):
-// end = next midnight Europe/London, start = end - 365 days (DST aware).
-// Each system is additionally clamped to its own feed availability.
-$date = new DateTime();
-$date->setTimezone(new DateTimeZone('Europe/London'));
-$date->modify("midnight");
-$stats_window_end = $date->getTimestamp() + 3600*24;
-$date->setTimestamp($stats_window_end);
-$date->modify("-".SCAN_DAYS." days");
-$stats_window_start = $date->getTimestamp();
+// Scan window aligned with process_rolling_stats (see stats_window). Each
+// system is additionally clamped to its own feed availability.
+list($stats_window_start, $stats_window_end) = stats_window();
 print "Stats window: ".date("Y-m-d H:i", $stats_window_start)." to ".date("Y-m-d H:i", $stats_window_end)." (Europe/London midnights)\n";
 
 $N = count($selected);
@@ -256,6 +271,54 @@ if (count($skipped)) {
     foreach ($skipped as $id => $reason) print "  $id: $reason\n";
 }
 print "\n";
+
+// --system mode: scan one system and print a detailed report
+function scan_one($mysqli, $emoncms_mysqli, $s)
+{
+    $window = stats_window();
+    $system_id = (int) $s->id;
+    print "System $system_id: $s->hp_manufacturer $s->hp_model, $s->hp_type, $s->hp_output kW\n";
+    if ($s->data_flag == 1) print "Note: data_flag is set; this system is excluded from the fleet scan\n";
+    print "Stats window: ".date("Y-m-d H:i", $window[0])." to ".date("Y-m-d H:i", $window[1])." (Europe/London midnights)\n\n";
+
+    $t = microtime(true);
+    $r = scan_system($mysqli, $emoncms_mysqli, $system_id, $s->hp_output * 1000.0, $window[0], $window[1]);
+    if (!is_array($r)) die("Cannot scan: $r\n");
+
+    $rec = function($v, $dp) { return $v !== null ? number_format($v, $dp) : "--"; };
+    printf("Scanned %.1f days in %.1fs\n", $r['days'], microtime(true) - $t);
+    printf("Running hours in H*:        %.0f\n\n", $r['running_hours']);
+    printf("Total heat (while running): %.1f kWh\n", $r['heat_kwh_running']);
+    printf("                            calculated  recorded\n");
+    printf("Heat-weighted flowT:        %8.2f C  %s\n", $r['w_flowT'], $rec($s->weighted_flowT, 2));
+    printf("Heat-weighted outsideT:     %8.2f C  %s\n", $r['w_outsideT'], $rec($s->weighted_outsideT, 2));
+    printf("Heat-weighted dT:           %8.2f K  %s\n", $r['w_dT'], $rec($s->weighted_flowT_minus_outsideT, 2));
+    printf("Heat-weighted flow-return:  %8.2f K  %s\n\n", $r['w_dTfr'], $rec($s->weighted_flowT_minus_returnT, 2));
+    printf("H  (fixed +%g/-%g offsets):   %.3f\n", FIXED_COND, FIXED_EVAP, $r['H_fixed']);
+    printf("H* (variable +%gr/-%gr):      %.3f\n", A_COND, B_EVAP, $r['H_star']);
+    if ($r['spf'] !== null) {
+        printf("\nTotal heat (all):           %.1f kWh\n", $r['heat_kwh_all']);
+        printf("Total elec (all):           %.1f kWh\n", $r['elec_kwh_all']);
+        printf("Measured SPF (window):      %.3f  (recorded combined_cop %s)\n", $r['spf'], $rec($s->combined_cop, 3));
+        printf("SPF / H  (prc carnot):      %.3f  (recorded weighted_prc_carnot %s%%)\n", $r['spf'] / $r['H_fixed'], $rec($s->weighted_prc_carnot, 1));
+        printf("SPF / H* (corrected):       %.3f\n", $r['spf'] / $r['H_star']);
+    }
+    print "\n";
+}
+
+// Scan window aligned with process_rolling_stats (load_and_process_cli.php):
+// end = next midnight Europe/London, start = end - SCAN_DAYS days (DST aware).
+// Returns array(start, end).
+function stats_window()
+{
+    $date = new DateTime();
+    $date->setTimezone(new DateTimeZone('Europe/London'));
+    $date->modify("midnight");
+    $end = $date->getTimestamp() + 3600*24;
+    $date->setTimestamp($end);
+    $date->modify("-".SCAN_DAYS." days");
+    return array($date->getTimestamp(), $end);
+}
 
 // Scan a system's feeds over the stats window, accumulating H* and friends.
 // Returns an array of results, or an error string if the system cannot be scanned.
