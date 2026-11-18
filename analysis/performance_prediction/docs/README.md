@@ -42,7 +42,7 @@ produce its results.
 **Other docs in this folder:**
 
 - [metering_floor.md](metering_floor.md): how accurate a measured SPF is
-- [design_model.md](design_model.md): predicting SPF from the design sheet
+- [design_model.md](design_model.md): an attempt at a simple steady-state design model
 - [load_and_quality.md](load_and_quality.md): why the simulator's load
   effect doesn't show up in real Arotherms, and the experiment to test it
 - [machine_replay.md](machine_replay.md): real Arotherm+ data replayed

@@ -140,6 +140,84 @@ def space_heat_kwh(u_wk, room, capacity_w, gains_w=GAINS_W, solar_scale=SOLAR_SC
     return np.clip(smooth_series(Q), 0, capacity_w).sum() * 0.5 / 1000.0
 
 
+# ------------------------------------------------- median fleet "default" system
+# Inputs chosen to reproduce a median HeatpumpMonitor.org system (docs/design_model.md,
+# "Defaults"). Heat loss is set so annual heat matches the fleet median, and
+# design flow so the heat-weighted flow temperature over the year (hot water
+# included) matches. Design temp -1.5 C keeps the climate right (weighted
+# outside temp). Uses a 35% minimum modulation rather than the global MINMOD.
+DEFAULT_SYSTEM = dict(
+    heat_loss_kw=4.23, design_temp=-1.5, room=20.0,
+    gains_w=120.0 + 240.0,          # body heat + lighting/appliances
+    solar_scale=4.0,                # solar aperture, m2
+    design_flow=40.0,               # flow temp needed at design condition, no gains
+    dt_sys=5.0, capacity_kw=6.0, min_mod=0.35,
+    eta=0.47,                       # bench (defrost-free) % of Carnot
+    defrost_D=DEFROST_D,
+    dhw_share=0.14, dhw_target=48.0, dhw_approach=4.0,
+)
+# Fleet medians, 2026-07-15 export (225 air source systems; H* from hstar_fleet.csv)
+FLEET_MEDIAN = dict(
+    total_heat_kwh=13205, weighted_flow=34.8, weighted_outside=7.3,
+    coldest_day=(-1.8, 37.3),       # (outside, flow), daily means
+    hstar=9.05, spf=4.00,
+)
+
+
+def default_system(p=DEFAULT_SYSTEM):
+    """Run the design model on one system described by a DEFAULT_SYSTEM-style dict."""
+    u = p["heat_loss_kw"] * 1000.0 / (p["room"] - p["design_temp"])
+    rad50 = p["heat_loss_kw"] * 1000.0 / ((p["design_flow"] - p["dt_sys"] / 2 - p["room"]) / 50.0) ** RAD_EXP
+    w = WEATHER + (p["design_temp"] - np.percentile(WEATHER, 0.4))   # localise standard year
+    cap = p["capacity_kw"] * 1000.0
+    kw = dict(gains_w=p["gains_w"], solar_scale=p["solar_scale"], weather=w)
+    args = (u, p["room"], rad50, p["dt_sys"], cap, p["dhw_share"], p["dhw_target"])
+    hkw = dict(min_mod=p["min_mod"], dhw_approach=p["dhw_approach"], **kw)
+    h_nodef = design_hstar(*args, **hkw)
+    h_def = design_hstar(*args, defrost_D=p["defrost_D"], **hkw)
+    space = space_heat_kwh(u, p["room"], cap, **kw)
+    share = p["dhw_share"]
+
+    def flow_at(q):
+        return p["room"] + 50.0 * (q / rad50) ** (1.0 / RAD_EXP) + p["dt_sys"] / 2.0
+
+    # heat-weighted flow and outside temps over the year, hot water included
+    # (DHW runs year-round at dhw_target + dhw_approach), as the fleet's
+    # weighted_flowT / weighted_outsideT are
+    Q = np.clip(smooth_series(u * (p["room"] - w) - p["gains_w"] - SOLAR * p["solar_scale"] * 0.9), 0, cap)
+    on = Q > 0
+    w_flow = ((flow_at(Q[on]) * Q[on]).sum() / Q[on].sum() * (1 - share)
+              + (p["dhw_target"] + p["dhw_approach"]) * share)
+    w_out = (w[on] * Q[on]).sum() / Q[on].sum() * (1 - share) + w.mean() * share
+
+    # curve on a day whose mean outside temp is the fleet's coldest day
+    # (solar ~0; demand is already a 24 h average)
+    t_cold = FLEET_MEDIAN["coldest_day"][0]
+    flow_cold = flow_at(u * (p["room"] - t_cold) - p["gains_w"])
+
+    return dict(
+        space_heat_kwh=space, total_heat_kwh=space / (1.0 - share),
+        rad50_kw=rad50 / 1000.0, hstar=h_nodef,
+        spf=p["eta"] * h_def, spf_no_defrost=p["eta"] * h_nodef,
+        defrost_spf=p["eta"] * (h_nodef - h_def),
+        weighted_flow=w_flow, weighted_outside=w_out, flow_coldest_day=flow_cold,
+    )
+
+
+def print_default_system():
+    r, m = default_system(), FLEET_MEDIAN
+    t, f = m["coldest_day"]
+    print("Default (median fleet) system — docs/design_model.md, Defaults")
+    print(f"                           model    fleet median")
+    print(f"  annual heat, kWh       {r['total_heat_kwh']:7.0f}  {m['total_heat_kwh']:7.0f}")
+    print(f"  weighted flow, C       {r['weighted_flow']:7.1f}  {m['weighted_flow']:7.1f}")
+    print(f"  weighted outside, C    {r['weighted_outside']:7.1f}  {m['weighted_outside']:7.1f}")
+    print(f"  flow on {t} C day, C {r['flow_coldest_day']:7.1f}  {f:7.1f}")
+    print(f"  H* (defrost-free)      {r['hstar']:7.2f}  {m['hstar']:7.2f}")
+    print(f"  SPF                    {r['spf']:7.2f}  {m['spf']:7.2f}")
+    print(f"  defrost cost {r['defrost_spf']:.2f} SPF; DT50 emitter output {r['rad50_kw']:.1f} kW")
+
+
 def cv_report(X, y, name, folds=5):
     ok = X.notna().any(axis=1) & y.notna()
     X, y = X[ok].reset_index(drop=True), y[ok].reset_index(drop=True)
@@ -239,8 +317,11 @@ def main():
     ok = hl.notna() & mhl.notna()
     print(f"  declared vs measured heat loss: r = {stats.pearsonr(hl[ok], mhl[ok])[0]:.3f}, "
           f"median ratio {(mhl[ok] / hl[ok]).median():.2f}  (n={ok.sum()})")
-    return s, f, R, yr
+    return f, R, yr
 
 
 if __name__ == "__main__":
-    main()
+    if "--default" in sys.argv:
+        print_default_system()     # needs only the weather file, no fleet data
+    else:
+        main()
