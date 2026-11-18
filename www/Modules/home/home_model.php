@@ -214,7 +214,7 @@ class Home
 
             // Hot water SPF each estimate assumed, backed out of the combined
             // estimate (it applies the space and water figures to the measured
-            // heat). For MCS 031 this folds in any immersion pasteurisation.
+            // heat).
             $water_spf = function ($combined, $space_spf) use ($space, $water) {
                 if ($combined === null || $space_spf === null || $space <= 0 || $water <= 0) return null;
                 $elec_water = ($space + $water) / $combined - $space / $space_spf;
@@ -386,7 +386,7 @@ class Home
 
             // Hot water SPF each estimate assumed, backed out of the combined
             // estimate (it applies the space and water figures to the measured
-            // heat). For MCS 031 this folds in any immersion pasteurisation.
+            // heat).
             $water_spf = function ($combined, $space_spf) use ($space, $water) {
                 if ($combined === null || $space_spf === null || $space <= 0 || $water <= 0) return null;
                 $elec_water = ($space + $water) / $combined - $space / $space_spf;
@@ -482,7 +482,7 @@ class Home
 
             // Hot water SPF each estimate assumed, backed out of the combined
             // estimate (it applies the space and water figures to the measured
-            // heat). For MCS 031 this folds in any immersion pasteurisation.
+            // heat).
             $water_spf = function ($combined, $space_spf) use ($space, $water) {
                 if ($combined === null || $space_spf === null || $space <= 0 || $water <= 0) return null;
                 $elec_water = ($space + $water) / $combined - $space / $space_spf;
@@ -542,8 +542,7 @@ class Home
                 'measured_outside_temp_coldest_day',
                 'new_radiators',
                 'old_radiators',
-                'UFH',
-                'legionella_immersion'
+                'UFH'
             ),
             'stats_fields' => array(
                 'combined_elec_kwh',
@@ -601,7 +600,7 @@ class Home
 
             // Hot water SPF each estimate assumed, backed out of the combined
             // estimate (it applies the space and water figures to the measured
-            // heat). For MCS 031 this folds in any immersion pasteurisation.
+            // heat).
             $water_spf = function ($combined, $space_spf) use ($space, $water) {
                 if ($combined === null || $space_spf === null || $space <= 0 || $water <= 0) return null;
                 $elec_water = ($space + $water) / $combined - $space / $space_spf;
@@ -634,8 +633,7 @@ class Home
                     !empty($system->new_radiators) ? 'new radiators' : '',
                     !empty($system->old_radiators) ? 'existing radiators' : '',
                     !empty($system->UFH) ? 'UFH' : ''
-                )))),
-                'immersion' => !empty($system->legionella_immersion) ? 1 : 0
+                ))))
             );
         }
         return $output_systems;
