@@ -8,8 +8,11 @@ predict SPF before anything is installed?
 **In principle yes, but only if the design sheet describes the system
 that actually gets run, and in this fleet it mostly doesn't.**
 
-The model is in `scripts/design_model.py`, and there's an interactive
-version at `design_spf_tool/index.html`. The two agree to within 0.3%.
+The model is in `scripts/design_model.py`
+(`.venv/bin/python scripts/design_model.py`, see the README for setup), and
+there's an interactive version at `design_spf_tool/index.html`. The two
+agree to within 0.3%. Both use the Llanberis 2024 weather year in
+`llanberis2024.csv`.
 
 ## How it works
 

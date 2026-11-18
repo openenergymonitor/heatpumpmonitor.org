@@ -133,7 +133,10 @@ test, and the datasheet prediction is far outside the fleet's interval.
 
 The low-load share points the same way. In the carnot sim, systems with
 more heat below 40% of rated output beat the ΔT line (ρ = +0.36), the
-opposite of the fleet (ρ = −0.33). The Arotherm sim can't test this: its
+opposite of the fleet (ρ = −0.33, though in the fleet that looks more
+like a step than a trend and may be mostly Arotherm+; it's provisional
+and due to be repeated, see README section 3). The Arotherm sim can't
+test this: its
 minimum output is a fixed 25% of maximum, or 44% of badge, so almost no
 heat is delivered below 40% of badge. Real units go lower in cold weather,
 when the same 30 rps delivers less heat.
@@ -293,8 +296,31 @@ Practical notes:
 
 ---
 
-*Files: in `scripts/feed_scan/` at the repo root, `steady_episodes_fleet.php`
-(episode detector), `hstar_fleet.php` (fleet H\* scan) and
-`hstar_hist_fleet.php` (histograms); here, `scripts/analyse_hstar_fleet.py`,
-`analyse_hstar_offsets.py`, `scripts/sim_model_comparison.py`, `twins/`,
-`hstar_fleet.csv`, `hstar_fleet_hist.csv` and `hstar_hist.csv`.*
+## Scripts
+
+Run from `analysis/performance_prediction/` with the `.venv` python (see
+the README for setup), except where noted.
+
+- **Fleet scans** are in `scripts/feed_scan/` at the repo root:
+  `hstar_fleet.php` (fleet H\* scan, writes `hstar_fleet.csv` and
+  `hstar_fleet_hist.csv`), `hstar_hist_fleet.php` (per-system heat
+  histograms, writes `hstar_hist.csv`, 113 MB and not in git) and
+  `steady_episodes_fleet.php` (episode detector for the experiment).
+- **The P test:** `scripts/analyse_hstar_fleet.py` and
+  `scripts/analyse_hstar_offsets.py`. `scripts/hstar_plots.py` draws
+  `hstar_p_test.png` and `utilisation_vs_rbar.png`, and needs
+  `hstar_hist.csv`.
+- **The Arotherm datasheet sweep:**
+
+  ```
+  .venv/bin/python scripts/sim_model_comparison.py carnot=sim_carnot_2026-10.csv \
+      arotherm=sim_arotherm_2026-10.csv --fig docs/figures/sim_model_ptest.png
+  ```
+
+- **The twins** (`twins.js` needs tools repo commit `176ae57` or later):
+
+  ```
+  .venv/bin/python twins/twin_targets.py > twins/targets.json
+  node twins/twins.js --tools <tools repo>/www/tools/dynamic_heatpump
+  .venv/bin/python twins/compare_twins.py --fig docs/figures/twins.png
+  ```

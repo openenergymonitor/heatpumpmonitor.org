@@ -36,6 +36,12 @@ simulator sweeps H\* beats ΔT, but that didn't carry over to real systems.
 source, MID-metered, H4 systems with at least 330 days of data and no
 cooling. Section 4 also uses the raw 10 s feeds of 229 systems.
 
+**Scripts** run from `analysis/performance_prediction/` in a virtualenv
+(`python3 -m venv .venv && .venv/bin/pip install -r requirements.txt`).
+They use the newest `heatpumpmonitor_all_fields_*.csv` in that folder and
+write figures to `docs/figures/`. Each section below says which scripts
+produce its results.
+
 **Other docs in this folder:**
 
 - [metering_floor.md](metering_floor.md): how accurate a measured SPF is
@@ -49,22 +55,29 @@ cooling. Section 4 also uses the raw 10 s feeds of 229 systems.
 - [mcs_and_scop_methods.md](mcs_and_scop_methods.md): manufacturer SCOP and
   MCS 031 estimates against measured SPF
 
-## 1. The baseline still holds
+## 1. ΔT is still the best predictor, and the goal is far off
 
-On current data the fit is **SPF = −0.110·ΔT + 7.04** (R² 0.60), close to
-the published −0.105·ΔT + 6.88 (R² 0.55). Curved fits (quadratic, log-log,
-Carnot) don't do better. The limit is how much one averaged ΔT can tell
-you, not the shape of the line.
-
-The no-cooling filter matters. Without it the fit weakens (n = 258,
-R² 0.46) because the published stats count summer cooling as heat.
+- On current data the fit is **SPF = −0.110·ΔT + 7.04** (R² 0.60), close
+  to the published −0.105·ΔT + 6.88 (R² 0.55).
+- Curved fits (quadratic, log-log, Carnot) are no better. The limit is how
+  much one averaged ΔT can tell you, not the shape of the line.
+- Getting to ±0.25 would need R² ≈ 0.90, and ±0.10 would need 0.98.
+  Metering error alone is about ±0.10 (see
+  [metering_floor.md](metering_floor.md)), so ±0.1 is roughly the
+  measurement floor.
 
 Filter counts: H4 boundary 268 → air source 263 → no cooling 228 →
-≥330 days 226 → COP and ΔT present 225.
+≥330 days 226 → COP and ΔT present 225. The no-cooling filter matters:
+without it R² falls to 0.46 (n = 258), because the published stats count
+summer cooling as heat.
 
 ![baseline fit](figures/cop_vs_flow_minus_outside.png)
 
-## 2. What the published stats add
+*Scripts:* `.venv/bin/python scripts/hpmon_analysis.py` loads the export,
+applies the standard filter, fits the line and draws the figure. The other
+scripts import their loader and filter from it.
+
+## 2. Annual heat demand is the only extra field that helps
 
 | Field | Effect | Worth adding? |
 |---|---|---|
@@ -79,49 +92,102 @@ Filter counts: H4 boundary 268 → air source 263 → no cooling 228 →
 The best model:
 
 ```
-SPF = 6.53 − 0.114·ΔT + 0.25·ln(annual heat, MWh)
+SPF = 6.53 − 0.114·ΔT + 0.25·ln(annual heat, MWh)      cv R² 0.64, ±0.47
 ```
 
-Doubling annual heat is worth about +0.17 SPF. It's unclear why. Bigger
-homes have less standby share, steadier running, and probably smaller
-pipework losses in proportion, and annual data can't separate these.
+- Doubling annual heat is worth about +0.17 SPF. Annual data can't say
+  why. Lower standby share, steadier running and smaller pipework losses in
+  proportion are all candidates.
+- Bigger models overfit with 225 systems: a linear model with every safe
+  field scores cv R² 0.61, and gradient boosting 0.55. The bottleneck is
+  better inputs, not better models.
 
 Standby can be removed exactly:
 `combined_cop = running_cop / (1 + standby_elec / running_elec)`.
 
-Bigger models don't help. A linear model with every safe field scores
-cv R² 0.61, and gradient boosting 0.55. With 225 systems they overfit.
-Getting to ±0.25 would need R² ≈ 0.90, and ±0.10 would need 0.98. That
-needs better inputs, not better models.
-
-**Watch out for leakage.** An early model scored a fake cv R² of 0.85
-because it could rebuild COP from heat and electricity fields. Never give a
-model both. `prc_carnot`, `water_cop`, `running_cop` and the unit cost
-fields are all COP in disguise.
-
 ![residual investigation](figures/residual_investigation.png)
 
-## 3. Systems running at low load do worse
+*Scripts:* `scripts/residual_analysis.py` runs the residual tests and holds
+the cross-validation harness, `scripts/residual_plots.py` draws the figure,
+and `scripts/regression_analysis.py` covers utilisation and the install and
+control fields.
 
-From the power histograms in the heatpumpmonitor.org API: the more heat a
-system delivers **below 40% of its rated output**, the worse it does
-against the ΔT line (ρ = −0.33). This still holds after allowing for
-annual demand (−0.28).
+## 3. Low-load running: unclear, needs repeating
 
-Most systems deliver about 10% of their heat at low load. The top 15%
-deliver 40–72%, and sit about 0.23 COP below the rest. This looks like
-oversizing: below minimum modulation the machine cycles, and fixed losses
-weigh more.
+*Status: provisional. The numbers below come from a quick check of the
+July 2026 features file, not from a script, and earlier versions of this
+section drew conclusions that didn't hold up. Treat them as leads to
+re-test, not results.*
 
-It's a weak signal in a regression, though (p = 0.11 on top of ΔT and
-annual heat, no cv R² gain). What causes it is still open, see
-[load_and_quality.md](load_and_quality.md). Electricity histograms showed
-nothing useful.
+The power histograms in the heatpumpmonitor.org API give the share of each
+system's heat delivered **below 40% of its rated output**. An early
+analysis read this as "the more low-load heat, the worse the system does".
+A closer look doesn't support that. Across the fleet it looks more like a
+step than a trend:
 
-![low load effect](figures/lowload_effect.png)
+| Share of heat below 40% of rated | n | Mean residual from the ΔT line |
+|---|---|---|
+| 0–6% | 84 | +0.08 to +0.20 |
+| 6–43% | 111 | −0.05 to −0.18 |
+| 44–92% | 28 | −0.03 |
 
-These figures use the July 2026 histograms in `modulation_features.csv`. An
-October re-fetch changed two systems, moving ρ to −0.35.
+- Systems that almost never run below 40% seem to do a little better,
+  about +0.13 on average. Beyond about 10% there's no visible relationship
+  (ρ 0.01), and the systems with the most low-load heat are about average.
+- The rank correlation (ρ −0.33) comes mostly from that step. A linear fit
+  explains about 3% of the residual variance.
+- An earlier version of this section said the top 15% sit 0.23 COP below
+  the rest. The July file gives about −0.07, which isn't significant, and
+  the source of 0.23 hasn't been found.
+
+**There may be a signal within Arotherm+.** 78 of the 90 systems with
+under 7% low-load heat are Vaillant. Across the 130 Vaillant systems the
+share correlates with the residual at ρ −0.48, and the correlation
+appears separately in the 5 kW (ρ −0.49) and 7 kW (ρ −0.53) units. The
+other 90 systems, a mix of makes, show nothing significant (ρ −0.14,
+p = 0.2). This split was found by looking at the data after the fleet-wide
+result failed, so it needs confirming on fresh data before it counts.
+
+One possible reason: an Arotherm+'s minimum output is about 44% of its
+badge in mild weather. Heat below 40% then means cycling and start-up
+below its minimum, or minimum speed in cold weather, when 30 rps delivers
+less heat. Other makes modulate below 40% normally, so a fixed threshold
+wouldn't separate good running from bad. If that's right, it fits the
+"efficiency drops off at minimum modulation" explanation in
+[load_and_quality.md](load_and_quality.md).
+
+### To repeat on the main server
+
+- **Re-run from fresh data.** Re-fetch the histograms, rebuild
+  `modulation_features.csv`, and check whether the step and the Vaillant
+  split still hold. Data that wasn't used to find the split is the real
+  test.
+- **Put the analysis in a script.** Add the binned residuals, the step
+  test and the make split to `modulation_analysis.py`.
+- **Use a better baseline.** Take residuals from the ΔT + annual heat
+  model in section 2, not ΔT alone, and control for DHW share and
+  utilisation.
+- **Make the threshold model-relative.** Use each model's minimum output
+  instead of a fixed 40% of badge, so "below minimum" means the same thing
+  for every make.
+- **Measure cycling directly.** Starts per day and short-cycle time from
+  the 10 s feeds (`hstar_hist.csv` and the feed scans) would test the
+  cycling explanation more directly than a power histogram. Check what
+  time resolution the API histograms use, and separate DHW from space
+  heating.
+- **Allow for multiple comparisons.** Several thresholds and subgroups
+  have been tried, so a single p-value overstates the evidence. Use
+  cross-validation or a held-out set.
+
+These numbers use the July 2026 histograms in `modulation_features.csv`
+(223 systems with a residual), with make and badge size from
+`hstar_fleet.csv`. Electricity histograms showed nothing useful.
+
+*Scripts:* run `scripts/fetch_histograms.py` first. It fills the
+`histograms/` cache, which isn't in git. Then `scripts/modulation_analysis.py`
+builds the low-load features and residuals in `modulation_features.csv`.
+The step and the Vaillant split were worked out directly from that file
+and aren't in a script yet.
 
 ## 4. The simulator and H\*
 
@@ -179,6 +245,21 @@ Side results:
 - **Ground source is excluded.** H\* assumes the evaporator sees outside
   air.
 
+*Scripts:* the fleet H\* values come from
+`scripts/feed_scan/hstar_fleet.php` at the repo root, which writes
+`hstar_fleet.csv` and `hstar_fleet_hist.csv`.
+`scripts/analyse_hstar_fleet.py` scores the metrics on the fleet and
+`scripts/analyse_hstar_offsets.py` runs the coefficient search. The
+simulator columns come from:
+
+```
+.venv/bin/python scripts/sim_model_comparison.py carnot=sim_carnot_2026-10.csv \
+    arotherm=sim_arotherm_2026-10.csv --fig docs/figures/sim_model_ptest.png
+```
+
+The simulator's weather year is `llanberis2024.csv`, copied from the tools
+repo.
+
 ## 5. Ideas not yet tried
 
 - **Daily records.** About 80,000 system-days instead of 225 annual
@@ -218,36 +299,3 @@ The histogram API needs a non-default User-Agent (`Python-urllib` gets a
 ```
 https://heatpumpmonitor.org/histogram/kwh_at_power_heat?id=<id>&start=<t>&end=<t>&x_min=0&x_max=30000
 ```
-
-## Running the scripts
-
-From `analysis/performance_prediction/`:
-
-```
-python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
-.venv/bin/python scripts/<name>.py
-```
-
-Scripts find their data relative to themselves and use the newest
-`heatpumpmonitor_all_fields_*.csv`. Figures go to `docs/figures/`.
-
-| Path | What it is |
-|---|---|
-| `scripts/hpmon_analysis.py` | loader, standard filter, linear fit (section 1) |
-| `scripts/residual_analysis.py`, `residual_plots.py` | residual tests and CV harness (section 2) |
-| `scripts/regression_analysis.py` | utilisation, install and control fields, coldest-day model (section 2, design_model.md) |
-| `scripts/fetch_histograms.py`, `modulation_analysis.py`, `lowload_plots.py` | low-load features (section 3). Run `fetch_histograms.py` first; the `histograms/` cache isn't in git |
-| `scripts/analyse_hstar_fleet.py`, `analyse_hstar_offsets.py` | H\* fleet test and coefficient search (section 4) |
-| `scripts/hstar_plots.py` | figures for load_and_quality.md; needs `hstar_hist.csv` |
-| `scripts/sim_model_comparison.py` | October sweeps against the fleet (section 4, load_and_quality.md) |
-| `scripts/design_model.py` | design sheet model |
-| `twins/` | Arotherm+ datasheet twins: `twin_targets.py` builds targets, `twins.js` runs them (tools repo `176ae57` or later), `compare_twins.py` compares with real systems |
-| `design_spf_tool/index.html` | interactive design sheet model |
-| `heatpumpmonitor_all_fields_*.csv` | fleet export |
-| `modulation_features.csv` | low-load features, July 2026 |
-| `hstar_fleet.csv`, `hstar_fleet_hist.csv` | raw feed scan results, one row per system |
-| `hstar_hist.csv` | per-system heat histograms, 113 MB, not in git; regenerate with `hstar_hist_fleet.php` |
-| `sim_carnot_2026-10.csv`, `sim_arotherm_2026-10.csv` | October 2026 sweeps |
-| `llanberis2024.csv` | the simulator's weather year (copied from the tools repo) |
-| `scripts/feed_scan/` (repo root) | PHP feed scanners |
