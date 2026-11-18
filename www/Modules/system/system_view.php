@@ -223,6 +223,31 @@ global $settings, $session, $path;
             </div>
         </div>
 
+        <!-- Projected annual SPF for systems with less than a year of data, see scripts/projected_spf.php -->
+        <div class="card mt-3" v-if="mode == 'view' && system.projected_spf_days > 0">
+            <h5 class="card-header">Projected annual SPF</h5>
+            <div class="card-body">
+                <template v-if="system.projected_spf > 0">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <h4 class="mb-0">{{ system.projected_spf | toFixed(1) }}</h4>
+                        </div>
+                        <div class="col">
+                            likely range {{ system.projected_spf_low | toFixed(1) }} – {{ system.projected_spf_high | toFixed(1) }}
+                        </div>
+                    </div>
+                    <p class="mt-2 mb-0" style="font-size:14px; color:#666">
+                        Projected from the first {{ system.projected_spf_days }} days of data, allowing for the time of year using systems on HeatpumpMonitor.org with a full year of data.
+                        In testing, {{ 100 * system.projected_spf_within10 | toFixed(0) }}% of systems ended within ±10% of a projection made at the same point in the year, and 8 in 10 ended inside the range.
+                        Settings changes after this point won't be reflected.
+                    </p>
+                </template>
+                <p v-else class="mb-0">
+                    This system has {{ system.projected_spf_days }} days of data. A projection of its annual SPF will appear once there's enough heating season data to make one within about ±10%, usually after 1–2 weeks of heating between November and March. Summer data is mostly hot water, so it says little about space heating performance.
+                </p>
+            </div>
+        </div>
+
         <!-- Design-stage estimates: last 365 days only, see design_estimates_model.php -->
         <div class="card mt-3" v-if="show_estimates">
             <h5 class="card-header" style="cursor:pointer" @click="estimates_expanded = !estimates_expanded">Measured vs Design-stage estimate <i :class="'bi bi-' + (estimates_expanded ? 'dash' : 'plus') + '-lg float-end'"></i></h5>

@@ -849,6 +849,11 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     columns['scop_space'].heading = "SCOP<br>SH";
     columns['scop_spf'].heading = "SCOP<br>SPF";
     columns['scop_spf_ratio'].heading = "SPF ÷<br>SCOP";
+    columns['projected_spf'].heading = "Projected<br>SPF";
+    columns['projected_spf_low'].heading = "Projected<br>SPF low";
+    columns['projected_spf_high'].heading = "Projected<br>SPF high";
+    columns['projected_spf_within10'].heading = "Projection<br>±10%";
+    columns['projected_spf_days'].heading = "Projection<br>days";
     // columns['electricity_tariff_unit_rate_all'].heading = "Elec<br>p/kWh";
 
     // snapshot of the standard headings, used to restore when a custom title is removed
@@ -1928,6 +1933,16 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                     || key == 'scop_space' || key == 'scop_spf' || key == 'scop_spf_ratio') {
                     if (val == null || val == 0) return '';
                     return val.toFixed(key == 'mcs031_space_spf' ? 1 : 2);
+                }
+
+                // Projected annual SPF: empty until the system has a projection
+                if (key == 'projected_spf' || key == 'projected_spf_low' || key == 'projected_spf_high') {
+                    if (val == null || val == 0) return '';
+                    return val.toFixed(2);
+                }
+                if (key == 'projected_spf_within10') {
+                    if (val == null || val == 0) return '';
+                    return (100 * val).toFixed(0) + '%';
                 }
                 
                 return val;

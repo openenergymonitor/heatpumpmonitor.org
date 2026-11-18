@@ -924,6 +924,49 @@ $schema['system_meta'] = array(
         'name' => 'Coldest day',
         'group' => 'Measurements',
         'helper' => 'Start of the coldest day in the last year, as a unix timestamp'
+    ),
+
+    // Projected annual SPF for systems with less than a year of data, set daily by
+    // scripts/projected_spf.php from the fleet-calibrated model in scripts/projected_spf_model.json
+    'projected_spf' => array(
+        'type' => 'float',
+        'editable' => false,
+        'optional' => true,
+        'name' => 'Projected annual SPF',
+        'group' => 'Projected performance',
+        'helper' => 'Annual combined SPF projected from the data so far, for systems with less than a year of data. Empty until the projection is within about ±10%'
+    ),
+    'projected_spf_low' => array(
+        'type' => 'float',
+        'editable' => false,
+        'optional' => true,
+        'name' => 'Projected annual SPF, low',
+        'group' => 'Projected performance',
+        'helper' => 'Lower end of the projection range: 9 in 10 systems in testing ended above it'
+    ),
+    'projected_spf_high' => array(
+        'type' => 'float',
+        'editable' => false,
+        'optional' => true,
+        'name' => 'Projected annual SPF, high',
+        'group' => 'Projected performance',
+        'helper' => 'Upper end of the projection range: 9 in 10 systems in testing ended below it'
+    ),
+    'projected_spf_within10' => array(
+        'type' => 'float',
+        'editable' => false,
+        'optional' => true,
+        'name' => 'Projection track record',
+        'group' => 'Projected performance',
+        'helper' => 'Share of systems in testing whose annual SPF ended within ±10% of a projection made at the same point in the year from the same number of days'
+    ),
+    'projected_spf_days' => array(
+        'type' => 'int(11)',
+        'editable' => false,
+        'optional' => true,
+        'name' => 'Projection based on (days)',
+        'group' => 'Projected performance',
+        'helper' => 'Days of data the projection uses. Set with an empty projection while waiting for heating season data'
     )
 );
 
