@@ -70,6 +70,8 @@ chdir($dir."/../../www");
 define('EMONCMS_EXEC', 1);
 require "Lib/load_database.php";
 require $dir."/../common.php";
+require $dir."/phpfina_reader.php";
+require $dir."/arotherm_model.php";
 
 $positional = array();
 $qnom_override = null;
@@ -645,7 +647,6 @@ $jsonfile = $out_dir."/replay_$system_id$suffix.json";
 if (file_put_contents($jsonfile, json_encode($out)) === false) die("ERROR: could not write $jsonfile\n");
 print "Written $jsonfile\n";
 
-
 // Accumulator: samples, positive and negative heat, elec, model elec,
 // heat x flowT, and flow-return dT summed over the samples that have it
 function new_acc()
@@ -764,41 +765,6 @@ function kwh($sum) { return $sum * 10 / 3600000; }
 function ratio($a, $b) { return $b > 0 ? $a / $b : null; }
 function fmt($x, $dp) { return $x === null ? "--" : number_format((float) $x, $dp, '.', ''); }
 
-// Vaillant Arotherm+ generic v2 COP fit, ported from www/lib/vaillant_cop_fit.js
-// in the tools repo (copFitGenericV2, estimateSpeed). Pre-defrost, no standby.
-function volumetric_capacity($flowT, $outsideT)
-{
-    $c = array(1.070e-2, 2.889e-4, 6.495e-7, -9.330e-3);
-    return max(($c[0] + $c[1] * $outsideT + $c[2] * $outsideT * $outsideT) * (1 + $c[3] * ($flowT - 50.0)), 1e-4);
-}
-
-// Inferred compressor speed, rps, unclamped (below 30 means the machine must cycle)
-function estimate_speed($qnom_kw, $flowT, $outsideT, $output_kw)
-{
-    return $output_kw / ($qnom_kw * volumetric_capacity($flowT, $outsideT));
-}
-
-function cop_fit_v2($qnom_kw, $flowT, $outsideT, $output_kw, $eta_scale = 1.0)
-{
-    $p = array(0.24930, 0.74153, -0.48742, 0.66656, -1.05159, 0.32990, -0.03477, -0.00303);
-
-    $qh = $output_kw / $qnom_kw;
-    $s = min(max(estimate_speed($qnom_kw, $flowT, $outsideT, $output_kw), 30), 120) / 100.0;
-
-    $Tc = $flowT + 273.15 + 4.0 * $qh;
-    $Te = $outsideT + 273.15 - 7.0 * $qh;
-    $L = max($Tc - $Te, 5.0);
-    $z = ($L - 45.0) / 45.0;
-    $w = ($flowT - 50.0) / 15.0;
-
-    $eta = $eta_scale
-         * ($p[0] + $p[1] * $s + $p[2] * $s * $s + $p[3] * $s * $z)
-         * (1.0 + $p[4] * $z + $p[5] * $z * $z + $p[6] * $z * $z * $z)
-         * (1.0 + $p[7] * $w);
-
-    return $eta * $Tc / $L;
-}
-
 // The datasheet COP for the chosen --model (see the usage notes at the top)
 function cop_model($model, $qnom_kw, $flowT, $outsideT, $output_kw)
 {
@@ -831,78 +797,4 @@ function cop_fit_load($p, $qnom_kw, $flowT, $outsideT, $output_kw)
          * (1.0 + $p[7] * $w);
 
     return $eta * $Tc / $L;
-}
-
-// Forward-fill NANs with the last valid value across gaps shorter than
-// FILL_MAX_S (as hstar_fleet.php, matching remove_null_values)
-function fill_nulls(&$data, $n, &$state)
-{
-    for ($j = 0; $j < $n; $j++) {
-        if ($data[$j] == $data[$j]) {
-            if ($state['gap'] > 0 && ($state['gap'] + 1) * 10 < FILL_MAX_S
-                && $state['value'] == $state['value']) {
-                $fill_start = $j - $state['gap'];
-                if ($fill_start < 0) $fill_start = 0;
-                for ($k = $fill_start; $k < $j; $k++) $data[$k] = $state['value'];
-            }
-            $state['value'] = $data[$j];
-            $state['gap'] = 0;
-        } else {
-            $state['gap']++;
-        }
-    }
-}
-
-// Read a block of $n 10s-aligned samples starting at $t0 from a phpfina feed
-// (as hstar_fleet.php). Other intervals are resampled by repetition; missing is NAN.
-function load_block($fh, $meta, $t0, $n)
-{
-    $interval = $meta->interval;
-    $p0 = intdiv($t0 - $meta->start_time, $interval);
-    $p1 = intdiv(($t0 + ($n - 1) * 10) - $meta->start_time, $interval);
-    if ($p0 < 0) $p0 = 0;
-    if ($p1 >= $meta->npoints) $p1 = $meta->npoints - 1;
-
-    $native = array();
-    if ($p1 >= $p0) {
-        fseek($fh, $p0 * 4);
-        $raw = fread($fh, ($p1 - $p0 + 1) * 4);
-        if ($raw !== false && strlen($raw) >= 4) {
-            $native = unpack("f*", substr($raw, 0, strlen($raw) - (strlen($raw) % 4)));
-        }
-    }
-
-    if ($interval == 10 && ($t0 - $meta->start_time) % 10 == 0 && $t0 >= $meta->start_time) {
-        $out = array_values($native);
-        for ($j = count($out); $j < $n; $j++) $out[$j] = NAN;
-        return $out;
-    }
-
-    $out = array();
-    for ($j = 0; $j < $n; $j++) {
-        $t = $t0 + $j * 10;
-        if ($t < $meta->start_time) { $out[$j] = NAN; continue; }
-        $idx = intdiv($t - $meta->start_time, $interval) - $p0 + 1;
-        $out[$j] = isset($native[$idx]) ? $native[$idx] : NAN;
-    }
-    return $out;
-}
-
-function getmeta($dir, $id)
-{
-    if (!file_exists($dir . $id . ".meta")) return false;
-
-    $meta = new stdClass();
-    $metafile = fopen($dir . $id . ".meta", 'rb');
-    fseek($metafile, 8);
-    $tmp = unpack("I", fread($metafile, 4));
-    $meta->interval = $tmp[1];
-    $tmp = unpack("I", fread($metafile, 4));
-    $meta->start_time = $tmp[1];
-    fclose($metafile);
-
-    clearstatcache(true, $dir . $id . ".dat");
-    $meta->npoints = floor(filesize($dir . $id . ".dat") / 4.0);
-    $meta->end_time = $meta->start_time + ($meta->npoints * $meta->interval);
-    return $meta;
 }

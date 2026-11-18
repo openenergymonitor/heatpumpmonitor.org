@@ -55,6 +55,7 @@ chdir($dir."/../../www");
 define('EMONCMS_EXEC', 1);
 require "Lib/load_database.php";
 require $dir."/../common.php";
+require $dir."/phpfina_reader.php";
 
 $positional = array();
 $out_dir = $dir."/dhwcal";
@@ -464,77 +465,3 @@ function line_fit($x, $y)
 }
 
 function fmt($x, $dp) { return $x === null ? "--" : number_format((float) $x, $dp, '.', ''); }
-
-// Forward-fill NANs with the last valid value across gaps shorter than
-// FILL_MAX_S (as replay.php)
-function fill_nulls(&$data, $n, &$state)
-{
-    for ($j = 0; $j < $n; $j++) {
-        if ($data[$j] == $data[$j]) {
-            if ($state['gap'] > 0 && ($state['gap'] + 1) * 10 < FILL_MAX_S
-                && $state['value'] == $state['value']) {
-                $fill_start = $j - $state['gap'];
-                if ($fill_start < 0) $fill_start = 0;
-                for ($k = $fill_start; $k < $j; $k++) $data[$k] = $state['value'];
-            }
-            $state['value'] = $data[$j];
-            $state['gap'] = 0;
-        } else {
-            $state['gap']++;
-        }
-    }
-}
-
-// Read a block of $n 10s-aligned samples starting at $t0 from a phpfina feed
-// (as replay.php). Other intervals are resampled by repetition; missing is NAN.
-function load_block($fh, $meta, $t0, $n)
-{
-    $interval = $meta->interval;
-    $p0 = intdiv($t0 - $meta->start_time, $interval);
-    $p1 = intdiv(($t0 + ($n - 1) * 10) - $meta->start_time, $interval);
-    if ($p0 < 0) $p0 = 0;
-    if ($p1 >= $meta->npoints) $p1 = $meta->npoints - 1;
-
-    $native = array();
-    if ($p1 >= $p0) {
-        fseek($fh, $p0 * 4);
-        $raw = fread($fh, ($p1 - $p0 + 1) * 4);
-        if ($raw !== false && strlen($raw) >= 4) {
-            $native = unpack("f*", substr($raw, 0, strlen($raw) - (strlen($raw) % 4)));
-        }
-    }
-
-    if ($interval == 10 && ($t0 - $meta->start_time) % 10 == 0 && $t0 >= $meta->start_time) {
-        $out = array_values($native);
-        for ($j = count($out); $j < $n; $j++) $out[$j] = NAN;
-        return $out;
-    }
-
-    $out = array();
-    for ($j = 0; $j < $n; $j++) {
-        $t = $t0 + $j * 10;
-        if ($t < $meta->start_time) { $out[$j] = NAN; continue; }
-        $idx = intdiv($t - $meta->start_time, $interval) - $p0 + 1;
-        $out[$j] = isset($native[$idx]) ? $native[$idx] : NAN;
-    }
-    return $out;
-}
-
-function getmeta($dir, $id)
-{
-    if (!file_exists($dir . $id . ".meta")) return false;
-
-    $meta = new stdClass();
-    $metafile = fopen($dir . $id . ".meta", 'rb');
-    fseek($metafile, 8);
-    $tmp = unpack("I", fread($metafile, 4));
-    $meta->interval = $tmp[1];
-    $tmp = unpack("I", fread($metafile, 4));
-    $meta->start_time = $tmp[1];
-    fclose($metafile);
-
-    clearstatcache(true, $dir . $id . ".dat");
-    $meta->npoints = floor(filesize($dir . $id . ".dat") / 4.0);
-    $meta->end_time = $meta->start_time + ($meta->npoints * $meta->interval);
-    return $meta;
-}

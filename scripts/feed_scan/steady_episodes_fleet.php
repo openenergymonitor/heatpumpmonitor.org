@@ -22,6 +22,7 @@ chdir($dir."/../../www");
 
 define('EMONCMS_EXEC', 1);
 require "Lib/load_database.php";
+require $dir."/phpfina_reader.php";
 
 require("Modules/user/user_model.php");
 $user = new User($mysqli,false);
@@ -107,7 +108,6 @@ if (count($skipped)) {
     foreach ($skipped as $id => $reason) print "  $id: $reason\n";
 }
 print "\n";
-
 
 // ---- Per-system scan ---------------------------------------------------
 // Scan one system's overlapping feed window at 10s resolution, detecting stable
@@ -446,64 +446,4 @@ function signature_write($mysqli, $system_id, $episodes)
     $stmt->close();
 
     return $written;
-}
-
-// Read a block of $n 10s-aligned samples starting at time $t0 from a phpfina feed.
-// Feeds stored at other intervals are resampled by repetition. Missing data is NAN.
-function load_block($fh, $meta, $t0, $n)
-{
-    $interval = $meta->interval;
-    $p0 = intdiv($t0 - $meta->start_time, $interval);
-    $p1 = intdiv(($t0 + ($n - 1) * 10) - $meta->start_time, $interval);
-    if ($p0 < 0) $p0 = 0;
-    if ($p1 >= $meta->npoints) $p1 = $meta->npoints - 1;
-
-    $native = array();
-    if ($p1 >= $p0) {
-        fseek($fh, $p0 * 4);
-        $raw = fread($fh, ($p1 - $p0 + 1) * 4);
-        if ($raw !== false && strlen($raw) >= 4) {
-            $native = unpack("f*", substr($raw, 0, strlen($raw) - (strlen($raw) % 4)));
-        }
-    }
-
-    // Fast path: native 10s feed aligned to the block start
-    if ($interval == 10 && ($t0 - $meta->start_time) % 10 == 0) {
-        $out = array_values($native);
-        for ($j = count($out); $j < $n; $j++) $out[$j] = NAN;
-        return $out;
-    }
-
-    $out = array();
-    for ($j = 0; $j < $n; $j++) {
-        $idx = intdiv(($t0 + $j * 10) - $meta->start_time, $interval) - $p0 + 1;
-        $out[$j] = isset($native[$idx]) ? $native[$idx] : NAN;
-    }
-    return $out;
-}
-
-// Read phpfina metadata (interval, start_time, npoints, end_time). Returns false
-// if the .meta file is missing.
-function getmeta($dir, $id)
-{
-    if (!file_exists($dir . $id . ".meta")) {
-        return false;
-    }
-
-    $meta = new stdClass();
-    $metafile = fopen($dir . $id . ".meta", 'rb');
-    fseek($metafile, 8);
-    $tmp = unpack("I", fread($metafile, 4));
-    $meta->interval = $tmp[1];
-    $tmp = unpack("I", fread($metafile, 4));
-    $meta->start_time = $tmp[1];
-    fclose($metafile);
-
-    clearstatcache($dir . $id . ".dat");
-    $npoints = floor(filesize($dir . $id . ".dat") / 4.0);
-    $meta->npoints = $npoints;
-
-    $meta->end_time = $meta->start_time + ($meta->npoints * $meta->interval);
-
-    return $meta;
 }
