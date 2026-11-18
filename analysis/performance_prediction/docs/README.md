@@ -13,10 +13,7 @@ Apart from this brief introduction the document text is all written by claude as
 
 ---
 
-**The question:** how well can we predict a heat pump's seasonal
-performance (SPF H4) from what we know about the system? The starting point
-is the known link between SPF and weighted flow temperature minus outside
-temperature (ΔT), which predicts SPF to about ±0.5. The goal was ±0.1.
+**The question:** Can we predict a heat pump's seasonal performance (SPF H4) to within ±0.1, starting from the known link with weighted flow-minus-outside temperature (ΔT), which gets you about ±0.5?
 
 **The answer so far:** ΔT is still the best predictor. Adding annual heat
 demand helps a little. Nothing else tried beats it on the real fleet.
