@@ -23,11 +23,9 @@ The model is "H* computed at design time": no simulation, no monitoring data.
       H*_design = sum(heat) / sum(heat / carnot)
       SPF       = eta * H*_design    (eta = % of Carnot; absorbed by the cv fit)
 
-Benchmarked with the same cv protocol as metric_comparison.py, on:
-  1. the simulator fleet (exact design params, physics ground truth)
-  2. the same, with fleet-grade input noise injected into the "paper" description
-  3. the real fleet: (A) declared design params, (B) corrected heat loss,
-     (C) corrected heat loss + WC curve anchored on the coldest-day flow temp
+Benchmarked with cross-validation on the real fleet: (A) declared design
+params, (B) corrected heat loss, (C) corrected heat loss + WC curve anchored
+on the coldest-day flow temp.
 """
 
 import sys
@@ -58,7 +56,7 @@ WEATHER, SOLAR = load_weather()
 # ------------------------------------------------------- the design model
 A_COND, B_EVAP = 3.0, 8.0        # H* convention (docs/README.md, section 4)
 RAD_EXP = 1.3                    # radiator equation exponent (as the simulator)
-MINMOD = 0.25                    # global constant (coarse grid on the sim)
+MINMOD = 0.25                    # minimum modulation floor, global constant
 # gains defaults mirror the dynamic model: metabolic + lighting/appliances (W)
 # and solar irradiance x an aperture scale x 0.9 (dynamic_heatpump.js:1289)
 GAINS_W, SOLAR_SCALE = 290.0, 4.0
@@ -151,62 +149,7 @@ def cv_report(X, y, name, folds=5):
 
 
 def main():
-    # ============ 1. SIMULATED FLEET (exact design params) ============
-    s = pd.read_csv(ROOT / "sim_results.csv")
-    s = s[s.degree_hours_below_setpoint < 2500].reset_index(drop=True)
-    s["dhw_frac"] = s.dhw_heat_kwh / s.heat_kwh
-    y = s.spf
-
-    def sim_design_hstar(row, hl_paper=None, ft_err=0.0):
-        """Design H* from the sim scenario's design sheet.
-
-        hl_paper/ft_err let us corrupt the paper description of the system
-        while the simulated system itself stays the same (input-noise test).
-        """
-        hl = hl_paper if hl_paper is not None else row.heat_loss
-        rad50_true = row.heat_loss * row.radiator_ratio
-        mwt_true = row.setpointT + 50.0 * (row.heat_loss / rad50_true) ** (1 / RAD_EXP)
-        mwt_paper = mwt_true + ft_err
-        if mwt_paper <= row.setpointT + 2:
-            return np.nan
-        rad50 = hl / ((mwt_paper - row.setpointT) / 50.0) ** RAD_EXP
-        return design_hstar(
-            u_wk=hl / 23.0,                      # sim convention: HL at 23K
-            room=row.setpointT,
-            rad50_w=rad50,
-            dt_sys=row.system_DT,
-            capacity_w=row.capacity,
-            dhw_share=row.dhw_frac,              # design assessment of DHW share
-            dhw_target=46.0,                     # sampled value unknown: midpoint
-        )
-
-    print(f"SIMULATED (n={len(s)}, identical machine, physics only)")
-    cv_report(s[["weighted_flowT_minus_outsideT"]], y, "dT_w (measured, needs a year of monitoring)")
-    cv_report(s[["H_carnot_var"]], y, "H* (measured, needs a year of monitoring)")
-    s["H_design"] = s.apply(sim_design_hstar, axis=1)
-    cv_report(s[["H_design"]], y, "H*_design (design params only, closed form)")
-    eta = y / s.H_design
-    print(f"  implied eta = SPF/H*_design: mean {eta.mean():.3f}  sd {eta.std():.3f}  (machine is 47%)")
-
-    # absolute demand check: closed-form space heat vs the sim's actual
-    pred_space = s.apply(lambda r: space_heat_kwh(r.heat_loss / 23.0, r.setpointT, r.capacity), axis=1)
-    ratio = pred_space / (s.heat_kwh - s.dhw_heat_kwh)
-    print(f"  space-heat demand: predicted/actual median {ratio.median():.2f}  "
-          f"IQR {ratio.quantile(.25):.2f}-{ratio.quantile(.75):.2f}")
-
-    # ---- input-noise test: same systems, corrupted paper description ----
-    print("\nSIMULATED, fleet-grade input noise on the design sheet")
-    rng = np.random.default_rng(20260716)
-    for lbl, hl_logsd, ft_sd in [("exact inputs", 0.0, 0.0),
-                                 ("fleet-grade (HL log-sd 0.26, flowT sd 5.3K)", 0.26, 5.3),
-                                 ("half fleet noise", 0.13, 2.65)]:
-        over = np.exp(rng.normal(np.log(1 / 0.76) if hl_logsd else 0.0, hl_logsd, len(s)))
-        fte = rng.normal(10.0 if ft_sd else 0.0, ft_sd, len(s))
-        h = pd.Series([sim_design_hstar(s.iloc[i], hl_paper=s.heat_loss[i] * over[i],
-                                        ft_err=fte[i]) for i in range(len(s))])
-        cv_report(pd.DataFrame({"h": h}), y, f"H*_design, {lbl}")
-
-    # ============ 2. REAL FLEET (self-reported design params) ============
+    # ============ REAL FLEET (self-reported design params) ============
     df = load(find_csv())
     f = standard_filter(df, verbose=False)
     f = f[f.weighted_flowT_minus_outsideT.notna() & f.combined_cop.notna()].reset_index(drop=True)

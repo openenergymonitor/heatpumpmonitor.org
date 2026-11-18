@@ -225,7 +225,7 @@ zero. Temperatures explain about 0.60 of the variance and the rest is
 machine and install quality plus noise.
 
 The simulated fleets don't spread load more widely than the real one
-(sd of P 0.024–0.035 in the sims, 0.047 in the fleet), so that isn't why
+(sd of P 0.024–0.028 in the sims, 0.047 in the fleet), so that isn't why
 the simulator rated H\* so highly. It's that every simulated machine
 follows its COP model exactly.
 

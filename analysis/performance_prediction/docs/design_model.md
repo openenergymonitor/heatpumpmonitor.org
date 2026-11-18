@@ -33,13 +33,15 @@ SPF       ≈ η · H*_design
 
 The 24-hour smoothing stands in for thermal mass. A midday solar surplus
 can offset evening demand, and anything beyond that is thrown away.
+Modelling gains explicitly matters: an early version that folded them into
+a 1 K offset overestimated annual space heat 2.3× against the fleet.
 
 The inputs are heat loss at a design temperature, room setpoint, emitter
 capacity (or design flow temperature), system ΔT, rated capacity, DHW
 share and target temperature, internal gains and solar aperture
 (defaults 290 W and 4 m²), and a weather year with solar irradiance.
 The only tuned constant is the minimum modulation ratio, 0.25, set by a
-coarse search on the simulator.
+coarse search.
 
 The load terms (+3r/−8r) come from the simulator. The fleet test found
 they carry no real signal beyond fixed offsets (see
@@ -69,26 +71,12 @@ The default SPF (4.30) is above the fleet median (4.00). That's partly
 because the ratio at median inputs isn't the median ratio, and partly the
 tail of underperforming systems.
 
-## In the simulator, with truthful inputs
+## In the simulator
 
-On the July simulator sweep (293 designs, see README section 4), where
-the design parameters are known exactly:
-
-| Predictor | Needs | cv R² | 90% PI |
-|---|---|---|---|
-| Weighted ΔT | a year of monitoring | 0.63 | ±0.34 |
-| H\* | a year of monitoring | 0.90 | ±0.16 |
-| **H\*_design** | **the design sheet** | **0.82** | **±0.21** |
-
-The design sheet beats a year of measured ΔT. The cycling, setback and DHW
-scheduling that the simulator models and this closed form ignores add up
-to only about ±0.1. One thing does matter: modelling gains explicitly.
-An early version that folded gains into a 1 K offset overestimated annual
-space heat by 47% against the simulator and 2.3× against the fleet.
-
-The model hasn't been re-tested on the October simulator, which adds
-defrost and pipework losses. H\* itself does less well there (±0.25 to
-±0.33), so expect the design model to as well.
+The model hasn't yet been tested against the October simulator sweeps
+(README section 4), where the design parameters are known exactly. H\*
+itself scores ±0.25 to ±0.33 there, which is roughly the best a
+design-sheet version of it could hope for.
 
 ## On the real fleet
 
@@ -113,11 +101,8 @@ It falls apart, and even coldest-day ΔT on its own does better (cv R²
   systems), though it does track measured heat loss well (r = 0.83), so it
   works once scaled down.
 
-We can check that the inputs are the problem. Adding exactly these
-errors (heat loss log-sd 0.26, flow temperature sd 5.3 K) to the
-simulator's design sheets widens its interval from ±0.21 to ±0.38 and
-drops R² from 0.82 to 0.47. A more detailed model would hit the same wall,
-because it would be fed the same inputs.
+A more detailed model would hit the same wall, because it would be fed
+the same inputs.
 
 It isn't just careless installers either. On the trained-installer subset
 (Heat Geek / Heating Academy, n = 120) the model does a bit better (R²
@@ -161,12 +146,10 @@ temperature. That makes them reasonable design-stage stand-ins for
 operating temperature, but not separate effects. Declared design flow
 temperature adds nothing at all (p = 0.92).
 
-![design model](figures/design_model.png)
-
 ## Defrost
 
-The July simulator the model was tuned on has no defrost, so the model
-adds it separately rather than leaving it hidden inside η. Two estimates
+The model adds defrost separately rather than leaving it hidden inside
+η. Two estimates
 from
 [OEM forum thread 29547](https://community.openenergymonitor.org/t/what-scop-can-you-expect-from-a-system-that-runs-at-55c-and-50c-flow-temperatures-on-the-coldest-days/29547/18)
 agree:
@@ -187,9 +170,6 @@ are too similar in climate for this to separate systems much (r = 0.10).
 
 ## What to take from this
 
-- If systems ran as designed, a design-sheet model would be nearly as good
-  as a year of measured H\* in the July simulator (±0.21 vs ±0.16), and
-  a simple closed form is enough.
 - On today's metadata it does worse than measured ΔT, because declared
   parameters describe intent, not operation.
 - **The leverage is in commissioning data.** If we recorded the
@@ -198,8 +178,7 @@ are too similar in climate for this to separate systems much (r = 0.10).
   looks reachable. Treat declared design flow temperature as an upper
   bound.
 
-Caveats: constants were tuned on the simulator, which shares the model's
-functional form, so the simulator result is flattering. One weather year
+Caveats: one weather year
 (Llanberis 2024, shifted to each design temperature) stands in for local
 climate, and postcode degree-days would be better. System ΔT is fixed at
 5 K and room at 20 °C, and underfloor and fan coil emitters go through
