@@ -14,7 +14,7 @@ target + 5 K (50 °C target where blank), interpolated, no extrapolation above
 the highest declared temperature. The result is checked against the stored
 scop_spf.
 
-Usage: python scop_fleet_comparison.py [--fetch] [--url https://heatpumpmonitor.org]
+Usage: python scop_fleet_comparison.py [--fetch] [--url https://heatpumpmonitor.org] [--csv heatpumpmonitor_scop_fleet_<date>.csv]
 """
 
 import datetime
@@ -27,7 +27,7 @@ import numpy as np
 import pandas as pd
 
 from hpmon_analysis import ROOT, DAY
-from scop_mcs031_comparison import loo_predict, score
+from scop_mcs031_comparison import MCS031_DHW, loo_predict, score
 
 UA = {"User-Agent": "Mozilla/5.0"}
 
@@ -57,6 +57,9 @@ def fetch(base):
 
 
 def load(refresh, base):
+    if "--csv" in sys.argv:
+        path = sys.argv[sys.argv.index("--csv") + 1]
+        return pd.read_csv(path), path
     existing = sorted(glob.glob(str(ROOT / "heatpumpmonitor_scop_fleet_*.csv")))
     if existing and not refresh:
         return pd.read_csv(existing[-1]), existing[-1]
@@ -95,6 +98,12 @@ def main():
         dhw = scop_at(table, dhw_target + 5)
         metered = s.space_heat_kwh > 0 and s.water_heat_kwh > 0
         blend = None
+        # MCS 031 from the site's table SPF and hot water / 1.9, without the
+        # immersion term (electricity estimate only). Recomputed rather than
+        # read from mcs031_spf, which included it until Nov 2026.
+        mcs031 = np.nan
+        if s.mcs031_space_spf > 0 and metered:
+            mcs031 = (s.space_heat_kwh + s.water_heat_kwh) / (s.space_heat_kwh / s.mcs031_space_spf + s.water_heat_kwh / MCS031_DHW)
         if sh is not None and dhw is not None and metered:
             blend = (s.space_heat_kwh + s.water_heat_kwh) / (s.space_heat_kwh / sh + s.water_heat_kwh / dhw)
         rows.append({
@@ -105,7 +114,7 @@ def main():
             "actual": s.combined_cop, "space_cop": s.space_cop, "water_cop": s.water_cop,
             "scop_sh": sh, "scop_dhw": dhw, "scop_design": blend, "site_scop_spf": s.scop_spf,
             "scop_sh_measured": scop_at(table, max(s.space_flowT_mean, min(table))) if pd.notna(s.space_flowT_mean) else None,
-            "mcs031": s.mcs031_spf if s.mcs031_spf > 0 else np.nan, "dT": s.dT,
+            "mcs031": mcs031, "dT": s.dT,
         })
     r = pd.DataFrame(rows)
     r.to_csv(ROOT / "scop_fleet_comparison.csv", index=False, float_format="%.3f")

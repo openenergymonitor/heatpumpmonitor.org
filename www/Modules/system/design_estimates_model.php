@@ -7,11 +7,12 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 //
 // MCS 031 a) issue 5.0 (MIS 3005) and MCS 031 a): 2025 issue 2.0 (MCS:2025),
 // both 05/12/2025, share the same method: a generic SPF looked up from the
-// design flow temperature (Appendix Table 2, the same in every heat loss band),
-// hot water divided by a fixed factor, plus an immersion term when the
-// cylinder is pasteurised by immersion. Instead of the EPC demand used on a
+// design flow temperature (Appendix Table 2, the same in every heat loss band)
+// and hot water divided by a fixed factor. Instead of the EPC demand used on a
 // quote, the estimate is applied to the system's measured space and water
-// heat, so it compares efficiency only.
+// heat, so it compares efficiency only. MCS 031 also adds immersion
+// pasteurisation to its electricity estimate, but gives no SPF that includes
+// it, so the immersion term is reported separately and left out of the SPF.
 //
 // The manufacturer SCOP estimate reads the SCOP declared to MCS for the
 // system's heat pump model (heatpump_model.mcs_scop) at the design flow
@@ -28,7 +29,9 @@ class DesignEstimates
         'Air Source'    => array(35 => 4.0, 40 => 3.8, 45 => 3.4, 50 => 3.1, 55 => 2.8, 60 => 2.5, 65 => 2.5),
         'Ground Source' => array(35 => 4.3, 40 => 4.1, 45 => 3.7, 50 => 3.4, 55 => 3.1, 60 => 2.8, 65 => 2.8)
     );
-    private static $mcs031_water = array('Air Source' => 1.9, 'Ground Source' => 2.2);
+    // Paragraph (n): hot water / 1.9 for any heat pump. The 2.2 for ground
+    // source applies only to hot-water-only systems, which aren't compared here.
+    const MCS031_WATER_SPF = 1.9;
 
     // Existing radiators default to 60 °C unless a room-by-room heat loss justifies lower
     const MCS031_EXISTING_RADIATOR_FLOW = 60;
@@ -143,12 +146,13 @@ class DesignEstimates
             'source' => $source,
             'design_flow' => $flow,
             'space_spf' => $space_spf,
-            'water_spf' => self::$mcs031_water[$source],
+            'water_spf' => self::MCS031_WATER_SPF,
             'existing_radiators' => $existing_radiators,
             'space_spf_default_flow' => $existing_radiators ? self::mcs031_space_spf($source, self::MCS031_EXISTING_RADIATOR_FLOW) : null
         );
 
-        // Pasteurisation by immersion: raise the cylinder 10 K, 50 to 60 °C
+        // Pasteurisation by immersion: raise the cylinder 10 K, 50 to 60 °C.
+        // Part of the MCS 031 electricity estimate only, not the SPF below.
         $immersion = 0;
         $frequency = isset($meta->legionella_frequency) ? $meta->legionella_frequency : '';
         if (!empty($meta->legionella_immersion) && !empty($meta->cylinder_volume) && isset(self::$legionella_per_year[$frequency])) {
@@ -164,7 +168,7 @@ class DesignEstimates
         $water = (float) $stats->water_heat_kwh;
         if ($space <= 0 || $water <= 0) return $estimate;
 
-        $elec = $space / $space_spf + $water / $estimate['water_spf'] + $immersion;
+        $elec = $space / $space_spf + $water / $estimate['water_spf'];
         $estimate['combined_spf'] = ($space + $water) / $elec;
         return $estimate;
     }

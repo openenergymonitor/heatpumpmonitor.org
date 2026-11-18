@@ -11,8 +11,10 @@ ways:
    cylinder (55 °C flow) and 3.92 for 45 °C.
 2. **MCS 031 a) issue 5.0** (December 2025). This uses a generic SPF by
    design flow temperature, the same for every product and every heat loss
-   band, and divides hot water by 1.9. An immersion term is added if
-   pasteurisation is done by immersion.
+   band, and divides hot water by 1.9. MCS 031 also adds immersion
+   electricity where pasteurisation is done by immersion, but only to its
+   electricity estimate, so it is left out of the SPF here (as on the
+   site).
 
    | Design flow (°C) | ≤35 | 36–40 | 41–45 | 46–50 | 51–55 | 56–65 |
    |---|---|---|---|---|---|---|
@@ -41,7 +43,7 @@ Measured SPF H4 averages 4.08.
 | Method | Needs | Mean | Bias | MAE | R² | r² rescaled | ±90% |
 |---|---|---|---|---|---|---|---|
 | Manufacturer SCOP at design flow | design sheet | 3.93 | −0.15 | 0.34 | 0.15 | 0.27 | ±0.62 |
-| MCS 031 | design sheet | 3.18 | −0.90 | 0.90 | −4.0 | 0.18 | ±0.67 |
+| MCS 031 | design sheet | 3.19 | −0.90 | 0.90 | −4.0 | 0.17 | ±0.67 |
 | Weighted ΔT | a year of monitoring | 4.06 | −0.03 | 0.24 | 0.54 | 0.53 | ±0.49 |
 | ΔT + log annual heat | a year of monitoring | 4.06 | −0.03 | 0.24 | 0.56 | 0.56 | ±0.48 |
 
@@ -56,7 +58,7 @@ once its bias is removed.
 **MCS 031 is too pessimistic by about 0.9.** Every one of the 78 systems
 beat its MCS 031 estimate, and 90% beat even the optimistic end of its
 ±10% range. Its R² is negative because of that offset, and even rescaled
-it explains only 18% of the variation, since it only sees the design flow
+it explains only 17% of the variation, since it only sees the design flow
 temperature band and the hot water share.
 
 **Manufacturer SCOP gets the average about right, but for the wrong
@@ -105,7 +107,7 @@ target recorded, so 50 °C is used. Measured SPF H4 averages 4.02.
 | Method | Mean | Bias | MAE | R² | r² rescaled | ±90% | Within 10% | Beat it |
 |---|---|---|---|---|---|---|---|---|
 | Manufacturer SCOP at design flow | 3.91 | −0.11 | 0.36 | 0.24 | 0.29 | ±0.72 | 60% | 61% |
-| MCS 031 | 3.12 | −0.90 | 0.90 | −2.95 | 0.16 | ±0.80 | 12% | 98% |
+| MCS 031 | 3.13 | −0.89 | 0.90 | −2.93 | 0.16 | ±0.80 | 12% | 98% |
 | Weighted ΔT | 4.00 | −0.02 | 0.26 | 0.57 | 0.58 | ±0.55 | 77% | 52% |
 
 ΔT is a leave-one-out fit over the 282 systems.
@@ -113,10 +115,10 @@ target recorded, so 50 °C is used. Measured SPF H4 averages 4.02.
 | Model | n | Measured | SCOP | MCS 031 | Design flow | Measured space flow |
 |---|---|---|---|---|---|---|
 | Vaillant Arotherm+ | 93 | 4.13 | 3.96 | 3.17 | 40 | 31.8 |
-| Daikin Altherma 3 | 11 | 3.54 | 3.57 | 2.96 | 50 | 36.4 |
-| Viessmann Vitocal 150A | 8 | 3.91 | 3.94 | 3.12 | 41 | 32.1 |
+| Daikin Altherma 3 | 11 | 3.54 | 3.57 | 2.97 | 50 | 36.4 |
+| Viessmann Vitocal 150A | 8 | 3.91 | 3.94 | 3.13 | 41 | 32.1 |
 | Grant Aerona HP290 | 5 | 3.75 | 4.07 | 3.05 | 43 | 34.4 |
-| Other (Ecodan, Samsung Gen 6/7, Cosy, Arotherm Split) | 11 | 3.77 | 3.74 | 2.97 | 45 | 33.4 |
+| Other (Ecodan, Samsung Gen 6/7, Cosy, Arotherm Split) | 11 | 3.77 | 3.74 | 2.98 | 45 | 33.4 |
 
 Design and measured flow are medians.
 
@@ -127,9 +129,12 @@ ranks them worse (r² 0.15 against 0.28). The Grant Aerona systems are
 estimate doesn't rank systems at all (r 0.02). The groups are small,
 though.
 
-**MCS 031 is low for every model**, by 0.97 on the Arotherm+ and 0.72 on
-the others. 2 of the 128 systems come in below it. Measured SPF is a
-median 23% above MCS 031 (from 12% below to 64% above).
+**MCS 031 is low for every model**, by 0.96 on the Arotherm+ and 0.71 on
+the others. 3 of the 128 systems come in below it. Measured SPF is a
+median 29% above MCS 031 (from 11% below to 66% above). That range
+leaves out system 1235, which logs 96% of its heat as hot water at a
+28 °C flow and comes in 174% above, since MCS 031 puts almost all of it
+at 1.9.
 
 **The space/water split is the same as on the Arotherm+.** Declared
 design flow is a median 10 K above the measured mean space heating flow
@@ -170,7 +175,7 @@ apart in practice.
 
 - MCS 031 issue 5.0 underestimates every one of the Arotherm+ systems, by
   a median 28% (2% to 65%), and 98% of systems across all models, by a
-  median 23%. It doesn't work as an estimate of what a system will
+  median 29%. It doesn't work as an estimate of what a system will
   achieve.
 - Manufacturer SCOP gets the fleet average about right (3.9 against 4.0
   measured across all models), but only because two errors cancel.
@@ -189,8 +194,8 @@ Two documents dated 05/12/2025 are current, one per scheme: MCS 031 a)
 issue 5.0 (MIS 3005 contractors) and MCS 031 a): 2025 issue 2.0
 (MCS:2025 contractors). Their method and Table 2 are identical. The only
 change from issue 4.0 (December 2024, mandatory from March 2025) is hot
-water at 1.9 instead of 1.7, which moves the fleet estimate from 3.10 to
-3.18. Systems quoted before March 2025 got the older SCOP-based method
+water at 1.9 instead of 1.7, which moves the fleet estimate from 3.11 to
+3.19. Systems quoted before March 2025 got the older SCOP-based method
 (issue 3), which is close to the manufacturer SCOP method above. The
 MCS standard page still links issue 4.0.
 
@@ -198,8 +203,8 @@ Points of the method worth knowing:
 
 - **The customer sees the table SPF, not the blend.** The template shows
   the space heating SPF from Table 2 (3.52 on average for the systems
-  below) and an electricity range. The blended 3.18 is what that
-  electricity estimate implies.
+  below) and an electricity range. The blended 3.19 is what that
+  electricity estimate implies, leaving out the immersion.
 - **Existing radiators default to 60 °C** (SPF 2.5) unless a room-by-room
   heat loss justifies lower. Only 3 of the 78 have existing radiators
   alone, all declared at 35–45 °C. At the 60 °C default they'd get 2.39
@@ -211,7 +216,10 @@ Points of the method worth knowing:
 - **The heat loss band doesn't change the SPF**, only the star rating
   and emitter notes.
 - **Hot water is 1.9 regardless of cylinder temperature or coil.** The
-  immersion term (weekly 50 → 60 °C by immersion) is extra.
+  immersion term (weekly 50 → 60 °C by immersion) is extra, and only
+  part of the electricity estimate. MCS 031 gives no SPF that includes it,
+  so the SPFs here leave it out. Counting it would lower them by about
+  0.03 for a weekly 200 L cylinder.
 - **Alternative estimates are allowed.** A SCOP-based figure can be
   given, but not more prominently than the MCS one, and with a
   warning if it is much better.

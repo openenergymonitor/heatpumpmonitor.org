@@ -8,16 +8,19 @@ efficiency side is tested):
                 declared design flow temperature, hot water at SCOP(DHW target + 5 K).
                 Missing DHW target: 50 °C.
   mcs031        MCS 031 a) issue 5.0 Table 2 generic ASHP SPF at the design flow
-                temperature, hot water / 1.9, plus the pasteurisation immersion term
-                where the form says legionella is done by immersion.
+                temperature, hot water / 1.9. MCS 031 adds immersion pasteurisation
+                to its electricity estimate only, so it is left out of the SPF, as
+                on the site.
   scop_measured manufacturer SCOP at the measured mean space and water flow
                 temperatures (clamped to the table's 35-55 °C range, extrapolated
                 above 55 from the 50-55 slope). Shows the method with correct inputs.
   dT, dT_heat   our fleet fits (README section 1-2), leave-one-out over the full
                 filtered fleet, so they need a year of monitoring.
 
-Usage: python scop_mcs031_comparison.py
+Usage: python scop_mcs031_comparison.py [--csv heatpumpmonitor_all_fields_*.csv]
 """
+
+import sys
 
 import numpy as np
 import pandas as pd
@@ -27,7 +30,6 @@ from hpmon_analysis import ROOT, DAY, find_csv, load, standard_filter
 # MCS 031 a) issue 5.0, Appendix A Table 2, column 5 (ASHP). Same in every heat loss band.
 MCS031_ASHP = [(35, 4.0), (40, 3.8), (45, 3.4), (50, 3.1), (55, 2.8), (60, 2.5), (65, 2.5)]
 MCS031_DHW = 1.9
-LEGIONELLA_PER_YEAR = {"Weekly": 52, "Fornightly": 26, "Monthly": 12, "Daily": 365}
 
 
 def mcs031_spf(flow):
@@ -55,8 +57,8 @@ def scop_at(table, flow):
     return float(np.interp(flow, temps, scop))    # clamps below 35 °C
 
 
-def blend(space, water, spf_space, spf_water, extra_elec=0.0):
-    return (space + water) / (space / spf_space + water / spf_water + extra_elec)
+def blend(space, water, spf_space, spf_water):
+    return (space + water) / (space / spf_space + water / spf_water)
 
 
 def loo_predict(X, y):
@@ -78,7 +80,8 @@ def score(pred, actual):
 
 
 def main():
-    fleet = standard_filter(load(find_csv()), verbose=False)
+    csv_path = sys.argv[sys.argv.index("--csv") + 1] if "--csv" in sys.argv else find_csv()
+    fleet = standard_filter(load(csv_path), verbose=False)
     fleet = fleet[fleet.combined_cop.notna() & fleet.weighted_flowT_minus_outsideT.notna()].copy()
     years = fleet.combined_data_length / (365 * DAY)
     fleet["ln_heat"] = np.log(fleet.combined_heat_kwh / years / 1000)
@@ -96,10 +99,6 @@ def main():
         space, water = s.space_heat_kwh, s.water_heat_kwh
         if space + water <= 0:    # no space/water split: treat it all as space heat
             space, water = s.combined_heat_kwh, 0.0
-        immersion = 0.0
-        if s.legionella_immersion == 1 and s.cylinder_volume > 0:
-            f = LEGIONELLA_PER_YEAR.get(s.legionella_frequency, 52)
-            immersion = f * s.cylinder_volume * 10 * 4200 / 3.6e6
         space_flow = s.space_flowT_mean if pd.notna(s.space_flowT_mean) else s.weighted_flowT
         water_flow = s.water_flowT_mean if pd.notna(s.water_flowT_mean) else dhw_target + 5
         rows.append({
@@ -108,7 +107,7 @@ def main():
             "water_share": water / (space + water), "actual": s.combined_cop,
             "scop_sh": scop_at(table, s.flow_temp), "scop_dhw": scop_at(table, dhw_target + 5),
             "scop_design": blend(space, water, scop_at(table, s.flow_temp), scop_at(table, dhw_target + 5)),
-            "mcs031": blend(space, water, mcs031_spf(s.flow_temp), MCS031_DHW, immersion),
+            "mcs031": blend(space, water, mcs031_spf(s.flow_temp), MCS031_DHW),
             "scop_measured": blend(space, water, scop_at(table, space_flow), scop_at(table, water_flow)),
             "dT": s.dT, "dT_heat": s.dT_heat,
         })

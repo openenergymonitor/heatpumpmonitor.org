@@ -958,7 +958,6 @@ global $settings, $session, $path;
                 return 'MCS 031 is a performance estimate method developed by MCS (' + this.mcs031.method + '). '
                     + 'It looks up a seasonal performance factor from the design flow temperature and heat pump type, the same for every make and model, '
                     + 'and divides hot water demand by ' + this.mcs031.water_spf + '. '
-                    + 'Where the cylinder is pasteurised by immersion it adds the electricity for a 50 to 60 °C immersion cycle. '
                     + 'Fleet figures are averages over public MID-metered systems of the same type with a year of data and metered hot water, updated daily. '
                     + 'Measured figures use the H4 boundary.';
             },

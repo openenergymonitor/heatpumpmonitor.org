@@ -226,7 +226,6 @@ function context(c){
   if(c.flow_temp)n.push(`Design flow ${deg(c.flow_temp)}${c.design_temp!=null?` at ${deg(c.design_temp)} outside`:''}`);
   if(c.coldest_flow)n.push(`Coldest day: ran at ${deg(c.coldest_flow)}${c.coldest_out!=null?` at ${deg(c.coldest_out)} outside`:''}`);
   if(c.emitters)n.push(c.emitters[0].toUpperCase()+c.emitters.slice(1));
-  if(c.immersion&&c.mcs_space)n.push('Immersion pasteurisation, counted in the MCS 031 hot water figure');
   return h+n.map(t=>`<div class="tx">${t}</div>`).join('');
 }
 function showTip(d,ev){
