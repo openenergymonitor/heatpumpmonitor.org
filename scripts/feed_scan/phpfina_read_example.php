@@ -6,9 +6,6 @@ chdir("/var/www/heatpumpmonitor");
 define('EMONCMS_EXEC', 1);
 require "Lib/load_database.php";
 
-require("Modules/user/user_model.php");
-$user = new User($mysqli,false);
-
 require ("Modules/system/system_model.php");
 $system = new System($mysqli);
 
