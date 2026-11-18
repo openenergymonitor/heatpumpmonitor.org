@@ -3,7 +3,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 $id = 2;
 if (isset($_GET['id'])) {
-    $id = $_GET['id'];
+    // Echoed into an inline <script> below: must be an int, never raw input
+    $id = (int) $_GET['id'];
 }
 ?>
 <script src="<?php echo $path; ?>theme/vendor/vue-2.7.16/vue.min.js" integrity="sha384-YVYXhPGIH/Gmcr0W5Rin4PcpcsG1a4pcdUUod1CnbDEJut7XiUaJtSlNKeRLJBPk"></script>

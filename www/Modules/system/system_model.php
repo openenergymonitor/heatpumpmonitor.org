@@ -502,6 +502,11 @@ class System
         $new_system = false;
         if ($systemid==false) {
 
+            // Checked before create() so a refused link leaves no empty row behind
+            if ($validate && !$this->app_link_allowed($userid, $userid, 0, '', $form_data)) {
+                return array("success"=>false, "message"=>"That MyHeatpump app is not linked to your account");
+            }
+
             // Determine owner of system based on app_id first
             $available_apps = $this->available_apps($userid);
 
@@ -528,7 +533,11 @@ class System
 
         // Compile change log
         $original = $this->get($userid, $systemid);
-        
+
+        if ($validate && !$this->app_link_allowed($userid, $original->userid, $original->app_id, $original->readkey, $form_data)) {
+            return array("success"=>false, "message"=>"That MyHeatpump app is not linked to your account");
+        }
+
         // Loop through the form schema and generate the query
         $query = array();
         $codes = array();
@@ -630,6 +639,44 @@ class System
                 "new_system"=>$new_system
             );
         }
+    }
+
+    /**
+     * May this save point the system at the app_id / readkey in $form_data?
+     *
+     * app_id decides whose emoncms data the system reads, and some of those
+     * reads skip emoncms's own apikey check: get_daily(), process_from_daily()
+     * and the CLI loaders query myheatpump_daily_stats and the app config
+     * straight from the emoncms database by app_id. So the client cannot be
+     * trusted to choose it. A new link must be one of the apps the editor, or
+     * the system's owner, can see (available_apps() covers sub accounts), with
+     * that app owner's current read key.
+     *
+     * Unchanged values pass, so a system whose stored readkey has gone stale
+     * can still be saved; refresh_readkey in the form sends the matching one.
+     * Unlinking (app_id 0) always passes. Site admins may link any app.
+     *
+     * @return bool
+     */
+    private function app_link_allowed($userid, $owner_userid, $original_app_id, $original_readkey, $form_data) {
+        $original_app_id = (int) $original_app_id;
+        $original_readkey = (string) $original_readkey;
+
+        $app_id = isset($form_data->app_id) ? (int) $form_data->app_id : $original_app_id;
+        $readkey = isset($form_data->readkey) ? (string) $form_data->readkey : $original_readkey;
+
+        if ($app_id === $original_app_id && $readkey === $original_readkey) return true;
+        if ($app_id === 0) return true;
+        if ($this->is_admin($userid)) return true;
+
+        foreach (array_unique(array((int) $userid, (int) $owner_userid)) as $uid) {
+            foreach ($this->available_apps($uid) as $app) {
+                if ($app['id'] === $app_id && hash_equals((string) $app['readkey'], $readkey)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     public function computed_fields($systemid=false) {
