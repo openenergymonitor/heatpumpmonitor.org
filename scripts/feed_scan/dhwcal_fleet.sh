@@ -1,5 +1,5 @@
 #!/bin/bash
-# Heat meter calibration check from DHW reheats (feed_scan_8.php) for the
+# Heat meter calibration check from DHW reheats (dhwcal.php) for the
 # validated Arotherm+ fleet. Systems without a cylinder temperature feed or
 # volume are listed as failed; that is expected.
 #
@@ -15,7 +15,7 @@ OUT=$(pwd)/scripts/feed_scan/dhwcal
 mkdir -p "$OUT"
 
 PHP="nice -n 10 php -d opcache.enable_cli=1 -d opcache.jit=tracing -d opcache.jit_buffer_size=64M"
-SCAN="$(pwd)/scripts/feed_scan/feed_scan_8.php"
+SCAN="$(pwd)/scripts/feed_scan/dhwcal.php"
 
 grep -v '^#' "$IDS" | awk '{print $1}' \
     | xargs -n 1 -P "$PAR" sh -c "$PHP $SCAN \$0 365 --out=$OUT > $OUT/dhwcal_\$0.txt 2>&1; echo \$(date +%H:%M:%S) dhwcal_\$0"

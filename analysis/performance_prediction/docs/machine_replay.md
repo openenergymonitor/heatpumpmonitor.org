@@ -21,15 +21,15 @@ All scans read the phpfina feeds directly, so they run on the
 HeatpumpMonitor.org server from the repo root. The Python summaries run
 anywhere the scan outputs can be read, using the venv from the README.
 
-### Step 1. Replay one system: `scripts/feed_scan/feed_scan_6.php`
+### Step 1. Replay one system: `scripts/feed_scan/replay.php`
 
 ```
-php scripts/feed_scan/feed_scan_6.php <id> [days] [--qnom=kW] [--no-dhw-guess] [--out=dir] [--model=v2|generic|unit]
+php scripts/feed_scan/replay.php <id> [days] [--qnom=kW] [--no-dhw-guess] [--out=dir] [--model=v2|generic|unit]
 ```
 
 The scan reads the system's elec, heat, flowT, returnT, outsideT and (if
 present) DHW flag feeds over the last 365 days, using the same sample
-handling as `feed_scan_4.php`: nulls forward-filled across gaps under
+handling as `hstar_fleet.php`: nulls forward-filled across gaps under
 15 min, and running meaning elec at or above the app's starting power. It
 cross-checks its SPF against the published last-365 stats; across the
 fleet it matches to within 0.02 for all but 5 systems.
@@ -141,10 +141,10 @@ It writes `twins/replay_fleet.csv`, one row per system, or
 `twins/replay_fleet_<model>.csv` for the other models. Everything below
 uses v2 unless it says otherwise.
 
-### Step 4. Pump-only scan: `scripts/feed_scan/feed_scan_7.php`
+### Step 4. Pump-only scan: `scripts/feed_scan/pumponly.php`
 
 ```
-php scripts/feed_scan/feed_scan_7.php <id> [days] [--out=dir]
+php scripts/feed_scan/pumponly.php <id> [days] [--out=dir]
 scripts/feed_scan/pumponly_fleet.sh "" 3
 ```
 
@@ -204,10 +204,10 @@ min-speed penalty and quality fit by model, the level by size, whether the
 models rank the systems the same way, the within-size links, and the
 example systems.
 
-### Step 7. Heat meter check from hot water reheats: `scripts/feed_scan/feed_scan_8.php`
+### Step 7. Heat meter check from hot water reheats: `scripts/feed_scan/dhwcal.php`
 
 ```
-php scripts/feed_scan/feed_scan_8.php <id> [days] [--out=dir] [--volume=L]
+php scripts/feed_scan/dhwcal.php <id> [days] [--out=dir] [--volume=L]
 scripts/feed_scan/dhwcal_fleet.sh "" 3
 ```
 
@@ -238,10 +238,10 @@ ratio a little above 1; water below the coil that doesn't heat pushes it
 below. So it's a calibration figure to compare between systems, or to
 follow over time in one system, rather than one to hold to exactly 1.
 
-### Step 8. Low modulation diagnostics: `scripts/feed_scan/feed_scan_9.php`
+### Step 8. Low modulation diagnostics: `scripts/feed_scan/lowmod.php`
 
 ```
-php scripts/feed_scan/feed_scan_9.php <id> [days] [--qnom=kW] [--out=dir] [--dump=YYYY-MM-DD,...]
+php scripts/feed_scan/lowmod.php <id> [days] [--qnom=kW] [--out=dir] [--dump=YYYY-MM-DD,...]
 scripts/feed_scan/lowmod_fleet.sh 3 [ids...]
 ```
 

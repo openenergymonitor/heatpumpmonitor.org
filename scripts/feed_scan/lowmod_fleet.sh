@@ -1,5 +1,5 @@
 #!/bin/bash
-# Low modulation diagnostics (feed_scan_9.php) for the validated Arotherm+ fleet,
+# Low modulation diagnostics (lowmod.php) for the validated Arotherm+ fleet,
 # at the size twins/replay_fleet.py chose (declared, or one size up where upsized),
 # so the speed bands match the replay.
 #
@@ -17,7 +17,7 @@ OUT=$(pwd)/scripts/feed_scan/lowmod
 mkdir -p "$OUT"
 
 PHP="nice -n 10 php -d opcache.enable_cli=1 -d opcache.jit=tracing -d opcache.jit_buffer_size=64M"
-SCAN="$(pwd)/scripts/feed_scan/feed_scan_9.php"
+SCAN="$(pwd)/scripts/feed_scan/lowmod.php"
 
 # one line per scan: system id, second argument (days, or --qnom when upsized), output name
 awk -F, 'NR > 1 {

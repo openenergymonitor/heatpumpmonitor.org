@@ -252,7 +252,7 @@ covers 2.1–8.0 kW of real output. Below 2.1 kW the machine has to cycle.
 
 **The plan:**
 
-1. Extend the stable-episode detector in `feed_scan_2.php` into a fleet
+1. Extend the stable-episode detector in `steady_episodes_fleet.php` into a fleet
    extractor for the Arotherm systems. An episode is at least 10 minutes
    with the compressor on and flowT steady. Record mean COP, output,
    flowT, returnT, outsideT and flow rate for each.
@@ -283,7 +283,7 @@ Practical notes:
 
 - We don't have compressor speed in the feeds, so compare on output kW.
   Within one badge size that also sidesteps the capacity question.
-- `feed_scan_2`'s stability thresholds (flowT sd < 0.01 K over 10 min,
+- `steady_episodes_fleet`'s stability thresholds (flowT sd < 0.01 K over 10 min,
   slope < 0.5 K/h, elec > 150 W) were tuned on one system and will
   probably need loosening. It's also worth requiring stable returnT, flow
   rate and outsideT.
@@ -293,8 +293,8 @@ Practical notes:
 
 ---
 
-*Files: in `scripts/feed_scan/` at the repo root, `feed_scan_2.php`
-(episode detector), `feed_scan_4.php` (fleet H\* scan) and
-`feed_scan_5.php` (histograms); here, `scripts/analyse_hstar_fleet.py`,
+*Files: in `scripts/feed_scan/` at the repo root, `steady_episodes_fleet.php`
+(episode detector), `hstar_fleet.php` (fleet H\* scan) and
+`hstar_hist_fleet.php` (histograms); here, `scripts/analyse_hstar_fleet.py`,
 `analyse_hstar_offsets.py`, `scripts/sim_model_comparison.py`, `twins/`,
 `hstar_fleet.csv`, `hstar_fleet_hist.csv` and `hstar_hist.csv`.*

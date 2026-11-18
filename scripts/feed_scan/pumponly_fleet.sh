@@ -1,5 +1,5 @@
 #!/bin/bash
-# Heat meter dT offset from pump-only running (feed_scan_7.php) for the
+# Heat meter dT offset from pump-only running (pumponly.php) for the
 # validated Arotherm+ fleet, to compare with the machine replay level.
 #
 # Usage, from anywhere: scripts/feed_scan/pumponly_fleet.sh [ids_file] [parallel]
@@ -14,7 +14,7 @@ OUT=$(pwd)/scripts/feed_scan/pumponly
 mkdir -p "$OUT"
 
 PHP="nice -n 10 php -d opcache.enable_cli=1 -d opcache.jit=tracing -d opcache.jit_buffer_size=64M"
-SCAN="$(pwd)/scripts/feed_scan/feed_scan_7.php"
+SCAN="$(pwd)/scripts/feed_scan/pumponly.php"
 
 grep -v '^#' "$IDS" | awk '{print $1}' \
     | xargs -n 1 -P "$PAR" sh -c "$PHP $SCAN \$0 365 --out=$OUT > $OUT/pumponly_\$0.txt 2>&1; echo \$(date +%H:%M:%S) pumponly_\$0"

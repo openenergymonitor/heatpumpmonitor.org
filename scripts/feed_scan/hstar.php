@@ -9,7 +9,7 @@
 //   heat-weighted mean flowT, outsideT and (flowT - outsideT)
 //   measured SPF over the same window (sum heat / sum elec), for SPF / H*
 //
-// Usage: php feed_scan_3.php [system_id]
+// Usage: php hstar.php [system_id]
 
 $dir = dirname(__FILE__);
 chdir("/var/www/heatpumpmonitor");

@@ -3,7 +3,7 @@
 meter, pump or pipework effect?
 
 Reads twins/replay_fleet.csv (from replay_fleet.py), the replay JSONs and the
-pump-only scans (scripts/feed_scan/feed_scan_7.php via pumponly_fleet.sh):
+pump-only scans (scripts/feed_scan/pumponly.php via pumponly_fleet.sh):
 
   1. heat meter dT offset in pump-only running vs the level
   2. the gap as extra watts of electricity, by speed, and pump-only power

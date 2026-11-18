@@ -42,14 +42,14 @@
 // load while running (extra W the same in every cell) and a heat meter
 // flow-return dT error (needed offset the same in every cell).
 //
-// Sample handling follows feed_scan_4.php: nulls forward-filled across gaps
+// Sample handling follows hstar_fleet.php: nulls forward-filled across gaps
 // under 15 min, measured SPF over samples with elec and heat present and
 // elec >= 0. Running means elec >= the app's starting_power (default 150 W),
 // as in the published stats.
 //
 // Output: report to stdout + replay_<id>.json alongside this script.
 //
-// Usage: php feed_scan_6.php [system_id] [days] [--qnom=kW] [--no-dhw-guess] [--out=dir] [--model=name]
+// Usage: php replay.php [system_id] [days] [--qnom=kW] [--no-dhw-guess] [--out=dir] [--model=name]
 //   defaults 75, 365; --qnom replaces the declared rated output in the fit;
 //   --no-dhw-guess treats everything as space heating when there's no DHW flag;
 //   --out writes the JSON there instead of alongside this script;
@@ -182,7 +182,7 @@ foreach ($feedids as $key => $feedid) {
     $meta[$key] = $m;
 }
 
-// Window: last $scan_days to the next Europe/London midnight, as feed_scan_4,
+// Window: last $scan_days to the next Europe/London midnight, as hstar_fleet,
 // clamped to the required feeds (the DHW flag can start later; missing is not DHW)
 $tz = new DateTimeZone('Europe/London');
 $date = new DateTime();
@@ -834,7 +834,7 @@ function cop_fit_load($p, $qnom_kw, $flowT, $outsideT, $output_kw)
 }
 
 // Forward-fill NANs with the last valid value across gaps shorter than
-// FILL_MAX_S (as feed_scan_4.php, matching remove_null_values)
+// FILL_MAX_S (as hstar_fleet.php, matching remove_null_values)
 function fill_nulls(&$data, $n, &$state)
 {
     for ($j = 0; $j < $n; $j++) {
@@ -854,7 +854,7 @@ function fill_nulls(&$data, $n, &$state)
 }
 
 // Read a block of $n 10s-aligned samples starting at $t0 from a phpfina feed
-// (as feed_scan_4.php). Other intervals are resampled by repetition; missing is NAN.
+// (as hstar_fleet.php). Other intervals are resampled by repetition; missing is NAN.
 function load_block($fh, $meta, $t0, $n)
 {
     $interval = $meta->interval;

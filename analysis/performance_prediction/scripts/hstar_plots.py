@@ -6,7 +6,7 @@
 
 Validated air source systems from the raw feed scan, as in analyse_hstar_fleet.py.
 r-bar comes from the per-system histogram hstar_hist.csv (not in git; regenerate
-with scripts/feed_scan/feed_scan_5.php at the repo root).
+with scripts/feed_scan/hstar_hist_fleet.php at the repo root).
 
 Usage: python3 scripts/hstar_plots.py
 """

@@ -1,12 +1,12 @@
 #!/bin/bash
-# Machine replay (feed_scan_6.php) for the validated Arotherm+ fleet. Each system
+# Machine replay (replay.php) for the validated Arotherm+ fleet. Each system
 # runs at its declared capacity and again at the next Arotherm+ size up, since
 # some declared sizes are wrong; twins/replay_fleet.py picks between the two.
 #
 # Usage, from anywhere: scripts/feed_scan/replay_fleet.sh [ids_file] [parallel] [model]
 #   ids_file: lines of "id kW" (default analysis/performance_prediction/twins/replay_ids.txt)
 #   parallel: scans run at once (default 1); they run under nice, as this is a live server
-#   model: datasheet COP model, v2 (default), generic or unit (see feed_scan_6.php)
+#   model: datasheet COP model, v2 (default), generic or unit (see replay.php)
 # Output: scripts/feed_scan/replay/replay_<id>[_q<kW>][_m<model>].json and .txt
 
 cd "$(dirname "$0")/../.."
@@ -21,7 +21,7 @@ mkdir -p "$OUT"
 # PHP's tracing JIT runs the scan about 3x faster with identical output
 # (ignored where opcache isn't available)
 PHP="nice -n 10 php -d opcache.enable_cli=1 -d opcache.jit=tracing -d opcache.jit_buffer_size=64M"
-SCAN="$(pwd)/scripts/feed_scan/feed_scan_6.php"
+SCAN="$(pwd)/scripts/feed_scan/replay.php"
 
 # one line per scan: system id, second argument (days, or the upsized --qnom), output name
 grep -v '^#' "$IDS" | while read id kw; do

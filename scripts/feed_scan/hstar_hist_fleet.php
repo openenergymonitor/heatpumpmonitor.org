@@ -1,6 +1,6 @@
 <?php
 
-// Fleet scan with histogram export: like feed_scan_4.php (same system
+// Fleet scan with histogram export: like hstar_fleet.php (same system
 // selection, stats window, forward-fill and coincidence semantics) but
 // additionally accumulates, per system, a sparse heat-weighted histogram of
 // (flowT, outsideT, load ratio) so that ANY offset-family Carnot metric
@@ -14,10 +14,10 @@
 // analysis/performance_prediction/analyse_hstar_offsets.py
 //
 // Output alongside this script:
-//   hstar_fleet_hist.csv  - one summary row per system (same columns as feed_scan_4)
+//   hstar_fleet_hist.csv  - one summary row per system (same columns as hstar_fleet)
 //   hstar_hist.csv        - histogram rows: id, heat_kwh, flowT, outsideT, r
 //
-// Usage: php feed_scan_5.php [max_systems]   (0 or omitted = all)
+// Usage: php hstar_hist_fleet.php [max_systems]   (0 or omitted = all)
 
 $dir = dirname(__FILE__);
 chdir($dir."/../../www");

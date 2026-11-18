@@ -3,11 +3,11 @@
 // Low modulation diagnostics: what steady space heating looks like, minute by
 // minute, in each inferred compressor speed band.
 //
-// The machine replay (feed_scan_6.php) found that some systems (269, 516, 741)
+// The machine replay (replay.php) found that some systems (269, 516, 741)
 // are close to their peers at 50-60 rps but need 15-23% more electricity for
 // the same heat in the band just above minimum speed. This scan asks whether
 // that band is steady running or the compressor hunting around its lower limit.
-// States, speed inference and the v2 datasheet fit are as feed_scan_6.php, so
+// States, speed inference and the v2 datasheet fit are as replay.php, so
 // the band totals match the replay's map.
 //
 // For each steady sample (10 s) in a speed band it looks at a centred window of
@@ -36,7 +36,7 @@
 //
 // Output: report to stdout + lowmod_<id>.json (and dump_<id>_<date>.csv).
 //
-// Usage: php feed_scan_9.php [system_id] [days] [--qnom=kW] [--no-dhw-guess] [--out=dir]
+// Usage: php lowmod.php [system_id] [days] [--qnom=kW] [--no-dhw-guess] [--out=dir]
 //        [--dump=YYYY-MM-DD[,YYYY-MM-DD...]]
 //   (lowmod_fleet.sh runs the Arotherm+ fleet)
 
@@ -98,14 +98,14 @@ $NEAR_LABELS = array("DHW after", "DHW before", "neither");
 $STATES = array("steady", "startup", "dhw", "defrost", "post_dhw", "beyond", "off", "unclass");
 $S = array_flip($STATES);
 
-// 0. The PHP port must match the JS fit (reference values as feed_scan_6.php)
+// 0. The PHP port must match the JS fit (reference values as replay.php)
 foreach (array(array(5, 35, 7, 2.5, 4.652104, 34.3901), array(7, 40, 0, 6.5, 3.304047, 79.3765)) as $p) {
     if (abs(cop_fit_v2($p[0], $p[1], $p[2], $p[3]) - $p[4]) > 1e-5 || abs(estimate_speed($p[0], $p[1], $p[2], $p[3]) - $p[5]) > 1e-3) {
         die("COP fit parity check failed at ".implode(",", $p)."\n");
     }
 }
 
-// 1. System meta and feeds (as feed_scan_6.php, plus the flow rate if present)
+// 1. System meta and feeds (as replay.php, plus the flow rate if present)
 $result = $mysqli->query("SELECT app_id, hp_manufacturer, hp_model, hp_output FROM system_meta WHERE id = $system_id");
 if (!$result || !($s = $result->fetch_object())) die("no system_meta row for $system_id\n");
 $qnom = $qnom_override > 0 ? $qnom_override : (float) $s->hp_output;
@@ -244,7 +244,7 @@ while ($i < $npoints) {
         fill_nulls($data[$f], $n, $fill[$f]);
     }
 
-    // pass 1: state, band and model elec per sample (sequential state as feed_scan_6)
+    // pass 1: state, band and model elec per sample (sequential state as replay)
     $A_st = array_fill(0, $n, -1);
     $A_band = array_fill(0, $n, -1);
     $A_e = array_fill(0, $n, NAN);
@@ -450,7 +450,7 @@ $xw = function ($a) { return $a['n'] > 0 ? ($a['e'] - $a['em']) / $a['n'] : null
 $steady_h = 0;
 foreach ($band_acc as $a) $steady_h += $hrs($a);
 
-print "Steady space heating by inferred speed band (field/model as feed_scan_6's map)\n";
+print "Steady space heating by inferred speed band (field/model as replay's map)\n";
 $tab = array();
 foreach ($BAND_LABELS as $b => $label) {
     $a = $band_acc[$b];
@@ -593,7 +593,7 @@ foreach ($dump_set as $d) print "Dump: $out_dir/dump_{$system_id}_$d.csv\n";
 
 function csvn($x, $dp) { return $x == $x ? number_format((float) $x, $dp, '.', '') : ""; }
 
-// The functions below are copied from feed_scan_6.php
+// The functions below are copied from replay.php
 
 function bin_index($x, $edges)
 {

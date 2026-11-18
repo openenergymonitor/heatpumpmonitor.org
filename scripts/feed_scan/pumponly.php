@@ -6,7 +6,7 @@
 // meter sees should be close to zero, so what it reads is mostly the offset
 // between its two temperature sensors. A small offset matters at heat pump
 // dTs: 0.1 K at a 2.7 K running dT is a 4% heat error. This scan measures it
-// so it can be compared with the replay level (feed_scan_6.php) and with the
+// so it can be compared with the replay level (replay.php) and with the
 // offset that would explain each system's gap to the datasheet.
 //
 // The true dT isn't exactly zero while the pump runs:
@@ -24,10 +24,10 @@
 // flow x dT while running, so the scan also reports k from steady running
 // (about 69.7 W per L/min per K for water, a bit less with glycol).
 //
-// Sample handling follows feed_scan_6.php (nulls forward-filled across gaps
+// Sample handling follows replay.php (nulls forward-filled across gaps
 // under 15 min, running means elec >= starting_power).
 //
-// Usage: php feed_scan_7.php <system_id> [days] [--out=dir]
+// Usage: php pumponly.php <system_id> [days] [--out=dir]
 // Output: report to stdout + pumponly_<id>.json in --out (default ./pumponly)
 
 $dir = dirname(__FILE__);
@@ -44,7 +44,7 @@ foreach (array_slice($argv, 1) as $a) {
     if (strpos($a, "--out=") === 0) $out_dir = rtrim(substr($a, 6), "/");
     else $positional[] = $a;
 }
-if (!isset($positional[0])) die("usage: feed_scan_7.php <system_id> [days] [--out=dir]\n");
+if (!isset($positional[0])) die("usage: pumponly.php <system_id> [days] [--out=dir]\n");
 $system_id = (int) $positional[0];
 $scan_days = isset($positional[1]) ? (int) $positional[1] : 365;
 if ($out_dir[0] != "/") $out_dir = $start_cwd."/".$out_dir;
@@ -101,7 +101,7 @@ foreach ($feedids as $key => $feedid) {
     $meta[$key] = $m;
 }
 
-// Window as feed_scan_6.php
+// Window as replay.php
 $tz = new DateTimeZone('Europe/London');
 $date = new DateTime();
 $date->setTimezone($tz);
@@ -349,7 +349,7 @@ function bin_index($x, $edges)
 function fmt($x, $dp) { return $x === null ? "--" : number_format((float) $x, $dp, '.', ''); }
 
 // Forward-fill NANs with the last valid value across gaps shorter than
-// FILL_MAX_S (as feed_scan_6.php)
+// FILL_MAX_S (as replay.php)
 function fill_nulls(&$data, $n, &$state)
 {
     for ($j = 0; $j < $n; $j++) {
@@ -369,7 +369,7 @@ function fill_nulls(&$data, $n, &$state)
 }
 
 // Read a block of $n 10s-aligned samples starting at $t0 from a phpfina feed
-// (as feed_scan_6.php). Other intervals are resampled by repetition; missing is NAN.
+// (as replay.php). Other intervals are resampled by repetition; missing is NAN.
 function load_block($fh, $meta, $t0, $n)
 {
     $interval = $meta->interval;

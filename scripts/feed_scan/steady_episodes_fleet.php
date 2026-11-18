@@ -4,9 +4,9 @@
 // MID-metered, H4 metering-boundary system and write them to signature_episodes.
 //
 // The system list uses the same combined_meta_stats_query filters as
-// find_homes_like_this / feed_scan_4.php. Public visibility (share + published)
+// find_homes_like_this / hstar_fleet.php. Public visibility (share + published)
 // is enforced inside combined_meta_stats_query and cannot be overridden here.
-// feed_scan_4's hp_type='Air Source' filter is intentionally NOT applied: that
+// hstar_fleet's hp_type='Air Source' filter is intentionally NOT applied: that
 // restriction exists for H*'s evaporator reconstruction, which this raw episode
 // scan does not do.
 //
@@ -15,7 +15,7 @@
 // flowT is stable (rolling 10 min stdev below STDEV_MAX). Each episode is
 // collapsed to a single representative point (mean of each feed).
 //
-// Usage: php feed_scan_2.php [max_systems]   (0 or omitted = all)
+// Usage: php steady_episodes_fleet.php [max_systems]   (0 or omitted = all)
 
 $dir = dirname(__FILE__);
 chdir($dir."/../../www");

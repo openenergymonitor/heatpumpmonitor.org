@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Analyse hstar_fleet.csv produced by feed_scan_4.php.
+"""Analyse hstar_fleet.csv produced by hstar_fleet.php.
 
 Filters to air source systems, validates the feed-scan weighted temperatures
 against the recorded stats, and compares how well weighted dT, fixed-offset

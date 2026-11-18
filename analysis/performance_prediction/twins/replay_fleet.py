@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Summarise the machine replay (scripts/feed_scan/feed_scan_6.php) across the
+"""Summarise the machine replay (scripts/feed_scan/replay.php) across the
 Arotherm+ fleet and ask what drives each system's level against its datasheet.
 
 Each replay compares measured electricity with the Arotherm+ datasheet fit at

@@ -2,7 +2,7 @@
 """Offset grid search for harmonic Carnot SPF prediction metrics.
 
 Reads the per-system heat-weighted (flowT, outsideT, load-ratio) histogram
-exported by scripts/feed_scan/feed_scan_5.php and reconstructs, offline, any
+exported by scripts/feed_scan/hstar_hist_fleet.php and reconstructs, offline, any
 metric of the family
 
     Tcond = flowT + a0 + a1*r          (K, condenser side)

@@ -6,7 +6,7 @@
 // stored in the cylinder: volume x 1.163 Wh/(L K) x the cylinder temperature
 // rise. A flow meter reading a share low would show as a ratio
 //   meter heat / stored heat
-// that same share below the fleet's. The machine replay (feed_scan_6.php)
+// that same share below the fleet's. The machine replay (replay.php)
 // can't tell a heat meter under-read from a machine or electricity-side
 // fault; this check doesn't involve the electricity meter or the datasheet.
 //
@@ -42,10 +42,10 @@
 // for sensor lag. Night reheats (00-06 local) have fewest draws.
 //
 // Reheats are runs of the DHW flag (gaps under MERGE_S merged); without a
-// flag feed, running with flowT above DHW_GUESS_FLOWT, as feed_scan_6.php.
+// flag feed, running with flowT above DHW_GUESS_FLOWT, as replay.php.
 // Cylinder volume comes from system_meta.cylinder_volume, or --volume.
 //
-// Usage: php feed_scan_8.php <system_id> [days] [--out=dir] [--volume=L]
+// Usage: php dhwcal.php <system_id> [days] [--out=dir] [--volume=L]
 // Output: report to stdout + dhwcal_<id>.json in --out (default ./dhwcal)
 
 $dir = dirname(__FILE__);
@@ -64,7 +64,7 @@ foreach (array_slice($argv, 1) as $a) {
     else if (strpos($a, "--volume=") === 0) $volume_override = (float) substr($a, 9);
     else $positional[] = $a;
 }
-if (!isset($positional[0])) die("usage: feed_scan_8.php <system_id> [days] [--out=dir] [--volume=L]\n");
+if (!isset($positional[0])) die("usage: dhwcal.php <system_id> [days] [--out=dir] [--volume=L]\n");
 $system_id = (int) $positional[0];
 $scan_days = isset($positional[1]) ? (int) $positional[1] : 365;
 if ($out_dir[0] != "/") $out_dir = $start_cwd."/".$out_dir;
@@ -134,7 +134,7 @@ foreach ($feedids as $key => $feedid) {
     $meta[$key] = $m;
 }
 
-// Window as feed_scan_6.php
+// Window as replay.php
 $tz = new DateTimeZone('Europe/London');
 $date = new DateTime();
 $date->setTimezone($tz);
@@ -466,7 +466,7 @@ function line_fit($x, $y)
 function fmt($x, $dp) { return $x === null ? "--" : number_format((float) $x, $dp, '.', ''); }
 
 // Forward-fill NANs with the last valid value across gaps shorter than
-// FILL_MAX_S (as feed_scan_6.php)
+// FILL_MAX_S (as replay.php)
 function fill_nulls(&$data, $n, &$state)
 {
     for ($j = 0; $j < $n; $j++) {
@@ -486,7 +486,7 @@ function fill_nulls(&$data, $n, &$state)
 }
 
 // Read a block of $n 10s-aligned samples starting at $t0 from a phpfina feed
-// (as feed_scan_6.php). Other intervals are resampled by repetition; missing is NAN.
+// (as replay.php). Other intervals are resampled by repetition; missing is NAN.
 function load_block($fh, $meta, $t0, $n)
 {
     $interval = $meta->interval;

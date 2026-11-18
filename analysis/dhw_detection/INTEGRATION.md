@@ -111,7 +111,7 @@ The cycles CSVs are plain text so PHP can read them.
 
 Ways to use them on HPM:
 
-- **In the scan scripts.** Where a system has no trusted flag, take hot-water periods from `system_<id>_cycles.csv` instead of the flowT > 45 °C guess (`DHW_GUESS_FLOWT`, `feed_scan_6.php` and `feed_scan_8.php`).
+- **In the scan scripts.** Where a system has no trusted flag, take hot-water periods from `system_<id>_cycles.csv` instead of the flowT > 45 °C guess (`DHW_GUESS_FLOWT`, `replay.php` and `dhwcal.php`).
 - **Splitting heat and electricity.** Sum heat and electricity over the steps with `dhw_predicted = 1` to get hot-water kWh and COP; the rest is space heating.
 - **A best-available flag.** Use the measured flag where it is trusted, and the prediction elsewhere. `data/flag_check.csv` lists the 384 systems whose flags were judged trustworthy in October 2026 (`flag = trusted`). For those, fill the flag across its own logging interval and count it as on at 0.5 or more. Which flags to trust from now on is HPM's call, so this step is not in the code.
 - **Checking flags.** A low `f1_vs_flag` in `systems.csv` points to a flag, or a system, worth a look.

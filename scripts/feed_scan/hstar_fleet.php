@@ -24,7 +24,7 @@
 //
 // Output: one line per system to stdout + hstar_fleet.csv alongside this script.
 //
-// Usage: php feed_scan_4.php [max_systems]   (0 or omitted = all)
+// Usage: php hstar_fleet.php [max_systems]   (0 or omitted = all)
 
 $dir = dirname(__FILE__);
 chdir($dir."/../../www");

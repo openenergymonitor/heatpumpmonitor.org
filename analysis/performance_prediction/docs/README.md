@@ -222,7 +222,7 @@ restatement of COP.
 
 ![metric collapse](figures/metric_collapse.png)
 
-On the real fleet it did worse than ΔT. `feed_scan_4.php` (in
+On the real fleet it did worse than ΔT. `hstar_fleet.php` (in
 `scripts/feed_scan/` at the repo root) computed it from the raw 10 s feeds
 for the 229 validated systems. Cross-validated:
 
@@ -236,7 +236,7 @@ H\* beats ΔT in every version of the simulator, most of all in the July
 one with its identical, defrost-free machines. On the fleet it's the worst
 of the three.
 
-To rule out the coefficients simply being wrong, `feed_scan_5.php`
+To rule out the coefficients simply being wrong, `hstar_hist_fleet.php`
 exported a per-system histogram of heat by flowT, outsideT and load, so any
 offsets could be tried offline. A search over 1,092 combinations (with
 capacity taken either from the badge or from each system's own observed
@@ -344,7 +344,7 @@ written to `docs/figures/`.
 | `heatpumpmonitor_all_fields_*.csv` | fleet export |
 | `modulation_features.csv` | histogram features, July 2026 fetch |
 | `hstar_fleet.csv`, `hstar_fleet_hist.csv` | raw feed scan results, one row per system |
-| `hstar_hist.csv` | per-system heat histograms, 113 MB, not in git; regenerate with `feed_scan_5.php` |
+| `hstar_hist.csv` | per-system heat histograms, 113 MB, not in git; regenerate with `hstar_hist_fleet.php` |
 | `sim_results.csv` | July 2026 simulator sweep |
 | `sim_carnot_2026-10.csv`, `sim_arotherm_2026-10.csv` | October 2026 sweeps, carnot and Arotherm+ datasheet models |
 | `llanberis2024.csv` | the simulator's weather year, used by the design model (a copy from the tools repo) |
