@@ -9,7 +9,7 @@
 // (engine 5), and fetches the rest (PHPTimeSeries) through the public API.
 
 define('EMONCMS_EXEC', 1);
-chdir(dirname(__FILE__)."/../../../www");
+chdir("/opt/openenergymonitor/heatpumpmonitor/www");
 require "Lib/load_database.php";
 
 define('PHPFINA_DIR', "/var/opt/emoncms/phpfina/");
