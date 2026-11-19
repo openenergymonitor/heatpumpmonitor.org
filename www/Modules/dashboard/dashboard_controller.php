@@ -29,9 +29,16 @@ function dashboard_controller() {
         if (is_array($system_data) && isset($system_data['success']) && $system_data['success']==false) {
             // 
         } else {
+            // Measured design parameters (scripts/measurements/system_measurements.php),
+            // read after the access check above
+            require_once "Modules/measurement/measurement_model.php";
+            $measurement = new Measurement($mysqli, false);
+
             return view("Modules/dashboard/myheatpump.php", array(
+                "measurements"=>$measurement->get_system($systemid),
                 "id"=>$systemid,
                 "system_data"=>$system_data,
+                "heatpump_model_id"=>$system->get_heatpump_model_id($systemid),
                 "apikey"=>$readkey,
                 "private_mode"=>$private_mode
             ));

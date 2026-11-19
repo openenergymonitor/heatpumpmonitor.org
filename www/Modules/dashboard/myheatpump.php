@@ -372,12 +372,19 @@ if ($private_mode || $system_data->share==0) {
     </div>
 
     <div id="heatdemand-block" class="app-card app-card-body" style="display:none">
+      <div class="d-flex mb-2">
+        <div class="btn-group app-segmented" id="heatdemand-mode" role="group" aria-label="Chart">
+          <button type="button" class="btn active" data-mode="heat" title="Daily heat output against inside - outside temperature difference">Heat</button>
+          <button type="button" class="btn" data-mode="flow" title="Daily space heating flow temperature against inside - outside temperature difference">Flow temperature</button>
+        </div>
+      </div>
       <div id="heatdemand_bound" style="width:100%; height:400px; overflow:hidden">
         <div id="heatdemand" style="height:400px"></div>
       </div>
       <p id="heatdemand-design" class="mb-1"></p>
       <p id="heatdemand-result" class="small"></p>
       <div class="d-flex flex-wrap gap-2">
+        <div id="heatdemand-heat-controls" class="d-flex flex-wrap gap-2">
         <div class="input-group w-auto" title="Outside temperature for the heat demand estimate">
           <span class="input-group-text">Design outside</span>
           <input type="number" class="form-control" style="width:64px" id="heatdemand_design_outsideT" value="-3" step="0.5">
@@ -407,6 +414,7 @@ if ($private_mode || $system_data->share==0) {
             <option value="season">Heating season</option>
           </select>
         </div>
+        </div>
         <button type="button" class="btn btn-outline-secondary" id="heatdemand_info_toggle" title="How this works" aria-expanded="false" aria-controls="heatdemand-info"><i class="bi bi-info-circle"></i></button>
       </div>
       <div id="heatdemand-info" class="small text-body-secondary mt-3" style="display:none">
@@ -416,10 +424,13 @@ if ($private_mode || $system_data->share==0) {
           <li><b>Design outside and Room:</b> set the design ΔT for the heat demand estimate. Design outside starts at the value entered on the system form.</li>
           <li><b>Projected:</b> the fit line at the design ΔT.</li>
           <li><b>Design heat loss:</b> the dashed line, the heat loss entered on the system form.</li>
+          <li><b>Max output test:</b> the shaded band, the range of approved max output test results for this heat pump model in the heat pump database. A single line when there is one result.</li>
+          <li><b>Heat pump capacity:</b> the black line, the badge capacity from the system form. Shown when the heat pump database has no max output test for this model.</li>
           <li><b>Use as room T:</b> replaces measured room temperature with the Room value. Used automatically when there is no room temperature feed. Useful when the feed is not representative of the whole house.</li>
           <li><b>Min ΔT:</b> optional, excludes mild days before the fit.</li>
           <li><b>Min quality:</b> percentage of the day with heat meter data. Days with gaps under-count heat and are excluded.</li>
           <li><b>Split by:</b> heating season runs July to June.</li>
+          <li><b>Flow temperature:</b> each point is one day's space heating flow temperature, weighted by heat output, against mean room minus outside temperature, over the latest year of the nightly measurements (not the window above). Hollow points are each day's highest 4 hours, the sustained flow temperature, for example coming off setback. Hover for details, click to open the power view at that day's highest 4 hours. The lines are read off at the design temperature difference to give the measured flow temperatures on the System card.</li>
         </ul>
         <p class="mt-2 mb-1">Notes on the estimate:</p>
         <ul class="mb-0 ps-3">
@@ -499,11 +510,13 @@ if ($private_mode || $system_data->share==0) {
   var config = {};
   config.id = <?php echo (int) $id; ?>;
   config.db = {};
-  // Design heat loss from the system form, kW at the outside design temperature
-  var system_design = <?php echo json_encode(array(
-      "heat_loss" => is_numeric($system_data->heat_loss) ? (float) $system_data->heat_loss : null,
-      "design_temp" => is_numeric($system_data->design_temp) ? (float) $system_data->design_temp : null
-  )); ?>;
+  // Measured design parameters by name: value, lower, upper, unit, start_time and
+  // end_time (unix s, the period it comes from) and details (selected days etc.)
+  var system_measurements = <?php
+      $measurements_json = json_encode(isset($measurements) ? (object) $measurements : new stdClass(),
+          JSON_HEX_TAG | JSON_HEX_AMP | JSON_INVALID_UTF8_SUBSTITUTE);
+      echo $measurements_json === false ? "{}" : $measurements_json;
+  ?>;
   // System form fields for the System card. A fixed list, so the read key,
   // app id and URL of the system never reach the page.
   var system_meta = <?php
@@ -518,13 +531,14 @@ if ($private_mode || $system_data->share==0) {
           "freeze", "heat_loss", "property", "floor_area", "age", "insulation",
           "mid_metering", "electric_meter", "heat_meter", "metering_inc_boost", "metering_inc_immersion",
           "metering_inc_central_heating_pumps", "metering_inc_secondary_heating_pumps", "metering_inc_brine_pumps",
-          "metering_inc_controls", "metering_boundary_code", "notes", "data_flag", "data_flag_note",
-          "measured_heat_loss", "measured_heat_loss_range", "measured_design_flowT", "measured_design_flowT_range"
+          "metering_inc_controls", "metering_boundary_code", "notes", "data_flag", "data_flag_note"
       );
       $system_meta = array();
       foreach ($system_meta_fields as $f) {
           if (isset($system_data->$f)) $system_meta[$f] = $system_data->$f;
       }
+      // Heat pump database model matched from make, model and output, for max output tests
+      $system_meta["heatpump_model_id"] = $heatpump_model_id ? (int) $heatpump_model_id : null;
       // HEX_TAG: a "</script>" in the notes stays inside the string.
       // INVALID_UTF8_SUBSTITUTE: bad bytes in a text field cannot make
       // json_encode return false and leave a syntax error in this script.

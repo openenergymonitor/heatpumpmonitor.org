@@ -289,6 +289,14 @@ function show() {
         $("#overlay").hide();
 
         hp_power_panels(false);
+
+        // ?heatdemand=1 opens the heat demand tool, which widens the default
+        // 30 days to the last year (links from the old /heatloss page)
+        if (urlParams.heatdemand != undefined) {
+            $("#heatdemand-toggle").click();
+            var hd = document.getElementById("heatdemand-block");
+            if (hd) hd.scrollIntoView();
+        }
     }
 
     // LOOP

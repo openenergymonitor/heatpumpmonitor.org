@@ -1108,6 +1108,20 @@ class System
         return false;
     }
 
+    /**
+     * Heat pump database model matched by the system's make, model, capacity and refrigerant,
+     * the same match the system list uses for heatpump_model_id. False when there is none.
+     */
+    public function get_heatpump_model_id($systemid) {
+        $systemid = (int) $systemid;
+        $result = $this->mysqli->query("SELECT hm.id AS heatpump_model_id FROM system_meta sm " .
+            self::HEATPUMP_MODEL_JOIN . " WHERE sm.id = $systemid AND hm.id IS NOT NULL LIMIT 1");
+        if ($result && $row = $result->fetch_object()) {
+            return (int) $row->heatpump_model_id;
+        }
+        return false;
+    }
+
     public function has_read_access($userid, $systemid) {
         $userid = (int) $userid;
         $systemid = (int) $systemid;
