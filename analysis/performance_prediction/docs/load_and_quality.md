@@ -180,7 +180,16 @@ load, so that isn't the reason.
    steady running implies. Compare that with measured running SPF, and see
    whether the gap grows with P or with time at minimum speed. *Tests
    explanation 1.*
-4. **Separate the meter from the machine.** Check whether the minimum-speed
+4. **Separate low flowT from low speed.** 81% of the Arotherms have a mean
+   steady flowT below the datasheet's 35 °C minimum, and median 38% of
+   steady running is inferred below 30 rps. Below 35 °C the fit
+   extrapolates both COP and speed. High-P systems run cooler (ρ −0.32)
+   and more often below minimum speed (+0.52). In a rough fit, adding
+   minimum-speed share brings the P slope back to +0.18 ± 0.08 (standard
+   error), and flowT adds little. To separate the two, compute
+   field/datasheet by (flowT band × speed band) from the per-system replay
+   JSONs on the server.
+5. **Separate the meter from the machine.** Check whether the minimum-speed
    and level correlations with P survive on systems with a verified heat
    meter (cylinder reheat check, or Arotherm's own flow reading).
 
