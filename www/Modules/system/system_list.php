@@ -743,7 +743,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         name: 'Oversizing Factor',
         heading: 'Oversizing',
         group: 'Heat pump',
-        helper: 'Oversizing factor'
+        helper: 'Tested max output (or datasheet max output) over the measured heat demand at design'
     };
 
     columns['heatpump_max_age'] = { name: "Live Data", heading: "Live", group: "Data Status", helper: "Data freshness status" };
@@ -808,6 +808,13 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             unit: "p/kWh",
             dp: 2
         };
+    }
+
+    // Measured design parameters (scripts/measurements/system_measurements.php).
+    // Kept with the stats columns so they format, export and filter the same way.
+    var measurement_columns = <?php echo json_encode(isset($measurement_columns) ? $measurement_columns : array(), JSON_UNESCAPED_UNICODE); ?>;
+    for (var key in measurement_columns) {
+        stats_columns[key] = measurement_columns[key];
     }
 
     // add stats_columns to columns
@@ -961,25 +968,12 @@ defined('EMONCMS_EXEC') or die('Restricted access');
         d.setMonth(d.getMonth() - 1);
     }
 
-    // Calculate over-sizing factor
     for (var z in systems) {
         let system = systems[z];
-        let oversizing_factor = 0;
-        
-        if (system['measured_heat_loss']>0 && system['hp_max_output']>0) {
-            oversizing_factor = system['hp_max_output'] / system['measured_heat_loss'];
-        }
-        
-        if (system['measured_heat_loss']>0 && system['hp_max_output_test']>0) {
-            oversizing_factor = system['hp_max_output_test'] / system['measured_heat_loss'];
-        }
-        
-        if (oversizing_factor != null) {
-            oversizing_factor = oversizing_factor.toFixed(1)*1;
-        }
-        
-        systems[z]['oversizing_factor'] = oversizing_factor;
-        
+
+        // Filled in when the measurements load (oversizing_factor)
+        systems[z]['oversizing_factor'] = null;
+
         // Add computed hp_make_model field for sorting
         systems[z]['hp_make_model'] = (system['hp_manufacturer'] || '') + ' ' + (system['hp_model'] || '');
         
@@ -1503,8 +1497,35 @@ defined('EMONCMS_EXEC') or die('Restricted access');
             stats_time_end_change: function () {
                 this.load_system_stats();
             },
+            // Measured design parameters. They don't depend on the stats period, so load once.
+            // Vue.set so the new keys are reactive, then re-sort and filter as the stats load does.
+            load_measurements: function () {
+                var params = {};
+                if (mode == "user" || mode == "admin") params.mode = mode;
+                axios.get(path + 'measurement/list.json', { params: params })
+                    .then(response => {
+                        var values = response.data;
+                        if (!values || typeof values !== 'object') return;
+                        for (var i = 0; i < app.systems.length; i++) {
+                            var m = values[app.systems[i].id] || {};
+                            for (var key in measurement_columns) {
+                                Vue.set(app.systems[i], key, m[key] !== undefined ? m[key] : null);
+                            }
+
+                            // Oversizing: tested max output, else datasheet max, over the measured heat demand at design
+                            var s = app.systems[i], demand = s['m_heat_loss_design'];
+                            var max_output = s['hp_max_output_test'] > 0 ? s['hp_max_output_test'] : s['hp_max_output'];
+                            s['oversizing_factor'] = demand > 0 && max_output > 0 ? (max_output / demand).toFixed(1) * 1 : null;
+                        }
+                        app.sort_only(app.currentSortColumn);
+                        app.filter_systems();
+                    })
+                    .catch(error => {
+                        console.log("Error loading measurements: " + error);
+                    });
+            },
             load_system_stats: function () {
-                
+
                 // Start
                 let start = this.stats_time_start;
                 if (start!='last7' && start!='last30' && start!='last90' && start!='last365' && start!='all' && start!='custom') {
@@ -2497,6 +2518,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
     Vue.component('v-select', VueSelect.VueSelect);
         
     app.load_system_stats();
+    app.load_measurements();
     app.sort_only('combined_cop');
     app.populateColumnOptions();
     resize(true);

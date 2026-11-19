@@ -84,13 +84,18 @@ function system_controller() {
 
     if ($route->action=="list") {
         if ($route->format=="html") {
+            // Measured design parameters, as extra list columns
+            require_once "Modules/measurement/measurement_model.php";
+            $measurement_columns = (new Measurement($mysqli, $system_stats))->columns();
+
             // Public list view
             if ($route->subaction=="public" && $settings['public_mode_enabled']) {
                 return view("Modules/system/system_list.php",array(
                     "mode"=>"public",
                     "systems"=>$system->list_public(),
                     "columns"=>$system->get_columns(),
-                    "stats_columns"=>$system_stats->schema['system_stats_monthly_v2']
+                    "stats_columns"=>$system_stats->schema['system_stats_monthly_v2'],
+                    "measurement_columns"=>$measurement_columns
                 ));
 
             // User list view
@@ -101,6 +106,7 @@ function system_controller() {
                         "systems"=>$system->list_user($session['userid']),
                         "columns"=>$system->get_columns(),
                         "stats_columns"=>$system_stats->schema['system_stats_monthly_v2'],
+                        "measurement_columns"=>$measurement_columns,
                         "user_config"=>$system->get_list_config($session['userid'])
                     ));
                 }
@@ -112,7 +118,8 @@ function system_controller() {
                         "mode" => "admin",
                         "systems"=>$system->list_admin(),
                         "columns"=>$system->get_columns(),
-                        "stats_columns"=>$system_stats->schema['system_stats_monthly_v2']
+                        "stats_columns"=>$system_stats->schema['system_stats_monthly_v2'],
+                        "measurement_columns"=>$measurement_columns
                     ));
                 }
             } else if ($settings['public_mode_enabled']) {
@@ -120,7 +127,8 @@ function system_controller() {
                     "mode"=>"public",
                     "systems"=>$system->list_public(),
                     "columns"=>$system->get_columns(),
-                    "stats_columns"=>$system_stats->schema['system_stats_monthly_v2']
+                    "stats_columns"=>$system_stats->schema['system_stats_monthly_v2'],
+                    "measurement_columns"=>$measurement_columns
                 ));
             }
         } else {
