@@ -396,7 +396,12 @@ if ($private_mode || $system_data->share==0) {
     </div>
 
     <div class="app-card app-card-body">
-      <div class="app-card-caption"><span class="app-section-label"><span id="all_time_history_title">All time history</span> <span id="total_mode"></span></span></div>
+      <div class="app-card-caption"><span class="app-section-label"><span id="all_time_history_title">All time history</span> <span id="total_mode"></span></span>
+        <div class="btn-group app-segmented ms-auto">
+          <button class="btn total-period" period="last365" title="Totals for the last 365 days">Last year</button>
+          <button class="btn total-period active" period="all" title="Totals since the start of monitoring">All time</button>
+        </div>
+      </div>
       <div class="app-live">
         <div>
           <div class="app-live-label">Electricity input</div>

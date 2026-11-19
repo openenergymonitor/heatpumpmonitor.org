@@ -207,11 +207,11 @@ function show() {
     if (config_start_date > alltime_start_time) {
         alltime_start_time = config_start_date;
         var d = new Date(alltime_start_time * 1000);
-        $("#all_time_history_title").html("Total since " + d.getDate() + " " + months[d.getMonth()] + " " + d.getFullYear());
     } else {
         var d = new Date(start_time * 1000);
-        $("#all_time_history_title").html("Total since " + d.getDate() + " " + months[d.getMonth()] + " " + d.getFullYear());
     }
+    totals_since_title = "Total since " + d.getDate() + " " + months[d.getMonth()] + " " + d.getFullYear();
+    $("#all_time_history_title").html(totals_since_title);
 
     var date = new Date();
     var now = date.getTime();
@@ -296,36 +296,47 @@ function show() {
     updater();
     updaterinst = setInterval(updater, 10000);
 
-    // Load totals from pre-processed daily data
+    // Load all time and last 365 day totals from pre-processed daily data
     if (config.app.enable_process_daily.value) {
-        $.ajax({
-            url: path + "system/stats/all",
-            data: { id: config.id, readkey: apikey },
-            async: true,
-            dataType: "json",
-            success: function (result) {
-                result = result[config.id];
-                if (result == undefined) return;
-                alltime_totals = result;
-                alltime_totals_draw();
-            }
+        ["all", "last365"].forEach(function (period) {
+            $.ajax({
+                url: path + "system/stats/" + period,
+                data: { id: config.id, readkey: apikey },
+                async: true,
+                dataType: "json",
+                success: function (result) {
+                    result = result[config.id];
+                    if (result == undefined) return;
+                    totals[period] = result;
+                    alltime_totals_draw();
+                }
+            });
         });
     }
 
     $(".ajax-loader").hide();
 }
 
-// All time totals for the mode selected above the daily chart. system/stats/all
-// gives totals per mode with the same prefixes as bargraph_mode.
-var alltime_totals = null;
+// Totals card: all time or last 365 days, for the mode selected above the daily
+// chart. system/stats/all and system/stats/last365 give totals per mode with the
+// same prefixes as bargraph_mode.
+var totals = { all: null, last365: null };
+var totals_period = "all";
+var totals_since_title = "All time history";
 var alltime_mode_names = { running: "When running", space: "Space heating", water: "Water heating", cooling: "Cooling" };
 
 function alltime_totals_draw() {
-    if (!alltime_totals) return;
-    var mode = alltime_totals[bargraph_mode + "_elec_kwh"] != undefined ? bargraph_mode : "combined";
-    var elec = alltime_totals[mode + "_elec_kwh"];
-    var heat = alltime_totals[mode + "_heat_kwh"];
-    var cop = alltime_totals[mode + "_cop"];
+    var t = totals[totals_period];
+    $("#all_time_history_title").html(totals_period == "last365" ? "Last 365 days" : totals_since_title);
+    $(".total-period").each(function () {
+        $(this).toggleClass("active", $(this).attr("period") == totals_period);
+    });
+    if (!t) return;
+
+    var mode = t[bargraph_mode + "_elec_kwh"] != undefined ? bargraph_mode : "combined";
+    var elec = t[mode + "_elec_kwh"];
+    var heat = t[mode + "_heat_kwh"];
+    var cop = t[mode + "_cop"];
 
     $("#total_elec").html(elec != null ? Math.round(elec) : "-");
     $("#total_heat").html(heat != null ? Math.round(heat) : "-");
@@ -333,10 +344,15 @@ function alltime_totals_draw() {
     $("#total_mode").html(alltime_mode_names[mode] ? "&middot; " + alltime_mode_names[mode] : "");
 
     // Boiler total is for the whole system, shown with All
-    var show_boiler = boiler_enabled && mode == "combined" && alltime_totals.boiler_kwh != undefined;
-    if (show_boiler) $("#total_boiler").html(Math.round(alltime_totals.boiler_kwh));
+    var show_boiler = boiler_enabled && mode == "combined" && t.boiler_kwh != undefined;
+    if (show_boiler) $("#total_boiler").html(Math.round(t.boiler_kwh));
     $("#boiler_total_bound").toggle(show_boiler);
 }
+
+$(".total-period").click(function () {
+    totals_period = $(this).attr("period");
+    alltime_totals_draw();
+});
 
 function clear() {
     clearInterval(updaterinst);
