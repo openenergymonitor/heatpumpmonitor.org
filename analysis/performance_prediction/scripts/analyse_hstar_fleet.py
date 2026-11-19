@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Analyse hstar_fleet.csv produced by hstar_fleet.php.
+"""Analyse hstar_fleet_hist.csv produced by hstar_hist_fleet.php.
 
 Filters to air source systems, validates the feed-scan weighted temperatures
 against the recorded stats, and compares how well weighted dT, fixed-offset
 harmonic Carnot (H) and load-dependent H* predict SPF across the fleet.
 See docs/README.md, section 4.
 
-Usage: python3 scripts/analyse_hstar_fleet.py [hstar_fleet.csv]
+Usage: python3 scripts/analyse_hstar_fleet.py [hstar_fleet_hist.csv]
 
 Pure stdlib, no dependencies.
 """
@@ -99,7 +99,7 @@ def analyse(rows, label):
 
 
 def main():
-    path = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "hstar_fleet.csv")
+    path = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "hstar_fleet_hist.csv")
     with open(path, newline="") as f:
         raw = list(csv.DictReader(f))
     print(f"{path}: {len(raw)} systems")

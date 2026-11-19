@@ -156,7 +156,7 @@ DEFAULT_SYSTEM = dict(
     defrost_D=DEFROST_D,
     dhw_share=0.14, dhw_target=48.0, dhw_approach=4.0,
 )
-# Fleet medians, 2026-07-15 export (225 air source systems; H* from hstar_fleet.csv)
+# Fleet medians, 2026-07-15 export (225 air source systems; H* from hstar_fleet_hist.csv)
 FLEET_MEDIAN = dict(
     total_heat_kwh=13205, weighted_flow=34.8, weighted_outside=7.3,
     coldest_day=(-1.8, 37.3),       # (outside, flow), daily means

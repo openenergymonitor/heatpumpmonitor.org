@@ -193,13 +193,13 @@ load, so that isn't the reason.
    and level correlations with P survive on systems with a verified heat
    meter (cylinder reheat check, or Arotherm's own flow reading).
 
-How we'd read the results:
-- **Field curves match the datasheet:** the benefit is real at steady state
-  and is lost somewhere outside steady running.
-- **Field curves are flatter than the datasheet:** the benefit doesn't
-  survive in real installs.
-- **Low-r̄ systems have few low-output episodes:** they cycle rather than
-  modulate. That would be informative in itself.
+How we'd read steps 2–4:
+- **Field/datasheet stays flat down to 30 rps:** the benefit holds at
+  steady state, and the loss is at or below minimum speed.
+- **Field/datasheet falls towards low speed:** the benefit doesn't survive
+  in real installs.
+- **The shortfall follows flowT below 35 °C rather than speed:** the
+  problem is how the fit extrapolates, not the machine.
 
 Ground truth, Arotherm 5 kW datasheet at 35/30 °C, COP (output kW):
 
@@ -212,12 +212,8 @@ Ground truth, Arotherm 5 kW datasheet at 35/30 °C, COP (output kW):
 The part-load benefit is large (3.3 → 4.6 at +7 °C) and turns over at
 30 rps. Below about 2.1 kW the machine has to cycle.
 
-Practical notes:
-- Compressor speed isn't in the feeds, so compare on output kW within a
-  badge size.
-- The episode thresholds were tuned on one system and will probably need
-  loosening. Also require stable returnT, flow rate and outsideT.
-- Split out DHW episodes (flowT above about 45 °C) as a second comparison.
+Compressor speed isn't in the feeds. The replay infers it from output,
+flowT and outsideT using the v2 capacity model.
 
 ## Population
 
@@ -233,9 +229,10 @@ Run from `analysis/performance_prediction/` with the `.venv` python,
 except where noted.
 
 - **Fleet scans** (`scripts/feed_scan/` at the repo root):
-  `hstar_fleet.php` → `hstar_fleet.csv`; `hstar_hist_fleet.php` →
+  `hstar_fleet.php` (fleet scan, or one system with `--system`); `hstar_hist_fleet.php` →
   `hstar_fleet_hist.csv` and `hstar_hist.csv` (113 MB, not in git);
-  `steady_episodes_fleet.php` → `signature_episodes`.
+  `steady_episodes_fleet.php` → `signature_episodes` (used by the
+  signature module, not by these notes).
 - **P test:** `scripts/analyse_hstar_fleet.py`,
   `scripts/analyse_hstar_offsets.py`. `scripts/hstar_plots.py` draws the
   P test and utilisation figures (needs `hstar_hist.csv`).

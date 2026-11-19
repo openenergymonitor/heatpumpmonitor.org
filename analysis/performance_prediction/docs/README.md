@@ -181,7 +181,7 @@ wouldn't separate good running from bad. If that's right, it fits the
 
 These numbers use the July 2026 histograms in `modulation_features.csv`
 (223 systems with a residual), with make and badge size from
-`hstar_fleet.csv`. Electricity histograms showed nothing useful.
+`hstar_fleet_hist.csv`. Electricity histograms showed nothing useful.
 
 *Scripts:* run `scripts/fetch_histograms.py` first. It fills the
 `histograms/` cache, which isn't in git. Then `scripts/modulation_analysis.py`
@@ -246,8 +246,8 @@ Side results:
   air.
 
 *Scripts:* the fleet H\* values come from
-`scripts/feed_scan/hstar_fleet.php` at the repo root, which writes
-`hstar_fleet.csv` and `hstar_fleet_hist.csv`.
+`scripts/feed_scan/hstar_hist_fleet.php` at the repo root, which writes
+`hstar_fleet_hist.csv`.
 `scripts/analyse_hstar_fleet.py` scores the metrics on the fleet and
 `scripts/analyse_hstar_offsets.py` runs the coefficient search. The
 simulator columns come from:
