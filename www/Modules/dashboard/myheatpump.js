@@ -228,8 +228,8 @@ function show() {
     if (urlParams.mode != undefined) {
         if (urlParams.mode == "power") {
             viewmode = "powergraph"
-            $("#advanced-block").show();
-            $("#advanced-toggle").html("HIDE DETAIL");
+            // Links to the power view open the detail and options, shown by hp_power_panels
+            $("#advanced-toggle, #options-toggle").addClass("active").attr("aria-expanded", true);
         }
         if (urlParams.cop) {
             $("#show_instant_cop").click();
@@ -271,7 +271,7 @@ function show() {
         $(".bargraph-navigation").hide();
         powergraph_load();
         $(".powergraph-navigation").show();
-        $("#advanced-toggle").show();
+        hp_power_panels(true);
     } else {
         var timeWindow = 30 * DAY;
         var start = end - timeWindow;
@@ -288,7 +288,7 @@ function show() {
         $("#overlay_text").html("");
         $("#overlay").hide();
 
-        $("#advanced-toggle").hide();
+        hp_power_panels(false);
     }
 
     // LOOP
@@ -656,8 +656,9 @@ function hp_timebar_sync() {
     });
     $(".bargraph-navigation").toggle(daily);
     $(".powergraph-navigation").toggle(!daily);
+    hp_power_panels(!daily);
     $("#heatdemand-toggle").toggle(daily);
-    $("#heatdemand-block").toggle(daily && $("#heatdemand-toggle").html() == "HIDE HEAT DEMAND");
+    $("#heatdemand-block").toggle(daily && $("#heatdemand-toggle").hasClass("active"));
 }
 
 // Daily view periods. Day opens the power view for the last 24 hours.
@@ -739,8 +740,17 @@ $(".viewhistory").click(function () {
 function hp_show_daily() {
     viewmode = "bargraph";
     $(".bargraph-navigation").show();
-    $("#advanced-toggle").hide();
-    $("#advanced-block").hide();
+    hp_power_panels(false);
+}
+
+// Power view only: COP tiles, the detail and options toggles and their blocks.
+// The daily view shows the single COP in window instead.
+function hp_power_panels(power) {
+    $(".hp-power-only").toggle(power);
+    $(".hp-daily-only").toggle(!power);
+    $("#advanced-toggle, #options-toggle").toggle(power);
+    $("#advanced-block").toggle(power && $("#advanced-toggle").hasClass("active"));
+    $("#options-block").toggle(power && $("#options-toggle").hasClass("active"));
 }
 
 document.getElementById('placeholder').addEventListener("plothover", function (event) {
@@ -794,12 +804,7 @@ function hp_open_power(start, end) {
 
     $(".bargraph-navigation").hide();
     $(".powergraph-navigation").show();
-    $("#advanced-toggle").show();
-    if ($("#advanced-toggle").html() == "SHOW DETAIL") {
-        $("#advanced-block").hide();
-    } else {
-        $("#advanced-block").show();
-    }
+    hp_power_panels(true);
 }
 
 document.getElementById('placeholder').addEventListener("plotselected", function (event) {

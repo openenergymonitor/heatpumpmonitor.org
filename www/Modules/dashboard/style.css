@@ -13,6 +13,37 @@
 /* COP in window, under the chart */
 .hp-window-cop { font-size: 16px; color: var(--ec-primary-darker); cursor: pointer; }
 
+/* Power view COP tiles under the chart legend, in place of the COP in window line */
+.hp-cop-tiles { margin: 12px 0 0; }
+/* Electric and heat kWh on the selected card only, to the right of the COP */
+.hp-cop-tiles > * { display: grid; grid-template-columns: 1fr auto; align-content: start; column-gap: 8px; }
+.hp-cop-tiles :is(.app-tile-title, .app-tile-value) { grid-column: 1; }
+.hp-cop-tiles .app-tile-sub {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  text-align: right;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--bs-secondary-color);
+  white-space: nowrap;
+}
+.hp-cop-tiles > :not(.active) .app-tile-sub { display: none; }
+@container app (max-width: 575.98px) {
+  .hp-cop-tiles .app-tile-sub { grid-column: 1 / -1; grid-row: auto; text-align: left; }
+}
+
+/* Stats, Options and Heat demand toggles, at the right of the line under the chart */
+.hp-panel-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-self: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.hp-panel-toggles > .btn .bi { margin-right: 2px; }
+
 /* Full window tile in the COP colour. Other tiles set theirs inline. */
 .show_stats_category[key="combined"] .app-tile-value { color: var(--ec-primary-darker); }
 

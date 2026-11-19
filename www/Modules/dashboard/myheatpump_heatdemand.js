@@ -294,7 +294,7 @@ function heatdemand_tooltip(item) {
 $("#heatdemand-toggle").click(function () {
     $("#heatdemand-block").toggle();
     var open = $("#heatdemand-block").is(":visible");
-    $(this).html(open ? "HIDE HEAT DEMAND" : "SHOW HEAT DEMAND");
+    $(this).toggleClass("active", open).attr("aria-expanded", open);
     // A week to 3 month preset has too few days for a useful fit, so opening
     // the tool widens the daily bars to the last year. Year, All and a zoomed
     // or panned window are kept.

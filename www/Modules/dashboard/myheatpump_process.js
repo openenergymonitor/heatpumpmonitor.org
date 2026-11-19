@@ -223,6 +223,9 @@ function process_stats() {
             stats[x][key].kwh = null;
             stats[x][key].minval = null;
             stats[x][key].maxval = null;
+            stats[x][key].weighted_sum = 0;
+            stats[x][key].weight_total = 0;
+            stats[x][key].weighted_mean = null;
         }
     }
 
@@ -250,6 +253,14 @@ function process_stats() {
         // let ch = false;
         // if (data["heatpump_ch"]!=undefined) ch = data["heatpump_ch"][z][1];
 
+        // Heat output weight for the heat-weighted temperature means:
+        // cooling output counts by its magnitude, negative heat (defrost) counts as zero
+        let heat_weight = 0;
+        if (data["heatpump_heat"] != undefined && data["heatpump_heat"][z] != undefined) {
+            let heat = data["heatpump_heat"][z][1];
+            if (heat != null) heat_weight = cool ? Math.abs(heat) : Math.max(0, heat);
+        }
+
         for (var i in keys) {
             let key = keys[i];
             if (data[key][z] != undefined) {
@@ -262,31 +273,17 @@ function process_stats() {
                         value = -1 * value;
                     }
 
-                    stats.combined[key].sum += value;
-                    stats.combined[key].count++;
-                    stats_min_max('combined', key, value);
+                    let weight = (feed_options[key].unit == "°C") ? heat_weight : 0;
+
+                    stats_add('combined', key, value, weight);
 
                     if (power != null && power >= starting_power) {
-                        stats.when_running[key].sum += value;
-                        stats.when_running[key].count++;
-                        stats_min_max('when_running', key, value);
+                        stats_add('when_running', key, value, weight);
 
                         if (cool) {
-                            stats.cooling[key].sum += value;
-                            stats.cooling[key].count++;
-                            stats_min_max('cooling', key, value);
-                        } else {
-                            if (dhw_enable) {
-                                if (dhw) {
-                                    stats.water_heating[key].sum += value;
-                                    stats.water_heating[key].count++;
-                                    stats_min_max('water_heating', key, value);
-                                } else {
-                                    stats.space_heating[key].sum += value;
-                                    stats.space_heating[key].count++;
-                                    stats_min_max('space_heating', key, value);
-                                }
-                            }
+                            stats_add('cooling', key, value, weight);
+                        } else if (dhw_enable) {
+                            stats_add(dhw ? 'water_heating' : 'space_heating', key, value, weight);
                         }
                     }
                 }
@@ -303,6 +300,11 @@ function process_stats() {
             stats[x][key].mean = null;
             if (stats[x][key].count > 0) {
                 stats[x][key].mean = stats[x][key].sum / stats[x][key].count;
+            }
+
+            stats[x][key].weighted_mean = null;
+            if (stats[x][key].weight_total > 0) {
+                stats[x][key].weighted_mean = stats[x][key].weighted_sum / stats[x][key].weight_total;
             }
 
             stats[x][key].diff = null;
@@ -332,6 +334,10 @@ function process_stats() {
 
                 out += "<td style='text-align:center'>" + (1*stats[x][key].mean).toFixed(feed_options[key].dp) + " " + feed_options[key].unit + "</td>";
 
+                var weighted_mean_str = "";
+                if (stats[x][key].weighted_mean != null) weighted_mean_str = (1*stats[x][key].weighted_mean).toFixed(feed_options[key].dp) + " " + feed_options[key].unit;
+                out += "<td style='text-align:center'>" + weighted_mean_str + "</td>";
+
                 if (feed_options[key].unit == "W") {
                     stats[x][key].kwh = (stats[x][key].mean * stats[x][key].count * view.interval) / 3600000;
                     out += "<td style='text-align:center'>" + (1*stats[x][key].kwh).toFixed(3) + " kWh</td>";
@@ -353,6 +359,16 @@ function process_stats() {
     $("#standby_kwh").html(standby_kwh.toFixed(3));
 
     return stats;
+}
+
+function stats_add(category, key, value, weight) {
+    stats[category][key].sum += value;
+    stats[category][key].count++;
+    if (weight > 0) {
+        stats[category][key].weighted_sum += value * weight;
+        stats[category][key].weight_total += weight;
+    }
+    stats_min_max(category, key, value);
 }
 
 function stats_min_max(category, key, value) {
@@ -490,9 +506,16 @@ function calculate_window_cops() {
                     }
                 }
                 
-                $(".cop_"+category).attr("title", tooltip_text);    
+                $(".cop_"+category).attr("title", tooltip_text);
+
+                // Electric in and heat out, shown beside the COP on the selected card
+                $(".kwh_"+category).html(
+                    "<div>Electric <b class='text-hp-elec'>" + cop_stats[category].elec_kwh.toFixed(1) + " kWh</b></div>" +
+                    "<div>Heat <b class='text-hp-heat'>" + cop_stats[category].heat_kwh.toFixed(1) + " kWh</b></div>"
+                ).attr("title", tooltip_text);
             } else {
                 $(".cop_"+category).html("---");
+                $(".kwh_"+category).html("");
             }
         }
         
@@ -504,6 +527,7 @@ function calculate_window_cops() {
         $(".cop_when_running").html("---");
         $(".cop_water_heating").html("---");
         $(".cop_space_heating").html("---");
+        $(".app-tile-sub").html("");
     }
 }
 

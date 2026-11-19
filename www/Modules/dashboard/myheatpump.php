@@ -135,48 +135,56 @@ if ($private_mode || $system_data->share==0) {
       </div>
       <div id="chart-legend" class="app-legend"></div>
 
+      <div id="error-message" style="display:none" class="alert alert-danger mt-2"></div>
+
+      <div class="app-tiles hp-cop-tiles hp-power-only" style="display:none">
+        <div class="show_stats_category" key="combined">
+          <div class="app-tile-title">Full window</div>
+          <div class="app-tile-value"><span class="cop_combined">---</span></div>
+          <div class="app-tile-sub kwh_combined"></div>
+        </div>
+
+        <div class="show_stats_category" key="when_running" style="color:#698d5d">
+          <div class="app-tile-title">When running</div>
+          <div class="app-tile-value"><span class="cop_when_running">---</span></div>
+          <div class="app-tile-sub kwh_when_running"></div>
+        </div>
+
+        <div class="show_stats_category" key="space_heating" style="color:#f6a801">
+          <div class="app-tile-title">Space heating</div>
+          <div class="app-tile-value"><span class="cop_space_heating">---</span></div>
+          <div class="app-tile-sub kwh_space_heating"></div>
+        </div>
+
+        <div class="show_stats_category" key="water_heating" style="color:#014656">
+          <div class="app-tile-title">Water heating</div>
+          <div class="app-tile-value"><span class="cop_water_heating">---</span></div>
+          <div class="app-tile-sub kwh_water_heating"></div>
+        </div>
+
+        <div class="show_stats_category" key="cooling" style="color:#014656; display:none">
+          <div class="app-tile-title">Cooling</div>
+          <div class="app-tile-value"><span class="cop_cooling">---</span></div>
+          <div class="app-tile-sub kwh_cooling"></div>
+        </div>
+      </div>
+
       <div class="app-card-caption app-chart-foot">
-        <span class="app-section-label">COP in window</span>
-        <b id="window-cop" class="hp-window-cop"></b>
+        <span class="app-section-label hp-daily-only">COP in window</span>
+        <b id="window-cop" class="hp-window-cop hp-daily-only"></b>
         <span id="window-carnot-cop" class="app-caption-note"></span>
         <span id="emitter-spec-volume" class="app-caption-note" style="display:none"></span>
         <span id="data-error" style="display:none">DATA ERROR</span>
-        <div class="nav ms-auto"><button id="advanced-toggle" class="nav-link" style="display:none">SHOW DETAIL</button><button id="heatdemand-toggle" class="nav-link" style="display:none">SHOW HEAT DEMAND</button></div>
+        <div class="app-segmented hp-panel-toggles">
+          <button id="advanced-toggle" class="btn" style="display:none" aria-expanded="false" aria-controls="advanced-block" title="Min, max and mean of each feed"><i class="bi bi-table"></i> <span>Stats</span></button>
+          <button id="options-toggle" class="btn" style="display:none" aria-expanded="false" aria-controls="options-block" title="Chart options and tools"><i class="bi bi-sliders"></i> <span>Options</span></button>
+          <button id="heatdemand-toggle" class="btn" style="display:none" aria-expanded="false" aria-controls="heatdemand-block" title="Daily heat output against temperature difference"><i class="bi bi-graph-up"></i> <span>Heat demand</span></button>
+        </div>
       </div>
     </div>
 
     <div id="advanced-block" class="app-card app-card-body" style="display:none">
       <div>
-
-        <div id="error-message" style="display:none" class="alert alert-danger"></div>
-
-        <div class="app-tiles">
-          <div class="show_stats_category active" key="combined">
-            <div class="app-tile-title">Full window</div>
-            <div class="app-tile-value"><span class="cop_combined">---</span></div>
-          </div>
-
-          <div class="show_stats_category" key="when_running" style="color:#698d5d">
-            <div class="app-tile-title">When running</div>
-            <div class="app-tile-value"><span class="cop_when_running">---</span></div>
-          </div>
-
-          <div class="show_stats_category" key="space_heating" style="color:#f6a801">
-            <div class="app-tile-title">Space heating</div>
-            <div class="app-tile-value"><span class="cop_space_heating">---</span></div>
-          </div>
-
-          <div class="show_stats_category" key="water_heating" style="color:#014656">
-            <div class="app-tile-title">Water heating</div>
-            <div class="app-tile-value"><span class="cop_water_heating">---</span></div>
-          </div>
-
-          <div class="show_stats_category" key="cooling" style="color:#014656; display:none">
-            <div class="app-tile-title">Cooling</div>
-            <div class="app-tile-value"><span class="cop_cooling">---</span></div>
-          </div>
-        </div>
-
         <table class="table">
           <tr>
             <th></th>
@@ -184,6 +192,7 @@ if ($private_mode || $system_data->share==0) {
             <th class="stats-col text-body-secondary">Max</th>
             <th class="stats-col text-body-secondary">Diff</th>
             <th class="stats-col">Mean</th>
+            <th class="stats-col" title="Temperatures averaged with each sample weighted by heat output">Heat-weighted mean</th>
             <th class="stats-col">kWh</th>
           </tr>
           <tbody class="stats_category" key="combined"></tbody>
@@ -192,32 +201,46 @@ if ($private_mode || $system_data->share==0) {
           <tbody class="stats_category" key="space_heating" style="display:none"></tbody>
           <tbody class="stats_category" key="cooling" style="display:none"></tbody>
         </table>
+      </div>
+    </div>
 
+    <div id="options-block" class="app-card app-card-body" style="display:none">
+      <div>
         <div class="app-section-label app-options-label">Chart options</div>
         <div class="app-options">
           <div id="show_immersion_bound" style="display:none" class="app-option">
-            <div style="float:right"><span id="immersion_kwh"></span> kWh</div>
-            <input id="show_immersion" type="checkbox">
-            <b>Show immersion</b>
+            <label class="app-option-head">
+              <span style="float:right"><span id="immersion_kwh"></span> kWh</span>
+              <input id="show_immersion" type="checkbox">
+              <b>Show immersion</b>
+            </label>
           </div>
 
           <div id="show_flow_rate_bound" style="display:none" class="app-option">
-            <input id="show_flow_rate" type="checkbox">
-            <b>Show flow rate</b>
+            <label class="app-option-head">
+              <input id="show_flow_rate" type="checkbox">
+              <b>Show flow rate</b>
+            </label>
           </div>
           <div id="show_dhw_temp_bound" style="display:none" class="app-option">
-            <input id="show_dhw_temp" type="checkbox">
-            <b>Show DHW temperature/charge</b>
+            <label class="app-option-head">
+              <input id="show_dhw_temp" type="checkbox">
+              <b>Show DHW temperature/charge</b>
+            </label>
           </div>
           <div id="show_cooling_bound" class="app-option">
-            <div style="float:right"><span id="total_defrost_and_loss_kwh"></span> kWh (<span id="prc_defrost_and_loss"></span>%)</div>
-            <input id="show_defrost_and_loss" type="checkbox">
-            <b>Show defrosts and other heat lost</b>
+            <label class="app-option-head">
+              <span style="float:right"><span id="total_defrost_and_loss_kwh"></span> kWh (<span id="prc_defrost_and_loss"></span>%)</span>
+              <input id="show_defrost_and_loss" type="checkbox">
+              <b>Show defrosts and other heat lost</b>
+            </label>
           </div>
 
           <div id="show_inst_cop_bound" class="app-option">
-            <input id="show_instant_cop" type="checkbox">
-            <b>Show instantaneous COP</b>
+            <label class="app-option-head">
+              <input id="show_instant_cop" type="checkbox">
+              <b>Show instantaneous COP</b>
+            </label>
 
             <div id="inst_cop_options" style="display:none">
               <div class="input-group">
@@ -241,8 +264,10 @@ if ($private_mode || $system_data->share==0) {
           </div>
 
           <div class="app-option">
-            <input id="carnot_enable" type="checkbox">
-            <b>Show simulated carnot heat output</b>
+            <label class="app-option-head">
+              <input id="carnot_enable" type="checkbox">
+              <b>Show simulated carnot heat output</b>
+            </label>
 
             <div id="carnot_sim_options" style="display:none">
               <div class="input-group">
@@ -265,8 +290,10 @@ if ($private_mode || $system_data->share==0) {
           </div>
 
           <div class="app-option">
-            <input id="carnot_enable_prc" type="checkbox">
-            <b>Show as % of carnot COP</b>
+            <label class="app-option-head">
+              <input id="carnot_enable_prc" type="checkbox">
+              <b>Show as % of carnot COP</b>
+            </label>
 
             <div id="carnot_prc_options" style="display:none">
               <p>Measured COP vs Carnot COP distribution:</p>
@@ -277,8 +304,10 @@ if ($private_mode || $system_data->share==0) {
           </div>
 
           <div class="app-option">
-            <input id="emitter_spec_enable" type="checkbox">
-            <b>Calculate emitter spec and system volume</b>
+            <label class="app-option-head">
+              <input id="emitter_spec_enable" type="checkbox">
+              <b>Calculate emitter spec and system volume</b>
+            </label>
             <div id="emitter_spec_options" style="margin-top:10px; display:none">
               <p>Make sure there is at least a short period of steady state running in the window.<br>Heat output spikes after hot water cycles can skew results.</p>
               <div class="input-group">
@@ -301,8 +330,10 @@ if ($private_mode || $system_data->share==0) {
 
           <!-- DHW Standby Heat Loss Calculation Option -->
           <div class="app-option">
-            <input id="standby_dhw_hl_enable" type="checkbox">
-            <b>Calculate DHW Standby Heat Loss Coefficient</b>
+            <label class="app-option-head">
+              <input id="standby_dhw_hl_enable" type="checkbox">
+              <b>Calculate DHW Standby Heat Loss Coefficient</b>
+            </label>
             <div id="standby_dhw_hl_options" style="margin-top:10px; display:none;">
               <p class="small text-body-secondary"><i>Ensure the selected window only shows natural DHW temperature decay (no heating cycles, no DHW use such as showering). Cylinder volume and environmental temperature are required to compute standby heat loss coefficient, which only works if DHW temperature is measured in °C and not % Charge. </i></p>
               <div class="input-group">
@@ -323,9 +354,11 @@ if ($private_mode || $system_data->share==0) {
           <!-- End DHW Standby Heat Loss -->
 
           <div class="app-option">
-            <div style="float:right"><span id="standby_kwh"></span> kWh</div>
-            <input id="configure_standby" type="checkbox">
-            <b>Configure standby</b>
+            <label class="app-option-head">
+              <span style="float:right"><span id="standby_kwh"></span> kWh</span>
+              <input id="configure_standby" type="checkbox">
+              <b>Configure standby</b>
+            </label>
             <div id="configure_standby_options" style="display:none">
               <div class="input-group">
                 <span class="input-group-text">Starting power</span>

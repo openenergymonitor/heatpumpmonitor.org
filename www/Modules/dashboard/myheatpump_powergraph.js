@@ -970,12 +970,15 @@ function linearRegression(x, y) {
 
 // Detail section events
 
+// No card is selected at first. Clicking one selects it, showing its kWh and its
+// stats; clicking it again clears the selection and the stats go back to the full window.
 $(".show_stats_category").click(function () {
-    var key = $(this).attr("key");
+    var select = !$(this).hasClass("active");
+    var key = select ? $(this).attr("key") : "combined";
     $(".stats_category").hide();
     $(".stats_category[key='" + key + "']").show();
     $(".show_stats_category").removeClass("active");
-    $(this).addClass("active");
+    $(this).toggleClass("active", select);
 });
 
 
@@ -1135,18 +1138,12 @@ document.getElementById('histogram').addEventListener("plothover", function (eve
     } else $("#tooltip").remove();
 });
 
-// Show advanced section on powergraph
-$("#advanced-toggle").click(function () {
-    var state = $(this).html();
-
-    if (state == "SHOW DETAIL") {
-        $("#advanced-block").show();
-        $("#advanced-toggle").html("HIDE DETAIL");
-
-    } else {
-        $("#advanced-block").hide();
-        $("#advanced-toggle").html("SHOW DETAIL");
-    }
+// Detail (stats table) and Options (chart options and tools) on powergraph.
+// The button's active class holds the open state.
+$("#advanced-toggle, #options-toggle").click(function () {
+    var open = !$(this).hasClass("active");
+    $(this).toggleClass("active", open).attr("aria-expanded", open);
+    $("#" + $(this).attr("aria-controls")).toggle(open);
 });
 
 $("#manual_roomT_enable").click(function () {
