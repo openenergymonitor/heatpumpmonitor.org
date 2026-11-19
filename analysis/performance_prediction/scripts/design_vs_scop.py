@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd
 
 from design_model import design_hstar, WEATHER, RAD_EXP, DEFROST_D
-from hpmon_analysis import load, standard_filter, find_csv, ROOT
+from hpmon_analysis import load, standard_filter, find_csv, measured_heat_loss, ROOT
 from residual_analysis import num
 from scop_mcs031_comparison import loo_predict, score
 
@@ -29,7 +29,7 @@ W_REF = np.percentile(WEATHER, 0.4)
 def design_inputs(f):
     hl = num(f.heat_loss)
     hl = hl.where(hl < 100, hl / 1000).where(lambda v: (v > 0.5) & (v < 30))
-    mhl = num(f.measured_heat_loss).where(lambda v: (v > 0.5) & (v < 30))
+    mhl = measured_heat_loss(f).where(lambda v: (v > 0.5) & (v < 30))
     hd = num(f.heat_demand).where(lambda v: v > 1000)
     wd = num(f.water_heat_demand).where(lambda v: v > 0)
     share_decl = (wd / hd).where(lambda v: (v > 0.01) & (v < 0.6))

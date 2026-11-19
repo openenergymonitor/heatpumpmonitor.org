@@ -18,7 +18,7 @@ import pandas as pd
 import statsmodels.formula.api as smf
 from sklearn.model_selection import KFold
 
-from hpmon_analysis import load, standard_filter, find_csv, ROOT
+from hpmon_analysis import load, standard_filter, find_csv, measured_heat_loss, ROOT
 
 DAY = 86400
 RNG = 42
@@ -57,7 +57,7 @@ def build(f):
     hl = num(f.heat_loss)
     hl = hl.where(hl <= 100, hl / 1000).where(lambda s: s > 0.5)
     D["heat_loss"] = hl
-    D["meas_hl"] = num(f.measured_heat_loss).where(lambda s: s > 0)
+    D["meas_hl"] = measured_heat_loss(f).where(lambda s: s > 0)
     D["hl_ratio"] = D.meas_hl / D.heat_loss
     D["ln_true_oversize"] = np.log(cap / D.meas_hl)
     D["ln_calc_oversize"] = np.log(cap / D.heat_loss)

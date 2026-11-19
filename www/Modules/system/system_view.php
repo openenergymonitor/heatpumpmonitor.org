@@ -71,7 +71,7 @@ global $settings, $session, $path;
                 </h3>
             </div>
             <a v-if="system.id" :href="path+'dashboard?id='+system.id"><button class="btn btn-primary mb-3"><span class="d-none d-lg-inline-block">Emoncms</span> Dashboard</button></a>
-            <a v-if="system.id" :href="path+'heatloss?id='+system.id"><button class="btn btn-secondary mb-3">Heat demand <span class="d-none d-lg-inline-block">tool</span></button></a>
+            <a v-if="system.id" :href="path+'dashboard?id='+system.id+'&heatdemand=1'"><button class="btn btn-secondary mb-3">Heat demand</button></a>
             <a v-if="system.id" :href="path+'monthly?id='+system.id"><button class="btn btn-secondary mb-3">Monthly</button></a>
             <a v-if="system.id" :href="path+'daily?id='+system.id"><button class="btn btn-secondary mb-3">Daily</button></a>
             <a v-if="system.id" :href="path+'compare?id='+system.id"><button class="btn btn-secondary mb-3">Compare</button></a>              
@@ -1425,7 +1425,6 @@ global $settings, $session, $path;
 
                 // IF admin
                 if (app.admin) {
-                    this.schema_groups['Measurements']['measured_max_flow_temp_coldest_day'].show = true;
                     this.schema_groups['Measurements']['measured_mean_flow_temp_coldest_day'].show = true;
                     this.schema_groups['Measurements']['measured_outside_temp_coldest_day'].show = true;
                 }

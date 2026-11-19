@@ -19,7 +19,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import KFold, cross_val_predict
 
 import design_model as d
-from hpmon_analysis import load, standard_filter, find_csv
+from hpmon_analysis import load, standard_filter, find_csv, measured_heat_loss
 from residual_analysis import num
 
 ROOM, DT_SYS = 20.0, 5.0
@@ -33,7 +33,7 @@ def main():
 
     hl = num(f.heat_loss)
     hl = hl.where(hl < 100, hl / 1000).where(lambda v: (v > 0.5) & (v < 30))
-    mhl = num(f.measured_heat_loss).where(lambda v: (v > 0.5) & (v < 30))
+    mhl = measured_heat_loss(f).where(lambda v: (v > 0.5) & (v < 30))
     hl = mhl.fillna(hl * 0.76)
     dtemp = num(f.design_temp).where(lambda v: (v > -15) & (v < 6))
     cap = num(f.hp_output).where(lambda v: (v > 1) & (v < 30)) * 1000

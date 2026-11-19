@@ -38,6 +38,15 @@ def load(csv_path):
     return pd.read_csv(csv_path)
 
 
+def measured_heat_loss(df):
+    """Measured heat demand at design (kW), worked out nightly by
+    scripts/measurements/system_measurements.php and exported by the system list
+    as m_heat_loss_design. Exports from before the switch (November 2026) only have
+    the hand-saved measured_heat_loss, used as a fallback."""
+    col = "m_heat_loss_design" if "m_heat_loss_design" in df.columns else "measured_heat_loss"
+    return pd.to_numeric(df[col], errors="coerce")
+
+
 def standard_filter(df, boundary=4, hp_type="Air Source", max_cooling_kwh=1.0,
                     min_days=330, mid_only=True, verbose=True):
     """Apply the standard low-temperature-analysis filter set, reporting counts."""

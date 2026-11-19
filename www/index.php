@@ -129,17 +129,18 @@ switch ($route->controller) {
 
     // These are individual pages that are not *yet* part of the main modules
 
+    // The heat demand explorer is now part of the MyHeatpump dashboard, with the
+    // measured heat demand worked out nightly (scripts/measurements). Old links
+    // open the dashboard's heat demand tool, or without a system the list with
+    // the measured heat demand columns.
     case "heatloss":
-        $route->format = "html";
-
-        $systemid = 2;
-        if (isset($_GET['id'])) $systemid = (int) $_GET['id'];
-        
-        $output = view("views/heatloss.php", array(
-            "userid"=>$session['userid'],
-            "systemid"=>$systemid 
-        ));
-        break;
+        $systemid = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+        if ($systemid > 0) {
+            header("Location: ".$path."dashboard?id=$systemid&heatdemand=1", true, 302);
+        } else {
+            header("Location: ".$path."system/list/public?add=heat_loss,m_heat_loss_design,oversizing_factor", true, 302);
+        }
+        exit();
 
     case "daily":
         $route->format = "html";
@@ -148,19 +149,6 @@ switch ($route->controller) {
         if (isset($_GET['id'])) $systemid = (int) $_GET['id'];
         
         $output = view("views/daily.php", array(
-            "userid"=>$session['userid'],
-            "systemid"=>$systemid,
-            "stats_schema"=>$system_stats->schema['system_stats_daily']  
-        ));
-        break;
-
-    case "coldest":
-        $route->format = "html";
-
-        $systemid = 2;
-        if (isset($_GET['id'])) $systemid = (int) $_GET['id'];
-        
-        $output = view("views/coldest.php", array(
             "userid"=>$session['userid'],
             "systemid"=>$systemid,
             "stats_schema"=>$system_stats->schema['system_stats_daily']  

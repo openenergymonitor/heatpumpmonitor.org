@@ -1650,11 +1650,11 @@ global $path;
                     </a>
                 </div>
                 <div class="col-md-6 col-xl-3">
-                    <a class="hpm-explore-card" href="<?php echo $path; ?>heatloss">
+                    <a class="hpm-explore-card" href="<?php echo $path; ?>system/list/public?add=heat_loss,m_heat_loss_design,oversizing_factor">
                         <span class="hpm-explore-icon"><i class="bi bi-thermometer-half"></i></span>
-                        <h3>Heat demand tool</h3>
-                        <p>Compare real world heat demand to the calculated value in the heat loss calculation.</p>
-                        <span class="hpm-go">Open the tool <i class="bi bi-arrow-right"></i></span>
+                        <h3>Heat demand</h3>
+                        <p>Compare measured heat demand with the value in the heat loss calculation, across all systems.</p>
+                        <span class="hpm-go">Compare systems <i class="bi bi-arrow-right"></i></span>
                     </a>
                 </div>
                 <div class="col-md-6 col-xl-3">

@@ -33,7 +33,7 @@ import sys
 import numpy as np
 import pandas as pd
 
-from hpmon_analysis import load, standard_filter, find_csv, linfit, ROOT
+from hpmon_analysis import load, standard_filter, find_csv, linfit, measured_heat_loss, ROOT
 from residual_analysis import num, cv_eval
 from sklearn.linear_model import LinearRegression
 from sklearn.pipeline import make_pipeline
@@ -237,7 +237,7 @@ def main():
     hl = num(f.heat_loss)
     hl = hl.where(hl < 100, hl / 1000.0)             # a few entries in W
     hl = hl.where((hl > 0.5) & (hl < 30))            # kW
-    mhl = num(f.measured_heat_loss).where(lambda v: (v > 0.5) & (v < 30))
+    mhl = measured_heat_loss(f).where(lambda v: (v > 0.5) & (v < 30))
     hl_true = mhl.fillna(hl * 0.76)                  # median measured/design ratio
     dtemp = num(f.design_temp).where(lambda v: (v > -15) & (v < 6))
     ftemp = num(f.flow_temp).where(lambda v: (v >= 25) & (v <= 70))   # design flow temp

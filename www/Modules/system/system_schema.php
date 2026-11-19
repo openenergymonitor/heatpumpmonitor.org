@@ -737,77 +737,11 @@ $schema['system_meta'] = array(
     ),
     */
 
-    'measured_base_DT' => array(
-        'type' => 'float', 
-        'editable' => true, 
-        'optional' => true,
-        'show' => false,
-        'name' => 'Measured base DT', 
-        'group' => 'Measurements',
-        'helper' => 'Use the heatpumpmonitor heat loss tool to fill this in once you have enough data', 
-        'unit' => '°K',
-        'dp' => 2
-    ),
-
-    'measured_design_DT' => array(
-        'type' => 'float', 
-        'editable' => true, 
-        'optional' => true, 
-        'show' => false,
-        'name' => 'Measured design DT', 
-        'group' => 'Measurements',
-        'helper' => 'Use the heatpumpmonitor heat loss tool to fill this in once you have enough data', 
-        'unit' => 'kW @ -3°C',
-        'dp' => 2
-    ),
-
-    'measured_heat_loss' => array(
-        'type' => 'float', 
-        'editable' => true, 
-        'optional' => true, 
-        'show' => false,
-        'name' => 'Measured heat demand', 
-        'group' => 'Measurements',
-        'helper' => 'Use the heatpumpmonitor heat loss tool to fill this in once you have enough data',
-        'unit' => 'kW',
-        'dp' => 2
-    ),
-
-    'measured_heat_loss_range' => array(
-        'type' => 'float', 
-        'editable' => true, 
-        'optional' => true, 
-        'show' => false,
-        'name' => 'Measured heat demand range', 
-        'group' => 'Measurements',
-        'helper' => 'Use the heatpumpmonitor heat loss tool to fill this in once you have enough data',
-        'unit' => 'kW',
-        'dp' => 2
-    ),
-
-    'measured_design_flowT' => array(
-        'type' => 'float',
-        'editable' => true,
-        'optional' => true,
-        'show' => false,
-        'name' => 'Measured design flow temperature',
-        'group' => 'Measurements',
-        'helper' => 'Flow temperature at design DT from the heat loss tool flow temperature fit',
-        'unit' => '°C',
-        'dp' => 2
-    ),
-
-    'measured_design_flowT_range' => array(
-        'type' => 'float',
-        'editable' => true,
-        'optional' => true,
-        'show' => false,
-        'name' => 'Measured design flow temperature range',
-        'group' => 'Measurements',
-        'helper' => 'Flow temperature at design DT from the heat loss tool flow temperature fit',
-        'unit' => '°C',
-        'dp' => 2
-    ),
+    // Measured heat demand and design flow temperature: worked out nightly into the
+    // measurement table by scripts/measurements/system_measurements.php (the hand-saved
+    // measured_base_DT, measured_design_DT, measured_heat_loss(_range) and
+    // measured_design_flowT(_range) fields were retired in November 2026, with
+    // measured_max_flow_temp_coldest_day, which was entered by hand on views/coldest.php).
 
     /* ---------------------------- Design estimates ---------------------------- */
     // Computed by DesignEstimates (design_estimates_model.php) on save and after
@@ -879,18 +813,6 @@ $schema['system_meta'] = array(
         'dp' => 2
     ),
 
-    'measured_max_flow_temp_coldest_day' => array(
-        'type' => 'float', 
-        'editable' => true, 
-        'optional' => true, 
-        'show' => false,
-        'name' => 'Max flow temperature for space heating on coldest day', 
-        'group' => 'Measurements',
-        'helper' => '',
-        'unit' => '°C',
-        'dp' => 2
-    ),
-
     'measured_outside_temp_coldest_day' => array(
         'type' => 'float', 
         'editable' => true, 
@@ -915,7 +837,7 @@ $schema['system_meta'] = array(
         'dp' => 2
     ),
 
-    // Start of the coldest day the measurements above come from, set by scripts/coldest_day.php
+    // Start of the coldest day the measurements above come from, set nightly by scripts/measurements/system_measurements.php
     'measured_coldest_day_timestamp' => array(
         'type' => 'int(11)',
         'editable' => false,
