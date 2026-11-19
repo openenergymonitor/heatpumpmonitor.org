@@ -419,6 +419,12 @@ function bargraph_draw() {
 
     tooltip_text += "Days: " + days_elec;
     $("#window-cop").attr("title", tooltip_text);
+    const completeWindow = (samples) => Array.isArray(samples) && samples.length > 0 &&
+        samples.every((sample) => Array.isArray(sample) && Number.isFinite(sample[1]));
+    const windowElectric = completeWindow(daily_data[bargraph_mode + "_elec_kwh"]) ? elec_kwh_in_window.toFixed(1) + " kWh" : "—";
+    const windowHeat = completeWindow(daily_data[bargraph_mode + "_heat_kwh"]) ? heat_kwh_in_window.toFixed(1) + " kWh" : "—";
+    const windowOutputLabel = bargraph_mode === "cooling" ? "Cooling" : "Heat";
+    $("#window-kwh").text("Recorded daily values — " + prefix + "Electric: " + windowElectric + " · " + prefix + windowOutputLabel + ": " + windowHeat);
 
     $("#window-carnot-cop").html("");
 

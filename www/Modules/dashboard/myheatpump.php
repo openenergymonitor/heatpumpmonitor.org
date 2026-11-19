@@ -172,6 +172,7 @@ if ($private_mode || $system_data->share==0) {
       <div class="app-card-caption app-chart-foot">
         <span class="app-section-label hp-daily-only">COP in window</span>
         <b id="window-cop" class="hp-window-cop hp-daily-only"></b>
+        <span id="window-kwh" class="app-caption-note hp-daily-only"></span>
         <span id="window-carnot-cop" class="app-caption-note"></span>
         <span id="emitter-spec-volume" class="app-caption-note" style="display:none"></span>
         <span id="data-error" style="display:none">DATA ERROR</span>
