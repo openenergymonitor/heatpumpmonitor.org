@@ -27,6 +27,7 @@ this manifest.
 | `ol-7.4.0/ol.css` | https://cdn.jsdelivr.net/npm/ol@v7.4.0/ol.css | jsdelivr hash api (/ol.css) | `9bhh0d43Gp9ct3OBqOdccAg6nQ48H3ibQN30wXbD0oC/uFYftJt4aOK45aGS1TJL` |
 | `ol-7.4.0/ol.js` | https://cdn.jsdelivr.net/npm/ol@v7.4.0/dist/ol.js | jsdelivr hash api (/dist/ol.js) | `UnFf8KXzbcP68LSCc4PSf4WbixBySdywUoVXLwlMw14SsRiQYHMAImua4dnHgwzo` |
 | `vue-2.7.16/vue.min.js` | https://cdn.jsdelivr.net/npm/vue@2.7.16 | jsdelivr hash api (/dist/vue.min.js) | `YVYXhPGIH/Gmcr0W5Rin4PcpcsG1a4pcdUUod1CnbDEJut7XiUaJtSlNKeRLJBPk` |
+| `vue-3.5.22/vue.global.prod.js` | https://cdn.jsdelivr.net/npm/vue@3.5.22/dist/vue.global.prod.js | jsdelivr hash api (/dist/vue.global.prod.js) | `8b+88atXoPL4ijtVqe+2pA+PC8VNYSGqubRseMLV0qxfa5GMHeftEEHvk4eM4RFT` |
 | `vue-select-3.20.4/vue-select.css` | https://cdn.jsdelivr.net/npm/vue-select@3.20.4/dist/vue-select.css | jsdelivr hash api (/dist/vue-select.css) | `d47t1X+T2AtAlhF0RnmMrSByfjJtWLX62A/zYSFLWF5hnjIryfT2GX3zaNCXjL/2` |
 | `vue-select-3.20.4/vue-select.js` | https://cdn.jsdelivr.net/npm/vue-select@3.20.4/dist/vue-select.js | jsdelivr hash api (/dist/vue-select.js) | `XG89Coh+Sc6fdYDtm9AqhAGIOt2HUo8+NiTs2v5kx26XYaffyPvPdr7+cn/qpEE6` |
 | `bootstrap-icons-1.11.0/font/fonts/bootstrap-icons.woff2` | https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/fonts/bootstrap-icons.woff2 | jsdelivr hash api (/font/fonts/bootstrap-icons.woff2) | `KoRugHSRrvj5dWFDXACL3VSSqDjno21U52laTdBeNExt4L5B/6BQG01Q71ZvFzP4` |

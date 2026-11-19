@@ -4,7 +4,8 @@
   (emoncms/app apps/OpenEnergyMonitor/myheatpump/myheatpump.php).
   Markup follows the emoncms card layout. Differences: title from the system
   details, no app config, Back to System link, time bar markup inline (emoncms
-  includes Lib/timebar.php) and no Solar split in heat demand.
+  includes Lib/timebar.php and Lib/timebar_manual.php) and no Solar split in
+  heat demand.
 */
 defined('EMONCMS_EXEC') or die('Restricted access');
 global $path, $session;
@@ -28,6 +29,11 @@ if ($private_mode || $system_data->share==0) {
 <script src="<?php echo $path; ?>theme/vendor/jquery-3.6.3/jquery.min.js" integrity="sha384-Ft/vb48LwsAEtgltj7o+6vtS2esTU9PCpDqcXs4OCVQFZu5BqprHtUCZ4kjK+bpE"></script>
 <script src="<?php echo $path; ?>theme/vendor/flot-5.1.0-mod/flot-5.1.0.mod.min.js" integrity="sha384-rKblsh+7b/6K5Ae+sg/HcUG7rP1MOMKv6V5ABCM6odDFU/hNCW8/fdQPDxvAwQon"></script>
 <script src="<?php echo $path; ?>Modules/dashboard/vis.helper.js?v=<?php echo $v; ?>"></script>
+
+<!-- Start and End date picker, Vue 3 component from emoncms Lib/js/DateTimePicker.js -->
+<script src="<?php echo $path; ?>theme/vendor/vue-3.5.22/vue.global.prod.js" integrity="sha384-8b+88atXoPL4ijtVqe+2pA+PC8VNYSGqubRseMLV0qxfa5GMHeftEEHvk4eM4RFT"></script>
+<script src="<?php echo $path; ?>Modules/dashboard/DateTimePicker.js?v=<?php echo $v; ?>"></script>
+<link href="<?php echo $path; ?>Modules/dashboard/datetimepicker.css?v=<?php echo $v; ?>" rel="stylesheet">
 
 <div class="app-page" data-bs-theme="light">
   <section id="app-block">
@@ -101,11 +107,11 @@ if ($private_mode || $system_data->share==0) {
       <div id="graph-nav-manual" class="app-navbar d-none">
         <div class="input-group w-auto">
           <span class="input-group-text">Start</span>
-          <input id="request-start" class="form-control" type="datetime-local" />
+          <input id="request-start" class="form-control" type="text" placeholder="YYYY-MM-DD HH:MM:SS" />
         </div>
         <div class="input-group w-auto">
           <span class="input-group-text">End</span>
-          <input id="request-end" class="form-control" type="datetime-local" />
+          <input id="request-end" class="form-control" type="text" placeholder="YYYY-MM-DD HH:MM:SS" />
         </div>
         <div class="btn-group app-timebar">
           <button id="time-manual-close" class="btn" title="Done"><i class="bi bi-check-lg"></i></button>

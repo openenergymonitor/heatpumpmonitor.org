@@ -1,0 +1,147 @@
+/* ---- DateTimePicker component (Lib/js/DateTimePicker.js) ---- */
+
+.dtp-input {
+    width: 155px;
+    flex: 0 0 auto;
+}
+.input-group > .dtp-input { width: 155px; }
+
+/* Calendar button, no dropdown caret */
+.dtp-toggle {
+    display: inline-flex;
+    align-items: center;
+    padding-left: 7px;
+    padding-right: 7px;
+}
+.dtp-toggle::after { display: none; }
+.dtp-toggle svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* Attached to an existing input: the host wraps the button and menu, so
+   Bootstrap's input group rules do not reach the button */
+.dtp-host { display: contents; }
+.input-group > .dtp-host > .dtp-toggle {
+    margin-left: calc(-1 * var(--bs-border-width));
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+.input-group > .dtp-host:not(:last-child) > .dtp-toggle {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.dtp-popup {
+    --bs-dropdown-padding-x: 10px;
+    --bs-dropdown-padding-y: 10px;
+    --bs-dropdown-min-width: 240px;
+    width: 240px;
+    user-select: none;
+}
+.dtp-calendar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+.dtp-nav {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+    color: var(--bs-secondary-color);
+    padding: 0 6px;
+    line-height: 1;
+    border-radius: var(--bs-border-radius);
+}
+.dtp-nav:hover { background: var(--bs-tertiary-bg); }
+.dtp-month-label {
+    font-size: 13px;
+    font-weight: 600;
+}
+.dtp-dow-row {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    margin-bottom: 2px;
+}
+.dtp-dow {
+    text-align: center;
+    font-size: 11px;
+    color: var(--bs-secondary-color);
+    font-weight: 600;
+    padding: 2px 0;
+}
+.dtp-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 1px;
+}
+.dtp-day {
+    text-align: center;
+    font-size: 12px;
+    padding: 5px 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    border-radius: var(--bs-border-radius);
+    color: var(--bs-body-color);
+    line-height: 1;
+}
+.dtp-day:hover { background: var(--bs-tertiary-bg); }
+.dtp-day--other { color: var(--bs-secondary-color); }
+.dtp-day--today {
+    font-weight: 700;
+    color: rgb(var(--bs-primary-rgb));
+}
+.dtp-day--selected,
+.dtp-day--selected:hover {
+    background: rgb(var(--bs-primary-rgb));
+    color: #fff;
+    font-weight: 600;
+}
+.dtp-time-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    margin: 10px 0 8px;
+    padding-top: 8px;
+    border-top: var(--bs-border-width) solid var(--bs-border-color);
+}
+.dtp-time-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+.dtp-t-btn {
+    background: none;
+    border: var(--bs-border-width) solid var(--bs-border-color);
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 9px;
+    color: var(--bs-secondary-color);
+    padding: 1px 5px;
+    line-height: 1;
+}
+.dtp-t-btn:hover { background: var(--bs-tertiary-bg); }
+.form-control.dtp-t-input {
+    width: 36px;
+    padding: 3px 2px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+}
+.dtp-colon {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--bs-secondary-color);
+}
+.dtp-footer {
+    display: flex;
+    gap: 6px;
+    padding-top: 8px;
+    border-top: var(--bs-border-width) solid var(--bs-border-color);
+}
+.dtp-footer .btn { flex: 1; }

@@ -42,8 +42,33 @@
     vertical-align: middle;
 }
 .app-page .input-group > :is(.form-control, .form-select) { flex: 0 0 auto; }
-/* Start and End fields of the time bar */
-#graph-nav-manual .form-control { width: 200px; }
+/* Start and End fields of the time bar, as the emoncms date picker input */
+#request-start, #request-end { width: 155px; }
+
+/* Primary buttons (date picker Apply) in the dashboard primary colour */
+.app-page .btn-primary {
+    --bs-btn-bg: var(--bs-primary);
+    --bs-btn-border-color: var(--bs-primary);
+    --bs-btn-hover-bg: var(--ec-primary-darker);
+    --bs-btn-hover-border-color: var(--ec-primary-darker);
+    --bs-btn-active-bg: var(--ec-primary-darker);
+    --bs-btn-active-border-color: var(--ec-primary-darker);
+    --bs-btn-disabled-bg: var(--bs-primary);
+    --bs-btn-disabled-border-color: var(--bs-primary);
+}
+
+/* Calendar button of the date picker, as emoncms btn-default */
+.app-page .btn-default {
+    --bs-btn-color: var(--bs-body-color);
+    --bs-btn-bg: var(--bs-tertiary-bg);
+    --bs-btn-border-color: var(--ec-input-border-color);
+    --bs-btn-hover-color: var(--bs-body-color);
+    --bs-btn-hover-bg: #e6e6e6;
+    --bs-btn-hover-border-color: #b3b3b3;
+    --bs-btn-active-color: var(--bs-body-color);
+    --bs-btn-active-bg: #d9d9d9;
+    --bs-btn-active-border-color: #b3b3b3;
+}
 .app-page .input-group-text {
     padding: 4px 5px;
     font-size: 14px;

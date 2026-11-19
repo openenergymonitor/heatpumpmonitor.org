@@ -576,30 +576,22 @@ function timebar_update(daily){
 
 // Start and End fields in place of the time bar. on_change runs after either
 // field sets the window.
-// heatpumpmonitor.org: native datetime-local inputs in place of the emoncms
-// DateTimePicker, which needs Vue 3.
 function timebar_manual(on_change){
-    var pad = function(n){ return String(n).padStart(2, "0"); };
-    var to_input = function(t){
-        var d = new Date(t);
-        return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) + "T" + pad(d.getHours()) + ":" + pad(d.getMinutes());
-    };
     var set = function(key){
-        return function(){
-            // datetime-local values are local time
-            var t = new Date(this.value).getTime();
-            if (!this.value || isNaN(t)) { alert("Please enter a valid " + key + " date."); return; }
+        return function(date){
+            if (!date) { alert("Please enter a valid " + key + " date."); return; }
+            var t = date.getTime();
             if (key == "start" ? t >= view.end : t <= view.start) { alert("Start date must be before the end date."); return; }
             view[key] = t;
             on_change();
         };
     };
-    $("#request-start").change(set("start"));
-    $("#request-end").change(set("end"));
+    var start = DateTimePicker.attach(document.getElementById("request-start"), { onChange: set("start") });
+    var end = DateTimePicker.attach(document.getElementById("request-end"), { onChange: set("end") });
 
     $("#time-manual-open").click(function(){
-        $("#request-start").val(to_input(view.start));
-        $("#request-end").val(to_input(view.end));
+        start.setDate(new Date(view.start));
+        end.setDate(new Date(view.end));
         $("#graph-nav").addClass("d-none");
         $("#graph-nav-manual").removeClass("d-none");
     });
