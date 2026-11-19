@@ -1,80 +1,79 @@
 # How accurate is a measured SPF?
 
-If metering error were large, no prediction could be checked against it
-more tightly than that error. So how good are the meters in this fleet?
-Most use SDM120 class 1 electricity meters and Axioma Qalcosonic class 2
-ultrasonic heat meters.
+Any prediction we make is checked against measured SPF, so it's worth
+knowing how accurate those measurements are likely to be. Most systems in
+the fleet use SDM120 class 1 electricity meters and Axioma Qalcosonic
+class 2 ultrasonic heat meters.
 
-**For a correctly installed system, about ±0.10 SPF (90%).** The
-certification worst case is ±0.29, but real meters sit well inside it.
+On a correctly installed system, measured SPF looks to be accurate to
+roughly **±0.10** (90% confidence). The certification standard allows up
+to about ±0.29.
 
-## The worst case allowed by the standard
+## What the standard allows
 
-EN 1434 adds three error limits together:
+EN 1434 sets a worst case by adding up three error limits:
 
 ```
-flow (class 2):  ±(2 + 0.02·qp/q) %     capped at ±5%
+flow (class 2):   ±(2 + 0.02·qp/q) %     capped at ±5%
 temperature pair: ±(0.5 + 3·ΔΘmin/ΔΘ) %
-calculator:      ±(0.5 + ΔΘmin/ΔΘ) %
+calculator:       ±(0.5 + ΔΘmin/ΔΘ) %
 ```
 
-Heat pumps run at small flow−return differences (fleet median 3.8 K, p10
-3.0, p90 5.2), close to the 3 K minimum the meter is rated for, which
-inflates the temperature terms. At each system's own operating point the
-allowed heat meter error is a median 6.2%. With 1% for the electricity
-meter on top, that gives about ±7.2%, or **±0.29 at SPF 4**. That's what
-certification permits, not what real meters do.
+Heat pumps usually run with a small flow−return temperature difference
+(fleet median 3.8 K, p10 3.0 K, p90 5.2 K). This is close to the 3 K
+minimum the meter is rated for, which pushes the temperature terms up.
 
-## What real meters do
+Working this out at each system's own operating point gives a median
+allowed heat meter error of 6.2%. Adding 1% for the electricity meter
+gives about ±7.2%, or ±0.29 at SPF 4.
 
-- **BEIS/DECC lab tests** (12 meters including ultrasonic): matched
-  temperature pairs got ΔT right to within about 0.05 K. That's around
-  1.3% at 3.8 K, against 2.9% allowed. Correctly installed flow
-  measurement was typically within a few percent, and new meters of the
-  same model agreed closely.
-- **OEM bench tests**: Axioma −1.7% on average (−0.5 to −3.2%), Sontex
-  +0.6% (−1.3 to +2.2%). Some of the Axioma offset was traced to pipework
-  heat loss before the meter rather than the meter itself.
-- **Two heat meters on one heat pump** for a month agreed on COP to 0.02
-  (4.02 vs 4.00).
+## Accuracy testing
 
-Combining the independent parts:
+Three sources point the same way:
+
+- **BEIS/DECC lab tests** (12 meters, including ultrasonic): matched
+  temperature pairs measured the difference to within about 0.05 K. At
+  3.8 K that's around 1.3%, compared with 2.9% allowed. Correctly
+  installed flow measurement was typically within a few percent.
+- **OEM bench tests**: Axioma meters read −1.7% on average (range −0.5 to
+  −3.2%), and Sontex +0.6% (range −1.3 to +2.2%). Some of the Axioma
+  offset may have been heat lost from the pipework before the meter,
+  rather than the meter itself.
+- **Two heat meters on one heat pump** for a month agreed on COP to
+  within 0.02 (4.02 vs 4.00).
+
+Combining the independent error sources gives a rough estimate:
 
 | Part | 90% bound |
 |---|---|
 | Flow measurement | ±2.0% |
-| ΔT measurement (0.05 K) | ±0.9–1.7%, median 1.3% |
+| Temperature difference (0.05 K) | ±0.9–1.7%, median 1.3% |
 | Calculator | ±0.5% |
 | Electricity meter | ±0.5% |
-| **COP** | **±2.5%, about ±0.10 at SPF 4** |
+| **COP** | **about ±2.5%, or ±0.10 at SPF 4** |
 
-That matches the conclusion of the OEM heat meter testing thread and the
-two-meter comparison.
-
-## When it's worse
+## When accuracy is likely to be worse
 
 - **Glycol.** BEIS found 1–4% extra error at 10% glycol and 7–8% at 30%,
-  because the meter assumes water. We don't record glycol, and it would be
-  worth adding as a field.
-- **Very low ΔT.** 23 of the 225 systems have a weighted flow−return ΔT
-  below 3 K.
-- **Bad installs.** Across RHI audit data BEIS estimated −5.9% to +2.8%
-  (95%), driven by a minority of poor installs such as strap-on sensors.
-  Pocketed sensors on MID installs should be near the lab end, but any
-  fleet will have a few faulty ones.
-- **Age and dirt** can make ultrasonic meters fail. The fleet is young,
-  so this matters later rather than now.
+  as the meter assumes plain water. Most systems on HeatpumpMonitor do not use glycol and those that do will have calibrated sontex heat meters.
+- **Very low temperature difference.** 23 of the 225 systems have a
+  weighted flow−return difference below 3 K.
+- **Poor installs.** Using RHI audit data, BEIS estimated a range of
+  −5.9% to +2.8% (95%), mostly due to a minority of poor installs such as
+  strap-on sensors. Pocketed sensors on MID installs should be closer to
+  the lab results, but a few faulty installs are likely in any fleet.
+- **Age and dirt** can cause ultrasonic meters to drift or fail. The
+  fleet is fairly young, so this is more likely to matter later.
 
-## What it means for prediction
+## What this means for prediction
 
-- ±0.10 is the floor when testing against measured SPF. A perfect model
-  would still scatter about ±0.10, and a model that's itself good to
-  ±0.10 would show about ±0.14. Anything claimed below ±0.10 is suspect.
-- Metering explains only about 4% of the current scatter
-  (0.10² / 0.51²). The rest is real differences between systems.
-- Systems far from any prediction (more than about 0.5 out) are worth
-  checking for glycol, low ΔT or install problems before reading them as
-  genuinely good or bad.
+- ±0.10 is roughly the floor when testing against measured SPF. Even a
+  perfect model would scatter by about ±0.10, and a model that is itself
+  good to ±0.10 would show about ±0.14. A claimed accuracy much tighter
+  than ±0.10 should be treated with caution.
+- Metering likely accounts for only around 4% of the current scatter
+  (0.10² / 0.51²). Most of the rest probably comes from real differences
+  between systems.
 
 ## Sources
 
