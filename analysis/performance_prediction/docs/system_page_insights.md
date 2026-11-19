@@ -1,6 +1,8 @@
 # Per-system insights on the system page: plan
 
-Working plan, November 2026. Nothing here is built yet.
+Working plan, November 2026. The nightly design parameter measurements
+(heat loss, peak heat, design outside temperature, flow temperatures) are
+built; the rest is not yet.
 
 ## Aim
 
@@ -51,18 +53,18 @@ Readiness:
 
 | Measurement | Shown as | Sample | Method | Current code | Systems | Readiness |
 |---|---|---|---|---|---|---|
-| HTC (effective) | W/K | Day | Slope of daily space heat vs (room − outside) ΔT, robust fit | `heatloss.php`, `heatloss_harness.php` | Outside temp; room temp or assumed 20 °C | Ready (needs CI, not just PI) |
-| Balance point / base ΔT | K | Day | Intercept of the same fit. Absorbs internal and solar gains | `heatloss.php` | As above | Ready |
-| Heat loss at design temperature | kW, at the form's `design_temp` and at the measured one | Day | HTC × design ΔT + intercept | `heatloss.php` → `measured_heat_loss`, `_range` | As above | Ready (currently saved by hand or `--save`) |
+| HTC (effective) | W/K | Day | Slope of daily space heat vs (room − outside) ΔT, robust fit | `scripts/measurements`, dashboard heat demand tool | Outside temp; room temp or assumed 20 °C | Ready (needs CI, not just PI) |
+| Balance point / base ΔT | K | Day | Intercept of the same fit. Absorbs internal and solar gains | `scripts/measurements` | As above | Ready |
+| Heat loss at design temperature | kW, at the form's `design_temp` and at the measured one | Day | HTC × design ΔT + intercept | `scripts/measurements` → `measurement` table | As above | Ready (nightly) |
 | Heat loss per m² | W/m² | Day | Above / `floor_area` | none | With floor area | Ready |
-| Coldest day experienced | °C, date | Day | Lowest daily weighted outside temp in the last year | `coldest_day.php` | Outside temp | Ready |
+| Coldest day experienced | °C, date | Day | Lowest daily weighted outside temp in the last year | `scripts/measurements` (`coldest_day`) | Outside temp | Ready |
 | Outside temperature distribution | Curve of daily means with `design_temp` marked | Day | All days of data, coldest 1% / 2.5% | none | Outside temp | Needs work |
 | Emitter capacity | kW at ΔT50 (radiators); kW at a stated MWT–room ΔT for all types | Episode | heat = rated × (ΔT / 50)^n per episode, kWh-weighted, KDE with peak detection | `emitter.js`, `signature_episodes` | Room temp feed, heat, return temp | Needs work (UFH and mixed systems, no-room-temp fallback) |
 | Implied emitter capacity from form | kW at ΔT50 | none | Form `heat_loss` at form `flow_temp`, assumed design dT and room | none | With form data | Ready (simple calculation) |
-| Flow temperature needed at design: empirical | °C | Day | Flow temp vs ΔT fit on space heating days, extrapolated to design ΔT | `heatloss.php` → `measured_design_flowT`, `_range` | Outside temp | Ready |
+| Flow temperature needed at design: empirical | °C | Day | Flow temp vs ΔT fit on space heating days, extrapolated to design ΔT | `scripts/measurements` (typical and sustained 4 h) | Outside temp | Ready |
 | Flow temperature needed at design: physical | °C | Episode | Measured design heat loss + measured emitter capacity + running dT → MWT → flowT | none | Room temp feed | Needs work |
-| Flow temperature on coldest day | °C, mean and max | Day | Daily weighted mean, max during space heating | `coldest_day.php` | All | Ready |
-| Heat pump size vs load | Ratio | none | Measured design heat loss / rated output, and / max output from capacity tests | `heatloss.php` (max tests) | All | Needs work |
+| Flow temperature on coldest day | °C, mean and max | Day | Daily weighted mean, max during space heating | `scripts/measurements` (`coldest_day`, `flowT_peak_4h`) | All | Ready |
+| Heat pump size vs load | Ratio | none | Measured design heat loss / rated output, and / max output from capacity tests | Dashboard System card and heat demand tool (max tests, peak 4 h) | All | Needs work |
 
 The two flow temperature routes are an internal check. If they disagree
 by more than their uncertainty, one of the inputs is off: room
@@ -197,16 +199,19 @@ error.
 
 Existing pieces:
 
-- [heatloss.php](../../../www/views/heatloss.php) fits heat loss and
-  design flow temperature in the browser from daily stats.
-  [heatloss_harness.php](../../../scripts/heatloss_harness.php) mirrors the
-  fit in PHP and can `--save` to the `measured_*` fields, which are
-  currently filled by hand from the tool.
+- The heat demand explorer (`views/heatloss.php`) has been folded into
+  the MyHeatpump dashboard's heat demand tool; `/heatloss` redirects there.
+  [system_measurements.php](../../../scripts/measurements/system_measurements.php)
+  runs the same fit nightly (shared PHP port in `heatloss_fit.php`), plus
+  peak heat, design outside temperature and space heating flow
+  temperatures from a 10 s feed scan, into the `measurement` table. The
+  dashboard and system list read from there; the hand-saved
+  `measured_*` fields are no longer written.
 - [emitter.js](../../../www/Modules/emitter/views/emitter.js) builds the
   emitter capacity distribution from `signature_episodes`, written by
   [steady_episodes_fleet.php](../../../scripts/feed_scan/steady_episodes_fleet.php).
-- [coldest_day.php](../../../scripts/coldest_day.php) fills the coldest
-  day fields nightly.
+- The coldest day fields in `system_meta` are filled nightly by
+  `system_measurements.php` (it replaced `coldest_day.php`).
 - [projected_spf.php](../../../scripts/projected_spf.php) and
   [update_design_estimates.php](../../../scripts/update_design_estimates.php)
   are the pattern for computed per-system fields shown as cards on
@@ -214,9 +219,10 @@ Existing pieces:
 
 Proposed:
 
-1. Run the heat loss harness fit nightly for every system and store the
+1. ~~Run the heat loss fit nightly for every system and store the
    results automatically, adding the confidence interval and the inputs
-   used (room temperature assumed or measured, days used).
+   used (room temperature assumed or measured, days used).~~ Done:
+   `scripts/measurements/system_measurements.php`.
 2. Move the KDE, weighted percentile and peak detection out of
    `emitter.js` into a shared JS library, so every distribution on the page
    is drawn the same way.
@@ -241,9 +247,19 @@ Results computed on a dev machine won't reach live system fields.
 
 ### Phase 1: design parameters, pipework and data checks
 
-- [ ] Nightly heat loss and flow temperature fit with confidence and
-      prediction intervals, block bootstrap by week
-- [ ] Outside temperature distribution and coldest days vs `design_temp`
+- [x] Nightly heat loss and flow temperature fit with confidence and
+      prediction intervals (`scripts/measurements/system_measurements.php`,
+      `measurement` table). Flow temperature from space heating only: typical
+      (weighted by heat output) and sustained (highest 4 h each day)
+- [ ] Block bootstrap by week for those intervals
+- [x] Outside temperature distribution and coldest days vs `design_temp`:
+      99.6% / 99.0% design outside temperature from hourly data over complete
+      years, coldest hour and coldest day
+- [x] Peak heat output: highest day and highest 4 h, with timestamps
+- [x] Measured values on the MyHeatpump dashboard (System card, heat demand
+      tool with a flow temperature chart) and as system list columns
+- [ ] Deploy: tables, nightly cron after the daily stats, one `--full` run,
+      drop the retired `measured_*` columns from `system_meta`
 - [ ] Shared distribution library from `emitter.js`
 - [ ] Emitter capacity per system, with UFH and no-room-temp handling
 - [ ] Implied emitter capacity from the form, and the physical flow
@@ -254,7 +270,7 @@ Results computed on a dev machine won't reach live system fields.
 - [ ] Data checks: DHW flag, sensor offset, room temp feed, other heat
       sources
 - [ ] Split-half test of the intervals across the fleet
-- [ ] Cards on `system_view.php`
+- [ ] Cards on `system_view.php` (the dashboard System card shows them so far)
 
 Done when: the measured vs form card shows on all systems with enough
 data, the two flow temperature routes agree within their intervals on
@@ -277,8 +293,8 @@ Starts once the heat meter flow test on 371 and 269 has a result.
 ## Open questions
 
 - Public, or owner and admins only? Possibly different for each card.
-- Should the automatic fits replace the hand-saved `measured_*` fields,
-  or sit beside them?
+- ~~Should the automatic fits replace the hand-saved `measured_*` fields,
+  or sit beside them?~~ Replaced: the site reads the `measurement` table.
 - What basis does the form's design temperature use (MCS / CIBSE design
   outside temperature for the location), and how do we compare it fairly
   with daily mean temperatures from one or two winters?
