@@ -43,8 +43,9 @@ produce its results.
 
 - [metering_floor.md](metering_floor.md): how accurate a measured SPF is
 - [design_model.md](design_model.md): an attempt at a simple steady-state design model
-- [load_and_quality.md](load_and_quality.md): why the simulator's load
-  effect doesn't show up in real Arotherms, and the experiment to test it
+- [load_and_quality.md](load_and_quality.md): why the datasheet's load
+  effect doesn't show up in real Arotherms: twins, machine replay
+  evidence and next steps
 - [machine_replay.md](machine_replay.md): real Arotherm+ data replayed
   through the datasheet
 - [daily_records.md](daily_records.md): using daily data, and projecting
@@ -170,11 +171,13 @@ wouldn't separate good running from bad. If that's right, it fits the
 - **Make the threshold model-relative.** Use each model's minimum output
   instead of a fixed 40% of badge, so "below minimum" means the same thing
   for every make.
-- **Measure cycling directly.** Starts per day and short-cycle time from
-  the 10 s feeds (`hstar_hist.csv` and the feed scans) would test the
-  cycling explanation more directly than a power histogram. Check what
-  time resolution the API histograms use, and separate DHW from space
-  heating.
+- **Measure cycling directly.** Partly done for Arotherm+ by the
+  [machine replay](machine_replay.md), from the 10 s feeds. Starts per
+  day isn't linked to quality (ρ −0.09), but the share of steady running
+  inferred below 30 rps is (ρ −0.42). That fits the minimum-output idea
+  above better than cycling as such (see
+  [load_and_quality.md](load_and_quality.md), Finding 3). Other makes
+  aren't covered yet.
 - **Allow for multiple comparisons.** Several thresholds and subgroups
   have been tried, so a single p-value overstates the evidence. Use
   cross-validation or a held-out set.
@@ -231,7 +234,12 @@ To check it wasn't just the wrong coefficients, 1,092 combinations were
 tried on the real fleet. **The best load coefficient is zero**, and none
 beat plain ΔT. That closes the metric search. The likely reason: the
 Arotherm+ datasheet predicts a strong load effect that real Arotherms
-don't show (see [load_and_quality.md](load_and_quality.md)).
+don't show (see [load_and_quality.md](load_and_quality.md)). The machine
+replay suggests steady running does follow the datasheet between 30 and
+120 rps, and part of the effect is lost to time at or below minimum speed.
+Once that's allowed for, about half the expected slope comes back (+0.18
+against +0.36). This is provisional and could partly be a heat meter
+effect.
 
 Side results:
 
@@ -269,7 +277,8 @@ repo.
   with SHAP values to explain each system's gap.
 - **Fit the simulator to each home.** The fitted % of Carnot becomes a
   cleaner machine quality score. The Arotherm twins in
-  [load_and_quality.md](load_and_quality.md) are a first step.
+  [load_and_quality.md](load_and_quality.md) were a first step, and the
+  [machine replay](machine_replay.md) is the next one.
 - **New metadata:** glycol concentration, primary pipework length, and the
   commissioned weather compensation curve.
 - **Publish a standby-corrected SPF.** It's an exact calculation.
