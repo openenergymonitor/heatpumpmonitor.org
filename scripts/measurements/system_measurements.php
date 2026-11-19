@@ -210,18 +210,25 @@ function scan_system($mysqli, $emoncms_mysqli, $systemid, $days, $full, $tz)
         $sp_hf = 0; $sp_h = 0; $sp_n = 0;
         $hour_sum = array(); $hour_n = array();
         $bin = null;
+        $heat_a = $d["heat"]; $elec_a = $d["elec"];
+        $dhw_a = $has_dhw ? $d["dhw"] : null;
+        $cool_a = $has_cool ? $d["cooling"] : null;
+        $out_a = isset($d["outsideT"]) ? $d["outsideT"] : null;
+        $room_a = isset($d["roomT"]) ? $d["roomT"] : null;
+        $flow_a = isset($d["flowT"]) ? $d["flowT"] : null;
+        $bin_n = BIN_S / 10;
 
         for ($j = 0; $j < $n; $j++) {
             $t = $day + $j * 10;
-            if ($j % (BIN_S / 10) == 0) {
+            if ($j % $bin_n == 0) {
                 if ($bin !== null) $bins[] = $bin;
                 $bin = array($t, 0, 0, 0, 0, 0, $day);
             }
 
-            $heat = $d["heat"][$j];
-            $elec = $d["elec"][$j];
-            $dhw = $has_dhw && $d["dhw"][$j] == $d["dhw"][$j] && $d["dhw"][$j] >= 0.5;
-            $cool = $has_cool && $d["cooling"][$j] == $d["cooling"][$j] && $d["cooling"][$j] >= 0.5;
+            $heat = $heat_a[$j];
+            $elec = $elec_a[$j];
+            $dhw = $dhw_a !== null && $dhw_a[$j] >= 0.5;      // NAN >= 0.5 is false
+            $cool = $cool_a !== null && $cool_a[$j] >= 0.5;
             if ($dhw) $last_dhw = $t;
 
             if ($heat == $heat) {
@@ -230,8 +237,8 @@ function scan_system($mysqli, $emoncms_mysqli, $systemid, $days, $full, $tz)
                 $bin[1] += $heat; $bin[2]++;
             }
 
-            if (isset($d["outsideT"])) {
-                $o = $d["outsideT"][$j];
+            if ($out_a !== null) {
+                $o = $out_a[$j];
                 if ($o == $o) {
                     $out_sum += $o; $out_n++;
                     $h = intdiv($j * 10, 3600);
@@ -239,15 +246,15 @@ function scan_system($mysqli, $emoncms_mysqli, $systemid, $days, $full, $tz)
                     $hour_sum[$h] += $o; $hour_n[$h]++;
                 }
             }
-            if (isset($d["roomT"])) {
-                $rt = $d["roomT"][$j];
+            if ($room_a !== null) {
+                $rt = $room_a[$j];
                 if ($rt == $rt) { $room_sum += $rt; $room_n++; }
             }
 
             // Space heating: running, not DHW, not cooling, settled after DHW
-            if (isset($d["flowT"]) && $elec == $elec && $elec >= $starting_power && !$dhw && !$cool
+            if ($flow_a !== null && $elec == $elec && $elec >= $starting_power && !$dhw && !$cool
                 && $t - $last_dhw >= DHW_SETTLE_S && $heat == $heat) {
-                $f = $d["flowT"][$j];
+                $f = $flow_a[$j];
                 if ($f == $f) {
                     $sp_n++; $bin[5]++;
                     if ($heat > 0) {

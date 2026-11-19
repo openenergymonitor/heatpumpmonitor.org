@@ -68,18 +68,29 @@ function load_block($fh, $meta, $t0, $n)
 // previous block have already been processed).
 function fill_nulls(&$data, $n, &$state)
 {
-    for ($j = 0; $j < $n; $j++) {
-        if ($data[$j] == $data[$j]) {
-            if ($state['gap'] > 0 && ($state['gap'] + 1) * 10 < FILL_MAX_S
-                && $state['value'] == $state['value']) {
-                $fill_start = $j - $state['gap'];
-                if ($fill_start < 0) $fill_start = 0;
-                for ($k = $fill_start; $k < $j; $k++) $data[$k] = $state['value'];
+    // Most samples are valid, so the block is walked in chunks and only chunks
+    // holding a NAN are stepped through sample by sample (any NAN makes the
+    // chunk's sum NAN, and array_sum runs in C). A clean chunk only needs its
+    // first sample stepped, which closes any gap carried into it.
+    $chunk = 360;
+    for ($c0 = 0; $c0 < $n; $c0 += $chunk) {
+        $c1 = min($n, $c0 + $chunk);
+        $clean = !is_nan(array_sum(array_slice($data, $c0, $c1 - $c0)));
+        $jend = $clean ? $c0 + 1 : $c1;
+        for ($j = $c0; $j < $jend; $j++) {
+            if ($data[$j] == $data[$j]) {
+                if ($state['gap'] > 0 && ($state['gap'] + 1) * 10 < FILL_MAX_S
+                    && $state['value'] == $state['value']) {
+                    $fill_start = $j - $state['gap'];
+                    if ($fill_start < 0) $fill_start = 0;
+                    for ($k = $fill_start; $k < $j; $k++) $data[$k] = $state['value'];
+                }
+                $state['value'] = $data[$j];
+                $state['gap'] = 0;
+            } else {
+                $state['gap']++;
             }
-            $state['value'] = $data[$j];
-            $state['gap'] = 0;
-        } else {
-            $state['gap']++;
         }
+        if ($clean) $state['value'] = $data[$c1 - 1];
     }
 }
