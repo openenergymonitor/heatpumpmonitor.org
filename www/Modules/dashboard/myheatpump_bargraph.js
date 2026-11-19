@@ -598,4 +598,5 @@ $(".bargraph_mode").click(function () {
 
     bargraph_mode = mode;
     bargraph_draw();
+    alltime_totals_draw();
 });

@@ -394,7 +394,7 @@ if ($private_mode || $system_data->share==0) {
     </div>
 
     <div class="app-card app-card-body">
-      <div class="app-card-caption"><span class="app-section-label" id="all_time_history_title">All time history</span></div>
+      <div class="app-card-caption"><span class="app-section-label"><span id="all_time_history_title">All time history</span> <span id="total_mode"></span></span></div>
       <div class="app-live">
         <div>
           <div class="app-live-label">Electricity input</div>

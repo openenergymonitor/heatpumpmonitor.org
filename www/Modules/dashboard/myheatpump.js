@@ -306,27 +306,36 @@ function show() {
             success: function (result) {
                 result = result[config.id];
                 if (result == undefined) return;
-                if (result.combined_elec_kwh != undefined) {
-                    $("#total_elec").html(Math.round(result.combined_elec_kwh));
-                    $("#total_heat").html(Math.round(result.combined_heat_kwh));
-                    if (result.combined_cop != undefined && result.combined_cop != null) {
-                        $("#total_cop").html(result.combined_cop.toFixed(2));
-                    } else {
-                        $("#total_cop").html("-");
-                    }
-                    
-                }
-
-                // if result includes boiler show this
-                if (boiler_enabled && result.boiler_kwh != undefined) {
-                    $("#total_boiler").html(Math.round(result.boiler_kwh));
-                    $("#boiler_total_bound").show();
-                }
+                alltime_totals = result;
+                alltime_totals_draw();
             }
         });
     }
 
     $(".ajax-loader").hide();
+}
+
+// All time totals for the mode selected above the daily chart. system/stats/all
+// gives totals per mode with the same prefixes as bargraph_mode.
+var alltime_totals = null;
+var alltime_mode_names = { running: "When running", space: "Space heating", water: "Water heating", cooling: "Cooling" };
+
+function alltime_totals_draw() {
+    if (!alltime_totals) return;
+    var mode = alltime_totals[bargraph_mode + "_elec_kwh"] != undefined ? bargraph_mode : "combined";
+    var elec = alltime_totals[mode + "_elec_kwh"];
+    var heat = alltime_totals[mode + "_heat_kwh"];
+    var cop = alltime_totals[mode + "_cop"];
+
+    $("#total_elec").html(elec != null ? Math.round(elec) : "-");
+    $("#total_heat").html(heat != null ? Math.round(heat) : "-");
+    $("#total_cop").html(cop != null ? cop.toFixed(2) : "-");
+    $("#total_mode").html(alltime_mode_names[mode] ? "&middot; " + alltime_mode_names[mode] : "");
+
+    // Boiler total is for the whole system, shown with All
+    var show_boiler = boiler_enabled && mode == "combined" && alltime_totals.boiler_kwh != undefined;
+    if (show_boiler) $("#total_boiler").html(Math.round(alltime_totals.boiler_kwh));
+    $("#boiler_total_bound").toggle(show_boiler);
 }
 
 function clear() {
