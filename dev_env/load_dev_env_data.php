@@ -162,6 +162,15 @@ if ($reload_all) $load_heatpump_models = 1;
 // 1. Clear the database
 // -------------------------------------------------------------------------------------
 
+// Dropping every table is only safe when heatpumpmonitor has its own database.
+// When it shares one with a local emoncms this would wipe users, feeds and apps.
+$shares_emoncms_db = $settings['sql']['server'] == $settings['emoncms_credentials']['server']
+    && $settings['sql']['database'] == $settings['emoncms_credentials']['database'];
+if ($clear_db && $shares_emoncms_db) {
+    print "- Not clearing the database: it is shared with emoncms (".$settings['sql']['database']."). Use dev_env/load_public_data.php instead.\n";
+    $clear_db = 0;
+}
+
 if ($clear_db) {
     $result = $mysqli->query("SHOW TABLES");
     while ($row = $result->fetch_row()) {

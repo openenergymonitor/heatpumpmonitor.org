@@ -973,7 +973,7 @@ function linearRegression(x, y) {
 $(".show_stats_category").click(function () {
     var key = $(this).attr("key");
     $(".stats_category").hide();
-    $(".stats_category[key='" + key + "'").show();
+    $(".stats_category[key='" + key + "']").show();
     $(".show_stats_category").removeClass("active");
     $(this).addClass("active");
 });

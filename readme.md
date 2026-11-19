@@ -24,9 +24,20 @@ Modify database credentials to match your system
 
 Load public data from heatpumpmonitor.org to create functioning development environment
 
-    php load_dev_env_data.php
+    php dev_env/load_dev_env_data.php
 
 Login using 'Self hosted data' and username and password: admin:admin
+
+### Alongside an existing local emoncms
+
+If you already run emoncms locally and want to keep logging in with your own users, import just the public data instead:
+
+    php dev_env/load_public_data.php              # systems, models, stats, installer logos
+    php dev_env/load_public_data.php --photos     # ... plus system photos
+    php dev_env/load_public_data.php --monthly    # ... plus monthly stats (one request per system, slow)
+    php dev_env/load_public_data.php --only=stats # refresh just one step
+
+It never drops tables or creates users. Your own systems are kept, and any production system whose id clashes with one of them is skipped. Imported systems are owned by placeholder userid 99999999, which has no user row, so they appear as read-only public systems that only admin can edit. Re-run it at any time to refresh.
 
 ## Run using Docker
 
