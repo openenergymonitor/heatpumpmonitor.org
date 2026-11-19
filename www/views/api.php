@@ -111,10 +111,28 @@ global $path;
                   </tr>
                   
                   <tr>
+                    <th>Measurements</th>
+                    <th></th>
+                    <th></th>
+                  </tr>
+
+                  <tr>
+                    <td><a target="_BLANK" href="<?php echo $path; ?>measurement/list.json">/measurement/list.json</a></td>
+                    <td><b>mode=</b>user or admin (optional)</td>
+                    <td>Design parameters worked out nightly from each system's monitoring data, for all public systems, keyed by system id. Values only, with an <code>m_</code> prefix as in the system list columns, e.g. <code>m_heat_loss_design</code>. With <b>mode=user</b> when logged in, your own systems.</td>
+                  </tr>
+
+                  <tr>
+                    <td><a target="_BLANK" href="<?php echo $path; ?>measurement/system.json?id=2">/measurement/system.json?id=2</a></td>
+                    <td><b>id=</b>SYSTEM_ID (required)</td>
+                    <td>All measurements for one system, keyed by name, each with <code>value</code>, <code>lower</code> and <code>upper</code> (80% prediction interval where there is one), <code>unit</code>, <code>samples</code>, <code>start_time</code> and <code>end_time</code> (unix time of the day or 4 hour window it comes from), <code>details</code> (method, inputs and selected days with their timestamps) and <code>updated</code>. Public systems, or your own when logged in.</td>
+                  </tr>
+
+                  <tr>
                     <th>Timeseries</th>
                     <th></th>
                     <th></th>
-                  </tr>  
+                  </tr>
 
                   <tr>
                     <td><a target="_BLANK" href="<?php echo $path; ?>timeseries/available?id=2">/timeseries/available?id=2</a></td>
@@ -138,6 +156,24 @@ global $path;
                   </tr>
 
                 </table>
+
+                <h4 class="mt-4">Measurements</h4>
+                <p>Worked out nightly for each system from its own monitoring data: heat loss from daily heat against inside - outside temperature difference, peak heat output, design outside temperature from hourly outside temperature, and space heating flow temperature at the design temperature. Design values are at the design outside temperature on the system form (or the measured one if the form has none) and 20 °C inside.</p>
+                <table class="table table-sm">
+                  <tr><th>Name</th><th>Unit</th><th>Description</th></tr>
+                  <tr><td><code>heat_loss_design</code></td><td>kW</td><td>Heat demand at the design temperature</td></tr>
+                  <tr><td><code>heat_loss_design_measured</code></td><td>kW</td><td>Heat demand at the measured 99.6% design outside temperature</td></tr>
+                  <tr><td><code>heat_loss_htc</code></td><td>W/K</td><td>Heat transfer coefficient, the slope of the heat loss fit</td></tr>
+                  <tr><td><code>heat_loss_base_dT</code></td><td>K</td><td>Balance point, the temperature difference where the fit reaches zero heat</td></tr>
+                  <tr><td><code>heat_peak_day</code></td><td>kW</td><td>Highest day of heat output divided by 24</td></tr>
+                  <tr><td><code>heat_peak_4h</code></td><td>kW</td><td>Highest 4 hour mean heat output</td></tr>
+                  <tr><td><code>design_outsideT_996</code>, <code>design_outsideT_990</code></td><td>°C</td><td>Hourly outside temperature equalled or exceeded for 99.6% / 99.0% of hours, complete years only</td></tr>
+                  <tr><td><code>flowT_typical_design</code></td><td>°C</td><td>Space heating flow temperature at the design temperature, from each day's flow temperature weighted by heat output over the last year</td></tr>
+                  <tr><td><code>flowT_sustained_design</code></td><td>°C</td><td>As above, from each day's highest 4 hours (e.g. coming off setback)</td></tr>
+                  <tr><td><code>flowT_peak_4h</code></td><td>°C</td><td>Highest 4 hour space heating flow temperature in the last year</td></tr>
+                  <tr><td><code>coldest_day</code></td><td>°C</td><td>Coldest day of the last year, outside temperature weighted by heat output (in <code>/measurement/system.json</code> only)</td></tr>
+                </table>
+
 
             <br><br>
             <button class="btn btn-secondary" style="float:right" onclick="copyCode(this)">Copy</button>
