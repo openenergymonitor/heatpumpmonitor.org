@@ -10,7 +10,9 @@
 */
 defined('EMONCMS_EXEC') or die('Restricted access');
 global $path, $session;
-$v = 4;
+// Cache busting version for the dashboard scripts and styles: the newest
+// modification time of the files in this folder, so a deployed change gets new URLs
+$v = max(array_map('filemtime', array_merge(glob(__DIR__."/*.js"), glob(__DIR__."/*.css"))));
 
 $app_title = "My Heatpump";
 if ($system_data->hp_output>0 && $system_data->hp_model!="" && $system_data->refrigerant!="" && $system_data->location!="") {
