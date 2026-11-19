@@ -285,8 +285,16 @@ function heatdemand_tooltip(item) {
 
 $("#heatdemand-toggle").click(function () {
     $("#heatdemand-block").toggle();
-    $(this).html($("#heatdemand-block").is(":visible") ? "HIDE HEAT DEMAND" : "SHOW HEAT DEMAND");
-    heatdemand_draw();
+    var open = $("#heatdemand-block").is(":visible");
+    $(this).html(open ? "HIDE HEAT DEMAND" : "SHOW HEAT DEMAND");
+    // A week to 3 month preset has too few days for a useful fit, so opening
+    // the tool widens the daily bars to the last year. Year, All and a zoomed
+    // or panned window are kept.
+    if (open && ["7", "30", "90"].indexOf(bargraph_period) != -1) {
+        $(".hp-period[days='365']").click();
+    } else {
+        heatdemand_draw();
+    }
 });
 
 $("#heatdemand-block").on("change", "input, select", heatdemand_draw);
