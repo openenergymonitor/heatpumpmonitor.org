@@ -16,6 +16,10 @@
 /* Full window tile in the COP colour. Other tiles set theirs inline. */
 .show_stats_category[key="combined"] .app-tile-value { color: var(--ec-primary-darker); }
 
+/* Power view time bar: windows, zoom and pan, Back */
+.hp-power-nav { display: flex; flex-wrap: wrap; gap: 8px; }
+.hp-periods > .btn, .hp-power-nav .btn { white-space: nowrap; }
+
 .stats-col {
   text-align: center;
   width: 150px;
@@ -25,6 +29,11 @@
   .bargraph-navigation { flex: 1 1 100%; }
   .bargraph-navigation > .btn { flex: 1; }
   .bargraph-navigation > .btn { white-space: nowrap; }
+  .hp-periods > .btn { --bs-btn-padding-x: 0.4rem; }
+  .hp-power-nav { flex: 1 1 auto; gap: 6px; }
+  .hp-power-nav > .btn-group:not(:last-child) { flex: 1 1 auto; }
+  .hp-power-nav .btn { flex: 1; --bs-btn-padding-x: 0.5rem; }
+  .app-card .app-navbar > .hp-manual { flex: 0 0 auto; }
   .hp-return { font-size: 13px; margin-left: 6px; }
   /* Live values stay in one row of 4 */
   #live_table { grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.4fr); }
@@ -32,6 +41,11 @@
   #live_table .app-live-label { font-size: 10px; letter-spacing: 0.03em; }
   #live_table .app-live-value { font-size: 20px; }
   #live_table .hp-return { font-size: 12px; margin-left: 3px; }
+}
+
+/* No room for the date window button on phones */
+@container app (max-width: 575.98px) {
+  .app-card .app-navbar > .hp-manual { display: none; }
 }
 
 /* Small phones: tighter mode buttons. Icons are dropped when Cooling makes five. */

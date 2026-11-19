@@ -3,9 +3,10 @@
   heatpumpmonitor.org version of the emoncms MyHeatpump app view
   (emoncms/app apps/OpenEnergyMonitor/myheatpump/myheatpump.php).
   Markup follows the emoncms card layout. Differences: title from the system
-  details, no app config, Back to System link, time bar markup inline (emoncms
-  includes Lib/timebar.php and Lib/timebar_manual.php) and no Solar split in
-  heat demand.
+  details, no app config, Back to System link, Start and End markup inline
+  (emoncms includes Lib/timebar_manual.php) and no Solar split in heat demand.
+  Navigation is the one click period and power window buttons of the emoncms
+  classic-nav branch (commit 769cfbc).
 */
 defined('EMONCMS_EXEC') or die('Restricted access');
 global $path, $session;
@@ -79,29 +80,35 @@ if ($private_mode || $system_data->share==0) {
           <button class="btn bargraph_mode" mode="water" title="Water heating"><i class="svg-icon-shower"></i> Water</button>
           <button class="btn bargraph_mode" mode="cooling" title="Cooling"><i class="svg-icon-snowflake"></i> Cooling</button>
         </div>
-        <?php
-        // Power view uses up to a month, daily bars from a week to all time
-        $timebar_ranges = array(1 => '1 hour', 6 => '6 hours', 24 => '24 hours', 168 => '1 week', 720 => '1 month', 2160 => '3 months', 8760 => '1 year', 'all' => 'All time');
-        ?>
-        <div class="btn-group app-timebar">
-          <select id="time-select" class="btn" title="Time range">
-            <option id="time-custom" value="" hidden disabled>Custom</option>
-            <?php foreach ($timebar_ranges as $hours => $label) { ?>
-            <option value="<?php echo $hours; ?>"><?php echo $label; ?></option>
-            <?php } ?>
-          </select>
-          <button id="time-manual-open" class="btn" title="Select time window"><i class="bi bi-calendar-range"></i></button>
-          <button id="zoomin" class="btn" title="Zoom in"><i class="svg-icon-zoom_in"></i></button>
-          <button id="zoomout" class="btn" title="Zoom out"><i class="svg-icon-zoom_out"></i></button>
-          <button id="left" class="btn" title="Earlier"><i class="svg-icon-pan_left"></i></button>
-          <button id="right" class="btn" title="Later"><i class="svg-icon-pan_right"></i></button>
-          <button id="time-now" class="btn" title="Move the window to now" style="display:none"><span class="app-now-text">Now</span><i class="svg-icon-pan_end"></i></button>
-          <button class="btn app-view-switch" title="Switch between power and daily view"><i class="svg-icon-bar_chart"></i><i class="svg-icon-show_chart"></i></button>
-        </div>
         <span id="window-label" class="app-window-text"></span>
-        <div class="btn-group app-segmented viewmode-toggle ms-auto">
-          <button class="btn viewpower">Power</button>
-          <button class="btn viewhistory active">Daily</button>
+        <div class="btn-group app-segmented bargraph-navigation hp-periods ms-auto">
+          <button class="btn hp-period" days="day" title="Power view, last 24 hours">Day</button>
+          <button class="btn hp-period" days="7" title="Daily bars, last 7 days">Week</button>
+          <button class="btn hp-period" days="30" title="Daily bars, last 30 days">Month</button>
+          <button class="btn hp-period" days="90" title="Daily bars, last 90 days">3 Months</button>
+          <button class="btn hp-period" days="365" title="Daily bars, last 365 days">Year</button>
+          <button class="btn hp-period" days="all" title="Daily bars, all time">All</button>
+        </div>
+        <div class="powergraph-navigation hp-power-nav ms-auto" style="display:none">
+          <div class="btn-group app-segmented">
+            <button class="btn hp-time" hours="1" title="Last hour">H</button>
+            <button class="btn hp-time" hours="6" title="Last 6 hours">6</button>
+            <button class="btn hp-time" hours="24" title="Last 24 hours">D</button>
+            <button class="btn hp-time" hours="168" title="Last 7 days">W</button>
+            <button class="btn hp-time" hours="720" title="Last 30 days">M</button>
+          </div>
+          <div class="btn-group app-timebar">
+            <button id="zoomin" class="btn" title="Zoom in"><i class="svg-icon-zoom_in"></i></button>
+            <button id="zoomout" class="btn" title="Zoom out"><i class="svg-icon-zoom_out"></i></button>
+            <button id="left" class="btn" title="Earlier"><i class="svg-icon-pan_left"></i></button>
+            <button id="right" class="btn" title="Later"><i class="svg-icon-pan_right"></i></button>
+          </div>
+          <div class="btn-group app-segmented">
+            <button class="btn viewhistory" title="Back to daily summary">Back</button>
+          </div>
+        </div>
+        <div class="btn-group app-timebar hp-manual">
+          <button id="time-manual-open" class="btn" title="Select time window"><i class="bi bi-calendar-range"></i></button>
         </div>
       </div>
       <div id="graph-nav-manual" class="app-navbar d-none">

@@ -99,7 +99,7 @@ var bargraph_end = 0;
 var last_bargraph_start = 0;
 var last_bargraph_end = 0;
 var bargraph_mode = "combined";
-var bargraph_alltime = false;
+var bargraph_period = false; // days or "all", false after zoom or pan
 
 var realtime_cop_div_mode = "30min";
 
@@ -279,7 +279,8 @@ function show() {
 
         if (urlParams.start != undefined) start = urlParams.start * 1000;
         if (urlParams.end != undefined) end = urlParams.end * 1000;
-        
+        if (urlParams.start == undefined && urlParams.end == undefined) bargraph_period = "30";
+
         bargraph_load(start, end);
         bargraph_draw();
 
@@ -560,8 +561,8 @@ function set_url_view_params(mode, start, end) {
 // TIME BAR
 // -------------------------------------------------------------------------------
 
-// Time bar after a redraw. Daily bars use their own window. All ranges stay
-// listed, the range select switches view where needed.
+// Time bar after a redraw. Daily bars use their own window. Period and time
+// buttons are marked active when they match the window.
 function hp_timebar_sync() {
     var daily = viewmode == "bargraph";
     if (daily) {
@@ -569,32 +570,39 @@ function hp_timebar_sync() {
         view.end = bargraph_end;
     }
     timebar_update(daily);
-    timebar_hide("option:not(#time-custom)", false);
-    if (daily && bargraph_alltime) $("#time-select").val("all");
-    $(".viewhistory").toggleClass("active", daily);
-    $(".viewpower").toggleClass("active", !daily);
+    $(".hp-period").each(function () {
+        $(this).toggleClass("active", daily && $(this).attr("days") == bargraph_period);
+    });
+    var hours = (view.end - view.start) / HOUR;
+    $(".hp-time").each(function () {
+        var h = $(this).attr("hours");
+        $(this).toggleClass("active", !daily && Math.abs(h - hours) <= h * 0.05);
+    });
     $(".bargraph-navigation").toggle(daily);
+    $(".powergraph-navigation").toggle(!daily);
     $("#heatdemand-toggle").toggle(daily);
     $("#heatdemand-block").toggle(daily && $("#heatdemand-toggle").html() == "HIDE HEAT DEMAND");
 }
 
-// Range select: under a week opens the power view, over a month the daily
-// bars, a week or a month keeps the current view
-$("#time-select").change(function () {
-    var value = $(this).val();
-    if (!value) return;
-    var daily = value == "all" || value > 720 || (value >= 168 && viewmode == "bargraph");
+// Daily view periods. Day opens the power view for the last 24 hours.
+$(".hp-period").click(function () {
+    var days = $(this).attr("days");
     var end = (new Date()).getTime();
-    if (daily) {
-        var start = value == "all" ? start_time * 1000 : end - value * HOUR;
-        if (start < start_time * 1000) start = start_time * 1000;
-        if (viewmode != "bargraph") hp_show_daily();
-        bargraph_alltime = value == "all";
-        bargraph_load(start, end);
-        bargraph_draw();
-    } else {
-        hp_open_power(end - value * HOUR, end);
+    if (days == "day") {
+        hp_open_power(end - DAY, end);
+        return;
     }
+    var start = days == "all" ? start_time * 1000 : end - days * DAY;
+    if (start < start_time * 1000) start = start_time * 1000;
+    bargraph_period = days;
+    bargraph_load(start, end);
+    bargraph_draw();
+});
+
+// Power view windows ending now
+$(".hp-time").click(function () {
+    var end = (new Date()).getTime();
+    hp_open_power(end - $(this).attr("hours") * HOUR, end);
 });
 
 // Zoom and pan act on the daily bars or the power graph
@@ -603,7 +611,7 @@ function hp_navigate(move) {
         view.start = bargraph_start;
         view.end = bargraph_end;
         move();
-        bargraph_alltime = false;
+        bargraph_period = false;
         bargraph_load(view.start, view.end);
         bargraph_draw();
     } else {
@@ -616,18 +624,17 @@ $("#zoomin").click(function () { hp_navigate(function () { view.zoomin(); }); })
 $("#right").click(function () { hp_navigate(function () { view.panright(); }); });
 $("#left").click(function () { hp_navigate(function () { view.panleft(); }); });
 
-// Start and End fields, and Now for the power view, from Lib/vis.helper.js
+// Start and End fields, from Lib/vis.helper.js
 // hp_navigate would reset view to the bar window first, so the typed dates are loaded directly
 timebar_manual(function () {
     if (viewmode == "bargraph") {
-        bargraph_alltime = false;
+        bargraph_period = false;
         bargraph_load(view.start, view.end);
         bargraph_draw();
     } else {
         powergraph_load();
     }
 });
-timebar_now(function () { powergraph_load(); });
 
 // -------------------------------------------------------------------------------
 // EVENTS
@@ -726,6 +733,7 @@ document.getElementById('placeholder').addEventListener("plotselected", function
     panning = true;
 
     if (viewmode == "bargraph") {
+        bargraph_period = false;
         bargraph_load(start, end);
         bargraph_draw();
     } else {

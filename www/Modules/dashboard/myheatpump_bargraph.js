@@ -599,19 +599,3 @@ $(".bargraph_mode").click(function () {
     bargraph_mode = mode;
     bargraph_draw();
 });
-
-$('.viewpower').click(function () {
-    if (viewmode == "powergraph") return;
-    view.timewindow(1.0);
-    viewmode = "powergraph";
-    powergraph_load();
-
-    $(".bargraph-navigation").hide();
-    $(".powergraph-navigation").show();
-    $("#advanced-toggle").show();
-    if ($("#advanced-toggle").html() == "SHOW DETAIL") {
-        $("#advanced-block").hide();
-    } else {
-        $("#advanced-block").show();
-    }
-});
