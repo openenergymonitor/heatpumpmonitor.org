@@ -291,6 +291,12 @@ $("#heatdemand-toggle").click(function () {
 
 $("#heatdemand-block").on("change", "input, select", heatdemand_draw);
 
+$("#heatdemand_info_toggle").click(function () {
+    var open = !$("#heatdemand-info").is(":visible");
+    $("#heatdemand-info").toggle(open);
+    $(this).toggleClass("active", open).attr("aria-expanded", open);
+});
+
 document.getElementById("heatdemand").addEventListener("plotclick", function (event) {
     var item = event.detail[1];
     if (!item || !item.series.days) return;

@@ -374,8 +374,9 @@ if ($private_mode || $system_data->share==0) {
             <option value="season">Heating season</option>
           </select>
         </div>
+        <button type="button" class="btn btn-outline-secondary" id="heatdemand_info_toggle" title="How this works" aria-expanded="false" aria-controls="heatdemand-info"><i class="bi bi-info-circle"></i></button>
       </div>
-      <div class="small text-body-secondary mt-3">
+      <div id="heatdemand-info" class="small text-body-secondary mt-3" style="display:none">
         <p class="mb-1">Each point is one day: mean heat output against mean room minus outside temperature. Hover over a point for details, click to open the power view for that day. The slope of the fit line is the heat loss in W/K.</p>
         <ul class="mb-0 ps-3">
           <li><b>Fit:</b> the balance point is where the fit line reaches zero heat. Days below the balance point are mostly water heating and standby, so the fit excludes them and refits until the balance point settles. Days more than 2.5 standard errors from the line are also excluded.</li>
