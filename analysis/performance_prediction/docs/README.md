@@ -51,6 +51,9 @@ produce its results.
   annual SPF from the first few weeks
 - [mcs_and_scop_methods.md](mcs_and_scop_methods.md): manufacturer SCOP and
   MCS 031 estimates against measured SPF
+- [system_page_insights.md](system_page_insights.md): plan for showing
+  design parameters measured from monitoring data against the system
+  form, with uncertainty, on the system page
 
 ## 1. ΔT is still the best predictor, and the goal is far off
 
