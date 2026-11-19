@@ -445,6 +445,9 @@ if ($private_mode || $system_data->share==0) {
       </div>
     </div>
 
+    <!-- System form details, filled by myheatpump_system.js -->
+    <div id="system-block" class="app-card app-card-body" style="display:none"></div>
+
   </section>
 
   <?php if ($private_mode === false) { ?>
@@ -468,6 +471,33 @@ if ($private_mode || $system_data->share==0) {
       "heat_loss" => is_numeric($system_data->heat_loss) ? (float) $system_data->heat_loss : null,
       "design_temp" => is_numeric($system_data->design_temp) ? (float) $system_data->design_temp : null
   )); ?>;
+  // System form fields for the System card. A fixed list, so the read key,
+  // app id and URL of the system never reach the page.
+  var system_meta = <?php
+      $system_meta_fields = array(
+          "location", "installer_name", "installer_url", "installer_logo", "installation_Cost",
+          "heatgeek", "ultimaterenewables", "heatingacademy", "guild", "betateach", "youtube",
+          "hp_type", "hp_hybrid", "hp_manufacturer", "hp_model", "hp_output", "hp_max_output", "hp_max_output_test",
+          "refrigerant", "uses_backup_heater",
+          "flow_temp", "design_temp", "zone_number", "new_radiators", "old_radiators", "fan_coil_radiators", "UFH",
+          "hydraulic_separation", "volumiser",
+          "dhw_method", "dhw_make_model", "cylinder_volume", "dhw_target_temperature", "legionella_frequency", "legionella_immersion",
+          "freeze", "heat_loss", "property", "floor_area", "age", "insulation",
+          "mid_metering", "electric_meter", "heat_meter", "metering_inc_boost", "metering_inc_immersion",
+          "metering_inc_central_heating_pumps", "metering_inc_secondary_heating_pumps", "metering_inc_brine_pumps",
+          "metering_inc_controls", "metering_boundary_code", "notes", "data_flag", "data_flag_note",
+          "measured_heat_loss", "measured_heat_loss_range", "measured_design_flowT", "measured_design_flowT_range"
+      );
+      $system_meta = array();
+      foreach ($system_meta_fields as $f) {
+          if (isset($system_data->$f)) $system_meta[$f] = $system_data->$f;
+      }
+      // HEX_TAG: a "</script>" in the notes stays inside the string.
+      // INVALID_UTF8_SUBSTITUTE: bad bytes in a text field cannot make
+      // json_encode return false and leave a syntax error in this script.
+      $system_meta_json = json_encode($system_meta, JSON_HEX_TAG | JSON_HEX_AMP | JSON_INVALID_UTF8_SUBSTITUTE);
+      echo $system_meta_json === false ? "{}" : $system_meta_json;
+  ?>;
 </script>
 
 <script src="<?php echo $path; ?>Modules/dashboard/myheatpump_process.js?v=<?php echo $v; ?>"></script>
@@ -475,3 +505,4 @@ if ($private_mode || $system_data->share==0) {
 <script src="<?php echo $path; ?>Modules/dashboard/myheatpump_bargraph.js?v=<?php echo $v; ?>"></script>
 <script src="<?php echo $path; ?>Modules/dashboard/myheatpump_heatdemand.js?v=<?php echo $v; ?>"></script>
 <script src="<?php echo $path; ?>Modules/dashboard/myheatpump.js?v=<?php echo $v; ?>"></script>
+<script src="<?php echo $path; ?>Modules/dashboard/myheatpump_system.js?v=<?php echo $v; ?>"></script>

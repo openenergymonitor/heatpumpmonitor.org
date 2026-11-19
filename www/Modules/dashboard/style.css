@@ -124,3 +124,130 @@
   font-weight: bold;
   cursor: pointer;
 }
+
+/* -- System card: the system form below the totals (concept) ----------------- */
+
+.hp-sys-unit { margin-left: 4px; font-size: 13px; font-weight: normal; color: var(--bs-secondary-color); }
+
+/* Sizing and flow temperature: a scale bar each, side by side */
+.hp-sys-features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.hp-sys-feature {
+  padding: 12px 16px 10px;
+  border-radius: 8px;
+  background: var(--bs-tertiary-bg);
+}
+.hp-sys-feature-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.hp-sys-feature-value { font-size: 26px; font-weight: bold; line-height: 32px; white-space: nowrap; }
+.hp-sys-feature-note { font-size: 12px; color: var(--bs-secondary-color); }
+.hp-sys-feature-note b { color: var(--bs-body-color); }
+
+.hp-sys-scale {
+  position: relative;
+  height: 10px;
+  margin: 30px 0 30px;
+  border-radius: 5px;
+  background: rgba(var(--bs-body-color-rgb), 0.08);
+}
+.hp-sys-scale-fill { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 5px; }
+.hp-sys-scale-fill.is-heat { background: linear-gradient(90deg, rgba(184,137,12,0.25), rgba(184,137,12,0.6)); }
+.hp-sys-scale-fill.is-heat-max {
+  border-radius: 0 5px 5px 0;
+  background: repeating-linear-gradient(45deg, rgba(184,137,12,0.3) 0 3px, transparent 3px 6px);
+}
+.hp-sys-scale.is-flow { background: linear-gradient(90deg, rgba(58,134,192,0.35), rgba(201,54,47,0.45)); }
+.hp-sys-scale-band { position: absolute; top: -3px; bottom: -3px; border-radius: 8px; background: rgba(var(--bs-body-color-rgb), 0.18); }
+.hp-sys-scale-dot {
+  position: absolute; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px;
+  border-radius: 50%; border: 2px solid var(--bs-body-bg);
+  background: var(--ec-primary-darker); box-shadow: 0 0 0 1px rgba(0,0,0,0.15);
+}
+.hp-sys-scale-dot.is-flow { background: #c9362f; }
+.hp-sys-scale-tick { position: absolute; top: -6px; bottom: -6px; width: 0; border-left: 2px dashed var(--bs-body-color); }
+.hp-sys-scale-tag {
+  position: absolute; transform: translateX(-50%);
+  font-size: 11px; font-weight: bold; white-space: nowrap; color: var(--bs-secondary-color);
+}
+.hp-sys-scale-tag.is-above { bottom: 16px; }
+.hp-sys-scale-tag.is-below { top: 16px; color: var(--bs-body-color); }
+/* Tags at the ends stay inside the bar */
+.hp-sys-scale-tag[style*="left:0%"], .hp-sys-scale-tag[style^="left:1%"], .hp-sys-scale-tag[style^="left:2%"] { transform: none; }
+.hp-sys-scale-end { position: absolute; top: 14px; font-size: 10px; color: var(--bs-secondary-color); opacity: 0.7; }
+.hp-sys-scale-end.is-lo { left: 0; }
+.hp-sys-scale-end.is-hi { right: 0; }
+
+/* Groups of the form, as a spec sheet */
+.hp-sys-groups {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 4px;
+}
+.hp-sys-group { padding: 12px 16px 14px; min-width: 0; border-top: 1px solid var(--border); }
+.hp-sys-group:not(:nth-child(3n+1)) { border-left: 1px solid var(--border); }
+.hp-sys-group-head {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+  font-size: 11px; font-weight: bold; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--bs-secondary-color);
+}
+.hp-sys-icon {
+  display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto;
+  width: 26px; height: 26px; border-radius: 50%;
+  font-size: 14px; color: var(--bs-primary); background: var(--bs-primary-bg-subtle);
+}
+.hp-sys-fact { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; font-size: 13px; }
+.hp-sys-fact-label { color: var(--bs-secondary-color); flex: 0 0 auto; font-size: 12px; }
+.hp-sys-fact-value { font-weight: 600; text-align: right; min-width: 0; }
+.hp-sys-group > .hp-sys-fact-label { margin-top: 6px; }
+
+.hp-sys-chips { display: flex; flex-wrap: wrap; gap: 5px; margin: 4px 0 6px; }
+.hp-sys-chip, .hp-sys-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 9px; border-radius: 12px;
+  font-size: 12px; line-height: 18px; white-space: nowrap;
+}
+.hp-sys-chip { color: var(--bs-secondary-color); border: 1px dashed var(--bs-border-color); opacity: 0.75; }
+.hp-sys-chip.is-on { opacity: 1; color: var(--bs-body-color); border: 1px solid transparent; background: rgba(var(--bs-primary-rgb), 0.12); }
+.hp-sys-chip.is-on i { color: var(--bs-primary); }
+.hp-sys-badge { font-weight: 600; color: var(--bs-body-color); background: rgba(var(--bs-body-color-rgb), 0.06); }
+.hp-sys-badge.is-good { color: #237a3b; background: rgba(58,166,85,0.14); }
+
+.hp-sys-flag { margin-top: 8px; padding: 6px 10px; border-radius: 6px; font-size: 12px; color: #8a5300; background: rgba(240,173,78,0.18); }
+.hp-sys-flag i, .hp-sys-badge i, .hp-sys-links i, .app-caption-note i { margin-right: 2px; }
+
+.hp-sys-installer { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.hp-sys-logo { max-height: 36px; max-width: 110px; object-fit: contain; }
+.hp-sys-installer-name { font-size: 15px; font-weight: bold; }
+.hp-sys-installer-name a { text-decoration: none; }
+.hp-sys-links { display: flex; gap: 14px; margin-top: 6px; font-size: 13px; }
+.hp-sys-links a { text-decoration: none; }
+
+.hp-sys-notes {
+  position: relative;
+  margin: 14px 0 6px; padding: 10px 16px 10px 40px;
+  border-left: 3px solid var(--bs-primary-border-subtle);
+  font-size: 13px; color: var(--ec-text-secondary); white-space: pre-line; overflow-wrap: anywhere;
+}
+.hp-sys-notes > .bi-quote { position: absolute; left: 12px; top: 4px; font-size: 22px; color: var(--bs-primary); opacity: 0.5; }
+
+@container app (max-width: 991.98px) {
+  .hp-sys-groups { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hp-sys-group:not(:nth-child(3n+1)) { border-left: 0; }
+  .hp-sys-group:nth-child(2n) { border-left: 1px solid var(--border); }
+}
+@container app (max-width: 575.98px) {
+  .hp-sys-groups { grid-template-columns: minmax(0, 1fr); }
+  .hp-sys-group:nth-child(2n) { border-left: 0; }
+  .hp-sys-group { padding: 10px 4px 12px; }
+  .hp-sys-feature { padding: 10px 12px 8px; }
+  .hp-sys-feature-value { font-size: 22px; }
+}
+
+/* System card Hide/Show: caption in line with the button, no gap below when hidden */
+.hp-sys-caption { align-items: center; }
+.hp-sys-caption .btn { white-space: nowrap; }
+.hp-sys-caption .bi { font-size: 11px; -webkit-text-stroke: 0.5px; }
+#system-block.is-collapsed { padding-bottom: 2px; }
