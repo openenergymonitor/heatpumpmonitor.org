@@ -50,7 +50,7 @@ class ImageUploadHelper
         
         // Validate file size
         if ($file['size'] > $this->max_file_size) {
-            return array("success" => false, "message" => "File size exceeds 5MB limit");
+            return array("success" => false, "message" => sprintf("File size (%.1fMB) exceeds 5MB limit", $file['size'] / (1024 * 1024)));
         }
         
         // Validate file type using MIME detection
