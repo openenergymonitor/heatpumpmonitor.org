@@ -231,7 +231,7 @@
     var groups = heatpump_group() + property_group() + heating_group() + water_group() + metering_group() + installer_group();
     if (!features && !groups && !has(m.notes)) return;
 
-    // Caption with a Hide/Show button; the card opens expanded
+    // Caption with a Hide/Show button; set_open below sets the starting state
     var html = '<div class="app-card-caption hp-sys-caption"><span class="app-section-label">System</span>' +
         (has(m.location) ? '<span class="app-caption-note"><i class="bi bi-geo-alt"></i> ' + esc(m.location) + '</span>' : '') +
         '<div class="btn-group app-segmented ms-auto"><button class="btn" id="system-toggle" aria-expanded="true" aria-controls="system-body" title="Hide the system details">' +
@@ -251,13 +251,15 @@
 
     var body = document.getElementById("system-body");
     var btn = document.getElementById("system-toggle");
-    btn.addEventListener("click", function () {
-        var open = body.hidden;
+    function set_open(open) {
         body.hidden = !open;
         el.classList.toggle("is-collapsed", !open);
         btn.setAttribute("aria-expanded", open ? "true" : "false");
         btn.title = (open ? "Hide" : "Show") + " the system details";
         btn.querySelector("i").className = "bi bi-chevron-" + (open ? "up" : "down");
         btn.querySelector("span").textContent = open ? "Hide" : "Show";
-    });
+    }
+    btn.addEventListener("click", function () { set_open(body.hidden); });
+    // Minimised for now: the card opens on Show
+    set_open(false);
 })();
