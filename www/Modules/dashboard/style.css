@@ -1,112 +1,67 @@
-.title1 {
-  font-weight:bold;
+/* MyHeatpump. Shared components are in Modules/app/Views/css/app-kit.css. */
+
+/* Value colours, darker than the chart series so they read on white */
+.text-hp-cop  { color: var(--ec-primary-darker); }
+.text-hp-elec { color: #3a86c0; }
+.text-hp-heat { color: #b8890c; }
+.text-hp-flow { color: #c9362f; }
+/* Heat pump icon in the header tab */
+.hp-title-icon { color: var(--bs-primary); }
+
+.hp-return { margin-left: 10px; font-size: 16px; color: #3aa655; }
+
+/* COP in window, under the chart */
+.hp-window-cop { font-size: 16px; color: var(--ec-primary-darker); cursor: pointer; }
+
+/* Full window tile in the COP colour. Other tiles set theirs inline. */
+.show_stats_category[key="combined"] .app-tile-value { color: var(--ec-primary-darker); }
+
+.stats-col {
+  text-align: center;
+  width: 150px;
 }
 
-.value1 {
-  font-weight:bold;
-  font-size:32px;
-  padding-top:10px;
-  padding-bottom:10px;
+@container app (max-width: 767.98px) {
+  .bargraph-navigation { flex: 1 1 100%; }
+  .bargraph-navigation > .btn { flex: 1; }
+  .bargraph-navigation > .btn { white-space: nowrap; }
+  .hp-return { font-size: 13px; margin-left: 6px; }
+  /* Live values stay in one row of 4 */
+  #live_table { grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.4fr); }
+  #live_table > :nth-child(4) { border-left: 1px solid var(--border); }
+  #live_table .app-live-label { font-size: 10px; letter-spacing: 0.03em; }
+  #live_table .app-live-value { font-size: 20px; }
+  #live_table .hp-return { font-size: 12px; margin-left: 3px; }
 }
 
-.units1 {
-  font-weight:normal;
-  padding-left:4px;
-  display: inline-block;
-  font-size:18px;
+/* Small phones: tighter mode buttons. Icons are dropped when Cooling makes five. */
+@container app (max-width: 359.98px) {
+  .bargraph-navigation > .btn { --bs-btn-padding-x: 0.4rem; }
 }
-.col1-inner{
-    display: flex;
-    flex-direction: column;
+@container app (max-width: 575.98px) {
+  .bargraph-navigation:has(> [mode="cooling"]:not([style*="none"])) [class^="svg-icon-"] { display: none; }
 }
 
-@media (max-width: 450px) {  
-  .title1 { font-size:12px }
-  .value1 { font-size:18px }
+/* Phones: stats table and totals fit the width, Diff column dropped */
+@container app (max-width: 575.98px) {
+  .stats-col { width: auto; }
+  #advanced-block .table :is(th, td):nth-child(4) { display: none; }
+  .app-card-caption:has(#all_time_history_title) + .app-live .app-live-value { font-size: 19px; }
 }
 
-.ledgend-box {
-    margin:2px;
-    padding:2px;
-    width:10px;
-    background-color:#aaa;
-}
-
-.ledgend-box-in {
-    width:10px;
-    height:10px;
-    background-color:#ccc;
-}
-
-.myheatpump-top-buttons {
-    display:inline-block; 
-    padding: 10px 15px 10px 15px; 
-    border-left: 1px solid #fff;
-    cursor:pointer;
-}
-
-.sc-white {
-    background-color:#fff;
-}
-
-.sc-grey {
-    background-color:#f3f3f3;
-}
-
-.advanced-options {
-    padding:10px;
-    background-color:#fff;
-    border: 1px solid #ccc;
-    border-bottom: none;
-}
-
-.advanced-options-checkbox {
-  margin-top:-4px !important; 
-  margin-left:7px !important; 
-  margin-right:10px !important;
-}
-
-.cop-title {
-  font-size:16px;
-}
-
-.cop-value {
-  font-size:22px;
-  padding:10px;
-}
-
-.show_stats_category {
-  width:20%; 
-  text-align:center;
-  cursor:pointer;
-}
-
-.show_stats_category:hover {
-  /*border-bottom: 1px solid #000;*/
-  background-color:#fafafa;
+#overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(var(--bs-body-bg-rgb), 0.8);
+  font-size: 20px;
 }
 
 #data-error {
-  color:red;
-  float: right;
-  padding:11px;
-  font-size:14px;
-  font-weight:bold;
-  cursor:pointer;
-}
-
-#emitter-spec-volume {
-  float: right;
-  padding:11px;
-  font-size:14px;
-}
-
-svg.icon {
-  display: inline-block;
-  width: 1em;
-  height: 1em;
-  stroke-width: 0;
-  stroke: currentColor;
-  fill: currentColor;
-  vertical-align: -0.15em;
+  color: var(--bs-danger);
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
 }

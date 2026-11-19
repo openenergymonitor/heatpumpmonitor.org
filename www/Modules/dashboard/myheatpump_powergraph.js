@@ -33,17 +33,18 @@ function powergraph_load() {
         "heatpump_cooling": { label: "Cooling", yaxis: 4, color: "#66b0ff", lines: { lineWidth: 0, show: true, fill: 0.15 } },
         "heatpump_error": { label: "Error", yaxis: 4, color: "#F00", lines: { lineWidth: 0, show: true, fill: 0.15 } },
         "heatpump_targetT": { label: "TargetT", yaxis: 2, color: "#ccc" },
-        "heatpump_flowT": { label: "FlowT", yaxis: 2, color: 2 },
-        "heatpump_returnT": { label: "ReturnT", yaxis: 2, color: 3 },
+        "heatpump_flowT": { label: "FlowT", yaxis: 2, color: flot_color(2) },
+        "heatpump_returnT": { label: "ReturnT", yaxis: 2, color: flot_color(3) },
         "heatpump_outsideT": { label: "OutsideT", yaxis: 2, color: "#c880ff" },
         "heatpump_roomT": { label: "RoomT", yaxis: 2, color: "#000" },
-        "heatpump_flowrate": { label: "Flow rate", yaxis: 3, color: 6 },
+        "heatpump_flowrate": { label: "Flow rate", yaxis: 3, color: flot_color(6) },
         "boiler_heat": { label: "Boiler", yaxis: 1, color: "#FF5349", lines: { show: true, fill: 0.2, lineWidth: 0.5 } },
-        "heatpump_heat": { label: "Heat", yaxis: 1, color: 0, lines: { show: true, fill: 0.2, lineWidth: 0.5 } },
-        "heatpump_elec": { label: "Electric", yaxis: 1, color: 1, lines: { show: true, fill: 0.3, lineWidth: 0.5 } },
-        "immersion_elec": { label: "Immersion", yaxis: 1, color: 4, lines: { show: true, fill: 0.3, lineWidth: 0.5 } },
+        "heatpump_heat": { label: "Heat", yaxis: 1, color: flot_color(0), lines: { show: true, fill: 0.2, lineWidth: 0.5 } },
+        "heatpump_elec": { label: "Electric", yaxis: 1, color: flot_color(1), lines: { show: true, fill: 0.3, lineWidth: 0.5 } },
+        "immersion_elec": { label: "Immersion", yaxis: 1, color: flot_color(4), lines: { show: true, fill: 0.3, lineWidth: 0.5 } },
         "heatpump_dhwT": { label: dhw_label, yaxis: dhw_axis, color: "#0080ff" },
         "heatpump_dhwTargetT": { label: dhw_target_label, yaxis: dhw_axis, color:"#99cbfc" },
+        
     }
 
     // limit to feeds that are available
@@ -62,14 +63,12 @@ function powergraph_load() {
     var average = 1;
     if (view.interval < 15) average = 0;
 
-    var keys = Object.keys(feeds_to_load);
-    var keys_string = keys.join(",");
-
+    // Fetch the data
     $.ajax({
         url: path + "timeseries/data.json",
         data: {
             id: config.id,
-            feeds: keys_string,
+            feeds: Object.keys(feeds_to_load).join(","),
             start: view.start,
             end: view.end,
             interval: view.interval,
@@ -83,17 +82,17 @@ function powergraph_load() {
         async: true,
         dataType: "json",
         success: function (all_data) {
-            // Transfer from data to all_data by key
-            for (var key in feeds_to_load) {
-                all_data[key] = populate_timestamps(all_data[key], view.start, view.interval);
-                // Data object used for calculations
-                data[key] = remove_null_values(all_data[key], view.interval);
+        // Transfer from data to all_data by key
+        for (var key in feeds_to_load) {
+            all_data[key] = populate_timestamps(all_data[key], view.start, view.interval);
+            // Data object used for calculations
+            data[key] = remove_null_values(all_data[key], view.interval);
 
-                // Load to powergraph_series (used for drawing the graph)
-                let series = feeds_to_load[key];
-                series.data = data[key];
-                powergraph_series[key] = series;
-            }
+            // Load to powergraph_series (used for drawing the graph)
+            let series = feeds_to_load[key];
+            series.data = data[key];
+            powergraph_series[key] = series;
+        }
 
         if (feeds["heatpump_outsideT"] != undefined) {
             $("#fixed_outside_temperature_bound").hide();
@@ -134,6 +133,7 @@ function powergraph_load() {
     }});
 }
 
+// timeseries/data.json with timeformat notime returns values only, timestamps are added here
 function populate_timestamps(values, start, interval) {
     var intervalms = interval*1000;
     var time = Math.floor(start/intervalms)*intervalms;
@@ -143,7 +143,7 @@ function populate_timestamps(values, start, interval) {
         time += intervalms;
     }
     return with_time;
-} 
+}
 
 // Called from powergraph_load and when changing settings
 // This function processes the data and loads it into powergraph_series
@@ -704,26 +704,63 @@ function calculate_standby_heat_loss() {
 // -------------------------------------------------------------------------------
 // POWER GRAPH
 // -------------------------------------------------------------------------------
+
+// Legend columns that fit the chart width, kept per width and label set
+var powergraph_legend_fit = { key: "", columns: 0 };
+
+// Plot with the legend in the top margin, wrapped to more rows when one row is too wide
+function powergraph_plot(series, options) {
+    var placeholder = document.getElementById('placeholder');
+    var width = placeholder.clientWidth;
+    var labels = series.filter(function (s) { return s.label; }).map(function (s) { return s.label; });
+    var key = width + "|" + labels.join(",");
+    var columns = powergraph_legend_fit.key == key ? powergraph_legend_fit.columns : labels.length;
+
+    var plot;
+    for (var i = 0; i < 4; i++) {
+        var rows = Math.ceil(labels.length / Math.max(columns, 1));
+        var top = 10 + 20 * rows;
+        options.legend.noColumns = columns;
+        options.legend.margin = [0, -top];
+        options.grid.margin.top = top;
+        plot = Flot.plot(placeholder, series, options);
+
+        // Legend is moved to the left edge by plot_legend, so its width is compared
+        var legend = placeholder.querySelector('.legend');
+        var legend_width = legend ? legend.getBoundingClientRect().width : 0;
+        if (columns <= 1 || legend_width <= width) break;
+        // Scale columns down by the overflow, at least one fewer each pass
+        columns = Math.min(columns - 1, Math.floor(columns * width / legend_width));
+        if (columns < 1) columns = 1;
+    }
+    powergraph_legend_fit = { key: key, columns: columns };
+    return plot;
+}
+
 function powergraph_draw() {
     $("#overlay_text").html("");
     $("#overlay").hide();  
     
     set_url_view_params("power", view.start, view.end);
 
-    var style = { size: flot_font_size, color: "#666" }
+    var style = { size: flot_font_size, color: "#666", fill: "#666" }
     var options = {
-        lines: { fill: false },
+        series: { lines: { fill: false, lineWidth: 2 } },
         xaxis: {
-            mode: "time", timezone: "browser",
+            mode: "time", timezone: "browser", timeBase: "milliseconds", autoScale: "none",
             min: view.start, max: view.end,
             font: style,
             reserveSpace: false
         },
         yaxes: [
-            { min: 0, font: style, reserveSpace: false },
-            { font: style, reserveSpace: false },
-            { min: 0, font: { size: flot_font_size, color: "#44b3e2" }, reserveSpace: false },
-            { min: 0, max: 1, show: false, reserveSpace: false }
+            { min: 0, autoScale: "none", font: style, reserveSpace: false },
+            // Temperatures and instantaneous COP on the right
+            { font: style, position: "right", labelWidth: 36, tickFormatter: function (v, axis) { return v.toFixed(axis.tickDecimals) + "\u00b0"; } },
+            { min: 0, autoScale: "none", font: { size: flot_font_size, color: "#44b3e2", fill: "#44b3e2" }, position: "right", labelWidth: 30 },
+            { min: 0, max: 1, autoScale: "none", show: false, reserveSpace: false },
+            { font: style, reserveSpace: false },   // unused
+            { font: style, reserveSpace: false },   // emitter spec
+            { font: style, reserveSpace: false }    // system volume and DHW charge
         ],
         grid: {
             show: true,
@@ -735,8 +772,10 @@ function powergraph_draw() {
             // axisMargin:0
             margin: { top: 30 }
         },
-        selection: { mode: "x" },
-        legend: { position: "NW", noColumns: 13 }
+        selection: { mode: "x", color: "#e8cfac", visualization: "fill" },
+        // Placed in the top grid margin, above the plot, as flot 0.8 drew it.
+        // Columns and margin are set by powergraph_plot.
+        legend: { show: true, position: "nw", margin: [0, -30], noColumns: 13 }
     }
 
     if (show_defrost_and_loss || show_cooling) {
@@ -752,21 +791,17 @@ function powergraph_draw() {
             if (key == 'immersion_elec' && !show_immersion) show = false;
             if (key == 'heatpump_dhwT' && !show_dhw_temp) show = false;
             if (key == 'heatpump_dhwTargetT' && !show_dhw_temp) show = false;
+            // Empty placeholder, which flot 5 would list in the legend
+            if (Array.isArray(powergraph_series[key]) && !powergraph_series[key].length) show = false;
             if (show) powergraph_series_without_key.push(powergraph_series[key]);
         }
-        $.plot($('#placeholder'), powergraph_series_without_key, options);
+        var plot = powergraph_plot(powergraph_series_without_key, options);
+        plot_legend(plot, 0);
     }
 
-    // show symbol when live scrolling is active
-    var now = new Date().getTime();
-    if (view.end > now - 5 * MINUTE && view.end <= now + 5 * MINUTE && view.end - view.start <= 2 * DAY) {
-        $('#right').hide();
-        $('#live').show();
-    }
-    else {
-        $('#live').hide();
-        $('#right').show();
-    }
+    // Power view keeps its legend in the chart
+    $("#chart-legend").empty();
+    hp_timebar_sync();
 }
 
 
@@ -787,16 +822,17 @@ function draw_histogram(histogram) {
 
     var options = {
         // lines: { fill: true },
-        bars: { show: true, align: "center", barWidth: (1 / 200) * 0.8, fill: 1.0, lineWidth: 0 },
+        series: { bars: { show: true, align: "center", barWidth: [(1 / 200) * 0.8, true], fill: 1.0, lineWidth: 0 } },
         xaxis: {
             // mode: "time", timezone: "browser", 
+            autoScale: "none",
             min: 0.2, max: 0.8,
-            font: { size: flot_font_size, color: "#666" },
+            font: { size: flot_font_size, color: "#666", fill: "#666" },
             reserveSpace: false
         },
         yaxes: [
             //{ min: 0,font: {size:flot_font_size, color:"#666"},reserveSpace:false},
-            { font: { size: flot_font_size, color: "#666" }, reserveSpace: false }
+            { font: { size: flot_font_size, color: "#666", fill: "#666" }, reserveSpace: false }
         ],
         grid: {
             show: true,
@@ -809,10 +845,10 @@ function draw_histogram(histogram) {
             margin: { top: 30 }
         },
         //selection: { mode: "x" },
-        legend: { position: "NW", noColumns: 6 }
+        legend: { show: true, position: "nw", noColumns: 6 }
     }
     if ($('#histogram').width() > 0) {
-        $.plot($('#histogram'), [{ data: sorted_histogram }], options);
+        Flot.plot(document.getElementById('histogram'), [{ data: sorted_histogram }], options);
     }
 }
 
@@ -932,26 +968,14 @@ function linearRegression(x, y) {
 
 // Powergraph events (advanced section)
 
-// Power graph navigation
-$("#zoomout").click(function () { view.zoomout(); powergraph_load(); });
-$("#zoomin").click(function () { view.zoomin(); powergraph_load(); });
-$('#right').click(function () { view.panright(); powergraph_load(); });
-$('#left').click(function () { view.panleft(); powergraph_load(); });
-
-$('.time').click(function () {
-    view.timewindow($(this).attr("time") / 24.0);
-    powergraph_load();
-});
-
 // Detail section events
 
 $(".show_stats_category").click(function () {
     var key = $(this).attr("key");
-    var color = $(this).css("color");
     $(".stats_category").hide();
-    $(".stats_category[key='" + key + "']").show();
-    $(".show_stats_category").css("border-bottom", "none");
-    $(this).css("border-bottom", "1px solid " + color);
+    $(".stats_category[key='" + key + "'").show();
+    $(".show_stats_category").removeClass("active");
+    $(this).addClass("active");
 });
 
 
@@ -1098,7 +1122,8 @@ $("#configure_standby").click(function () {
     }
 });
 
-$('#histogram').bind("plothover", function (event, pos, item) {
+document.getElementById('histogram').addEventListener("plothover", function (event) {
+    var pos = event.detail[0], item = event.detail[1];
     if (item) {
         var z = item.dataIndex;
         if (previousPoint != item.datapoint) {

@@ -1,0 +1,625 @@
+/* ==========================================================================
+   App kit
+   Shared components for apps, taken from MyElectricFlow. Colours come from
+   the light and dark sets in Theme/css/bootstrap5-theme.css. An app wraps its
+   view in .app-page and sets data-bs-theme="dark" on it for the dark look.
+   Components are listed in docs/design/css-guide.md.
+   ========================================================================== */
+
+/* -- Page frame ------------------------------------------------------------ */
+
+/* Dark page background and footer colours are in Theme/css/bootstrap5-theme.css */
+body:has(.app-page[data-bs-theme="dark"]) #footer { margin: 0; }
+
+/* Standard app width */
+.content-container { max-width: 1150px; }
+
+.app-page #app-block { padding: 0; }
+
+/* Breakpoints below follow the width of the app, not the window, so the
+   phone layout also applies beside an open sidebar on a tablet */
+.app-page #app-block { container: app / inline-size; }
+
+.app-page[data-bs-theme="dark"] .ajax-loader {
+    background: var(--ec-dark-page-bg) url(../../images/ajax-loader.gif) center no-repeat;
+}
+
+/* Text greys in apps: lighter on dark, darker on light, for contrast */
+.app-page[data-bs-theme="dark"] {
+    --bs-body-color: #ddd;
+    --bs-body-color-rgb: 221, 221, 221;
+    --bs-secondary-color: #bbb;
+    --bs-secondary-text-emphasis: #bbb;
+}
+.app-page[data-bs-theme="light"] {
+    --bs-body-color: #222;
+    --bs-body-color-rgb: 34, 34, 34;
+    --bs-secondary-color: #555;
+    --bs-secondary-text-emphasis: #444;
+    --ec-text-secondary: #333;
+    --ec-text-muted: #444;
+}
+
+/* Light apps use Montserrat, as MyHeatpump */
+.app-page[data-bs-theme="light"] { font-family: Montserrat, Verdana, sans-serif; }
+
+/* -- Option rows ------------------------------------------------------------ */
+
+/* Option rows: checkbox and label, with fields below when ticked */
+.app-option {
+    padding: 10px;
+    border: 1px solid var(--ec-input-border-color);
+    border-bottom: none;
+}
+.app-option:last-child { border-bottom: 1px solid var(--ec-input-border-color); }
+.app-option > input[type="checkbox"] { margin: 0 10px 0 7px; vertical-align: -1px; }
+.app-option .input-group { margin-top: 5px; }
+
+/* -- Energy colours --------------------------------------------------------- */
+
+/* Energy colours for text, the same in every app */
+.text-use     { color: var(--ec-energy-use); }
+.text-house   { color: var(--ec-energy-use-light); }
+.text-solar   { color: var(--ec-energy-solar); }
+.text-wind    { color: var(--ec-energy-wind); }
+.text-direct  { color: var(--ec-energy-direct); }
+.text-import  { color: var(--ec-energy-import); }
+.text-export  { color: var(--ec-energy-export); }
+.text-battery { color: var(--ec-energy-battery); }
+
+/* -- Cards: compact layout, from MyElectricFlow ---------------------------- */
+
+/* Light apps on cards sit on the grey page background. Config stays dark. */
+body:not(.app-config-open):has(.app-page[data-bs-theme="light"] .app-card) { background-color: var(--bg-body); }
+
+/* Bordered block, as the config cards */
+.app-card {
+    margin-bottom: 10px;
+    background-color: var(--ec-app-panel-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 8px;
+}
+.app-card:first-child { margin-top: 14px; }
+.app-card-body { padding: 10px 16px 8px; }
+
+/* Header row: tabs, then status and tools */
+.app-card-head {
+    display: flex;
+    align-items: stretch;
+    min-height: 40px;
+    padding: 0 12px;
+    border-bottom: 1px solid var(--bs-border-color);
+}
+.app-card-head > .nav { align-items: stretch; }
+/* Header alone in a card: no rule under it */
+.app-card-head:last-child { border-bottom: 0; }
+.app-card-tools {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-left: auto;
+}
+
+/* Live or paused, with a dot */
+.app-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--bs-secondary-color);
+    white-space: nowrap;
+}
+.app-status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background-color: var(--bs-secondary-color);
+}
+.app-status.is-live .app-status-dot { background-color: var(--ec-btn-success); }
+
+/* Row of live values. Hidden items give their width to the rest. */
+.app-live {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    padding: 10px 4px;
+}
+.app-live > * { min-width: 0; padding: 0 12px; }
+.app-live > * + * { border-left: 1px solid var(--border); }
+.app-live-label {
+    overflow: hidden;
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--bs-secondary-color);
+}
+.app-live-value {
+    font-size: 28px;
+    font-weight: bold;
+    line-height: 34px;
+    white-space: nowrap;
+}
+.app-live-value :is(.power-unit, .power-unit-static) {
+    margin-left: 3px;
+    font-size: 14px;
+}
+
+@container app (max-width: 767.98px) {
+    .app-live { grid-auto-flow: row; grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 8px; }
+    .app-live > :nth-child(3n+1) { border-left: none; }
+    .app-live > * { padding: 0 8px; }
+    .app-live-value { font-size: 22px; line-height: 28px; }
+}
+
+/* is-center: centred values. is-row: one row at every width, unit below the value */
+.app-live.is-center > * { text-align: center; }
+.app-live.is-row .app-live-value :is(.power-unit, .power-unit-static) { display: block; margin-left: 0; line-height: 16px; }
+/* is-large: larger live values */
+.app-live.is-large .app-live-value { font-size: 48px; line-height: 56px; }
+.app-live.is-large .app-live-value :is(.power-unit, .power-unit-static) { font-size: 20px; }
+@container app (max-width: 767.98px) {
+    .app-live.is-large .app-live-value { font-size: 34px; line-height: 40px; }
+    .app-live.is-large .app-live-value :is(.power-unit, .power-unit-static) { font-size: 16px; }
+}
+@container app (max-width: 399.98px) {
+    .app-live.is-large .app-live-value { font-size: 28px; line-height: 34px; }
+    .app-live.is-large .app-live-value :is(.power-unit, .power-unit-static) { font-size: 14px; }
+}
+@container app (max-width: 767.98px) {
+    .app-live.is-row { grid-auto-flow: column; grid-template-columns: none; }
+    .app-live.is-row > * { padding: 0 4px; }
+    .app-live.is-row > * + * { border-left: 1px solid var(--border); }
+    .app-live.is-row .app-live-label { letter-spacing: 0.02em; }
+}
+
+/* Row of values inside a card body, first value in line with the body edge */
+.app-card-body > .app-live { margin: 0 -12px; padding: 0 0 6px; }
+@container app (max-width: 767.98px) {
+    .app-card-body > .app-live { margin: 0 -8px; }
+}
+
+/* Text toggles and links beside the tabs, time bar or a caption: smaller than tabs */
+.app-card .nav:not(.nav-underline) > .nav-link { font-size: 13px; }
+.app-card .nav:not(.nav-underline) > .nav-link [class^="svg-icon-"] { font-size: 1rem; }
+
+/* Uppercase label and a note after it */
+.app-card-caption {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 10px;
+    margin-bottom: 8px;
+}
+.app-section-label {
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--bs-secondary-color);
+}
+.app-caption-note { font-size: 12px; color: var(--ec-text-muted); }
+.app-caption-note b { color: var(--bs-body-color); }
+
+/* Chart toolbar in a card: time bar, window label, zoom, mode toggle */
+.app-card .app-navbar { gap: 8px 12px; margin-bottom: 6px; }
+.app-timebar > select.btn {
+    --bs-btn-padding-x: 0.6rem;
+    --bs-btn-font-size: 14px;
+    min-width: 0;
+    text-align: left;
+}
+.app-timebar > select.btn option { color: var(--bs-body-color); background-color: var(--bs-body-bg); }
+/* Sprite icons in the time bar: white set on dark, faded as the button text */
+.app-page[data-bs-theme="dark"] .app-timebar [class^="icon-"] { background-image: url("../../../../Theme/img/glyphicons-halflings-white.png"); }
+/* Sprite icons: 14px box, glyph drawn low in the box, raised 1px */
+.app-timebar > .btn > [class^="icon-"] { opacity: 0.8; vertical-align: top; margin-top: calc((1.5rem - 14px) / 2 - 1px); }
+.app-timebar > .btn:hover > [class^="icon-"] { opacity: 1; }
+.app-window-text { font-size: 13px; color: var(--bs-secondary-color); white-space: nowrap; }
+@container app (max-width: 991.98px) { .app-window-text { display: none; } }
+
+/* Two way toggle */
+.app-segmented > .btn {
+    --bs-btn-padding-x: 0.75rem;
+    --bs-btn-padding-y: 3px;
+    --bs-btn-font-size: 13px;
+    --bs-btn-line-height: 24px;
+    --bs-btn-font-weight: bold;
+    --bs-btn-color: var(--bs-secondary-color);
+    --bs-btn-bg: transparent;
+    --bs-btn-border-color: var(--bs-border-color);
+    --bs-btn-hover-color: var(--bs-emphasis-color);
+    --bs-btn-hover-bg: transparent;
+    --bs-btn-hover-border-color: var(--bs-border-color);
+    --bs-btn-active-color: var(--bs-emphasis-color);
+    --bs-btn-active-bg: rgba(var(--bs-primary-rgb), 0.2);
+    --bs-btn-active-border-color: var(--bs-border-color);
+}
+
+/* Legend below a chart, built from the series */
+.app-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    min-height: 22px;
+    padding: 4px 0 0 40px;
+    font-size: 12px;
+    color: var(--bs-secondary-color);
+}
+.app-legend-item { display: inline-flex; align-items: center; gap: 5px; }
+.app-legend-swatch { width: 10px; height: 10px; border-radius: 2px; }
+.app-legend-line { width: 14px; height: 2px; }
+
+/* Legend item that shows or hides a series, dimmed when off */
+.app-legend-toggle {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    opacity: 0.5;
+    cursor: pointer;
+}
+.app-legend-toggle.active { opacity: 1; }
+.app-legend-toggle:hover { color: var(--bs-body-color); }
+
+/* Compact flow diagram: five columns, energy nodes and the flows between them.
+   Flow colour comes from --statsbox-color, set by the app. */
+.app-flow {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-rows: 46px 38px 46px;
+    --app-flow-gap: 6px;
+    gap: var(--app-flow-gap);
+    margin-bottom: 4px;
+    font-weight: bold;
+}
+.app-flow > *,
+.app-flow-link > span[id] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 0;
+    white-space: nowrap;
+}
+.app-flow > * { overflow: hidden; }
+.app-flow-wide { grid-column: span 3; }
+/* :where keeps the energy fill classes stronger */
+:where(.app-flow-node, .app-flow-link) { background-color: var(--ec-app-box-bg); }
+.app-flow-node { color: var(--bs-secondary-color); }
+.app-flow-node:is(.statsbox-solar, .statsbox-import, .statsbox-battery, .statsbox-house) { color: var(--ec-energy-text); }
+/* Energy fills for flow nodes */
+.statsbox-solar   { background: var(--ec-energy-solar); }
+.statsbox-import  { background: var(--ec-energy-import); }
+.statsbox-export  { background: var(--ec-energy-export); }
+.statsbox-battery { background: var(--ec-energy-battery); }
+.statsbox-house   { background: var(--ec-energy-use-light); }
+.app-flow-link {
+    --statsbox-color: var(--border);
+    color: var(--statsbox-color);
+}
+.app-flow-name { font-size: 13px; }
+.app-flow-value { font-size: 18px; }
+.app-flow-node .app-flow-value { font-size: 22px; }
+.app-flow-unit,
+.app-flow-title { font-size: 12px; }
+.app-flow-arrow { font-size: 11px; }
+/* Percentage on a node edge, placed by the app */
+.app-flow-node { position: relative; }
+.app-flow-prc {
+    position: absolute;
+    font-size: 12px;
+    line-height: 1;
+    opacity: 0.75;
+}
+/* Centred on the column of the flow below or above a wide node */
+.app-flow-wide { --app-flow-col: calc((100% - 2 * var(--app-flow-gap)) / 3); }
+.app-flow-prc-bottom-left,
+.app-flow-prc-bottom-right,
+.app-flow-prc-top-left,
+.app-flow-prc-top-right { width: var(--app-flow-col); text-align: center; }
+.app-flow-prc-bottom-left  { left: 0; bottom: 4px; }
+.app-flow-prc-bottom-right { right: 0; bottom: 4px; }
+.app-flow-prc-top-left     { left: 0; top: 4px; }
+.app-flow-prc-top-right    { right: 0; top: 4px; }
+.app-flow-prc-left         { left: 6px; top: 50%; transform: translateY(-50%); }
+.app-flow-prc-right        { right: 6px; top: 50%; transform: translateY(-50%); }
+
+@container app (max-width: 767.98px) {
+    .app-flow { grid-template-rows: 40px 34px 40px; --app-flow-gap: 4px; }
+    .app-flow > *, .app-flow-link > span[id] { gap: 3px; }
+    .app-flow-value { font-size: 15px; }
+    .app-flow-node .app-flow-value { font-size: 17px; }
+    .app-flow-name { font-size: 11px; }
+    .app-flow-link .app-flow-unit { display: none; }
+    .app-flow-prc { font-size: 11px; }
+    /* Edge percentages to the free corner, clear of the column ones */
+    .app-flow-prc-left  { top: auto; bottom: 4px; transform: none; }
+    .app-flow-prc-right { top: 4px; transform: none; }
+    .app-flow-node:not(.app-flow-wide) .app-flow-unit { display: none; }
+    /* Narrow nodes and titled flows: name on a line above the value */
+    .app-flow-node:not(.app-flow-wide),
+    .app-flow-link:has(.app-flow-title),
+    .app-flow-link > span[id]:has(.app-flow-title) {
+        flex-wrap: wrap;
+        align-content: center;
+        row-gap: 0;
+        line-height: 1.1;
+    }
+    .app-flow-node:not(.app-flow-wide) .app-flow-name,
+    .app-flow-title {
+        flex: 0 0 100%;
+        order: -1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        text-align: center;
+        font-size: 10px;
+    }
+}
+.app-flow-short { display: none; }
+@container app (max-width: 575.98px) {
+    .app-flow-title:has(.app-flow-short) .app-flow-long { display: none; }
+    .app-flow-short { display: inline; }
+}
+
+/* Phones: time bar on its own row, window label shortened */
+@container app (max-width: 575.98px) {
+    .app-card-body { padding: 8px 10px 6px; }
+    .app-card-head { padding: 0 6px; }
+    .app-status-text { display: none; }
+    .app-card .app-navbar { gap: 6px; }
+    .app-card .app-navbar > .app-timebar:has(#time-select) { flex: 1 1 100%; }
+    .app-legend { gap: 0 10px; padding-left: 0; font-size: 11px; line-height: 18px; }
+    .app-legend-item { gap: 4px; }
+}
+
+/* Small phones: header tabs without icons, smaller live values */
+@container app (max-width: 399.98px) {
+    .app-card-head .nav-underline:has(> .nav-link + .nav-link:not(.d-none)) .nav-link { font-size: 14px; }
+    .app-card-head .nav-underline:has(> .nav-link + .nav-link:not(.d-none)) .nav-link > [class^="svg-icon-"] { display: none; }
+    .app-card-tools { gap: 8px; }
+    .app-live > * { padding: 0 6px; }
+    .app-live-value { font-size: 19px; }
+    .app-live-value :is(.power-unit, .power-unit-static) { margin-left: 2px; font-size: 12px; }
+}
+
+/* Line under a chart: window totals and a detail toggle, with a rule above */
+.app-chart-foot {
+    align-items: center;
+    margin: 8px 0 0;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+}
+
+/* Tiles to pick a category, the chosen one tinted */
+.app-tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 8px;
+    margin-bottom: 12px;
+}
+.app-tiles > * {
+    padding: 8px 12px;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 6px;
+    cursor: pointer;
+}
+.app-tiles > *:hover { background-color: var(--bs-tertiary-bg); }
+.app-tiles > .active {
+    border-color: var(--bs-primary-border-subtle);
+    background-color: var(--bs-primary-bg-subtle);
+}
+.app-tile-title {
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--bs-secondary-color);
+}
+.app-tile-value { font-size: 22px; font-weight: 600; }
+@container app (max-width: 575.98px) {
+    .app-tiles { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+    .app-tiles > * { padding: 6px 10px; }
+    .app-tile-value { font-size: 19px; }
+}
+
+/* Option rows in two columns. An open row spans both. */
+.app-options-label { display: block; margin: 16px 0 8px; }
+.app-options {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+.app-options > .app-option {
+    border: 1px solid var(--bs-border-color);
+    border-radius: 6px;
+}
+.app-options > .app-option:has(> div[id$="_options"]:not([style*="none"])) { grid-column: 1 / -1; }
+@container app (max-width: 767.98px) {
+    .app-options { grid-template-columns: 1fr; }
+}
+
+/* -- Tables ---------------------------------------------------------------- */
+
+/* Colour square before a name */
+.app-swatch {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    margin-right: 5px;
+}
+
+/* -- Charts ---------------------------------------------------------------- */
+
+/* Flot 5 legend is SVG, so the panel and label colours are set here */
+.app-page .legend { font-size: 13px; }
+.app-page .legendLayer rect.background { fill: rgba(var(--bs-body-bg-rgb), 0.85); }
+.app-page .legendLayer text { fill: var(--bs-body-color); }
+
+/* Flot 5 tick and axis labels are SVG text, black unless an app sets font.fill */
+.app-page .flot-tick-label,
+.app-page .axisLabels {
+    fill: var(--bs-secondary-color);
+    font-size: 13px;               /* as MyElectricFlow, where Flot sets 0.8 x the 16px placeholder */
+}
+
+/* Tooltip is added to body, outside .app-page, so its colours are fixed */
+#tooltip {
+    position: absolute;
+    display: none;
+    top: 0;
+    left: 0;
+    padding: .3em .5em;
+    border: 1px solid #545454;
+    border-radius: .1em;
+    background-color: #333;
+    color: #fff;
+    opacity: .8;
+}
+.tooltip-title {
+    color: #ccc;
+    font-weight: bold;
+    font-size: 12px;
+}
+.tooltip-value {
+    color: #fff;
+    font-weight: bold;
+    font-size: 14px;
+}
+.tooltip-units {
+    color: #fff;
+    font-weight: bold;
+    font-size: 10px;
+}
+
+/* -- Bootstrap components in apps ------------------------------------------
+   Tabs are nav-underline, text and icon buttons nav-link, the time bar a
+   btn-group, actions btn-outline-primary, fields input-group, tables table.
+   Tuned here through their variables. */
+
+.app-page,
+.app-page .nav {
+    --bs-nav-link-padding-x: 0.6rem;
+    --bs-nav-link-padding-y: 0.25rem;
+    --bs-nav-link-color: var(--bs-secondary-color);
+    --bs-nav-link-hover-color: var(--bs-emphasis-color);
+    --bs-nav-underline-gap: 0;
+    --bs-nav-underline-link-active-color: var(--bs-emphasis-color);
+}
+.app-page .nav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45em;
+    font-weight: bold;
+}
+.app-page .nav-underline .nav-link { padding-inline: var(--bs-nav-link-padding-x); }
+.app-page .nav-underline .nav-link.active { border-bottom-color: var(--bs-primary); }
+.app-page .nav-link.active { color: var(--bs-emphasis-color); }
+.app-page .nav:not(.nav-underline) .nav-link.active { text-decoration: underline; }
+
+/* Row above a chart: time bar, then notes and links. JS may show and hide it. */
+.app-navbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+/* Time bar */
+.app-timebar > .btn {
+    --bs-btn-padding-x: 0.5rem;
+    --bs-btn-padding-y: 3px;              /* 32px high with the border, as the old time bar */
+    --bs-btn-font-size: 1rem;
+    --bs-btn-line-height: 1.5;
+    --bs-btn-color: color-mix(in srgb, var(--ec-text-secondary) 85%, transparent);
+    --bs-btn-bg: rgba(var(--ec-app-nav-rgb), 0.1);
+    --bs-btn-border-color: transparent;
+    --bs-btn-hover-color: var(--bs-emphasis-color);
+    --bs-btn-hover-bg: rgba(var(--ec-app-nav-rgb), 0.2);
+    --bs-btn-hover-border-color: transparent;
+    --bs-btn-active-color: var(--bs-emphasis-color);
+    --bs-btn-active-bg: rgba(var(--ec-app-nav-rgb), 0.3);
+    --bs-btn-active-border-color: transparent;
+    min-width: 3em;
+}
+.app-timebar > .btn + .btn { border-left-color: rgba(var(--bs-emphasis-color-rgb), 0.12); }
+
+/* Rounded ends on the group, so they hold when JS hides the first or last button */
+.app-timebar {
+    border-radius: 0.375rem;
+    overflow: hidden;
+}
+.app-timebar > .btn {
+    --bs-btn-border-radius: 0;
+    --bs-btn-focus-box-shadow: inset 0 0 0 2px rgba(var(--bs-primary-rgb), 0.5);
+}
+
+@container app (max-width: 575.98px) {
+    .app-timebar { flex: 1; }
+    .app-timebar > .btn { min-width: 0; --bs-btn-padding-x: 0.3rem; }
+}
+
+/* Time bar zoom (plus and minus) and pan icons, line style: 24px grid, 2.5px stroke. Bar chart
+   icon for the view switch, filled as svg-icon-show_chart. */
+.svg-icon-zoom_in {
+    -webkit-mask-image: url("data:image/svg+xml;charset=utf-8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M12 5v14M5 12h14'/></svg>");
+    mask-image: url("data:image/svg+xml;charset=utf-8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M12 5v14M5 12h14'/></svg>");
+}
+.svg-icon-zoom_out {
+    -webkit-mask-image: url("data:image/svg+xml;charset=utf-8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M5 12h14'/></svg>");
+    mask-image: url("data:image/svg+xml;charset=utf-8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M5 12h14'/></svg>");
+}
+.svg-icon-pan_left {
+    -webkit-mask-image: url("data:image/svg+xml;charset=utf-8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M15 18l-6-6 6-6'/></svg>");
+    mask-image: url("data:image/svg+xml;charset=utf-8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M15 18l-6-6 6-6'/></svg>");
+}
+.svg-icon-pan_right {
+    -webkit-mask-image: url("data:image/svg+xml;charset=utf-8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M9 18l6-6-6-6'/></svg>");
+    mask-image: url("data:image/svg+xml;charset=utf-8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M9 18l6-6-6-6'/></svg>");
+}
+.svg-icon-bar_chart {
+    -webkit-mask-image: url("data:image/svg+xml;charset=utf-8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M4 10h4v10H4zM10 4h4v16h-4zM16 13h4v7h-4z'/></svg>");
+    mask-image: url("data:image/svg+xml;charset=utf-8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M4 10h4v10H4zM10 4h4v16h-4zM16 13h4v7h-4z'/></svg>");
+}
+.svg-icon-pan_end {
+    -webkit-mask-image: url("data:image/svg+xml;charset=utf-8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M7 18l6-6-6-6M17 6v12'/></svg>");
+    mask-image: url("data:image/svg+xml;charset=utf-8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M7 18l6-6-6-6M17 6v12'/></svg>");
+}
+/* Icons centred in the 1.5rem line box */
+.app-timebar > .btn > [class^="svg-icon-"] { font-size: 1.05rem; vertical-align: top; margin-top: calc((1.5rem - 1em) / 2); }
+
+/* Now is text, and an icon on small phones */
+#time-now > .svg-icon-pan_end { display: none; }
+@container app (max-width: 399.98px) {
+    #time-now > .app-now-text { display: none; }
+    #time-now > .svg-icon-pan_end { display: inline-block; }
+}
+
+/* Power and Daily toggle folds into the time bar on phones, as one button
+   showing the other view: bars in power view, a line in daily view */
+.app-view-switch { display: none; }
+@container app (max-width: 575.98px) {
+    .app-navbar:has(> .viewmode-toggle:not([style*="none"])) .app-view-switch { display: block; }
+    /* !important as apps show and hide the toggle with inline styles */
+    .app-navbar > .viewmode-toggle { display: none !important; }
+    .app-navbar:has(.viewhistory.active) .app-view-switch .svg-icon-bar_chart,
+    .app-navbar:has(.viewpower.active) .app-view-switch .svg-icon-show_chart { display: none; }
+    .app-view-switch [class^="svg-icon-"] { font-size: 1.1rem; }
+    .app-timebar > select.btn { flex: 1 1 auto; --bs-btn-padding-x: 0.4rem; }
+}
+
+/* Fields line up with buttons in a flex row */
+.app-page .input-group { margin-bottom: 0; }
+
+/* Compact tables on phones */
+@container app (max-width: 575.98px) {
+    .app-page .table { font-size: 13px; }
+    .app-page .table > :not(caption) > * > * { padding: 0.4rem 0.25rem; }
+}
+
+/* Name cell in a table */
+.app-page .table .col-primary { color: var(--bs-emphasis-color); }

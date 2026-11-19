@@ -69,6 +69,13 @@
   "replaces": []
  },
  {
+  "file": "flot-5.1.0-mod/flot-5.1.0.mod.min.js",
+  "source": "https://github.com/emoncms/emoncms/blob/339f5f1f/Lib/js/flot-5.1.0.mod.min.js (OpenEnergyMonitor modified build of @kevinburke/flot 5.1.0)",
+  "sha384": "sha384-rKblsh+7b/6K5Ae+sg/HcUG7rP1MOMKv6V5ABCM6odDFU/hNCW8/fdQPDxvAwQon",
+  "verified": "matches emoncms git blob at 339f5f1f (origin/master)",
+  "replaces": []
+ },
+ {
   "file": "font-awesome-5.15.4/css/fontawesome.min.css",
   "source": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css",
   "sha384": "sha384-jLKHWM3JRmfMU0A5x5AkjWkw/EYfGUAGagvnfryNV3F9VqM98XiIH7VBGVoxVSc7",
