@@ -367,10 +367,13 @@ function heatdemand_flow_draw() {
         { label: "Days", color: blue, flow: used, data: used.map(function (d) { return [d.dT, d.flowT]; }), points: { show: true, radius: 3, fill: true, fillColor: blue } },
         { label: "Highest 4 h each day", color: red, flow: max4h, data: max4h.map(function (d) { return [d.dT, d.flowT4h]; }), points: { show: true, radius: 3, lineWidth: 1.5, fill: true, fillColor: "#fff" } }
     ];
-    if (below.length) series.push({ label: "Below balance point, not fitted", color: "#aaa", flow: below, data: below.map(function (d) { return [d.dT, d.flowT]; }), points: { show: true, radius: 3, fill: true, fillColor: "#aaa" } });
+    // Older measurements have no fit_min_dT: the balance point was the only cut
+    var no_dhw_cut = t.fit_min_reason == "no hot water flag";
+    var below_label = no_dhw_cut ? "Milder days, not fitted (no hot water flag)" : "Below balance point, not fitted";
+    if (below.length) series.push({ label: below_label, color: "#aaa", flow: below, data: below.map(function (d) { return [d.dT, d.flowT]; }), points: { show: true, radius: 3, fill: true, fillColor: "#aaa" } });
 
     // Fit lines, the 80% band about the typical line, and the readings at design
-    var x0 = t.balance_point_dT || 0;
+    var x0 = (t.fit_min_dT !== undefined ? t.fit_min_dT : t.balance_point_dT) || 0;
     function fit_line(m, color, dashes) {
         var d = m.details, line = { label: "", color: color, data: [[x0, d.slope * x0 + d.intercept], [xmax, d.slope * xmax + d.intercept]], lines: { show: true, lineWidth: 2 }, points: { show: false } };
         if (dashes) line.lines.dashes = dashes;
@@ -407,7 +410,8 @@ function heatdemand_flow_draw() {
     var fmt = function (d) { return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }); };
     result.push(used.length + " days with space heating, " + fmt(first) + " to " + fmt(last) +
         (t.room == "feed" ? ", measured room temperature" : ", room temperature assumed 20 °C") +
-        (t.dhw_split ? "" : ", no hot water flag so all running counts as space heating") +
+        (t.dhw_split ? "" : ", no hot water flag so all running counts as space heating" +
+            (no_dhw_cut ? "; only days with ΔT of " + t.fit_min_dT.toFixed(1) + " K or more are fitted, where hot water is a small share of the heat" : "")) +
         ". From the nightly measurements, not the window above.");
     $("#heatdemand-result").html(result.join("<br>"));
 

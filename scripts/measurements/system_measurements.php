@@ -33,6 +33,10 @@
 //        read off at the design ΔT: the daily value weighted by heat output
 //        (typical) and the highest 4 hour value each day (sustained, e.g.
 //        coming off setback). The coldest days are listed with timestamps.
+//        With no hot water flag, hot water heating counts as space heating and
+//        pulls up the flow temperature of mild days, where it is a large share
+//        of the heat, so only the colder days are fitted (ΔT at least half the
+//        highest).
 //
 // Measurements that come from one period carry start_time and end_time;
 // selected days are listed with their timestamps in details.
@@ -56,7 +60,7 @@ $system_stats = new SystemStats($mysqli, $system);
 require "$dir/../feed_scan/phpfina_reader.php";
 require "$dir/heatloss_fit.php";
 
-const VERSION = 2;                   // 2: flowT_typical_design details.points
+const VERSION = 3;                   // 2: flowT_typical_design details.points, 3: no hot water flag fits the colder days
 const PHPFINA_DIR = "/var/opt/emoncms/phpfina/";
 const TIMEZONE = "Europe/London";
 const FILL_MAX_S = 900;              // forward fill gaps shorter than this, as the myheatpump app
@@ -71,6 +75,7 @@ const DOT_YEAR_COVERAGE = 0.9;       // share of hours with outside temperature 
 const FLOW_DAYS = 365;               // flow temperature fits use the latest year (weather compensation changes)
 const FLOW_MIN_SPACE_KWH = 2;        // space heating per day for a flow temperature day
 const MIN_FIT_DAYS = 10;
+const NO_DHW_MIN_DT_SHARE = 0.5;     // no hot water flag: flow temperature fits use days with ΔT at least this share of the highest
 const ROOM_T = 20;                   // design room temperature, and assumed room temperature with no feed
 const PI_Z = 1.2816;                 // 80% two sided
 const COLDEST_DAYS = 5;
@@ -403,6 +408,8 @@ function derive($system_stats, $systemid, $days, $meta)
         $info = array('design_outsideT' => $design_dot, 'design_outsideT_source' => $design_dot_source,
             'design_dT' => $dT, 'room' => $flow['room_source'], 'dhw_split' => $flow['dhw_split'],
             'balance_point_dT' => $base_dT !== null ? r($base_dT, 2) : null,
+            'fit_min_dT' => $flow['fit_min_dT'] !== null ? r($flow['fit_min_dT'], 2) : null,
+            'fit_min_reason' => $flow['fit_min_reason'],
             'interval' => "80% prediction interval, a single day about the fit");
 
         foreach (array("flowT_typical_design" => array('space_flowT', null, "Daily space heating flow temperature weighted by heat output"),
@@ -437,7 +444,7 @@ function derive($system_stats, $systemid, $days, $meta)
         }
 
         // The days behind both fits, for the dashboard chart:
-        // [day, ΔT, flow temp, highest 4 h flow temp, its start, 1 fitted / 0 below the balance point]
+        // [day, ΔT, flow temp, highest 4 h flow temp, its start, 1 fitted / 0 below fit_min_dT]
         if (isset($m['flowT_typical_design'])) {
             $points = array();
             foreach (array(1 => $flow['days'], 0 => $flow['below']) as $used => $list) {
@@ -451,7 +458,9 @@ function derive($system_stats, $systemid, $days, $meta)
             $m['flowT_typical_design']['details']['points'] = $points;
         }
 
-        // Highest 4 hour space heating flow temperature in the latest year
+        // Highest 4 hour space heating flow temperature in the latest year, on the
+        // fitted days (with no hot water flag, mild days' highest 4 hours are
+        // often a cylinder reheat)
         $peak = null;
         foreach ($flow['days'] as $ts => $p) {
             if ($days[$ts]['space_flowT_max4h'] !== null && ($peak === null || $days[$ts]['space_flowT_max4h'] > $days[$peak]['space_flowT_max4h'])) $peak = $ts;
@@ -460,7 +469,8 @@ function derive($system_stats, $systemid, $days, $meta)
             $s = $days[$peak]['space_flowT_max4h_start'];
             $m['flowT_peak_4h'] = measurement($days[$peak]['space_flowT_max4h'], "°C", count($flow['days']), null, null, $s, $s + 14400,
                 array('method' => "Highest 4 hour space heating flow temperature in the latest year, weighted by heat output",
-                    'outsideT' => r(window_outsideT($days, $s), 1), 'dhw_split' => $flow['dhw_split']));
+                    'outsideT' => r(window_outsideT($days, $s), 1), 'dhw_split' => $flow['dhw_split'],
+                    'fit_min_dT' => $flow['fit_min_dT'] !== null ? r($flow['fit_min_dT'], 2) : null));
         }
     }
 
@@ -532,7 +542,11 @@ function heat_loss_at($hl, $dT)
 }
 
 // Days for the flow temperature fits: the latest year, full days with space
-// heating, above the balance point
+// heating, above the balance point. With no hot water flag, only the colder
+// days: hot water heating counts as space heating then, and on mild days it is
+// a large share of the heat, pulling their flow temperature up and the fitted
+// slope down (on a system with a flag, ignoring it took the design value from
+// 35.6 to 31.9 °C; fitting the colder half of days gave 35.0 °C).
 function flow_points($days, $base_dT)
 {
     if (!count($days)) return null;
@@ -540,23 +554,36 @@ function flow_points($days, $base_dT)
     $has_room = false;
     foreach ($days as $d) if ($d['roomT'] !== null && $d['roomT'] > 0) { $has_room = true; break; }
 
-    $out = array(); $below = array(); $dhw_split = false; $start = null;
+    $all = array(); $dhw_split = false; $max_dT = null;
     foreach ($days as $ts => $d) {
         if ($ts <= $last - FLOW_DAYS * 86400) continue;
         if ($d['data_s'] < FULL_DAY_COVERAGE * 86400 || $d['outsideT'] === null) continue;
         if ($d['space_kwh'] < FLOW_MIN_SPACE_KWH || $d['space_flowT'] === null) continue;
         $roomT = $has_room ? $d['roomT'] : ROOM_T;
         if ($roomT === null) continue;
-        $dT = $roomT - $d['outsideT'];
-        // Days below the balance point are kept for the chart, but not fitted
-        if ($base_dT !== null && $dT < $base_dT) { $below[$ts] = array('dT' => $dT); continue; }
-        $out[$ts] = array('dT' => $dT);
+        $all[$ts] = $roomT - $d['outsideT'];
         if ($d['dhw_flag']) $dhw_split = true;
+        if ($max_dT === null || $all[$ts] > $max_dT) $max_dT = $all[$ts];
+    }
+    if (!count($all)) return null;
+
+    $min_dT = $base_dT; $reason = $base_dT !== null ? "balance point" : null;
+    if (!$dhw_split && ($min_dT === null || NO_DHW_MIN_DT_SHARE * $max_dT > $min_dT)) {
+        $min_dT = NO_DHW_MIN_DT_SHARE * $max_dT;
+        $reason = "no hot water flag";
+    }
+
+    // Days below the minimum ΔT are kept for the chart, but not fitted
+    $out = array(); $below = array(); $start = null;
+    foreach ($all as $ts => $dT) {
+        if ($min_dT !== null && $dT < $min_dT) { $below[$ts] = array('dT' => $dT); continue; }
+        $out[$ts] = array('dT' => $dT);
         if ($start === null) $start = $ts;
     }
     if (!count($out)) return null;
     return array('days' => $out, 'below' => $below, 'start' => $start, 'end' => $last + 86400,
-        'room_source' => $has_room ? "feed" : "assumed", 'dhw_split' => $dhw_split);
+        'room_source' => $has_room ? "feed" : "assumed", 'dhw_split' => $dhw_split,
+        'fit_min_dT' => $min_dT, 'fit_min_reason' => $reason);
 }
 
 // 99.6% and 99.0% design outside temperature over complete 365 day blocks
