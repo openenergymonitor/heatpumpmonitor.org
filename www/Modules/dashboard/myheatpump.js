@@ -347,10 +347,61 @@ function alltime_totals_draw() {
     var show_boiler = boiler_enabled && mode == "combined" && t.boiler_kwh != undefined;
     if (show_boiler) $("#total_boiler").html(Math.round(t.boiler_kwh));
     $("#boiler_total_bound").toggle(show_boiler);
+
+    totals_breakdown_draw(t);
+}
+
+// By mode: totals for All, Space heating, Water heating and Cooling in one table,
+// in place of the single mode row. Icons and colours as the mode buttons and COP tiles.
+var totals_breakdown = false;
+var totals_breakdown_modes = [
+    { key: "combined", name: "All", icon: "svg-icon-hpmon", color: "var(--ec-primary-darker)" },
+    { key: "space", name: "Space heating", icon: "svg-icon-radiator", color: "#f6a801" },
+    { key: "water", name: "Water heating", icon: "svg-icon-shower", color: "#014656" },
+    { key: "cooling", name: "Cooling", icon: "svg-icon-snowflake", color: "#66b0ff" }
+];
+
+function totals_breakdown_draw(t) {
+    // Split into space and water heating needs the daily pre-processed split
+    var space_heat = t.space_heat_kwh || 0;
+    var water_heat = t.water_heat_kwh || 0;
+    var has_split = water_heat > 0 && space_heat > 0;
+    var has_cooling = (t.cooling_heat_kwh || 0) > 0;
+
+    $("#totals-breakdown-bound").toggle(has_split || has_cooling);
+    var show = totals_breakdown && (has_split || has_cooling);
+    $("#totals-breakdown").toggle(show);
+    $("#totals-single").toggle(!show);
+    $("#total_mode").toggle(!show);
+    $("#totals-breakdown-toggle").toggleClass("active", show)
+        .find("i").attr("class", show ? "bi bi-chevron-up" : "bi bi-chevron-down");
+    if (!show) return;
+
+    var fmt = function (v, dp) { return v != null ? v.toFixed(dp) : "-"; };
+    var rows = "";
+    totals_breakdown_modes.forEach(function (m) {
+        if ((m.key == "space" || m.key == "water") && !has_split) return;
+        if (m.key == "cooling" && !has_cooling) return;
+        var heat = t[m.key + "_heat_kwh"];
+        var share = (m.key == "space" || m.key == "water") ? fmt(100 * heat / (space_heat + water_heat), 0) + "<span class='power-unit-static'>%</span>" : "";
+        rows += "<tr>" +
+            "<td class='hp-totals-mode' style='color:" + m.color + "' title='" + m.name + "'><i class='" + m.icon + "'></i><span>" + m.name + "</span></td>" +
+            "<td class='text-hp-elec'>" + fmt(t[m.key + "_elec_kwh"], 0) + "<span class='power-unit-static'>kWh</span></td>" +
+            "<td class='text-hp-heat'>" + fmt(heat, 0) + "<span class='power-unit-static'>kWh</span></td>" +
+            "<td class='text-hp-cop'>" + fmt(t[m.key + "_cop"], 2) + "</td>" +
+            "<td class='hp-totals-share'>" + share + "</td>" +
+            "</tr>";
+    });
+    $("#totals-breakdown-rows").html(rows);
 }
 
 $(".total-period").click(function () {
     totals_period = $(this).attr("period");
+    alltime_totals_draw();
+});
+
+$("#totals-breakdown-toggle").click(function () {
+    totals_breakdown = !totals_breakdown;
     alltime_totals_draw();
 });
 

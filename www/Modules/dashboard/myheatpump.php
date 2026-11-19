@@ -397,12 +397,32 @@ if ($private_mode || $system_data->share==0) {
 
     <div class="app-card app-card-body">
       <div class="app-card-caption"><span class="app-section-label"><span id="all_time_history_title">All time history</span> <span id="total_mode"></span></span>
-        <div class="btn-group app-segmented ms-auto">
-          <button class="btn total-period" period="last365" title="Totals for the last 365 days">Last year</button>
-          <button class="btn total-period active" period="all" title="Totals since the start of monitoring">All time</button>
+        <div class="hp-totals-tools ms-auto">
+          <div class="btn-group app-segmented" id="totals-breakdown-bound" style="display:none">
+            <button class="btn" id="totals-breakdown-toggle" title="Show totals for each mode"><i class="bi bi-chevron-down"></i> By mode</button>
+          </div>
+          <div class="btn-group app-segmented">
+            <button class="btn total-period" period="last365" title="Totals for the last 365 days">Last year</button>
+            <button class="btn total-period active" period="all" title="Totals since the start of monitoring">All time</button>
+          </div>
         </div>
       </div>
-      <div class="app-live">
+      <!-- Totals for each mode, shown in place of the single mode row by By mode -->
+      <div id="totals-breakdown" style="display:none">
+        <table class="hp-totals-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th class="app-live-label"><span class="hp-label-long">Electricity input</span><span class="hp-label-short">Electric</span></th>
+              <th class="app-live-label"><span class="hp-label-long">Heat output</span><span class="hp-label-short">Heat</span></th>
+              <th class="app-live-label">SCOP</th>
+              <th class="app-live-label" title="Share of space and water heat output">Share</th>
+            </tr>
+          </thead>
+          <tbody id="totals-breakdown-rows"></tbody>
+        </table>
+      </div>
+      <div class="app-live" id="totals-single">
         <div>
           <div class="app-live-label">Electricity input</div>
           <div class="app-live-value text-hp-elec"><span id="total_elec"></span><span class="power-unit-static">kWh</span></div>

@@ -48,6 +48,51 @@
   .app-card .app-navbar > .hp-manual { display: none; }
 }
 
+/* Totals card: By mode and period buttons, then totals for each mode */
+.hp-totals-tools { display: flex; flex-wrap: wrap; gap: 8px; }
+.hp-totals-tools .btn { white-space: nowrap; }
+.hp-totals-tools .bi { font-size: 11px; -webkit-text-stroke: 0.5px; }
+
+.hp-totals-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  margin-bottom: 6px;
+}
+.hp-totals-table th { padding: 0 12px 4px; font-weight: bold; text-align: left; }
+.hp-totals-table th:first-child { width: 22%; }
+.hp-totals-table td {
+  padding: 8px 12px;
+  border-top: 1px solid var(--border);
+  font-size: 22px;
+  font-weight: bold;
+  line-height: 28px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hp-totals-table td + td, .hp-totals-table th + th { border-left: 1px solid var(--border); }
+.hp-totals-table .power-unit-static { margin-left: 3px; font-size: 13px; }
+.hp-totals-table td.hp-totals-mode { font-size: 14px; }
+.hp-totals-mode i { font-size: 20px; margin-right: 8px; vertical-align: -4px; }
+.hp-totals-share { color: var(--bs-secondary-color); }
+.hp-label-short { display: none; }
+
+/* Phones: icon only for the mode, smaller values, no units */
+@container app (max-width: 575.98px) {
+  .hp-totals-tools { gap: 6px; }
+  .hp-totals-table th:first-child { width: 36px; }
+  .hp-totals-table th, .hp-totals-table td { padding-left: 6px; padding-right: 6px; }
+  .hp-totals-table th.app-live-label { font-size: 9px; letter-spacing: 0.02em; }
+  .hp-totals-table td { font-size: 17px; line-height: 24px; }
+  .hp-totals-table td .power-unit-static { display: none; }
+  .hp-totals-table td.hp-totals-share .power-unit-static { display: inline; font-size: 12px; margin-left: 1px; }
+  .hp-totals-mode span { display: none; }
+  .hp-label-long { display: none; }
+  .hp-label-short { display: inline; }
+  .hp-totals-mode i { margin-right: 0; }
+}
+
 /* Small phones: tighter mode buttons. Icons are dropped when Cooling makes five. */
 @container app (max-width: 359.98px) {
   .bargraph-navigation > .btn { --bs-btn-padding-x: 0.4rem; }
