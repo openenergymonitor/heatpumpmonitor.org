@@ -82,6 +82,53 @@ heat and weighted flowT. 126 converged.
 Caveats: the simulator's cycling is simple and probably understates start
 and stop losses. One weather year, shifted rather than local.
 
+## Finding 3: machine replay, steady running by speed band
+
+The [machine replay](machine_replay.md) runs each Arotherm's real 10s data
+through the datasheet fit. It labels every sample by operating state and
+compares field and datasheet COP in steady space heating, by inferred
+compressor speed. Fleet medians (`twins/replay_fleet.csv`):
+
+| | Field / datasheet |
+|---|---|
+| Steady, 30–70 rps (the "level") | 0.96 |
+| 70–120 rps, relative to level | 1.01 |
+| Below 30 rps (must cycle), relative to level | 0.89 |
+| Share of steady running below 30 rps | 38% |
+
+- **Between 30 and 120 rps, field running seems to follow the datasheet's
+  part-load curve.** That counts against explanation 2.
+- **The shortfall is at minimum speed,** where many systems spend a lot of
+  their time. That's consistent with explanation 1.
+- **Transients look small and similar across the fleet.** Start-ups,
+  defrosts, ramps and DHW each cost a median 0.04–0.13 SPF, and starts per
+  day isn't linked to quality. That's evidence against explanation 3,
+  though P hasn't yet been recomputed from steady samples only.
+
+**Joined with P** (quick exploratory join, Spearman, n = 132):
+
+| | ρ |
+|---|---|
+| P vs share of time below 30 rps | +0.52 |
+| P vs level | −0.26 |
+| P vs starts per day | +0.29 |
+| Share below 30 rps vs quality | −0.42 |
+
+High-P systems spend more time at minimum speed and sit further below
+their datasheet. Dividing quality by level moves the P test slope from
+−0.02 to **+0.18**, about half the twins' +0.36. This suggests partial
+cancellation: the benefit holds in steady running, but gentle systems lose
+part of it at minimum speed and through a lower level.
+
+Caveats:
+- Speed is inferred from metered heat. A heat meter that reads low pushes
+  running into the lowest band *and* lowers the level, which could produce
+  both correlations by itself.
+- The fit gives low flowT too much credit (see the replay doc). If high-P
+  systems run cooler, their level is pushed down artificially.
+- The level pools 30–70 rps. A finer split (30–40 against 50–70 rps) would
+  test the datasheet's part-load slope more directly.
+
 ## Ruled out (so far)
 
 - **Standby.** It's small (2.4% of electricity), and using running COP
@@ -121,19 +168,21 @@ load, so that isn't the reason.
 
 ## Next steps
 
-1. **Steady-only P.** Recompute P from steady-episode samples only (or
-   drop the first N minutes after each start) and rerun the P test. Also
-   measure the share of annual heat that falls in transients. *Tests
-   explanation 3.*
-2. **Field compressor map.** Use `steady_episodes_fleet.php` on the
-   Arotherms: episodes of at least 10 minutes with the compressor on and
-   flowT steady. Plot episode COP (or COP/Carnot) against output kW, in
-   outsideT and flowT bins, and compare with the datasheet. *Tests
-   explanation 2.*
-3. **Steady vs actual SPF.** Weight each system's episode curve by its
-   annual histogram (`hstar_hist.csv`) to get the SPF its steady running
-   implies, and compare that with measured running SPF. Does the gap grow
-   as r̄ falls? *Tests explanation 1.*
+1. **Steady-only P.** Recompute P from the replay's steady samples only and
+   rerun the P test. The replay's state labels make this straightforward.
+   *Tests explanation 3.*
+2. **Finer field compressor map.** Split the replay's 30–70 rps level into
+   narrower speed bands and check whether field/datasheet stays flat. This
+   builds on `replay_fleet.csv` rather than starting again from
+   `steady_episodes_fleet.php`. *Tests explanation 2.*
+3. **Steady vs actual SPF.** Weight each system's steady field/datasheet
+   curve by its annual histogram (`hstar_hist.csv`) to get the SPF its
+   steady running implies. Compare that with measured running SPF, and see
+   whether the gap grows with P or with time at minimum speed. *Tests
+   explanation 1.*
+4. **Separate the meter from the machine.** Check whether the minimum-speed
+   and level correlations with P survive on systems with a verified heat
+   meter (cylinder reheat check, or Arotherm's own flow reading).
 
 How we'd read the results:
 - **Field curves match the datasheet:** the benefit is real at steady state
@@ -181,6 +230,10 @@ except where noted.
 - **P test:** `scripts/analyse_hstar_fleet.py`,
   `scripts/analyse_hstar_offsets.py`. `scripts/hstar_plots.py` draws the
   P test and utilisation figures (needs `hstar_hist.csv`).
+- **Machine replay:** `scripts/feed_scan/replay.php`, summarised by
+  `twins/replay_fleet.py` into `twins/replay_fleet.csv`. See
+  [machine_replay.md](machine_replay.md). The P join in Finding 3 merges
+  that file with `hstar_fleet_hist.csv` on `id` (P = H_star/H_fixed).
 - **Twins** (`twins.js` needs tools repo commit `176ae57` or later):
 
   ```
