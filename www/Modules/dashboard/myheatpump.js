@@ -70,6 +70,7 @@ var previousPoint = false;
 var viewmode = "bargraph";
 var panning = false;
 var flot_font_size = 12;
+var chart_height = 0;   // set on the first resize(), then kept
 var updaterinst = false;
 var elec_enabled = false;
 var heat_enabled = false;
@@ -475,17 +476,21 @@ function resize() {
 
     var width = placeholder_bound.width();
 
-    // Viewport height less content above the chart (measured from the top of the page,
-    // independent of scroll position), the legend, the chart foot and the all time history
-    // card. Legend height is the tallest seen at this width and the foot a fixed allowance,
-    // so the chart keeps its size when the view changes.
-    var chart_foot = 48;
-    var history_card = $('#all_time_history_title').closest('.app-card').outerHeight(true);
-    var offset_top = placeholder_bound.offset().top;
-    var height = window.innerHeight - offset_top - chart_legend_height() - chart_foot - history_card - 16;
+    // heatpumpmonitor.org: height is set once, on the first draw, and kept after that,
+    // so the chart only resizes horizontally with the window.
+    if (!chart_height) {
+        // Viewport height less content above the chart (measured from the top of the page,
+        // independent of scroll position), the legend, the chart foot and the all time history
+        // card. Legend height is the tallest seen at this width and the foot a fixed allowance.
+        var chart_foot = 48;
+        var history_card = $('#all_time_history_title').closest('.app-card').outerHeight(true);
+        var offset_top = placeholder_bound.offset().top;
+        chart_height = window.innerHeight - offset_top - chart_legend_height() - chart_foot - history_card - 16;
 
-    // min size to avoid flot errors
-    if (height < 250) height = 250;
+        // min size to avoid flot errors
+        if (chart_height < 250) chart_height = 250;
+    }
+    var height = chart_height;
 
     placeholder.width(width);
     placeholder_bound.height(height);
@@ -498,22 +503,22 @@ function resize() {
         powergraph_draw();
     }
 }
-// on finish sidebar hide/show
+// Redraw at the new width when the window width changes. emoncms fires a debounced
+// "window.resized" event from its theme; heatpumpmonitor.org has none, so the window
+// resize event is debounced here. Height-only changes (address bar, on-screen keyboard)
+// are ignored, as the chart height is fixed.
 $(function () {
     var last_width = window.innerWidth;
-    var last_height = window.innerHeight;
+    var resize_timeout = false;
 
-    $(document).on('window.resized', function () {
-        // Touch devices: skip small height-only changes from the browser address bar
-        // showing and hiding on scroll, and from the on-screen keyboard
-        var touch = window.matchMedia('(pointer: coarse)').matches;
-        if (touch && window.innerWidth == last_width && Math.abs(window.innerHeight - last_height) < 150) return;
-        last_width = window.innerWidth;
-        last_height = window.innerHeight;
-        resize();
-    })
-
-    $(document).on('hidden.sidebar.collapse shown.sidebar.collapse', resize)
+    window.addEventListener('resize', function () {
+        clearTimeout(resize_timeout);
+        resize_timeout = setTimeout(function () {
+            if (window.innerWidth == last_width) return;
+            last_width = window.innerWidth;
+            resize();
+        }, 100);
+    });
 })
 // ----------------------------------------------------------------------
 // App log
