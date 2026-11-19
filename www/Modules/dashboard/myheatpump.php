@@ -380,7 +380,9 @@ if ($private_mode || $system_data->share==0) {
         <p class="mb-1">Each point is one day: mean heat output against mean room minus outside temperature. Hover over a point for details, click to open the power view for that day. The slope of the fit line is the heat loss in W/K.</p>
         <ul class="mb-0 ps-3">
           <li><b>Fit:</b> the balance point is where the fit line reaches zero heat. Days below the balance point are mostly water heating and standby, so the fit excludes them and refits until the balance point settles. Days more than 2.5 standard errors from the line are also excluded.</li>
-          <li><b>Design outside and Room:</b> set the design ΔT for the heat demand estimate.</li>
+          <li><b>Design outside and Room:</b> set the design ΔT for the heat demand estimate. Design outside starts at the value entered on the system form.</li>
+          <li><b>Projected:</b> the fit line at the design ΔT.</li>
+          <li><b>Design heat loss:</b> the dashed line, the heat loss entered on the system form.</li>
           <li><b>Use as room T:</b> replaces measured room temperature with the Room value. Used automatically when there is no room temperature feed. Useful when the feed is not representative of the whole house.</li>
           <li><b>Min ΔT:</b> optional, excludes mild days before the fit.</li>
           <li><b>Min quality:</b> percentage of the day with heat meter data. Days with gaps under-count heat and are excluded.</li>
@@ -461,6 +463,11 @@ if ($private_mode || $system_data->share==0) {
   var config = {};
   config.id = <?php echo (int) $id; ?>;
   config.db = {};
+  // Design heat loss from the system form, kW at the outside design temperature
+  var system_design = <?php echo json_encode(array(
+      "heat_loss" => is_numeric($system_data->heat_loss) ? (float) $system_data->heat_loss : null,
+      "design_temp" => is_numeric($system_data->design_temp) ? (float) $system_data->design_temp : null
+  )); ?>;
 </script>
 
 <script src="<?php echo $path; ?>Modules/dashboard/myheatpump_process.js?v=<?php echo $v; ?>"></script>

@@ -242,7 +242,7 @@ function heatdemand_draw() {
         if (!isNaN(design_dT)) {
             var y = f.m * design_dT + f.b, pi = heatdemand_pi(f, design_dT);
             max_kw = Math.max(max_kw, Math.ceil(y + pi + 0.5));
-            lines.push({ label: "Design", data: [[design_dT, y]], color: "#c0504d", points: { show: true, radius: 5, fill: true, fillColor: "#c0504d" } });
+            lines.push({ label: "Projected", data: [[design_dT, y]], color: "#c0504d", points: { show: true, radius: 5, fill: true, fillColor: "#c0504d" } });
             $("#heatdemand-design").html("<b>" + y.toFixed(2) + " kW</b> ± " + pi.toFixed(2) + " kW (80% PI) at " + design_outsideT + " °C outside, " + design_insideT + " °C inside, ΔT " + design_dT.toFixed(1) + " K");
         }
     } else {
@@ -257,6 +257,14 @@ function heatdemand_draw() {
             var ci = function (i) { return (m.beta[i] * 1000).toFixed(0) + " ± " + (1.96 * m.se[i] * 1000).toFixed(0); };
             result.push("<b>With solar:</b> " + ci(1) + " W/K, " + ci(2) + " W per kWh/day of solar, intercept " + ci(0) + " W, R² " + m.r2.toFixed(2) + " (95% interval)");
         }
+    }
+
+    // Design heat loss from the system form, a horizontal line at the entered kW
+    if (system_design.heat_loss > 0) {
+        max_kw = Math.max(max_kw, Math.ceil(system_design.heat_loss + 0.5));
+        lines.push({ label: "Design heat loss", data: [[0, system_design.heat_loss], [max_dT, system_design.heat_loss]], color: "#7b5ea7", lines: { show: true, lineWidth: 2, dashes: [6, 4] }, points: { show: false } });
+        var at = system_design.design_temp != null ? " at " + system_design.design_temp + " °C outside" : "";
+        result.push("<b>Design heat loss:</b> " + system_design.heat_loss + " kW" + at + " (system form)");
     }
 
     $("#heatdemand-result").html(result.join("<br>"));
@@ -296,6 +304,9 @@ $("#heatdemand-toggle").click(function () {
         heatdemand_draw();
     }
 });
+
+// Design outside temperature starts at the value entered on the system form
+if (system_design.design_temp != null) $("#heatdemand_design_outsideT").val(system_design.design_temp);
 
 $("#heatdemand-block").on("change", "input, select", heatdemand_draw);
 
