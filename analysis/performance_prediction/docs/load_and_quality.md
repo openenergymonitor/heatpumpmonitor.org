@@ -1,198 +1,62 @@
-# The open question: why doesn't load show up in annual SPF?
+# Why doesn't load show up in annual SPF?
 
-*Status: open. The experiment at the end is planned but hasn't been run.*
+*Lab notes. Ongoing, last updated 2026-11-19. Conclusions are provisional.*
 
-Manufacturer data says a heat pump is much more efficient at low
-compressor speed than flat out, at the same water and air temperatures.
-The H\* metric (see [README.md](README.md), section 4) builds that in, and
-on the real fleet it made prediction worse. This doc sets out what we know
-about why, and how we could find out.
+Manufacturer data says a heat pump is much more efficient at low compressor
+speed than flat out, at the same water and air temperatures. The H\* metric
+(see [README.md](README.md), section 4) builds this in. On the real fleet
+it doesn't improve SPF prediction. These notes cover what we've found so far
+and what to try next.
 
-## Some definitions
-
-These get mixed up easily, so to be precise:
+## Terms
 
 - **r**: instantaneous load ratio, heat output divided by rated capacity.
 - **r̄**: a system's heat-weighted annual mean of r. Fleet median 0.66,
-  sd 0.15. (The *time*-weighted mean while running is lower: median 0.51,
-  IQR 0.43–0.59.)
-- **Utilisation**: annual heat divided by capacity × hours in the year,
-  off-time included. Fleet median 0.22. A system that rarely runs but
-  goes flat out when it does has low utilisation and high r̄.
+  sd 0.15.
+- **Utilisation**: annual heat divided by capacity × hours in the year.
+  Fleet median 0.22. Only loosely related to r̄ (r ≈ 0.55).
 - **H_fixed**: heat-weighted harmonic Carnot COP with fixed +2/−6 K
-  offsets. This only accounts for temperatures.
+  offsets. Temperatures only.
 - **H\***: the same, with offsets that grow with load (+3r/−8r K).
-- **P = H\*/H_fixed**: how much the load model adjusts each system's
-  year. Above 1 means the heat was delivered gently, below 1 means the
-  machine was run hard. Fleet sd 4.7%.
-
-r̄ and utilisation are only loosely related (r ≈ +0.55). Both follow from
-sizing, but at the same r̄ utilisation still ranges from 0.10 to 0.44
-depending on climate, house and schedule.
+- **P = H\*/H_fixed**: the load adjustment on its own. Above 1 means the
+  heat was delivered gently. Fleet sd 4.7%.
 
 ![utilisation vs mean load ratio](figures/utilisation_vs_rbar.png)
 
-## The test
+## How it was computed
 
-If every machine achieved the same fraction q of its true ideal COP, then
-SPF = q·H\*. Dividing both sides by H_fixed cancels the temperatures,
-which are most of the signal, and leaves just the load part:
+- **From 10s data.** `hstar_fleet.php` and `hstar_hist_fleet.php` scan the
+  last 365 days of raw 10s feeds for each system. Every sample is used if
+  elec, heat, flowT, returnT and outsideT are all present and heat > 0.
+  The scan builds up H\*, H_fixed, weighted temperatures and SPF, plus a
+  heat-weighted histogram of (flowT, outsideT, r).
+- **No steady-state selection.** Start-ups, cycle tails, pump overrun,
+  defrost recovery and DHW are all included. See explanation 3 below.
+- **Then compared across systems.** The tests below use one annual point
+  per system. They ask whether systems with a gentler year get a better
+  year, not whether low-output running is more efficient within a system.
 
-```
-SPF / H_fixed = q · P
-```
+## Finding 1: the P test is flat
 
-Plotted against P, systems should then line up along a slope of
-q ≈ 0.45. Gently run systems should beat the temperature-only benchmark,
-and hard-run ones fall short of it, by about 0.2 SPF per standard
-deviation of P.
-
-**The observed slope is +0.05. It's flat.** The over- and
-under-performance the load model predicts isn't there.
+If every machine achieved the same fraction q of its ideal COP, then
+SPF/H_fixed = q·P, and the fleet should line up on a slope of about 0.45.
+**The observed slope is +0.05.**
 
 ![the P test](figures/hstar_p_test.png)
 
-*Panel A: SPF against H\* is dominated by temperature (colour = weighted
-ΔT). Panel B: the load part on its own. The orange line is what identical
-machines would show, and the fleet is flat.*
+Other checks agree:
+- Adding r̄ to ΔT doesn't help (cv R² 0.59 either way).
+- Fitted together with H_fixed, H\* gets a coefficient of about zero.
 
-Other checks agree. Adding mean load ratio to ΔT doesn't help (cv R²
-0.59 either way), and in a fit with both H_fixed and H\*, H\* gets a
-coefficient of about zero.
+## Finding 2: datasheet twins of real Arotherms do show the effect
 
-## Two explanations
-
-From annual data we can't tell these apart:
-
-1. **The penalty is real but something cancels it.** Machines really are
-   more efficient at low load, but systems run at low load are worse in
-   some other way that roughly cancels the benefit.
-2. **There's nothing to cancel.** The load model overstates how much the
-   steady-state benefit is worth over a real year of operation, so flat
-   simply means flat.
-
-A simulator using the same load model as H\* can't decide between these,
-since it would just give back what we put in. A simulator using a real
-machine's datasheet can. That test is further down (what the Arotherm
-datasheet predicts), and it rules out the weakest form of explanation 2:
-the datasheet itself predicts a large load effect.
-
-### What's been ruled out as the cancelling effect
-
-- **Standby.** It's small (median 2.4% of electricity), and using running
-  COP instead of combined COP leaves the load slope unchanged. Whatever is
-  going on happens while the compressor is running.
-- **DHW share.** It's uncorrelated with SPF/H\* and barely changes with
-  load.
-- **Heat meter ΔT error.** Controlling for flow−return ΔT barely moves the
-  load slope.
-
-### What's still in the running
-
-- **Efficiency drops off at minimum modulation.** The Arotherm data below
-  shows COP turning over at the lowest speed. Systems at low r̄ spend more
-  of their time down there.
-- **Installation quality goes with sizing.** Well-sized systems may simply
-  be better designed and commissioned in general.
-- **The benefit doesn't hold up in real installs.** For example, part-load
-  flow rates and water ΔT differ from the test conditions. This would be
-  explanation 2.
-
-## What the Arotherm datasheet predicts
-
-The tools repo simulator now has a COP model fitted to the Vaillant
-Arotherm+ datasheet (`generic_v2`: efficiency as a function of inferred
-compressor speed, about 7% error against the tables). So we can simulate a
-fleet of Arotherms and ask what the P test *should* show if real machines
-behaved like their datasheet.
-
-`sweep.js --cop-model generic_v2` ran 400 houses with Arotherm+ units: the
-nearest badge size to the sampled sizing, maximum output and a 30 rps
-minimum from the fit, flow rate sized for the badge output. The same 400
-houses were also run with the old `carnot_variable` model for comparison.
-About two thirds pass the comfort filter in each case. Then the P test was
-run on both sweeps and on the fleet (`scripts/sim_model_comparison.py`;
-the cv R² for each is in README section 4). The fleet's Arotherms are the
-133 of 150 scanned that pass the raw scan's cross-check:
-
-| | n | P test slope (± 95%) |
-|---|---|---|
-| Fleet, all | 229 | +0.05 ± 0.10 |
-| **Fleet, Arotherm+ only** | **133** | **−0.01 ± 0.14** |
-| Sim, carnot_variable | 272 | +0.46 ± 0.10 |
-| **Sim, Arotherm+ datasheet** | **267** | **+0.77 ± 0.09** |
-
-![P test: fleet against simulated fleets](figures/sim_model_ptest.png)
-
-The datasheet predicts a *steeper* load effect than the carnot model, not
-a flatter one. At the fleet Arotherms' own spread of P, a slope of 0.77 is
-worth about 0.27 SPF per standard deviation, so a gently run Arotherm
-should beat a hard-run one by around half an SPF at the same temperatures.
-The 133 real Arotherms show nothing (−0.01 ± 0.14). Same hardware, same
-test, and the datasheet prediction is far outside the fleet's interval.
-
-The low-load share points the same way. In the carnot sim, systems with
-more heat below 40% of rated output beat the ΔT line (ρ = +0.36), the
-opposite of the fleet (ρ = −0.33, though in the fleet that looks more
-like a step than a trend and may be mostly Arotherm+; it's provisional
-and due to be repeated, see README section 3). The Arotherm sim can't
-test this: its
-minimum output is a fixed 25% of maximum, or 44% of badge, so almost no
-heat is delivered below 40% of badge. Real units go lower in cold weather,
-when the same 30 rps delivers less heat.
-
-What this means:
-
-- **The effect is in the datasheet.** "The load model overstates the
-  part-load benefit" isn't the answer, at least not if real machines
-  follow the datasheet.
-- **So either real machines don't follow their datasheet at part load, or
-  something cancels the benefit.** That's explanations 1 and 2 again, but
-  sharper: the question is now specifically whether Arotherms in the field
-  reach their datasheet COP at low speed.
-- **The stable-episode experiment below answers exactly that,** and the
-  validated Arotherms are the right population for it.
-
-Caveats: the simulator's cycling below minimum output is simple, and real
-starts and stops may cost more than it assumes. The sim's houses aren't
-matched to the fleet: the fleet Arotherms run harder relative to their
-badge (median P 1.01 against 1.06 in the sim). One weather year, and the
-fit underpredicts the 5 kW unit by 10–16% at mild outside temperatures
-(+10 to +20 °C).
-
-## Twins of the real Arotherms
-
-The houses in that sweep were random, so the next step was to simulate
-each real Arotherm instead. `twins/twins.js` builds a twin for each of the
-132 validated Arotherm+ systems (the 133 above, less one 24 kW entry that
-isn't an Arotherm+ size) with the same badge, room temperature, DHW
-target, cylinder size and flow rate (from its running output and
-flow−return ΔT), and the Llanberis weather shifted to its mean outside
-temperature (median −2.5 K). It then calibrates heat loss, DHW volume and
-design flow temperature until the twin matches the system's annual space
-heat, water heat and heat-weighted flow temperature. 126 of 132 converged,
-mostly within 3–5 simulated years. The calibrated heat losses (median
-3.6 kW) sit close to the fleet's measured ones (4.0 kW).
-`twins/compare_twins.py` then compares each system with its twin.
+`twins/twins.js` builds a simulated twin of each of the 132 validated
+Arotherm+ systems. Each twin uses the `generic_v2` datasheet COP fit
+(about 7% error against the Vaillant tables), with heat loss, DHW volume
+and design flowT calibrated to the real system's annual space heat, DHW
+heat and weighted flowT. 126 converged.
 
 ![real Arotherms against their datasheet twins](figures/twins.png)
-
-**The twins get the temperatures right but not the load.** Weighted
-flow−outside ΔT correlates at 0.99 between real systems and their twins.
-But the twins run more gently and more uniformly: median P 1.06 against
-1.01, sd 0.020 against 0.038, correlation only 0.56. Running the twins'
-hot water at full output instead of the app's 50% eco limit barely moved
-this (1.062 to 1.058). So real systems deliver their space heating in a
-harder, burstier way than a simulated house held at a constant setpoint
-by smooth PI control. Schedules, setbacks, zoning and the real controls
-aren't in the twins.
-
-**Absolute SPF is close.** The twins come out 7.5% low (real/twin median
-1.075), most of it in the 5 kW units (1.10), which matches the fit's known
-10–16% under-prediction for that unit at mild temperatures. As an SPF
-predictor the twins do no better than ΔT (cv R² 0.52 against 0.53).
-
-**The P test, system by system:**
 
 | | Slope | ± 95% |
 |---|---|---|
@@ -200,48 +64,86 @@ predictor the twins do no better than ΔT (cv R² 0.52 against 0.53).
 | Real: real quality vs real P | −0.02 | 0.15 |
 | Real quality vs twin P | −0.06 | 0.28 |
 
-Matched to the fleet's own houses, the datasheet predicts a smaller load
-effect than the random sweep did (+0.36 rather than +0.77). Applied to the
-real spread of P, that's about 0.12 SPF per standard deviation, against
-at most 0.04 allowed by the real data's interval. So the conclusion holds
-in a weaker form: the datasheet's load benefit should be visible across
-real Arotherms and isn't.
+- **The datasheet predicts a load effect in these houses**, about 0.12
+  SPF per sd of P, and the real systems don't show it. So it's probably
+  not just that our load model overstates the benefit.
+- **Only the load part seems to be missing.** Real SPF/H_fixed follows the
+  twins' non-load variation (lift, flowT) at about half size (slope +0.42
+  ± 0.28).
+- **Real systems run harder and burstier than their twins.** They match on
+  temperature (weighted ΔT correlation 0.99), but median P is 1.01
+  against 1.06, sd 0.038 against 0.020, and P correlates only 0.56. The
+  twins have no schedules, setbacks, zoning or real controls.
+- **Absolute SPF:** the twins come out about 7.5% low, mostly in the 5 kW
+  units, where the fit is known to under-predict.
+- **The real/twin gap** correlates weakly with badge size (−0.29), twin P
+  (−0.21) and starts per day (−0.16).
 
-**Real quality does partly follow the twins.** Regressing real SPF/H_fixed
-on the twin's gives a slope of +0.42 ± 0.28. The datasheet's other
-variation in efficiency, mostly with temperature lift and flow
-temperature, shows up in reality at about half size. It's the load part
-specifically that's missing.
+Caveats: the simulator's cycling is simple and probably understates start
+and stop losses. One weather year, shifted rather than local.
 
-Nothing else stands out in the real/twin gap. Its strongest correlate is
-badge size (−0.29: larger units fall further short of their datasheet),
-then the twin's P (−0.21), heat loss per kW of badge (+0.17) and starts per
-day (−0.16). DHW share and climate offset don't matter.
+## Ruled out (so far)
 
-## How big a lever was it anyway?
+- **Standby.** It's small (2.4% of electricity), and using running COP
+  leaves the slope unchanged.
+- **DHW share.** It's uncorrelated with SPF/H\*.
+- **Heat meter ΔT error.** Controlling for flow−return ΔT barely moves the
+  slope.
 
-Modest, even if the datasheet held. P has an sd of 4.7% across the
-fleet. Under the carnot model one sd of P is worth about 0.19 SPF, and
-under the Arotherm datasheet between 0.12 (twins of real houses) and 0.27
-(random houses), against a fleet SPF sd of 0.49. In practice it's about
-zero. Temperatures explain about 0.60 of the variance and the rest is
-machine and install quality plus noise.
+## Candidate explanations
 
-The simulated fleets don't spread load more widely than the real one
-(sd of P 0.024–0.028 in the sims, 0.047 in the fleet), so that isn't why
-the simulator rated H\* so highly. It's that every simulated machine
-follows its COP model exactly.
+1. **The benefit is real but something cancels it.** Possibly COP turning
+   over at minimum modulation, with low-r̄ systems spending more time
+   there or cycling. Or install quality that goes with sizing.
+2. **Real machines don't reach their datasheet COP at part load.** For
+   example, part-load flow rates and ΔT may differ from test conditions.
+3. **The metric is contaminated by transients.** The datasheet tables are
+   steady state, but H\* applies them to every 10s sample. Start-ups,
+   cycle tails, pump overrun and defrost recovery all have low
+   instantaneous r. H\* scores them as gentle, efficient running, when in
+   reality they're some of the least efficient moments. Heat-meter lag
+   adds further noise. This would push P up for systems with a lot of
+   starts while their SPF goes down, which flattens the slope. It
+   overlaps with 1: cycling losses are real physics, and P also
+   misattributes them. We don't yet know what share of annual heat falls
+   in transients, so we can't say how much this explains.
 
-## The experiment: measure the compressor map in the field
+These can't be separated using annual cross-system data.
 
-The fleet has **132 validated Arotherm+ systems** (55 × 5 kW, 56 × 7 kW,
-11 × 10 kW, 7 × 12 kW, 3 × 3.5 kW; 150 Arotherm entries before the
-cross-check), and
-Vaillant publishes COP
-per compressor speed. That's a ground truth we can check field data
-against.
+## How big a lever is it?
 
-Arotherm 5 kW datasheet, 35/30 °C flow/return, COP (output kW):
+Probably modest even if the datasheet held. One sd of P is worth about
+0.12 SPF under the Arotherm datasheet and 0.19 under the Carnot model,
+against a fleet SPF sd of 0.49. Temperatures explain about 60% of
+variance. The simulator rated H\* highly because simulated machines follow
+their COP model exactly. Simulated load actually varies less than real
+load, so that isn't the reason.
+
+## Next steps
+
+1. **Steady-only P.** Recompute P from steady-episode samples only (or
+   drop the first N minutes after each start) and rerun the P test. Also
+   measure the share of annual heat that falls in transients. *Tests
+   explanation 3.*
+2. **Field compressor map.** Use `steady_episodes_fleet.php` on the
+   Arotherms: episodes of at least 10 minutes with the compressor on and
+   flowT steady. Plot episode COP (or COP/Carnot) against output kW, in
+   outsideT and flowT bins, and compare with the datasheet. *Tests
+   explanation 2.*
+3. **Steady vs actual SPF.** Weight each system's episode curve by its
+   annual histogram (`hstar_hist.csv`) to get the SPF its steady running
+   implies, and compare that with measured running SPF. Does the gap grow
+   as r̄ falls? *Tests explanation 1.*
+
+How we'd read the results:
+- **Field curves match the datasheet:** the benefit is real at steady state
+  and is lost somewhere outside steady running.
+- **Field curves are flatter than the datasheet:** the benefit doesn't
+  survive in real installs.
+- **Low-r̄ systems have few low-output episodes:** they cycle rather than
+  modulate. That would be informative in itself.
+
+Ground truth, Arotherm 5 kW datasheet at 35/30 °C, COP (output kW):
 
 | Outside | 120 rps | 90 rps | 70 rps | 50 rps | 40 rps | 30 rps |
 |---|---|---|---|---|---|---|
@@ -249,75 +151,37 @@ Arotherm 5 kW datasheet, 35/30 °C flow/return, COP (output kW):
 | +2 °C | 3.1 (7.3) | 3.4 (5.5) | 3.5 (4.2) | 3.7 (3.0) | 4.0 (2.4) | 3.9 (2.0) |
 | +7 °C | 3.3 (8.0) | 3.7 (6.2) | 3.9 (4.9) | 4.3 (3.7) | 4.6 (2.9) | 4.1 (2.1) |
 
-The part-load benefit is large (3.3 → 4.6 at +7 °C), at least as big as
-the +3r/−8r model assumes. It turns over at 30 rps. And the "5 kW" badge
-covers 2.1–8.0 kW of real output. Below 2.1 kW the machine has to cycle.
-
-**The plan:**
-
-1. Extend the stable-episode detector in `steady_episodes_fleet.php` into a fleet
-   extractor for the Arotherm systems. An episode is at least 10 minutes
-   with the compressor on and flowT steady. Record mean COP, output,
-   flowT, returnT, outsideT and flow rate for each.
-2. Plot episode COP against output in bins of outside and flow
-   temperature, and see whether field data reproduces the datasheet.
-   Since flow temperatures rarely sit at exactly 35 °C, it's probably
-   easier to plot COP / Carnot against output, which uses every episode.
-3. For each system, weight its own episode curve by its annual histogram
-   (from `hstar_hist.csv`) to get the SPF its steady running implies.
-4. Compare that with its measured running SPF. The gap is everything
-   steady running misses: cycling, defrost, DHW and transients. Then see
-   whether the gap grows as r̄ falls.
-
-**What the results would mean:**
-
-- **Field curves match the datasheet:** explanation 1. The benefit is
-  real, so the cancelling effect has to live outside steady running, and
-  the step 4 gap should grow at low r̄ by around 0.2 SPF per sd of P.
-  Spread between identical machines at the same operating point then
-  measures install quality directly.
-- **Field curves are flatter than the datasheet:** explanation 2. The
-  benefit doesn't survive in real installs, and that by itself explains
-  why H\* failed.
-- **Low-load systems have few low-output episodes at all,** because they
-  cycle instead of modulating. That would be informative in itself.
+The part-load benefit is large (3.3 → 4.6 at +7 °C) and turns over at
+30 rps. Below about 2.1 kW the machine has to cycle.
 
 Practical notes:
+- Compressor speed isn't in the feeds, so compare on output kW within a
+  badge size.
+- The episode thresholds were tuned on one system and will probably need
+  loosening. Also require stable returnT, flow rate and outsideT.
+- Split out DHW episodes (flowT above about 45 °C) as a second comparison.
 
-- We don't have compressor speed in the feeds, so compare on output kW.
-  Within one badge size that also sidesteps the capacity question.
-- `steady_episodes_fleet`'s stability thresholds (flowT sd < 0.01 K over 10 min,
-  slope < 0.5 K/h, elec > 150 W) were tuned on one system and will
-  probably need loosening. It's also worth requiring stable returnT, flow
-  rate and outsideT.
-- Separate out DHW episodes by flow temperature (over about 45 °C). They
-  give a second, free comparison at DHW temperatures.
-- Defrost recovery drops out by itself, since flowT isn't stable.
+## Population
+
+132 validated Arotherm+ systems (55 × 5 kW, 56 × 7 kW, 11 × 10 kW,
+7 × 12 kW, 3 × 3.5 kW), from 150 scanned. One 24 kW entry is excluded
+from the twins.
 
 ---
 
 ## Scripts
 
-Run from `analysis/performance_prediction/` with the `.venv` python (see
-the README for setup), except where noted.
+Run from `analysis/performance_prediction/` with the `.venv` python,
+except where noted.
 
-- **Fleet scans** are in `scripts/feed_scan/` at the repo root:
-  `hstar_fleet.php` (fleet H\* scan, writes `hstar_fleet.csv` and
-  `hstar_fleet_hist.csv`), `hstar_hist_fleet.php` (per-system heat
-  histograms, writes `hstar_hist.csv`, 113 MB and not in git) and
-  `steady_episodes_fleet.php` (episode detector for the experiment).
-- **The P test:** `scripts/analyse_hstar_fleet.py` and
-  `scripts/analyse_hstar_offsets.py`. `scripts/hstar_plots.py` draws
-  `hstar_p_test.png` and `utilisation_vs_rbar.png`, and needs
-  `hstar_hist.csv`.
-- **The Arotherm datasheet sweep:**
-
-  ```
-  .venv/bin/python scripts/sim_model_comparison.py carnot=sim_carnot_2026-10.csv \
-      arotherm=sim_arotherm_2026-10.csv --fig docs/figures/sim_model_ptest.png
-  ```
-
-- **The twins** (`twins.js` needs tools repo commit `176ae57` or later):
+- **Fleet scans** (`scripts/feed_scan/` at the repo root):
+  `hstar_fleet.php` → `hstar_fleet.csv`; `hstar_hist_fleet.php` →
+  `hstar_fleet_hist.csv` and `hstar_hist.csv` (113 MB, not in git);
+  `steady_episodes_fleet.php` → `signature_episodes`.
+- **P test:** `scripts/analyse_hstar_fleet.py`,
+  `scripts/analyse_hstar_offsets.py`. `scripts/hstar_plots.py` draws the
+  P test and utilisation figures (needs `hstar_hist.csv`).
+- **Twins** (`twins.js` needs tools repo commit `176ae57` or later):
 
   ```
   .venv/bin/python twins/twin_targets.py > twins/targets.json
