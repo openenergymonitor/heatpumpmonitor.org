@@ -160,13 +160,7 @@
 
 .hp-sys-unit { margin-left: 4px; font-size: 13px; font-weight: normal; color: var(--bs-secondary-color); }
 
-/* Sizing and flow temperature: a scale bar each, side by side */
-.hp-sys-features {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 12px;
-  margin-bottom: 14px;
-}
+/* Tiles with a scale bar: sizing, flow temperature and the other measurements */
 .hp-sys-feature {
   padding: 12px 16px 10px;
   border-radius: 8px;
@@ -293,3 +287,137 @@
 .hp-sys-period:hover, .hp-sys-period:hover b { text-decoration: underline; }
 .hp-sys-period .hp-sys-badge { cursor: pointer; background: rgba(var(--bs-link-color-rgb), 0.08); }
 /* Flow temperature measured value: links to the flow temperature chart */
+
+/* -- Measurements card (concept) ----------------------------------------------- */
+
+#measurements-block.is-collapsed { padding-bottom: 2px; }
+.hp-ms-section { margin-top: 8px; }
+.hp-ms-section + .hp-ms-section, .hp-ms-grid + .hp-ms-section { margin-top: 22px; }
+.hp-ms-section-head {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin-bottom: 10px;
+  font-size: 11px; font-weight: bold; letter-spacing: 0.08em; text-transform: uppercase; color: var(--bs-secondary-color);
+}
+.hp-ms-section-sub { font-size: 12px; font-weight: normal; letter-spacing: 0; text-transform: none; }
+.hp-ms-subhead {
+  margin: 14px 0 4px; padding-top: 10px; border-top: 1px solid var(--border);
+  font-size: 11px; font-weight: bold; letter-spacing: 0.08em; text-transform: uppercase; color: var(--bs-secondary-color);
+}
+/* Example values until a measurement is built */
+.hp-ms-preview {
+  display: inline-block; margin-left: 8px; padding: 0 6px; border-radius: 8px; vertical-align: 1px;
+  font-size: 9px; font-weight: bold; letter-spacing: 0.06em; text-transform: uppercase; line-height: 15px;
+  color: var(--bs-secondary-color); border: 1px dashed var(--bs-secondary-color); opacity: 0.8;
+}
+.hp-ms-fine { display: block; margin-top: 4px; font-size: 11px; opacity: 0.75; }
+.hp-ms-cold { color: #3a86c0; }
+
+/* Tiles two by two, one column on a phone */
+.hp-ms-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.hp-ms-grid + .hp-ms-grid, .hp-ms-section + .hp-ms-grid { margin-top: 22px; }
+@container app (max-width: 767.98px) { .hp-ms-grid { grid-template-columns: minmax(0, 1fr); } }
+.hp-ms-grid .hp-sys-feature .hp-sys-fact { font-size: 13px; }
+
+/* Heat loss figures under the tiles */
+.hp-ms-stats { display: flex; flex-wrap: wrap; gap: 8px 28px; padding: 12px 4px 0; }
+.hp-ms-stat-value { font-size: 17px; font-weight: bold; }
+
+/* Scale bar variants */
+.hp-sys-scale.is-outside { background: linear-gradient(90deg, rgba(58,134,192,0.5), rgba(58,134,192,0.08)); }
+.hp-sys-scale-dot.is-outside { background: #3a86c0; }
+.hp-sys-scale-peak.is-outside { background: #3a86c0; opacity: 0.6; }
+.hp-sys-scale-peak.is-cold { background: #1d4f7a; }
+.hp-sys-scale.is-events { height: 6px; margin: 14px 0 26px; }
+.hp-ms-event {
+  position: absolute; top: 50%; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; border-radius: 50%;
+  background: #c9362f; opacity: 0.55; border: 1px solid var(--bs-tertiary-bg);
+}
+
+/* Distribution curve with markers (emitter capacity) */
+.hp-ms-dist { position: relative; height: 56px; margin: 26px 0 28px; border-bottom: 1px solid rgba(var(--bs-body-color-rgb), 0.25); }
+.hp-ms-dist svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.hp-ms-dist path { fill: rgba(184,137,12,0.35); stroke: #b8890c; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.hp-ms-dist-band { position: absolute; bottom: -4px; height: 4px; background: rgba(var(--bs-body-color-rgb), 0.35); border-radius: 2px; }
+.hp-ms-dist-line { position: absolute; top: 0; bottom: 0; border-left: 2px solid #b8890c; }
+.hp-ms-dist .hp-sys-scale-tag.is-above { bottom: calc(100% + 2px); }
+.hp-ms-dist .hp-sys-scale-tag.is-below { top: calc(100% + 6px); }
+.hp-ms-dist .hp-sys-scale-tick { top: -2px; bottom: 0; }
+.hp-ms-dist .hp-sys-scale-end { top: calc(100% + 6px); }
+
+/* Flow temperature map */
+.hp-ms-map-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin-bottom: 8px; }
+.hp-ms-map-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; font-size: 12px; color: var(--bs-secondary-color); }
+.hp-ms-map-ramp { width: 90px; height: 10px; border-radius: 2px; background: linear-gradient(90deg, rgba(201,54,47,0.08), rgba(201,54,47,1)); }
+.hp-ms-key { display: inline-flex; align-items: center; gap: 5px; margin-left: 10px; }
+.hp-ms-key-line { width: 20px; border-top: 2px dashed var(--bs-body-color); }
+.hp-ms-key-ring { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--bs-body-color); }
+.hp-ms-map { position: relative; }
+.hp-ms-map canvas { display: block; width: 100%; }
+.hp-ms-tip {
+  position: absolute; z-index: 2; pointer-events: none; max-width: 260px; padding: 6px 9px; border-radius: 6px;
+  font-size: 12px; line-height: 1.4; color: var(--bs-body-color); background: var(--bs-body-bg);
+  border: 1px solid var(--bs-border-color); box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.hp-ms-map-result { margin-top: 8px; font-size: 13px; }
+.hp-ms-map-result .hp-sys-badge { margin-right: 4px; }
+
+/* Primary loop pipe size and length */
+.hp-ms-pipe-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 8px 0 6px; }
+.hp-ms-pipe-row .app-segmented .btn { padding: 1px 8px; font-size: 12px; }
+.hp-ms-pipe-len { margin-left: auto; font-size: 17px; }
+
+/* Fleet range bars */
+.hp-ms-range { position: relative; width: 110px; height: 6px; margin-top: 6px; border-radius: 3px; background: rgba(var(--bs-body-color-rgb), 0.08); }
+.hp-ms-range-fleet { position: absolute; top: 0; bottom: 0; border-radius: 3px; background: rgba(var(--bs-body-color-rgb), 0.22); }
+.hp-ms-range-dot {
+  position: absolute; top: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%;
+  background: var(--bs-body-color); border: 2px solid var(--bs-tertiary-bg);
+}
+.hp-ms-range-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 4px 0 6px; }
+.hp-ms-range-row .hp-ms-range { margin-top: 0; }
+
+/* Data checks: status icon, label and note, value */
+.hp-ms-checks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 28px; }
+@container app (max-width: 767.98px) { .hp-ms-checks { grid-template-columns: minmax(0, 1fr); } }
+.hp-ms-check { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; gap: 10px; padding: 8px 0; border-top: 1px solid var(--border); }
+.hp-ms-check > .bi { font-size: 15px; line-height: 20px; }
+.hp-ms-check.is-good > .bi { color: #3aa655; }
+.hp-ms-check.is-warn > .bi { color: #d48a00; }
+.hp-ms-check.is-info > .bi { color: var(--bs-primary); }
+.hp-ms-check-label { font-size: 13px; font-weight: 600; }
+.hp-ms-check-note { font-size: 12px; color: var(--bs-secondary-color); }
+.hp-ms-check-value { display: flex; flex-direction: column; align-items: flex-end; font-size: 13px; font-weight: 600; white-space: nowrap; }
+
+/* Flow rate and ΔT tile */
+.hp-sys-scale.is-flowrate, .hp-sys-scale.is-dT { background: rgba(var(--bs-body-color-rgb), 0.08); }
+.hp-sys-scale.is-dT { margin-top: 56px; }
+.hp-sys-scale-dot.is-flowrate { background: #3a86c0; }
+.hp-ms-rated { position: absolute; top: 0; bottom: 0; border-radius: 5px; background: rgba(58,134,192,0.28); }
+
+/* Full width tile with its chart beside the notes */
+.hp-ms-wide { grid-column: 1 / -1; }
+.hp-ms-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 28px; align-items: start; }
+.hp-ms-split > .hp-sys-feature-note { margin-top: 8px; }
+@container app (max-width: 767.98px) { .hp-ms-split { grid-template-columns: minmax(0, 1fr); } }
+
+/* Efficiency: % of Carnot rows, level bar, SPF ladder */
+.hp-ms-eff-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; padding: 7px 0; border-top: 1px solid var(--border); }
+.hp-ms-eff-row:first-of-type { border-top: 0; }
+.hp-ms-range-mid { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: rgba(var(--bs-body-color-rgb), 0.55); }
+.hp-sys-scale-dot.is-cop { background: var(--ec-primary-darker); }
+.hp-sys-scale-peak.is-mid { background: rgba(var(--bs-body-color-rgb), 0.55); }
+.hp-ms-lad { margin: 10px 0 6px; font-size: 12px; }
+.hp-ms-lad-row { display: grid; grid-template-columns: minmax(150px, 2fr) minmax(0, 3fr) 52px 52px; gap: 10px; align-items: center; padding: 3px 0; }
+.hp-ms-lad-row.is-head { color: var(--bs-secondary-color); font-size: 11px; }
+.hp-ms-lad-axis { display: flex; justify-content: space-between; }
+.hp-ms-lad-track { position: relative; height: 14px; }
+.hp-ms-lad-bar { position: absolute; top: 0; bottom: 0; border-radius: 3px; }
+.hp-ms-lad-bar.is-total { background: var(--ec-primary-darker); opacity: 0.75; }
+.hp-ms-lad-bar.is-loss { background: rgba(var(--bs-body-color-rgb), 0.4); }
+.hp-ms-lad-bar.is-gain { background: #3aa655; }
+.hp-ms-lad-value { text-align: right; font-weight: 600; }
+.hp-ms-lad-fleet { text-align: right; color: var(--bs-secondary-color); }
+@container app (max-width: 575.98px) {
+  .hp-ms-lad-row { grid-template-columns: minmax(0, 1fr) 46px 46px; }
+  .hp-ms-lad-track, .hp-ms-lad-axis { grid-column: 1 / -1; grid-row: 2; }
+}
+@container app (max-width: 575.98px) { .hp-sys-feature-head { flex-wrap: wrap; } }

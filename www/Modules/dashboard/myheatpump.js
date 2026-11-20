@@ -317,6 +317,8 @@ function show() {
                     if (result == undefined) return;
                     totals[period] = result;
                     alltime_totals_draw();
+                    // The Measurements card's efficiency tiles use the last 365 days
+                    if (period == "last365" && typeof measurements_card_render == "function") measurements_card_render();
                 }
             });
         });

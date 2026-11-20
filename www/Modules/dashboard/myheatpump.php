@@ -482,6 +482,9 @@ if ($private_mode || $system_data->share==0) {
       </div>
     </div>
 
+    <!-- Measured design parameters, pipework and data checks, filled by myheatpump_measurements.js -->
+    <div id="measurements-block" class="app-card app-card-body" style="display:none"></div>
+
     <!-- System form details, filled by myheatpump_system.js -->
     <div id="system-block" class="app-card app-card-body" style="display:none"></div>
 
@@ -532,6 +535,9 @@ if ($private_mode || $system_data->share==0) {
       }
       // Heat pump database model matched from make, model and output, for max output tests
       $system_meta["heatpump_model_id"] = $heatpump_model_id ? (int) $heatpump_model_id : null;
+      // Its rated minimum and maximum flow rate, L/min, where the database has them
+      $system_meta["hp_min_flowrate"] = isset($heatpump_flowrate["min"]) ? (float) $heatpump_flowrate["min"] : null;
+      $system_meta["hp_max_flowrate"] = isset($heatpump_flowrate["max"]) ? (float) $heatpump_flowrate["max"] : null;
       // HEX_TAG: a "</script>" in the notes stays inside the string.
       // INVALID_UTF8_SUBSTITUTE: bad bytes in a text field cannot make
       // json_encode return false and leave a syntax error in this script.
@@ -545,4 +551,5 @@ if ($private_mode || $system_data->share==0) {
 <script src="<?php echo $path; ?>Modules/dashboard/myheatpump_bargraph.js?v=<?php echo $v; ?>"></script>
 <script src="<?php echo $path; ?>Modules/dashboard/myheatpump_heatdemand.js?v=<?php echo $v; ?>"></script>
 <script src="<?php echo $path; ?>Modules/dashboard/myheatpump.js?v=<?php echo $v; ?>"></script>
+<script src="<?php echo $path; ?>Modules/dashboard/myheatpump_measurements.js?v=<?php echo $v; ?>"></script>
 <script src="<?php echo $path; ?>Modules/dashboard/myheatpump_system.js?v=<?php echo $v; ?>"></script>

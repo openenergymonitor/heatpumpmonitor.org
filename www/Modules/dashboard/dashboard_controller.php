@@ -34,11 +34,24 @@ function dashboard_controller() {
             require_once "Modules/measurement/measurement_model.php";
             $measurement = new Measurement($mysqli, false);
 
+            // Rated flow rate range of the matched heat pump model, L/min
+            $heatpump_model_id = $system->get_heatpump_model_id($systemid);
+            $heatpump_flowrate = array("min" => null, "max" => null);
+            if ($heatpump_model_id) {
+                $stmt = $mysqli->prepare("SELECT min_flowrate, max_flowrate FROM heatpump_model WHERE id = ?");
+                $stmt->bind_param("i", $heatpump_model_id);
+                $stmt->execute();
+                $stmt->bind_result($min_flowrate, $max_flowrate);
+                if ($stmt->fetch()) $heatpump_flowrate = array("min" => $min_flowrate, "max" => $max_flowrate);
+                $stmt->close();
+            }
+
             return view("Modules/dashboard/myheatpump.php", array(
                 "measurements"=>$measurement->get_system($systemid),
                 "id"=>$systemid,
                 "system_data"=>$system_data,
-                "heatpump_model_id"=>$system->get_heatpump_model_id($systemid),
+                "heatpump_model_id"=>$heatpump_model_id,
+                "heatpump_flowrate"=>$heatpump_flowrate,
                 "apikey"=>$readkey,
                 "private_mode"=>$private_mode
             ));

@@ -1,0 +1,885 @@
+// Measurements card: design parameters worked out from the monitoring data,
+// set against the system form, then the flow temperature map, primary
+// pipework and system volume, the hot water cylinder and data checks.
+// Concept. Measurements built so far come from system_measurements (nightly,
+// scripts/measurements/system_measurements.php). The rest show example
+// values marked Preview until they are built: see MEASUREMENTS_PREVIEW and
+// analysis/performance_prediction/docs/system_page_insights.md.
+
+// Example values for measurements not built yet, by the name they are
+// expected to have in system_measurements. A real measurement of the same
+// name replaces the example and its Preview mark.
+var MEASUREMENTS_PREVIEW = {
+    // Emitter capacity at ΔT50 from steady running episodes (emitter.js
+    // method), heat-weighted, with the main peaks of the distribution
+    emitter_kw50: { value: 9.4, lower: 8.7, upper: 10.3, samples: 412, unit: "kW",
+        details: { exponent: 1.3, room: "feed", peaks: [{ kw: 6.6, share: 0.18, sd: 0.45 }, { kw: 9.4, share: 0.82, sd: 0.55 }] } },
+    // Space heating flow rate and flow - return ΔT while running on the 3
+    // coldest days (flowT_coldest_days' days), heat-weighted. Per day in details.days
+    flowrate_coldest_days: { value: 14.4, lower: 14.1, upper: 14.4, samples: 3, unit: "l/min", details: { heat_kw: 4.6, days: [] } },
+    dT_coldest_days: { value: 4.6, lower: 3.9, upper: 4.6, samples: 3, unit: "K" },
+    // Machine replay (scripts/feed_scan/replay.php, machine_replay.md): field
+    // COP / datasheet COP in steady space heating at 30-70 rps over the last
+    // year, the peer level against same-size systems in the same conditions,
+    // and the share of steady running at minimum speed and its COP against the level
+    replay_level: { value: 0.94, samples: 1580, unit: "", details: { peer_level: 0.97, min_share: 0.46, min_ratio: 0.82, steady_flowT: 33.2 } },
+    // SPF ladder from the same replay: datasheet SPF at the measured conditions,
+    // then each operating state put back as measured. Steps depend on order
+    replay_ladder: { value: 1, details: { steps: [
+        { key: "steady", label: "Steady space heating", spf: -0.15 },
+        { key: "ramp", label: "Flow temperature ramps", spf: -0.06 },
+        { key: "startup", label: "Start-ups", spf: -0.08 },
+        { key: "dhw", label: "Hot water", spf: -0.10 },
+        { key: "defrost", label: "Defrosts and recovery", spf: -0.11 },
+        { key: "extra", label: "Heat after hot water and beyond the compressor's range", spf: 0.03 },
+        { key: "off", label: "Standby and pump overrun", spf: -0.06 }
+    ] } },
+    // Primary loop: return to flow transport delay at hot water switch-overs
+    // (comparison/fast.py loop_volume, manual_loop_lag.md)
+    loop_delay: { value: 88, lower: 85, upper: 91, samples: 14, unit: "s", details: { flowrate: 14.4 } },
+    loop_volume: { value: 21.1, lower: 20.4, upper: 21.8, samples: 14, unit: "L",
+        details: { spike_volume: 21.4, events: [20.2, 20.4, 20.6, 20.9, 21.0, 21.0, 21.1, 21.1, 21.2, 21.4, 21.5, 21.6, 21.9, 22.3] } },
+    // Water inside the heat pump and meter, from the heat pump model table
+    unit_water_content: { value: 2.0, unit: "L", details: { source: "datasheet" } },
+    // Whole heating circuit from the mean water temperature rise after starts
+    // (today the Options panel's manual emitter spec and system volume tool)
+    system_volume: { value: 118, lower: 96, upper: 141, samples: 37, unit: "L" },
+    // Cylinder standby heat loss coefficient from overnight temperature decay
+    dhw_standby_U: { value: 1.8, lower: 1.6, upper: 2.1, samples: 31, unit: "W/K", details: { env_temp: 18, fleet: [1.2, 2.9] } },
+    // Outside design temperatures, when there is no complete year of data yet
+    design_outsideT_996: { value: -2.1, samples: 8760, details: { blocks: [], coldest_hour: null } },
+    design_outsideT_990: { value: -0.8, samples: 8760 },
+    // Metering and data checks (replay.php, pumponly.php)
+    data_checks: { value: 1, details: {
+        dhw_flag: { status: "good", value: "OK", note: "Set on 412 reheats; no unflagged reheats found" },
+        sensor_offset: { value: 0.02, fleet: [-0.06, 0.04], scale: [-0.15, 0.15] },
+        meter_k: { value: 69.3, fleet: [68.9, 70.0], scale: [68, 71] },
+        room_feed: true, flowrate_feed: true,
+        standby_power: { value: 14, fleet: [8, 21], scale: [0, 40] },
+        pump_only_power: { value: 26, fleet: [17, 37], scale: [0, 60] },
+        coverage: 0.987
+    } }
+};
+
+// Fleet figures for comparison. % Carnot: last 365 days of every system with a
+// value between 20 and 80% (system/stats/last365, November 2026), 10th, 50th
+// and 90th percentile. Replay: 132 validated Arotherm+ systems
+// (twins/replay_fleet.csv). To come from a nightly fleet summary
+var MEASUREMENTS_FLEET = {
+    prc_carnot: {
+        space: { p: [43.3, 48.8, 54.5], n: 585 },
+        water: { p: [34.9, 41.8, 48.6], n: 518 },
+        running: { p: [41.3, 47.5, 53.1], n: 826 }
+    },
+    level: { p: [0.89, 0.964, 1.024], n: 132 },
+    min_share: { p: [0.06, 0.39, 0.71] },
+    min_ratio: { p: [0.73, 0.84, 0.90] },
+    ladder: { steady: -0.196, ramp: -0.073, startup: -0.059, dhw: -0.074, defrost: -0.132, extra: 0.033, off: -0.045 }
+};
+
+// Page state for the card: heat map mode and pipe size for the length
+var hp_ms_state = { mode: "space", pipe: 28 };
+var hp_ms_map = null;   // flow temperature map data, built on render
+
+function measurements_card_render() {
+    var m = window.system_meta;
+    var el = document.getElementById("measurements-block");
+    if (!m || !el) return;
+    var H = hp_sys, esc = H.esc, has = H.has, num = H.num, fmt = H.fmt, period = H.period, date = H.date,
+        chip_date = H.chip_date, pct = H.pct, mv = H.mv, fact = H.fact, fact_html = H.fact_html;
+    var ms = window.system_measurements || {};
+
+    // Measured value, or the example value marked as a preview
+    function pv(name) {
+        var v = mv(name);
+        if (v) return v;
+        var p = MEASUREMENTS_PREVIEW[name];
+        if (!p) return null;
+        var c = JSON.parse(JSON.stringify(p));
+        c.preview = true;
+        if (c.lower === undefined) c.lower = null;
+        if (c.upper === undefined) c.upper = null;
+        c.details = c.details || {};
+        return c;
+    }
+    function preview_tag(on) {
+        return on ? '<span class="hp-ms-preview" title="Example values: this measurement is not built yet">Preview</span>' : '';
+    }
+    function unit(u) { return '<span class="hp-sys-unit">' + u + '</span>'; }
+    function signed(v, dp) { return (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(dp); }
+    // A tile: label, headline value and the body below
+    function tile(label, value_html, value_class, body, is_preview, extra_class) {
+        return '<div class="hp-sys-feature' + (extra_class ? ' ' + extra_class : '') + '">' +
+            '<div class="hp-sys-feature-head"><span class="app-live-label">' + esc(label) + preview_tag(is_preview) + '</span>' +
+            '<span class="hp-sys-feature-value ' + (value_class || '') + '">' + value_html + '</span></div>' + body + '</div>';
+    }
+    function section(title, sub, body, is_preview) {
+        if (!body) return "";
+        return '<div class="hp-ms-section"><div class="hp-ms-section-head"><span>' + esc(title) + '</span>' + preview_tag(is_preview) +
+            (sub ? '<span class="hp-ms-section-sub">' + sub + '</span>' : '') + '</div>' + body + '</div>';
+    }
+    // Small range bar: the fleet's 10th to 90th percentile shaded, this system as a dot
+    function range_bar(v, fleet, scale, unit_text) {
+        var lo = scale[0], hi = scale[1];
+        return '<div class="hp-ms-range" title="This system ' + esc(fmt(v, 2) + unit_text) + '; most systems ' + esc(fmt(fleet[0], 2) + ' to ' + fmt(fleet[1], 2) + unit_text) + '">' +
+            '<div class="hp-ms-range-fleet" style="left:' + pct(fleet[0], lo, hi) + '%;width:' + (pct(fleet[1], lo, hi) - pct(fleet[0], lo, hi)) + '%"></div>' +
+            (fleet[2] !== undefined ? '<div class="hp-ms-range-mid" style="left:' + pct(fleet[2], lo, hi) + '%"></div>' : '') +
+            '<div class="hp-ms-range-dot" style="left:' + pct(v, lo, hi) + '%"></div></div>';
+    }
+
+    var ROOM = 20;          // assumed room temperature where there is no feed
+    var EMITTER_DT = 5;     // assumed flow - return at design
+    var CP = 4.13;          // kJ/L/K, water at 40-50 °C
+    var DESIGN_DT = 5;      // assumed design flow - return ΔT (the form has no field)
+
+    // Space heating flow rate and ΔT on the coldest days. Example scaled to
+    // this system: its highest 4 h heat on those days carried at a fixed flow
+    // rate, so heat = flow rate × cp × ΔT holds on each day
+    function flow_dT() {
+        var fr = pv("flowrate_coldest_days"), dt = pv("dT_coldest_days");
+        if (!fr || !dt) return null;
+        if (fr.preview || dt.preview) {
+            var hc = mv("heat_coldest_days"), p4 = mv("heat_peak_4h");
+            var q = p4 ? p4.value : hc ? hc.value : fr.details.heat_kw;
+            var flow = num(m.hp_max_flowrate) ? Math.min(fr.value, m.hp_max_flowrate) : fr.value;
+            fr.details.heat_kw = q;
+            fr.value = flow;
+            dt.value = q / (CP * flow / 60);
+            var days = hc && hc.details && hc.details.days ? hc.details.days : [];
+            fr.details.days = days.map(function (d, i) {
+                var f = flow * (1 - 0.01 * i), h = d.heat_4h !== null && d.heat_4h !== undefined ? d.heat_4h : d.heat_kw;
+                return { start: d.start, end: d.end, outsideT: d.outsideT, heat_kw: h, flowrate: f, dT: h / (CP * f / 60) };
+            });
+            if (fr.details.days.length) {
+                var fs = fr.details.days.map(function (d) { return d.flowrate; }), ds = fr.details.days.map(function (d) { return d.dT; });
+                fr.lower = Math.min.apply(null, fs); fr.upper = Math.max.apply(null, fs);
+                dt.lower = Math.min.apply(null, ds); dt.upper = Math.max.apply(null, ds);
+                dt.value = dt.upper;
+            } else { fr.lower = fr.upper = dt.lower = dt.upper = null; }
+        }
+        return { fr: fr, dt: dt, preview: fr.preview || dt.preview };
+    }
+
+    // -- Sizing: heat pump output against design and measured heat loss -------
+    function sizing() {
+        var hp = num(m.hp_output), max_out = num(m.hp_max_output), design = num(m.heat_loss);
+        // Estimated heat demand at the form's design temperature, from the nightly heat loss fit
+        var auto = mv("heat_loss_design");
+        var meas = auto ? auto.value : null, meas_r = auto && auto.upper !== null ? auto.upper - auto.value : 0;
+        // Observed on the coldest days of the last year (the flow temperature card's days)
+        var cold = mv("heat_coldest_days"), peak_4h = mv("heat_peak_4h");
+        if (!hp || (!design && !meas)) return "";
+
+        var hi = Math.max(hp, max_out || 0, design || 0, meas ? meas + meas_r : 0,
+            peak_4h ? peak_4h.value : 0, cold ? cold.value : 0) * 1.12;
+
+        var bar = '<div class="hp-sys-scale">';
+        bar += '<div class="hp-sys-scale-fill is-heat" style="width:' + pct(hp, 0, hi) + '%"></div>';
+        if (max_out && max_out > hp) {
+            bar += '<div class="hp-sys-scale-fill is-heat-max" style="left:' + pct(hp, 0, hi) + '%;width:' + (pct(max_out, 0, hi) - pct(hp, 0, hi)) + '%"></div>';
+        }
+        if (meas) {
+            bar += '<div class="hp-sys-scale-band" style="left:' + pct(meas - meas_r, 0, hi) + '%;width:' + (pct(meas + meas_r, 0, hi) - pct(meas - meas_r, 0, hi)) + '%"></div>';
+            bar += '<div class="hp-sys-scale-dot" style="left:' + pct(meas, 0, hi) + '%"></div>';
+            var a = auto.details || {};
+            var how = "Line fitted to " + (a.days || auto.samples) + " days of daily heat against inside - outside temperature difference" +
+                (has(a.design_dT) ? ", read off at ΔT " + fmt(a.design_dT, 1) + " K" : "") +
+                (a.extrapolated ? ", beyond the coldest day" + (has(a.max_dT) ? " (ΔT " + fmt(a.max_dT, 1) + " K)" : "") : "") +
+                (auto.upper !== null ? ". 80% range " + fmt(auto.lower, 1) + " to " + fmt(auto.upper, 1) + " kW" : "");
+            bar += '<div class="hp-sys-scale-tag is-below" style="left:' + pct(meas, 0, hi) + '%" title="' + esc(how) + '">Estimated ' + fmt(meas, 1) + ' kW' + (a.extrapolated ? ' (extrapolated)' : '') + '</div>';
+        }
+        if (design) {
+            bar += '<div class="hp-sys-scale-tick" style="left:' + pct(design, 0, hi) + '%"></div>';
+            bar += '<div class="hp-sys-scale-tag is-above" style="left:' + pct(design, 0, hi) + '%">Design ' + fmt(design, 1) + ' kW</div>';
+        }
+        // Highest of the coldest days (kWh / 24) and highest 4 hours on them
+        [[cold, "Highest coldest day"], [peak_4h, "Peak 4 h"]].forEach(function (p) {
+            if (!p[0]) return;
+            bar += '<div class="hp-sys-scale-peak" style="left:' + pct(p[0].value, 0, hi) + '%" title="' + p[1] + ' ' + fmt(p[0].value, 2) + ' kW"></div>';
+        });
+        bar += '</div>';
+
+        var note = '';
+        if (cold) {
+            // The highest of the coldest days, with its outside temperature, opening that day
+            var c = cold.details || {};
+            note += 'Highest: <b>' + period(cold.start_time, cold.end_time, fmt(cold.value, 1) + ' kW',
+                date(cold.start_time) + ', mean heat output over the day in all modes (' + c.heat_kwh + ' kWh / 24); open with it highlighted', { heatkw: cold.value }) + ' 24 h mean</b>' +
+                (has(c.outsideT) ? ' at ' + fmt(c.outsideT, 1) + '°C outside' : '');
+            if (c.days && c.days.length) {
+                note += '<div class="hp-sys-chips">';
+                c.days.forEach(function (d) {
+                    note += period(d.start, d.end, '<span class="hp-sys-badge">' + chip_date(d.start) + ' · ' + fmt(d.heat_kw, 1) + ' kW' +
+                        ' <span class="hp-sys-badge-sub">' + fmt(d.outsideT, 1) + '° out</span></span>',
+                        date(d.start) + ", " + d.heat_kwh + " kWh (" + d.space_kw + " kW space heating), " + d.outsideT + " °C outside (weighted by space heating output; day mean " + d.outsideT_day + " °C)" +
+                        (d.heat_4h !== null ? ", highest 4 h " + d.heat_4h + " kW" : ""), { heatkw: d.heat_kw });
+                });
+                note += '</div>';
+            }
+        }
+        if (peak_4h) note += (note && !(cold && cold.details && cold.details.days && cold.details.days.length) ? '<br>' : '') + 'Peak: <b>' + period(peak_4h.start_time, peak_4h.end_time, fmt(peak_4h.value, 1) + ' kW',
+            date(peak_4h.start_time, true) + (peak_4h.details && peak_4h.details.outsideT !== null ? ", " + peak_4h.details.outsideT + " °C outside" : "")) +
+            ' 4 h mean</b> on ' + esc(date(peak_4h.start_time, true));
+
+        return '<div class="hp-sys-feature">' +
+            '<div class="hp-sys-feature-head"><span class="app-live-label">Sizing</span>' +
+            '<span class="hp-sys-feature-value text-hp-heat">' + fmt(hp, 1) + '<span class="hp-sys-unit">kW heat pump</span></span></div>' +
+            bar + '<div class="hp-sys-feature-note">' + note + '</div></div>';
+    }
+
+    // -- Flow temperature: design against measured on the coldest days --------
+    function flow() {
+        // Space heating flow temperature on the coldest days of the last year, worked out nightly
+        var cold = mv("flowT_coldest_days"), peak = mv("flowT_peak_4h");
+        var design = num(m.flow_temp);
+        var meas = cold ? cold.value : null;
+        if (!design && !meas) return "";
+        var c = cold ? cold.details || {} : {};
+
+        var vals = [design, cold ? cold.lower : null, cold ? cold.upper : null, peak ? peak.value : null].filter(function (v) { return v; });
+        var lo = Math.floor(Math.min(25, Math.min.apply(null, vals) - 5) / 5) * 5;
+        var hi = Math.ceil(Math.max(55, Math.max.apply(null, vals) + 5) / 5) * 5;
+        var dot = has(m.design_temp) ? fmt(m.design_temp, 1) + "°C" : "design";
+
+        var bar = '<div class="hp-sys-scale is-flow">';
+        if (meas) {
+            // Band from the lowest to the highest of the coldest days, dot at the highest
+            if (cold.lower !== null && cold.upper !== null)
+                bar += '<div class="hp-sys-scale-band is-flow" style="left:' + pct(cold.lower, lo, hi) + '%;width:' + (pct(cold.upper, lo, hi) - pct(cold.lower, lo, hi)) + '%" title="Coldest days ' + fmt(cold.lower, 1) + ' to ' + fmt(cold.upper, 1) + '°C"></div>';
+            bar += '<div class="hp-sys-scale-dot is-flow" style="left:' + pct(meas, lo, hi) + '%"></div>';
+            bar += '<div class="hp-sys-scale-tag is-below" style="left:' + pct(meas, lo, hi) + '%">Measured ' + fmt(meas, 1) + '°C</div>';
+        }
+        if (design) {
+            bar += '<div class="hp-sys-scale-tick" style="left:' + pct(design, lo, hi) + '%"></div>';
+            bar += '<div class="hp-sys-scale-tag is-above" style="left:' + pct(design, lo, hi) + '%">Design ' + fmt(design, 1) + '°C</div>';
+        }
+        if (peak) {
+            bar += '<div class="hp-sys-scale-peak is-flow" style="left:' + pct(peak.value, lo, hi) + '%" title="Peak 4 h ' + fmt(peak.value, 1) + '°C"></div>';
+        }
+        bar += '<div class="hp-sys-scale-end is-lo">' + lo + '°</div><div class="hp-sys-scale-end is-hi">' + hi + '°</div>';
+        bar += '</div>';
+
+        var note = "Design flow temperature at " + esc(dot) + " outside";
+        if (meas) {
+            // The highest day, with its own outside temperature, opening that day
+            note = 'Highest: ' + period(cold.start_time, cold.end_time, fmt(meas, 1) + '°C', date(cold.start_time) + ', open with the weighted flow temperature highlighted', { flowt: meas, outsidet: c.outsideT }) +
+                (has(c.outsideT) ? ' at ' + fmt(c.outsideT, 1) + '°C outside' : '');
+            if (design) {
+                var d = meas - design;
+                note += ', <b>' + fmt(Math.abs(d), 1) + '°C ' + (d < 0 ? 'cooler' : 'warmer') + '</b> than designed at ' + esc(dot);
+            }
+            // The coldest days, coldest first, each opening its day
+            if (c.days && c.days.length) {
+                note += '<div class="hp-sys-chips">';
+                c.days.forEach(function (d) {
+                    note += period(d.start, d.end, '<span class="hp-sys-badge">' + chip_date(d.start) + ' · ' + fmt(d.flowT, 1) + '°' +
+                        ' <span class="hp-sys-badge-sub">' + fmt(d.outsideT, 1) + '° out</span></span>',
+                        date(d.start) + ", " + d.outsideT + " °C outside (weighted by space heating output; day mean " + d.outsideT_day + " °C), " + d.space_kwh + " kWh space heating" +
+                        (d.flowT_4h !== null ? ", highest 4 h " + d.flowT_4h + " °C" : ""), { flowt: d.flowT, outsidet: d.outsideT });
+                });
+                note += '</div>';
+            }
+            if (peak) note += 'Space heating peak 4 h ' + period(peak.start_time, peak.end_time, '<b>' + fmt(peak.value, 1) + '°C</b>',
+                date(peak.start_time, true) + (peak.details && peak.details.outsideT !== null ? ", " + peak.details.outsideT + " °C outside" : "")) +
+                ' on ' + esc(date(peak.start_time, true));
+            if (!c.dhw_split) note += '<br>No hot water flag, so these may include cylinder reheats';
+        }
+        var head = meas || design;
+        return '<div class="hp-sys-feature">' +
+            '<div class="hp-sys-feature-head"><span class="app-live-label">Flow temperature</span>' +
+            '<span class="hp-sys-feature-value text-hp-flow">' + fmt(head, 1) + '<span class="hp-sys-unit">°C ' + (meas ? 'measured' : 'design') + '</span></span></div>' +
+            bar + '<div class="hp-sys-feature-note">' + note + '</div></div>';
+    }
+
+    // -- Outside design temperature: measured 99.6% and 99.0% against the form -
+    function outside() {
+        var d996 = pv("design_outsideT_996"), d990 = pv("design_outsideT_990");
+        var design = has(m.design_temp) ? m.design_temp * 1 : null;
+        if (!d996) return "";
+        var t996 = d996.value, t990 = d990 ? d990.value : null;
+        var det = d996.details || {}, ch = det.coldest_hour;
+
+        var vals = [t996, t990, design, ch ? ch.outsideT : null].filter(function (v) { return v !== null && v !== undefined; });
+        var lo = Math.floor(Math.min.apply(null, vals) - 2), hi = Math.ceil(Math.max.apply(null, vals) + 2);
+        if (hi - lo < 8) hi = lo + 8;
+
+        var bar = '<div class="hp-sys-scale is-outside">';
+        if (t990 !== null) bar += '<div class="hp-sys-scale-band" style="left:' + pct(t996, lo, hi) + '%;width:' + (pct(t990, lo, hi) - pct(t996, lo, hi)) + '%" title="99.6% to 99.0%"></div>';
+        if (t990 !== null) bar += '<div class="hp-sys-scale-peak is-outside" style="left:' + pct(t990, lo, hi) + '%" title="99.0%: ' + fmt(t990, 1) + '°C"></div>';
+        bar += '<div class="hp-sys-scale-dot is-outside" style="left:' + pct(t996, lo, hi) + '%"></div>';
+        bar += '<div class="hp-sys-scale-tag is-below" style="left:' + pct(t996, lo, hi) + '%">99.6% ' + fmt(t996, 1) + '°C</div>';
+        if (ch) bar += '<div class="hp-sys-scale-peak is-cold" style="left:' + pct(ch.outsideT, lo, hi) + '%" title="Coldest hour ' + fmt(ch.outsideT, 1) + '°C"></div>';
+        if (design !== null) {
+            bar += '<div class="hp-sys-scale-tick" style="left:' + pct(design, lo, hi) + '%"></div>';
+            bar += '<div class="hp-sys-scale-tag is-above" style="left:' + pct(design, lo, hi) + '%">Design ' + fmt(design, 1) + '°C</div>';
+        }
+        bar += '<div class="hp-sys-scale-end is-lo">' + lo + '°</div><div class="hp-sys-scale-end is-hi">' + hi + '°</div></div>';
+
+        var years = det.blocks && det.blocks.length ? det.blocks.length : null;
+        var note = 'Hourly outside temperature is below this for 35 hours a year (0.4%)' +
+            (years ? ', over ' + years + ' complete year' + (years > 1 ? 's' : '') : '') + '.';
+        if (t990 !== null) note += ' 99.0%: <b>' + fmt(t990, 1) + '°C</b>, 88 hours a year.';
+        if (design !== null) {
+            var d = t996 - design;
+            note += '<br>Design temperature on the form is <b>' + fmt(Math.abs(d), 1) + ' K ' + (d > 0 ? 'colder' : 'milder') + '</b> than the measured 99.6%';
+        }
+        if (ch) note += '<br>Coldest hour: ' + period(ch.start, ch.end, '<b>' + fmt(ch.outsideT, 1) + '°C</b>', date(ch.start, true)) + ' on ' + esc(date(ch.start, true));
+        // Each complete year, newest first
+        if (years) {
+            note += '<div class="hp-sys-chips">';
+            det.blocks.forEach(function (b) {
+                var y = new Date(b.start * 1000).getFullYear() + "–" + String(new Date(b.end * 1000).getFullYear()).slice(2);
+                note += '<span class="hp-sys-badge" title="' + esc(b.hours + " hours, " + fmt(100 * b.coverage, 1) + "% coverage, coldest hour " + b.min + " °C") + '">' + y +
+                    ' · ' + fmt(b.t996, 1) + '° <span class="hp-sys-badge-sub">' + fmt(b.t990, 1) + '° at 99%</span></span>';
+            });
+            note += '</div>';
+        }
+        note += '<span class="hp-ms-fine">From the weather service feed, not a sensor at the house</span>';
+
+        return tile("Outside design temperature", fmt(t996, 1) + unit("°C 99.6%"), "hp-ms-cold", bar + '<div class="hp-sys-feature-note">' + note + '</div>', d996.preview);
+    }
+
+    // -- Emitter capacity: measured at ΔT50 against what the form implies ------
+    function emitters() {
+        var e = pv("emitter_kw50");
+        if (!e) return "";
+        // Example scaled to this system: the output on the highest of the
+        // coldest days at its flow temperature, so the preview hangs together
+        var hc = mv("heat_coldest_days"), fc = mv("flowT_coldest_days"), fd = flow_dT(), need_dT = fd ? fd.dt.value : EMITTER_DT;
+        if (e.preview && hc && fc) {
+            var rt = hc.details && has(hc.details.roomT) ? hc.details.roomT : ROOM;
+            var c50 = hc.value / Math.pow((fc.value - need_dT / 2 - rt) / 50, 1.3);
+            if (isFinite(c50) && c50 > 1 && c50 < 60) {
+                var k = c50 / e.value;
+                e.value *= k; e.lower *= k; e.upper *= k;
+                e.details.peaks.forEach(function (p) { p.kw *= k; p.sd *= k; });
+            }
+        }
+        var det = e.details || {}, n = det.exponent || 1.3;
+        // Implied by the form: its heat loss at its design flow temperature,
+        // with the assumed flow - return and room temperatures
+        var implied = null, mwt = num(m.flow_temp) ? m.flow_temp - EMITTER_DT / 2 : null;
+        if (num(m.heat_loss) && mwt && mwt > ROOM + 2) implied = m.heat_loss / Math.pow((mwt - ROOM) / 50, n);
+        // Flow temperature these emitters need for the estimated heat loss at design
+        var hl = mv("heat_loss_design"), need = null;
+        if (hl) need = ROOM + 50 * Math.pow(hl.value / e.value, 1 / n) + need_dT / 2;
+
+        // Distribution of capacity over the episodes, weighted by heat: example
+        // from the peaks; real data will carry the curve itself
+        var peaks = det.peaks || [{ kw: e.value, share: 1, sd: 0.6 }];
+        var x_hi = Math.ceil(Math.max(e.upper || e.value, implied || 0) * 1.25), x_lo = 0;
+        var pts = [], ymax = 0;
+        for (var i = 0; i <= 120; i++) {
+            var x = x_lo + (x_hi - x_lo) * i / 120, y = 0;
+            peaks.forEach(function (p) { y += p.share / p.sd * Math.exp(-0.5 * Math.pow((x - p.kw) / p.sd, 2)); });
+            pts.push([x, y]); if (y > ymax) ymax = y;
+        }
+        var path = "M0,60 " + pts.map(function (p) { return "L" + fmt(300 * (p[0] - x_lo) / (x_hi - x_lo), 1) + "," + fmt(60 - 54 * p[1] / ymax, 1); }).join(" ") + " L300,60 Z";
+        var dist = '<div class="hp-ms-dist"><svg viewBox="0 0 300 60" preserveAspectRatio="none" aria-hidden="true"><path d="' + path + '"/></svg>';
+        if (e.lower !== null && e.upper !== null) dist += '<div class="hp-ms-dist-band" style="left:' + pct(e.lower, x_lo, x_hi) + '%;width:' + (pct(e.upper, x_lo, x_hi) - pct(e.lower, x_lo, x_hi)) + '%" title="80% of heat: ' + fmt(e.lower, 1) + ' to ' + fmt(e.upper, 1) + ' kW"></div>';
+        dist += '<div class="hp-ms-dist-line" style="left:' + pct(e.value, x_lo, x_hi) + '%"></div>';
+        dist += '<div class="hp-sys-scale-tag is-below" style="left:' + pct(e.value, x_lo, x_hi) + '%">Measured ' + fmt(e.value, 1) + ' kW</div>';
+        if (implied) {
+            dist += '<div class="hp-sys-scale-tick" style="left:' + pct(implied, x_lo, x_hi) + '%"></div>';
+            dist += '<div class="hp-sys-scale-tag is-above" style="left:' + pct(implied, x_lo, x_hi) + '%">Form ' + fmt(implied, 1) + ' kW</div>';
+        }
+        dist += '<div class="hp-sys-scale-end is-lo">0</div><div class="hp-sys-scale-end is-hi">' + x_hi + ' kW</div></div>';
+
+        var note = 'Radiator output at a 50 K mean water to room difference, from <b>' + e.samples + '</b> steady running periods weighted by heat' +
+            (e.lower !== null ? '. 80% of heat: ' + fmt(e.lower, 1) + '–' + fmt(e.upper, 1) + ' kW' : '') + '.';
+        var minor = peaks.filter(function (p) { return Math.abs(p.kw - e.value) > 1; });
+        if (minor.length) note += ' A second peak at ' + minor.map(function (p) { return '<b>' + fmt(p.kw, 1) + ' kW</b> (' + Math.round(100 * p.share) + '% of heat)'; }).join(", ") + ': rooms or a zone switched off.';
+        if (implied) note += '<br>Form: ' + fmt(m.heat_loss, 1) + ' kW at ' + fmt(m.flow_temp, 0) + '°C flow implies <b>' + fmt(implied, 1) + ' kW</b> (' + EMITTER_DT + ' K flow − return, ' + ROOM + '°C room)';
+        if (need) {
+            var cold = mv("flowT_coldest_days");
+            note += '<br>For the estimated ' + fmt(hl.value, 1) + ' kW at design, at the measured ' + fmt(need_dT, 1) + ' K ΔT, these need about <b>' + fmt(need, 1) + '°C</b> flow' +
+                (cold ? ' (coldest days measured ' + fmt(cold.value, 1) + '°C)' : '');
+        }
+        note += '<span class="hp-ms-fine">Exponent ' + n + ' assumed (radiators); underfloor heating is nearer 1.1</span>';
+        return tile("Emitter capacity", fmt(e.value, 1) + unit("kW at ΔT50"), "text-hp-heat",
+            '<div class="hp-ms-split">' + dist + '<div class="hp-sys-feature-note">' + note + '</div></div>', e.preview, "hp-ms-wide");
+    }
+
+    // -- Flow rate and flow - return ΔT: measured on the coldest days against design
+    function flowrate() {
+        var f = flow_dT();
+        if (!f) return "";
+        var fr = f.fr, dt = f.dt;
+        var rmin = num(m.hp_min_flowrate), rmax = num(m.hp_max_flowrate);
+        // Heat loss to carry at design: the estimate from the data, else the form
+        var hl = mv("heat_loss_design"), q_design = hl ? hl.value : num(m.heat_loss);
+        var need = q_design ? q_design / (CP * DESIGN_DT) * 60 : null;
+
+        // Flow rate bar: rated range shaded, measured dot and day range, flow rate needed at design ΔT
+        var hi = Math.ceil(Math.max(fr.upper || fr.value, rmax || 0, need || 0) * 1.15 / 5) * 5;
+        var bar = '<div class="hp-sys-scale is-flowrate">';
+        if (rmin && rmax) bar += '<div class="hp-ms-rated" style="left:' + pct(rmin, 0, hi) + '%;width:' + (pct(rmax, 0, hi) - pct(rmin, 0, hi)) + '%" title="Rated ' + rmin + ' to ' + rmax + ' l/min (heat pump database)"></div>';
+        if (fr.lower !== null && fr.upper !== null && fr.upper > fr.lower)
+            bar += '<div class="hp-sys-scale-band" style="left:' + pct(fr.lower, 0, hi) + '%;width:' + (pct(fr.upper, 0, hi) - pct(fr.lower, 0, hi)) + '%"></div>';
+        bar += '<div class="hp-sys-scale-dot is-flowrate" style="left:' + pct(fr.value, 0, hi) + '%"></div>';
+        bar += '<div class="hp-sys-scale-tag is-below" style="left:' + pct(fr.value, 0, hi) + '%">Measured ' + fmt(fr.value, 1) + ' l/min</div>';
+        if (need) {
+            bar += '<div class="hp-sys-scale-tick" style="left:' + pct(need, 0, hi) + '%"></div>';
+            bar += '<div class="hp-sys-scale-tag is-above" style="left:' + pct(need, 0, hi) + '%">Design ' + fmt(need, 1) + ' l/min at ' + DESIGN_DT + ' K</div>';
+        }
+        bar += '<div class="hp-sys-scale-end is-lo">0</div><div class="hp-sys-scale-end is-hi">' + hi + ' l/min</div></div>';
+
+        // ΔT bar, 0 to 10 K: measured dot and day range, assumed design ΔT
+        var dhi = Math.max(10, Math.ceil((dt.upper || dt.value) + 1));
+        var dbar = '<div class="hp-sys-scale is-dT">';
+        if (dt.lower !== null && dt.upper !== null && dt.upper > dt.lower)
+            dbar += '<div class="hp-sys-scale-band" style="left:' + pct(dt.lower, 0, dhi) + '%;width:' + (pct(dt.upper, 0, dhi) - pct(dt.lower, 0, dhi)) + '%"></div>';
+        dbar += '<div class="hp-sys-scale-dot is-flowrate" style="left:' + pct(dt.value, 0, dhi) + '%"></div>';
+        dbar += '<div class="hp-sys-scale-tag is-below" style="left:' + pct(dt.value, 0, dhi) + '%">Measured ΔT ' + fmt(dt.value, 1) + ' K</div>';
+        dbar += '<div class="hp-sys-scale-tick" style="left:' + pct(DESIGN_DT, 0, dhi) + '%"></div>';
+        dbar += '<div class="hp-sys-scale-tag is-above" style="left:' + pct(DESIGN_DT, 0, dhi) + '%" title="The form has no design ΔT">Design ' + DESIGN_DT + ' K</div>';
+        dbar += '<div class="hp-sys-scale-end is-lo">0</div><div class="hp-sys-scale-end is-hi">' + dhi + ' K</div></div>';
+
+        var note = 'Space heating while running on the coldest days, weighted by heat: <b>' + fmt(fr.details.heat_kw, 1) + ' kW</b> at ' +
+            fmt(fr.value, 1) + ' l/min and ' + fmt(dt.value, 1) + ' K.';
+        if (need) {
+            var carry = fr.value / 60 * CP * DESIGN_DT;
+            note += '<br>At ' + DESIGN_DT + ' K this flow rate carries <b>' + fmt(carry, 1) + ' kW</b>; the ' + (hl ? 'estimated ' : 'design ') + fmt(q_design, 1) + ' kW at design needs <b>' + fmt(need, 1) + ' l/min</b>.';
+        }
+        // A wider ΔT than designed lowers the mean water temperature for the same flow
+        if (dt.value > DESIGN_DT + 0.5) note += '<br>A ' + fmt(dt.value, 1) + ' K ΔT puts the mean water temperature ' + fmt((dt.value - DESIGN_DT) / 2, 1) + ' K lower than at ' + DESIGN_DT + ' K for the same flow temperature.';
+        if (rmin && rmax) {
+            var where = fr.value < rmin ? 'below the rated range' : fr.value > rmax * 0.97 ? 'at the top of the rated range' : 'within the rated range';
+            note += '<br>' + (fr.value > rmax * 0.97 || fr.value < rmin ? '<b>' : '') + where.charAt(0).toUpperCase() + where.slice(1) + (fr.value > rmax * 0.97 || fr.value < rmin ? '</b>' : '') +
+                ' of ' + rmin + '–' + rmax + ' l/min for this model.';
+        }
+        if (fr.details.days && fr.details.days.length) {
+            note += '<div class="hp-sys-chips">';
+            fr.details.days.forEach(function (d) {
+                note += period(d.start, d.end, '<span class="hp-sys-badge">' + chip_date(d.start) + ' · ' + fmt(d.flowrate, 1) + ' l/min · ' + fmt(d.dT, 1) + ' K' +
+                    ' <span class="hp-sys-badge-sub">' + fmt(d.heat_kw, 1) + ' kW</span></span>', date(d.start) + ', ' + d.outsideT + ' °C outside');
+            });
+            note += '</div>';
+        }
+        if (has(m.hydraulic_separation) && !/^(none|no)/i.test(m.hydraulic_separation)) note += '<span class="hp-ms-fine">With hydraulic separation this is the heat pump side; the emitter side flow rate can differ</span>';
+        return tile("Flow rate and ΔT", fmt(fr.value, 1) + unit("l/min, " + fmt(dt.value, 1) + " K"), "text-hp-flow",
+            bar + dbar + '<div class="hp-sys-feature-note">' + note + '</div>', f.preview);
+    }
+
+    // -- Efficiency ------------------------------------------------------------
+    // Last 365 day stats, loaded by myheatpump.js for the totals card; the card
+    // is drawn again when they arrive
+    function last365() { return window.totals && window.totals.last365 ? window.totals.last365 : null; }
+
+    // % of Carnot by mode, against the fleet
+    function carnot() {
+        var t = last365();
+        if (!t) return tile("% of Carnot", '<span class="hp-sys-unit">loading</span>', "", '<div class="hp-sys-feature-note">Loading the last 365 days</div>');
+        var modes = [["space", "Space heating"], ["water", "Hot water"], ["running", "When running"]];
+        var rows = "", head = null;
+        modes.forEach(function (md) {
+            var prc = num(t[md[0] + "_prc_carnot"]), cop = num(t[md[0] + "_cop"]);
+            if (!prc || !cop) return;
+            if (head === null) head = [prc, md[1]];
+            var f = MEASUREMENTS_FLEET.prc_carnot[md[0]].p;
+            var ideal = cop * 100 / prc, flowT = num(t[md[0] + "_flowT_mean"]), outT = num(t[md[0] + "_outsideT_mean"]);
+            rows += '<div class="hp-ms-eff-row"><div><div class="hp-ms-check-label">' + md[1] + '</div>' +
+                '<div class="hp-ms-check-note">COP ' + cop.toFixed(2) + ' of an ideal ' + ideal.toFixed(1) +
+                (flowT !== null && outT !== null ? ' at ' + fmt(flowT, 1) + '°C flow, ' + fmt(outT, 1) + '°C outside' : '') + '</div></div>' +
+                '<div class="hp-ms-check-value"><span>' + prc.toFixed(1) + unit("%") + '</span>' +
+                range_bar(prc, [f[0], f[2], f[1]], [25, 65], "%") + '</div></div>';
+        });
+        if (!rows) return "";
+        var note = '<div class="hp-sys-feature-note">Measured COP as a share of the ideal (Carnot) COP at the same flow and outside temperatures, over the last 365 days. ' +
+            'Takes out the effect of flow and outside temperature, so it shows how well the heat pump turns lift into heat. ' +
+            'Ideal COP uses flow + 2 K and outside − 6 K. Shaded: the middle 80% of systems; line: median.</div>';
+        return tile("% of Carnot", head[0].toFixed(1) + unit("% " + head[1].toLowerCase()), "text-hp-cop", rows + note);
+    }
+
+    // Level against the datasheet, from the machine replay
+    function level() {
+        var lv = pv("replay_level");
+        if (!lv) return "";
+        var d = lv.details || {}, F = MEASUREMENTS_FLEET;
+        var arotherm = /arotherm/i.test((m.hp_manufacturer || "") + " " + (m.hp_model || ""));
+        var lo = 0.7, hi = 1.1, fl = F.level.p;
+        var bar = '<div class="hp-sys-scale is-level">' +
+            '<div class="hp-sys-scale-band" style="left:' + pct(fl[0], lo, hi) + '%;width:' + (pct(fl[2], lo, hi) - pct(fl[0], lo, hi)) + '%" title="Middle 80% of ' + F.level.n + ' Arotherm+ systems"></div>' +
+            '<div class="hp-sys-scale-tick" style="left:' + pct(1, lo, hi) + '%"></div>' +
+            '<div class="hp-sys-scale-tag is-above" style="left:' + pct(1, lo, hi) + '%">Datasheet 1.00</div>' +
+            '<div class="hp-sys-scale-peak is-mid" style="left:' + pct(fl[1], lo, hi) + '%" title="Median ' + fl[1] + '"></div>' +
+            '<div class="hp-sys-scale-dot is-cop" style="left:' + pct(lv.value, lo, hi) + '%"></div>' +
+            '<div class="hp-sys-scale-tag is-below" style="left:' + pct(lv.value, lo, hi) + '%">This system ' + lv.value.toFixed(2) + '</div>' +
+            '<div class="hp-sys-scale-end is-lo">' + lo + '</div><div class="hp-sys-scale-end is-hi">' + hi + '</div></div>';
+        var b = bar;
+        if (has(d.peer_level)) b += fact_html("Peer level", d.peer_level.toFixed(2) + unit("same-size systems, same conditions"));
+        if (has(d.min_share)) b += fact_html("Steady running at minimum speed", fmt(100 * d.min_share, 0) + unit("% (most " + Math.round(100 * F.min_share.p[0]) + "–" + Math.round(100 * F.min_share.p[2]) + "%)"));
+        if (has(d.min_ratio)) b += fact_html("COP there, against the level", d.min_ratio.toFixed(2) + unit("(most " + F.min_ratio.p[0].toFixed(2) + "–" + F.min_ratio.p[2].toFixed(2) + ")"));
+        var t = last365(), spf = t ? num(t.combined_cop) : null;
+        if (spf) b += fact_html("SPF, last 365 days", fmt(spf, 2) + unit("about " + fmt(spf / lv.value, 2) + " at level 1.00"));
+        b += '<div class="hp-sys-feature-note">Field COP against the datasheet COP at the same flow and outside temperatures and output, in steady space heating at 30–70 rps' +
+            (lv.samples ? ', ' + lv.samples + ' hours' : '') + '. 0.94 means about 6% more electricity than the datasheet for the same heat. ' +
+            'It describes the gap, not its cause: the machine, the heat meter flow reading or something else.' +
+            (!arotherm ? '<br><b>Arotherm+ only so far:</b> other models need a datasheet fit first.' : '') + '</div>';
+        return tile("Level against the datasheet", lv.value.toFixed(2), "text-hp-cop", b, lv.preview);
+    }
+
+    // Where the SPF goes: datasheet SPF at the measured conditions down to the measured SPF
+    function ladder() {
+        var lad = pv("replay_ladder"), t = last365();
+        if (!lad) return "";
+        var steps = lad.details.steps, F = MEASUREMENTS_FLEET.ladder;
+        var spf = t && num(t.combined_cop) ? t.combined_cop * 1 : 4.0;
+        var start = spf - steps.reduce(function (a, s) { return a + s.spf; }, 0);
+        var lo = Math.floor(Math.min(spf, start) * 4 - 1) / 4, hi = Math.ceil(Math.max(spf, start) * 4 + 0.5) / 4;
+        function row(label, from, to, cls, value, fleet) {
+            var a = Math.min(from, to), b = Math.max(from, to);
+            return '<div class="hp-ms-lad-row"><div class="hp-ms-lad-label">' + label + '</div>' +
+                '<div class="hp-ms-lad-track"><div class="hp-ms-lad-bar ' + cls + '" style="left:' + pct(a, lo, hi) + '%;width:' + Math.max(0.6, pct(b, lo, hi) - pct(a, lo, hi)) + '%"></div></div>' +
+                '<div class="hp-ms-lad-value">' + value + '</div><div class="hp-ms-lad-fleet">' + (fleet || '') + '</div></div>';
+        }
+        var html = '<div class="hp-ms-lad">' +
+            '<div class="hp-ms-lad-row is-head"><div></div><div class="hp-ms-lad-axis"><span>' + lo.toFixed(2) + '</span><span>' + hi.toFixed(2) + '</span></div><div class="hp-ms-lad-value">SPF</div><div class="hp-ms-lad-fleet">Median</div></div>' +
+            row("<b>Datasheet</b>, at this system's conditions", lo, start, "is-total", '<b>' + fmt(start, 2) + '</b>');
+        var at = start;
+        steps.forEach(function (s) {
+            html += row(esc(s.label), at, at + s.spf, s.spf < 0 ? "is-loss" : "is-gain", signed(s.spf, 2), F[s.key] !== undefined ? signed(F[s.key], 2) : "");
+            at += s.spf;
+        });
+        html += row("<b>Measured</b>, last 365 days", lo, spf, "is-total", '<b>' + fmt(spf, 2) + '</b>') + '</div>';
+        html += '<div class="hp-sys-feature-note">Each operating state put back as measured, in this order; a different order gives different steps. ' +
+            'Most systems lose a similar small amount to each of start-ups, ramps, hot water and defrosts; the level in steady running makes most of the difference between systems.</div>';
+        return tile("Where the SPF goes", fmt(spf, 2) + unit("SPF of " + fmt(start, 2) + " datasheet"), "text-hp-cop", html, lad.preview, "hp-ms-wide");
+    }
+
+    // -- Heat loss figures behind the Sizing tile ------------------------------
+    function heatloss_stats() {
+        var hd = mv("heat_loss_design"), hdm = mv("heat_loss_design_measured"), htc = mv("heat_loss_htc"), base = mv("heat_loss_base_dT");
+        var s = "";
+        function stat(label, value, u, title) {
+            return '<div class="hp-ms-stat"' + (title ? ' title="' + esc(title) + '"' : '') + '><div class="hp-sys-fact-label">' + esc(label) + '</div><div class="hp-ms-stat-value">' + value + unit(u) + '</div></div>';
+        }
+        if (htc) s += stat("Heat transfer coefficient", fmt(htc.value, 0), "W/K", "Slope of daily heat against inside − outside temperature, " + htc.samples + " days");
+        if (base) s += stat("Balance point", fmt(base.value, 1), "K", "Temperature difference where the fit reaches zero heat: internal and solar gains");
+        if (hd) {
+            var at = hd.details && has(hd.details.design_outsideT) ? " at " + fmt(hd.details.design_outsideT, 1) + "°C" : "";
+            var ci = hd.details && hd.details.ci80 ? " ±" + fmt(hd.details.ci80, 2) : "";
+            s += stat("Heat demand" + at, fmt(hd.value, 2), "kW" + ci, "± is the 80% confidence interval of the fit at design; single days spread " + fmt(hd.lower, 1) + " to " + fmt(hd.upper, 1) + " kW");
+        }
+        if (hdm && (!hd || hd.details.design_outsideT_source != "measured")) s += stat("At measured 99.6%", fmt(hdm.value, 2), "kW");
+        if (hd && num(m.floor_area)) s += stat("Per floor area", fmt(1000 * hd.value / m.floor_area, 0), "W/m²", "Measured heat demand / " + m.floor_area + " m²" +
+            (num(m.heat_loss) ? ". Form: " + fmt(1000 * m.heat_loss / m.floor_area, 0) + " W/m²" : ""));
+        return s ? '<div class="hp-ms-stats">' + s + '</div>' : '';
+    }
+
+    // -- Flow temperature against outside temperature, weighted by heat --------
+    function flowmap() {
+        hp_ms_map = flowmap_build(m, mv);
+        var det = hp_ms_map.detect, sub = "", res = "";
+        if (det) {
+            var at_design = has(m.design_temp) ? det.a + det.b * m.design_temp : null;
+            if (det.b < -0.15) {
+                res = '<span class="hp-sys-badge is-good"><i class="bi bi-thermometer-half"></i>Weather compensation</span> ' +
+                    'Flow falls <b>' + fmt(-det.b, 2) + ' K</b> for each 1 K warmer outside: <b>' + fmt(det.a + det.b * det.x_lo, 1) + '°C</b> at ' + fmt(det.x_lo, 0) + '°C, <b>' +
+                    fmt(det.a + det.b * det.x_hi, 1) + '°C</b> at ' + fmt(det.x_hi, 0) + '°C' +
+                    (at_design !== null ? ', ' + fmt(at_design, 1) + '°C at the design ' + fmt(m.design_temp, 1) + '°C' : '') + '. ' +
+                    Math.round(100 * det.within) + '% of space heating within ±2 K of the line.';
+            } else {
+                res = '<span class="hp-sys-badge"><i class="bi bi-dash-lg"></i>Fixed flow temperature</span> Flow hardly changes with outside temperature (' + signed(det.b, 2) + ' K per K): a fixed flow temperature or room thermostat control.';
+            }
+        }
+        var modes = [["space", "Space heating"], ["water", "Hot water"], ["all", "All"]];
+        var btns = '<div class="btn-group app-segmented hp-ms-map-modes">' + modes.map(function (md) {
+            return '<button class="btn' + (hp_ms_state.mode == md[0] ? ' active' : '') + '" data-mode="' + md[0] + '">' + md[1] + '</button>';
+        }).join("") + '</div>';
+        var body = '<div class="hp-ms-map-top">' + btns +
+            '<div class="hp-ms-map-legend"><span>Less heat</span><span class="hp-ms-map-ramp"></span><span>More</span>' +
+            '<span class="hp-ms-key"><span class="hp-ms-key-line"></span>Fitted curve</span>' +
+            '<span class="hp-ms-key"><span class="hp-ms-key-ring"></span>Design</span></div></div>' +
+            '<div id="hp-ms-map" class="hp-ms-map"><canvas role="img" aria-label="Heat delivered at each flow and outside temperature"></canvas><div class="hp-ms-tip" hidden></div></div>' +
+            (res ? '<div class="hp-ms-map-result">' + res + '</div>' : '');
+        return section("Flow temperature by outside temperature", "Heat delivered at each flow and outside temperature, last 12 months", body, hp_ms_map.preview);
+    }
+
+    // -- Primary pipework and system volume ------------------------------------
+    function pipework() {
+        var vol = pv("loop_volume"), delay = pv("loop_delay"), unit_w = pv("unit_water_content"), sys_vol = pv("system_volume");
+        if (!vol) return "";
+        var pipes = { 22: 0.32, 28: 0.54, 35: 0.83 };
+        var uw = unit_w ? unit_w.value : 0;
+        var each = Math.max(0, (vol.value - uw) / pipes[hp_ms_state.pipe] / 2);
+
+        var ev = vol.details.events || [];
+        var lo = Math.floor(Math.min.apply(null, ev.concat([vol.value])) - 1), hi = Math.ceil(Math.max.apply(null, ev.concat([vol.value])) + 1);
+        var strip = '<div class="hp-sys-scale is-events" title="Volume from each hot water switch-over">';
+        ev.forEach(function (v) { strip += '<div class="hp-ms-event" style="left:' + pct(v, lo, hi) + '%"></div>'; });
+        if (vol.details.spike_volume) strip += '<div class="hp-sys-scale-tick" style="left:' + pct(vol.details.spike_volume, lo, hi) + '%" title="Spike energy method ' + vol.details.spike_volume + ' L"></div>';
+        strip += '<div class="hp-sys-scale-end is-lo">' + lo + ' L</div><div class="hp-sys-scale-end is-hi">' + hi + ' L</div></div>';
+
+        var b = strip;
+        if (delay) b += fact_html("Loop delay", fmt(delay.value, 0) + unit("s" + (delay.lower !== null ? ", " + delay.lower + "–" + delay.upper : "")));
+        if (delay && delay.details.flowrate) b += fact_html("Flow rate", fmt(delay.details.flowrate, 1) + unit("l/min"));
+        if (vol.details.spike_volume) b += fact_html("Spike energy check", fmt(vol.details.spike_volume, 1) + unit("L"));
+        if (unit_w) b += fact_html("Heat pump and meter water", fmt(uw, 1) + unit("L, " + (unit_w.details.source || "")));
+        b += '<div class="hp-ms-pipe-row"><span class="hp-sys-fact-label">Primaries, each way</span>' +
+            '<div class="btn-group app-segmented">' + Object.keys(pipes).map(function (p) {
+                return '<button class="btn hp-ms-pipe' + (hp_ms_state.pipe == p ? ' active' : '') + '" data-pipe="' + p + '" title="' + pipes[p] + ' L per metre">' + p + ' mm</button>';
+            }).join("") + '</div><b class="hp-ms-pipe-len">' + fmt(each, 1) + unit("m") + '</b></div>';
+        if (has(m.hydraulic_separation) && !/^(none|no)/i.test(m.hydraulic_separation)) {
+            b += '<div class="hp-sys-flag"><i class="bi bi-info-circle"></i>Hydraulic separation on the form (' + esc(m.hydraulic_separation) + '): if it is between the meter and the heat pump, the volume includes it</div>';
+        }
+        b += '<div class="hp-sys-feature-note">From ' + vol.samples + ' hot water switch-overs: the time a step in return temperature takes to reach the flow sensor, times the flow rate. ' +
+            'Includes the water in the heat pump, so the length depends on its water content and the pipe size.</div>';
+
+        if (sys_vol) {
+            b += '<div class="hp-ms-subhead">Heating system volume' + preview_tag(sys_vol.preview) + '</div>';
+            b += fact_html("Whole system", fmt(sys_vol.value, 0) + unit("L" + (sys_vol.lower !== null ? ", " + sys_vol.lower + "–" + sys_vol.upper : "")));
+            if (num(m.hp_output)) b += fact_html("Per kW of heat pump", fmt(sys_vol.value / m.hp_output, 0) + unit("L/kW"));
+            b += fact_html("Primary loop share", fmt(100 * vol.value / sys_vol.value, 0) + unit("%"));
+            if (m.volumiser) b += fact_html("Volumiser", "Yes");
+            b += '<div class="hp-sys-feature-note">From the rise in mean water temperature after ' + sys_vol.samples + ' starts, with the emitter capacity above. ' +
+                'Today the Options panel works this out for one window at a time.</div>';
+        }
+        return tile("Primary loop", fmt(vol.value, 1) + unit("L"), "text-hp-flow", b, vol.preview);
+    }
+
+    // -- Hot water cylinder standby loss ---------------------------------------
+    function cylinder() {
+        if (has(m.dhw_method) && /^none/i.test(m.dhw_method)) return "";
+        var U = pv("dhw_standby_U");
+        if (!U) return "";
+        var V = num(m.cylinder_volume), V_used = V || 200;
+        var target = num(m.dhw_target_temperature) || 50, env = U.details.env_temp || 18;
+        var loss_w = U.value * (target - env);
+        var t_half = Math.LN2 * V_used * CP * 1000 / U.value / 86400;
+
+        var b = '';
+        if (U.details.fleet) b += '<div class="hp-ms-range-row"><span class="hp-sys-fact-label">Against other cylinders</span>' + range_bar(U.value, U.details.fleet, [0, 4], " W/K") + '</div>';
+        b += fact_html("Standby loss at " + fmt(target, 0) + "°C", fmt(loss_w, 0) + unit("W, " + fmt(loss_w * 24 / 1000, 1) + " kWh/day"));
+        b += fact_html("Half-life of the charge", fmt(t_half, 1) + unit("days"));
+        b += fact_html("Cylinder", fmt(V_used, 0) + unit("L" + (V ? "" : " assumed")));
+        if (U.lower !== null) b += fact_html("80% range", fmt(U.lower, 1) + "–" + fmt(U.upper, 1) + unit("W/K"));
+        b += '<div class="hp-sys-feature-note">From ' + U.samples + ' periods of cylinder temperature falling with no reheat or draw-off, assuming the cylinder is in a ' + env + '°C space. ' +
+            'Needs a cylinder temperature in °C, not % charge. Today the Options panel works this out for one window at a time.</div>';
+        return tile("Hot water cylinder", fmt(U.value, 1) + unit("W/K"), "text-hp-flow", b, U.preview);
+    }
+
+    // -- Metering and data checks ----------------------------------------------
+    function checks() {
+        var c = pv("data_checks");
+        if (!c) return "";
+        var d = c.details, rows = [];
+        var icon = { good: "check-circle-fill", warn: "exclamation-triangle-fill", info: "info-circle-fill" };
+        var word = { good: "OK", warn: "Check", info: "Note" };
+        function row(status, label, value, note, extra) {
+            rows.push('<div class="hp-ms-check is-' + status + '"><i class="bi bi-' + icon[status] + '" title="' + word[status] + '" aria-label="' + word[status] + '"></i>' +
+                '<div class="hp-ms-check-text"><div class="hp-ms-check-label">' + esc(label) + '</div>' + (note ? '<div class="hp-ms-check-note">' + note + '</div>' : '') + '</div>' +
+                '<div class="hp-ms-check-value"><span>' + value + '</span>' + (extra || '') + '</div></div>');
+        }
+        function in_fleet(r) { return r.value >= r.fleet[0] && r.value <= r.fleet[1]; }
+
+        if (d.dhw_flag) row(d.dhw_flag.status, "Hot water flag", esc(d.dhw_flag.value), esc(d.dhw_flag.note));
+        if (d.sensor_offset) row(in_fleet(d.sensor_offset) ? "good" : "warn", "Heat meter sensor offset", signed(d.sensor_offset.value, 2) + unit("K"),
+            "Flow − return with the pump running and the compressor off", range_bar(d.sensor_offset.value, d.sensor_offset.fleet, d.sensor_offset.scale, " K"));
+        if (d.meter_k) row(in_fleet(d.meter_k) ? "good" : "warn", "Heat meter consistency", fmt(d.meter_k.value, 1),
+            "Heat ÷ (flow rate × ΔT) in steady running, about 69.5 expected", range_bar(d.meter_k.value, d.meter_k.fleet, d.meter_k.scale, ""));
+        row(d.room_feed ? "good" : "warn", "Room temperature feed", d.room_feed ? "Present" : "Missing", d.room_feed ? "Used for heat loss and emitter capacity" : "20°C assumed for heat loss and emitter capacity");
+        row(d.flowrate_feed ? "good" : "info", "Flow rate feed", d.flowrate_feed ? "Present" : "Missing", d.flowrate_feed ? "" : "Primary loop volume from the spike energy method only");
+        var other = m.hp_hybrid ? ["warn", "Boiler (hybrid)"] : m.uses_backup_heater ? ["info", "Backup heater"] : ["good", "None recorded"];
+        row(other[0], "Other heat sources", other[1], "Heat from other sources lowers the measured heat loss");
+        if (d.standby_power) row(in_fleet(d.standby_power) ? "good" : "info", "Standby power", fmt(d.standby_power.value, 0) + unit("W"), "Off, pump stopped",
+            range_bar(d.standby_power.value, d.standby_power.fleet, d.standby_power.scale, " W"));
+        if (d.pump_only_power) row(in_fleet(d.pump_only_power) ? "good" : "info", "Pump-only power", fmt(d.pump_only_power.value, 0) + unit("W"), "Pump running, compressor off",
+            range_bar(d.pump_only_power.value, d.pump_only_power.fleet, d.pump_only_power.scale, " W"));
+        if (d.coverage) row(d.coverage > 0.95 ? "good" : "warn", "Data coverage", fmt(100 * d.coverage, 1) + unit("%"), "Share of the last year with heat meter data");
+        if (m.data_flag) row("warn", "Flagged", "Yes", esc(has(m.data_flag_note) ? m.data_flag_note : "Data issue flagged"));
+        return section("Metering and data checks", "The figures above depend on these. Shaded: the middle 80% of systems", '<div class="hp-ms-checks">' + rows.join("") + '</div>', c.preview);
+    }
+
+    // -- Card ------------------------------------------------------------------
+    var design = '<div class="hp-ms-grid">' + outside() + sizing() + flow() + flowrate() + emitters() + '</div>' + heatloss_stats();
+    var body = section("Design: measured against the form", "Each tile compares what the monitoring data shows with the system form", design) +
+        section("Efficiency", "How close the heat pump runs to the ideal and to its datasheet",
+            '<div class="hp-ms-grid">' + carnot() + level() + ladder() + '</div>') +
+        flowmap() +
+        '<div class="hp-ms-grid">' + pipework() + cylinder() + '</div>' +
+        checks();
+
+    var updated = 0;
+    for (var k in ms) if (ms[k].updated > updated) updated = ms[k].updated;
+    var note = '<span class="app-caption-note">' + (updated ? 'From the monitoring data, ' + esc(date(updated)) : 'From the monitoring data') + '</span>';
+    H.card(el, "measurements", "Measurements", note, body, flowmap_draw);
+}
+
+// Flow temperature map data: heat (kWh) in 1 K bins of outside and flow
+// temperature, for space heating and hot water, and the fitted curve.
+// Example data until the nightly scan stores the grid: a weather
+// compensation curve through the coldest days' measured flow temperature.
+function flowmap_build(m, mv) {
+    var X0 = -8, NX = 26, Y0 = 20, NY = 40;
+    var cold = mv("flowT_coldest_days");
+    var ax = cold && cold.details && cold.details.outsideT !== undefined ? cold.details.outsideT : (m.design_temp !== undefined && m.design_temp !== null && m.design_temp !== "" ? m.design_temp * 1 : -3);
+    var ay = cold ? cold.value : (m.flow_temp * 1 || 45);
+    var bx = 16, by = Math.min(28, ay - 4);
+    var slope = (ay - by) / (ax - bx);
+    function curve(x) { return Math.max(24, by + slope * (x - bx)); }
+    var seed = 7;
+    function rnd() { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
+    function hours(x) { return Math.exp(-0.5 * Math.pow((x - 8) / 5, 2)); }
+    var space = [], water = [];
+    for (var i = 0; i < NX; i++) {
+        space.push([]); water.push([]);
+        var x = X0 + i + 0.5, demand = Math.max(0, 15.5 - x) * hours(x) * 40, c = curve(x);
+        for (var j = 0; j < NY; j++) {
+            var y = Y0 + j + 0.5;
+            // Steady running around the curve, with a tail above it from warm-ups after setbacks
+            var s = demand * (0.85 * Math.exp(-0.5 * Math.pow((y - c) / 1.4, 2)) + 0.15 * Math.exp(-0.5 * Math.pow((y - c - 4) / 2.5, 2)));
+            var w = hours(x) * 6 * (Math.exp(-0.5 * Math.pow((y - 51) / 2.2, 2)) + 0.5 * Math.exp(-0.5 * Math.pow((y - 44) / 3, 2)));
+            space[i].push(s > 0.05 ? s * (0.6 + 0.8 * rnd()) : 0);
+            water[i].push(w > 0.05 ? w * (0.6 + 0.8 * rnd()) : 0);
+        }
+    }
+    var data = { x0: X0, nx: NX, y0: Y0, ny: NY, space: space, water: water, preview: true };
+    data.detect = flowmap_detect(data);
+    return data;
+}
+
+// Fitted curve: heat-weighted median flow temperature in each outside
+// temperature column, then a line through them weighted by each column's heat
+function flowmap_detect(d) {
+    var cols = [], tot_all = 0;
+    for (var i = 0; i < d.nx; i++) {
+        var tot = 0;
+        for (var j = 0; j < d.ny; j++) tot += d.space[i][j];
+        tot_all += tot;
+        cols.push(tot);
+    }
+    var colmax = Math.max.apply(null, cols), med = [];
+    for (var i = 0; i < d.nx; i++) {
+        if (cols[i] < 0.03 * colmax) continue;
+        var acc = 0;
+        for (var j = 0; j < d.ny; j++) {
+            acc += d.space[i][j];
+            if (acc >= cols[i] / 2) { med.push({ x: d.x0 + i + 0.5, y: d.y0 + j + 0.5, w: cols[i] }); break; }
+        }
+    }
+    if (med.length < 3) return null;
+    var sw = 0, sx = 0, sy = 0, sxx = 0, sxy = 0;
+    med.forEach(function (p) { sw += p.w; sx += p.w * p.x; sy += p.w * p.y; sxx += p.w * p.x * p.x; sxy += p.w * p.x * p.y; });
+    var b = (sw * sxy - sx * sy) / (sw * sxx - sx * sx), a = (sy - b * sx) / sw;
+    var within = 0;
+    for (var i = 0; i < d.nx; i++) for (var j = 0; j < d.ny; j++) {
+        if (Math.abs(d.y0 + j + 0.5 - (a + b * (d.x0 + i + 0.5))) <= 2) within += d.space[i][j];
+    }
+    return { a: a, b: b, medians: med, within: within / tot_all, x_lo: med[0].x - 0.5, x_hi: med[med.length - 1].x + 0.5 };
+}
+
+function flowmap_grid(d, mode) {
+    if (mode == "space") return d.space;
+    if (mode == "water") return d.water;
+    return d.space.map(function (col, i) { return col.map(function (v, j) { return v + d.water[i][j]; }); });
+}
+
+// Draws the map to fit its box; called when the card opens, on resize and on a mode change
+function flowmap_draw() {
+    var wrap = document.getElementById("hp-ms-map"), d = hp_ms_map;
+    if (!wrap || !d || wrap.offsetParent === null) return;
+    var canvas = wrap.querySelector("canvas"), tip = wrap.querySelector(".hp-ms-tip");
+    var W = wrap.clientWidth, Ht = W < 500 ? 260 : 320;
+    var dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.round(W * dpr); canvas.height = Math.round(Ht * dpr);
+    canvas.style.height = Ht + "px";
+    var ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, Ht);
+
+    var cs = getComputedStyle(wrap);
+    var ink_rgb = (cs.getPropertyValue("--bs-body-color-rgb") || "34,34,34").trim();
+    var ink = "rgb(" + ink_rgb + ")", faint = "rgba(" + ink_rgb + ",0.09)", muted = "rgba(" + ink_rgb + ",0.65)";
+    var L = 38, R = 10, T = 10, B = 34, pw = W - L - R, ph = Ht - T - B;
+    var cw = pw / d.nx, ch = ph / d.ny;
+    function X(t) { return L + (t - d.x0) / d.nx * pw; }
+    function Y(t) { return T + ph - (t - d.y0) / d.ny * ph; }
+
+    // Grid and axes
+    ctx.font = "11px " + cs.fontFamily;
+    ctx.lineWidth = 1;
+    ctx.fillStyle = muted;
+    ctx.textAlign = "center"; ctx.textBaseline = "top";
+    for (var t = Math.ceil(d.x0 / 5) * 5; t <= d.x0 + d.nx; t += 5) {
+        ctx.strokeStyle = faint; ctx.beginPath(); ctx.moveTo(Math.round(X(t)) + 0.5, T); ctx.lineTo(Math.round(X(t)) + 0.5, T + ph); ctx.stroke();
+        ctx.fillText(t + "°", X(t), T + ph + 5);
+    }
+    ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    for (var t = Math.ceil(d.y0 / 5) * 5; t <= d.y0 + d.ny; t += 5) {
+        ctx.strokeStyle = faint; ctx.beginPath(); ctx.moveTo(L, Math.round(Y(t)) + 0.5); ctx.lineTo(L + pw, Math.round(Y(t)) + 0.5); ctx.stroke();
+        ctx.fillText(t + "°", L - 6, Y(t));
+    }
+    ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+    ctx.fillText("Outside temperature", L + pw / 2, Ht - 1);
+    ctx.save(); ctx.translate(10, T + ph / 2); ctx.rotate(-Math.PI / 2); ctx.textBaseline = "middle"; ctx.fillText("Flow temperature", 0, 0); ctx.restore();
+
+    // Cells: one hue, stronger with more heat; a 1 px gap between cells
+    var grid = flowmap_grid(d, hp_ms_state.mode), max = 0, total = 0;
+    grid.forEach(function (col) { col.forEach(function (v) { if (v > max) max = v; total += v; }); });
+    for (var i = 0; i < d.nx; i++) for (var j = 0; j < d.ny; j++) {
+        var v = grid[i][j];
+        if (!(v > 0.01 * max)) continue;
+        ctx.fillStyle = "rgba(201,54,47," + (0.06 + 0.94 * Math.pow(v / max, 0.75)).toFixed(3) + ")";
+        ctx.fillRect(L + i * cw + 0.5, T + ph - (j + 1) * ch + 0.5, Math.max(1, cw - 1), Math.max(1, ch - 1));
+    }
+
+    // Fitted curve and the column medians behind it
+    var det = d.detect;
+    if (det && hp_ms_state.mode != "water") {
+        ctx.fillStyle = ink;
+        det.medians.forEach(function (p) { ctx.beginPath(); ctx.arc(X(p.x), Y(p.y), 2, 0, 2 * Math.PI); ctx.fill(); });
+        ctx.strokeStyle = ink; ctx.lineWidth = 2; ctx.setLineDash([6, 4]);
+        ctx.beginPath(); ctx.moveTo(X(det.x_lo), Y(det.a + det.b * det.x_lo)); ctx.lineTo(X(det.x_hi), Y(det.a + det.b * det.x_hi)); ctx.stroke();
+        ctx.setLineDash([]);
+    }
+    // Design point from the form
+    var m = window.system_meta || {};
+    if (m.flow_temp * 1 && m.design_temp !== null && m.design_temp !== undefined && m.design_temp !== "") {
+        var dx = X(m.design_temp * 1), dy = Y(m.flow_temp * 1);
+        if (dx >= L && dx <= L + pw && dy >= T && dy <= T + ph) {
+            ctx.lineWidth = 2; ctx.strokeStyle = getComputedStyle(document.body).backgroundColor || "#fff";
+            ctx.beginPath(); ctx.arc(dx, dy, 6, 0, 2 * Math.PI); ctx.stroke();
+            ctx.strokeStyle = ink; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.arc(dx, dy, 5, 0, 2 * Math.PI); ctx.stroke();
+            ctx.fillStyle = ink; ctx.textAlign = "left"; ctx.textBaseline = "bottom";
+            ctx.fillText("Design", dx + 8, dy - 4);
+        }
+    }
+
+    // Hover: the cell under the pointer
+    canvas.onmousemove = function (e) {
+        var r = canvas.getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top;
+        var i = Math.floor((px - L) / cw), j = Math.floor((T + ph - py) / ch);
+        if (i < 0 || i >= d.nx || j < 0 || j >= d.ny || !(grid[i][j] > 0)) { tip.hidden = true; return; }
+        var x = d.x0 + i, y = d.y0 + j;
+        tip.innerHTML = '<b>' + x + ' to ' + (x + 1) + '°C</b> outside, <b>' + y + ' to ' + (y + 1) + '°C</b> flow<br>' +
+            grid[i][j].toFixed(1) + ' kWh, ' + (100 * grid[i][j] / total).toFixed(1) + '% of the heat shown';
+        tip.hidden = false;
+        var left = px + 12, tw = tip.offsetWidth;
+        if (left + tw > W) left = px - tw - 12;
+        tip.style.left = Math.max(0, left) + "px";
+        tip.style.top = Math.max(0, py - tip.offsetHeight - 8) + "px";
+    };
+    canvas.onmouseleave = function () { tip.hidden = true; };
+}
+
+// Map mode and pipe size buttons. One delegated handler, since the card's content is redrawn
+(function () {
+    var el = document.getElementById("measurements-block");
+    if (!el) return;
+    el.addEventListener("click", function (e) {
+        var b = e.target.closest("[data-mode], [data-pipe]");
+        if (!b) return;
+        if (b.hasAttribute("data-mode")) {
+            hp_ms_state.mode = b.getAttribute("data-mode");
+            el.querySelectorAll("[data-mode]").forEach(function (x) { x.classList.toggle("active", x === b); });
+            flowmap_draw();
+        } else {
+            hp_ms_state.pipe = parseInt(b.getAttribute("data-pipe"));
+            measurements_card_render();
+        }
+    });
+    var timer = null;
+    window.addEventListener("resize", function () { clearTimeout(timer); timer = setTimeout(flowmap_draw, 100); });
+})();
