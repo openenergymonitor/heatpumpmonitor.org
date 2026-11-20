@@ -15,7 +15,9 @@
 // flowT is stable (rolling 10 min stdev below STDEV_MAX). Each episode is
 // collapsed to a single representative point (mean of each feed).
 //
-// Usage: php steady_episodes_fleet.php [max_systems]   (0 or omitted = all)
+// Usage: php steady_episodes_fleet.php [max_systems] [--id=N]
+//   max_systems  0 or omitted = all
+//   --id=N       scan only system N (it must still match the filters)
 
 $dir = dirname(__FILE__);
 chdir($dir."/../../www");
@@ -30,7 +32,13 @@ $system = new System($mysqli);
 require ("Modules/system/system_stats_model.php");
 $system_stats = new SystemStats($mysqli,$system);
 
-$max_systems = isset($argv[1]) ? (int) $argv[1] : 0;
+$max_systems = 0;
+$only_id = 0;
+foreach (array_slice($argv, 1) as $arg) {
+    if (preg_match('/^--id=(\d+)$/', $arg, $mt)) $only_id = (int) $mt[1];
+    else if (is_numeric($arg)) $max_systems = (int) $arg;
+    else die("Unknown option $arg\n");
+}
 
 // Episode detection parameters
 define('WINDOW', 60);          // rolling window: 60 x 10s = 10 minutes
@@ -55,6 +63,11 @@ $query = array(
 );
 
 $systems = $system_stats->combined_meta_stats_query($query);
+
+if ($only_id) {
+    $systems = array_values(array_filter($systems, function ($s) use ($only_id) { return (int) $s->id == $only_id; }));
+    if (!count($systems)) die("System $only_id does not match the filters (public, MID, H4)\n");
+}
 
 $N = count($systems);
 print "Systems matching filters (public, MID, H4): $N\n";

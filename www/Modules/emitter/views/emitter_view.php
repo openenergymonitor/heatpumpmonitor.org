@@ -143,4 +143,5 @@ if (isset($_GET['id'])) {
     var admin = <?php echo $admin; ?>;
     var systemid = <?php echo $systemid; ?>;
 </script>
-<script src="<?php echo $path; ?>Modules/emitter/views/emitter.js?v=3"></script>
+<script src="<?php echo $path; ?>Modules/emitter/views/emitter_stats.js?v=1"></script>
+<script src="<?php echo $path; ?>Modules/emitter/views/emitter.js?v=4"></script>

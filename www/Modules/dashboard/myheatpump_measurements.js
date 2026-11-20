@@ -329,7 +329,10 @@ function measurements_card_render() {
 
     // -- Emitter capacity: measured at ΔT50 against what the form implies ------
     function emitters() {
-        var e = pv("emitter_kw50");
+        // From the steady running episodes (signature/list), loaded when the card
+        // opens and worked out in the browser; the example until then, or when
+        // the system has no usable episodes
+        var em = window.hp_ms_emitter, e = em && em.e ? em.e : pv("emitter_kw50");
         if (!e) return "";
         // Example scaled to this system: the output on the highest of the
         // coldest days at its flow temperature, so the preview hangs together
@@ -355,12 +358,17 @@ function measurements_card_render() {
         // Distribution of capacity over the episodes, weighted by heat: example
         // from the peaks; real data will carry the curve itself
         var peaks = det.peaks || [{ kw: e.value, share: 1, sd: 0.6 }];
-        var x_hi = Math.ceil(Math.max(e.upper || e.value, implied || 0) * 1.25), x_lo = 0;
+        var x_hi = Math.ceil(Math.max(det.x_max || (e.upper || e.value) * 1.25, (implied || 0) * 1.1)), x_lo = 0;
         var pts = [], ymax = 0;
-        for (var i = 0; i <= 120; i++) {
-            var x = x_lo + (x_hi - x_lo) * i / 120, y = 0;
-            peaks.forEach(function (p) { y += p.share / p.sd * Math.exp(-0.5 * Math.pow((x - p.kw) / p.sd, 2)); });
-            pts.push([x, y]); if (y > ymax) ymax = y;
+        if (det.curve) {
+            // The episodes' KDE, on its own grid from 0
+            det.curve.x.forEach(function (x, i) { if (x <= x_hi) { pts.push([x, det.curve.d[i]]); if (det.curve.d[i] > ymax) ymax = det.curve.d[i]; } });
+        } else {
+            for (var i = 0; i <= 120; i++) {
+                var x = x_lo + (x_hi - x_lo) * i / 120, y = 0;
+                peaks.forEach(function (p) { y += p.share / p.sd * Math.exp(-0.5 * Math.pow((x - p.kw) / p.sd, 2)); });
+                pts.push([x, y]); if (y > ymax) ymax = y;
+            }
         }
         var path = "M0,60 " + pts.map(function (p) { return "L" + fmt(300 * (p[0] - x_lo) / (x_hi - x_lo), 1) + "," + fmt(60 - 54 * p[1] / ymax, 1); }).join(" ") + " L300,60 Z";
         var dist = '<div class="hp-ms-dist"><svg viewBox="0 0 300 60" preserveAspectRatio="none" aria-hidden="true"><path d="' + path + '"/></svg>';
@@ -373,7 +381,8 @@ function measurements_card_render() {
         }
         dist += '<div class="hp-sys-scale-end is-lo">0</div><div class="hp-sys-scale-end is-hi">' + x_hi + ' kW</div></div>';
 
-        var note = 'Radiator output at a 50 K mean water to room difference, from <b>' + e.samples + '</b> steady running periods weighted by heat' +
+        var note = 'Radiator output at a 50 K mean water to room difference, from <b>' + e.samples + '</b> steady running periods' +
+            (det.kwh ? ' (' + fmt(det.kwh, 0) + ' kWh)' : '') + ' weighted by heat' +
             (e.lower !== null ? '. 80% of heat: ' + fmt(e.lower, 1) + '–' + fmt(e.upper, 1) + ' kW' : '') + '.';
         var minor = peaks.filter(function (p) { return Math.abs(p.kw - e.value) > 1; });
         if (minor.length) note += ' A second peak at ' + minor.map(function (p) { return '<b>' + fmt(p.kw, 1) + ' kW</b> (' + Math.round(100 * p.share) + '% of heat)'; }).join(", ") + ': rooms or a zone switched off.';
@@ -383,7 +392,10 @@ function measurements_card_render() {
             note += '<br>For the estimated ' + fmt(hl.value, 1) + ' kW at design, at the measured ' + fmt(need_dT, 1) + ' K ΔT, these need about <b>' + fmt(need, 1) + '°C</b> flow' +
                 (cold ? ' (coldest days measured ' + fmt(cold.value, 1) + '°C)' : '');
         }
-        note += '<span class="hp-ms-fine">Exponent ' + n + ' assumed (radiators); underfloor heating is nearer 1.1</span>';
+        if (!e.preview) note += '<br>Worked out in the browser from the steady running episodes. <a href="' + path + 'emitter?id=' + config.id + '" target="_blank" rel="noopener">Open in the emitter explorer</a>';
+        else if (em && em.message) note += '<br><b>' + esc(em.message) + '</b>';
+        else if (!em) note += '<br>Loading the steady running episodes…';
+        note += '<span class="hp-ms-fine">Exponent ' + n + ' assumed (radiators); underfloor heating is nearer 1.1. Episodes with mean water under 5 K above room are left out</span>';
         return tile("Emitter capacity", fmt(e.value, 1) + unit("kW at ΔT50"), "text-hp-heat",
             '<div class="hp-ms-split">' + dist + '<div class="hp-sys-feature-note">' + note + '</div></div>', e.preview, "hp-ms-wide");
     }
@@ -486,32 +498,48 @@ function measurements_card_render() {
         return tile("% of Carnot", head[0].toFixed(1) + unit("% " + head[1].toLowerCase()), "text-hp-cop", rows + note);
     }
 
-    // Level against the datasheet, from the machine replay
+    // Level against the datasheet: from the steady running episodes (loaded
+    // with the emitter tile) for Arotherm+ systems; for other makes the
+    // Arotherm+ fit is only a stand-in, so it stays a concept. The example
+    // until the episodes load or when there are too few
     function level() {
-        var lv = pv("replay_level");
-        if (!lv) return "";
-        var d = lv.details || {}, F = MEASUREMENTS_FLEET;
+        var L = window.hp_ms_level, F = MEASUREMENTS_FLEET;
         var arotherm = /arotherm/i.test((m.hp_manufacturer || "") + " " + (m.hp_model || ""));
+        var make = [m.hp_manufacturer, m.hp_model].filter(has).join(" ") || "this heat pump";
+        var from_eps = L && L.value;
+        var lv = from_eps ? { value: L.value, samples: L.hours, details: {} } : pv("replay_level");
+        if (!lv) return "";
+        var concept = !from_eps || !arotherm;
+        var d = lv.details || {};
         var lo = 0.7, hi = 1.1, fl = F.level.p;
+        var v = Math.min(hi, Math.max(lo, lv.value));
         var bar = '<div class="hp-sys-scale is-level">' +
-            '<div class="hp-sys-scale-band" style="left:' + pct(fl[0], lo, hi) + '%;width:' + (pct(fl[2], lo, hi) - pct(fl[0], lo, hi)) + '%" title="Middle 80% of ' + F.level.n + ' Arotherm+ systems"></div>' +
+            '<div class="hp-sys-scale-band" style="left:' + pct(fl[0], lo, hi) + '%;width:' + (pct(fl[2], lo, hi) - pct(fl[0], lo, hi)) + '%" title="Middle 80% of ' + F.level.n + ' Arotherm+ systems in the machine replay"></div>' +
             '<div class="hp-sys-scale-tick" style="left:' + pct(1, lo, hi) + '%"></div>' +
             '<div class="hp-sys-scale-tag is-above" style="left:' + pct(1, lo, hi) + '%">Datasheet 1.00</div>' +
             '<div class="hp-sys-scale-peak is-mid" style="left:' + pct(fl[1], lo, hi) + '%" title="Median ' + fl[1] + '"></div>' +
-            '<div class="hp-sys-scale-dot is-cop" style="left:' + pct(lv.value, lo, hi) + '%"></div>' +
-            '<div class="hp-sys-scale-tag is-below" style="left:' + pct(lv.value, lo, hi) + '%">This system ' + lv.value.toFixed(2) + '</div>' +
+            '<div class="hp-sys-scale-dot is-cop" style="left:' + pct(v, lo, hi) + '%"></div>' +
+            '<div class="hp-sys-scale-tag is-below" style="left:' + pct(v, lo, hi) + '%">This system ' + lv.value.toFixed(2) + '</div>' +
             '<div class="hp-sys-scale-end is-lo">' + lo + '</div><div class="hp-sys-scale-end is-hi">' + hi + '</div></div>';
         var b = bar;
-        if (has(d.peer_level)) b += fact_html("Peer level", d.peer_level.toFixed(2) + unit("same-size systems, same conditions"));
-        if (has(d.min_share)) b += fact_html("Steady running at minimum speed", fmt(100 * d.min_share, 0) + unit("% (most " + Math.round(100 * F.min_share.p[0]) + "–" + Math.round(100 * F.min_share.p[2]) + "%)"));
-        if (has(d.min_ratio)) b += fact_html("COP there, against the level", d.min_ratio.toFixed(2) + unit("(most " + F.min_ratio.p[0].toFixed(2) + "–" + F.min_ratio.p[2].toFixed(2) + ")"));
+        if (from_eps) {
+            b += fact_html("Steady running used", fmt(L.hours, 0) + unit("h, " + L.samples + " of " + L.of + " episodes"));
+            b += '<div class="hp-sys-fact hp-ms-fact-concept"><div class="hp-sys-fact-label">Peer level' + preview_tag(true) + '</div>' +
+                '<div class="hp-sys-fact-value"><span class="hp-sys-unit">needs the fleet: same-size systems, same conditions</span></div></div>';
+        } else {
+            if (has(d.peer_level)) b += fact_html("Peer level", d.peer_level.toFixed(2) + unit("same-size systems, same conditions"));
+            if (has(d.min_share)) b += fact_html("Steady running at minimum speed", fmt(100 * d.min_share, 0) + unit("% (most " + Math.round(100 * F.min_share.p[0]) + "–" + Math.round(100 * F.min_share.p[2]) + "%)"));
+        }
         var t = last365(), spf = t ? num(t.combined_cop) : null;
         if (spf) b += fact_html("SPF, last 365 days", fmt(spf, 2) + unit("about " + fmt(spf / lv.value, 2) + " at level 1.00"));
-        b += '<div class="hp-sys-feature-note">Field COP against the datasheet COP at the same flow and outside temperatures and output, in steady space heating at 30–70 rps' +
-            (lv.samples ? ', ' + lv.samples + ' hours' : '') + '. 0.94 means about 6% more electricity than the datasheet for the same heat. ' +
+        b += '<div class="hp-sys-feature-note">Field COP against the Arotherm+ datasheet COP at the same flow and outside temperatures and output, in steady space heating at 30–70 rps. ' +
+            lv.value.toFixed(2) + ' means about ' + Math.abs(Math.round(100 * (1 / lv.value - 1))) + '% ' + (lv.value < 1 ? 'more' : 'less') + ' electricity than the datasheet for the same heat. ' +
             'It describes the gap, not its cause: the machine, the heat meter flow reading or something else.' +
-            (!arotherm ? '<br><b>Arotherm+ only so far:</b> other models need a datasheet fit first.' : '') + '</div>';
-        return tile("Level against the datasheet", lv.value.toFixed(2), "text-hp-cop", b, lv.preview);
+            (from_eps ? '<br>Worked out in the browser from the steady running episodes (flow 25–45°C, at least 15 K lift). Reads about 0.01 higher than the machine replay on most systems.' : '') +
+            (from_eps && !arotherm ? '<br><b>' + esc(make) + ':</b> the Arotherm+ fit is only a stand-in for other makes, so this is a concept.' : '') +
+            (!from_eps && L && L.message ? '<br><b>' + esc(L.message) + '</b>' : '') +
+            (!from_eps && !L ? '<br>Loading the steady running episodes…' : '') + '</div>';
+        return tile("Level against the datasheet", lv.value.toFixed(2), "text-hp-cop", b, concept);
     }
 
     // Where the SPF goes: datasheet SPF at the measured conditions down to the measured SPF
@@ -755,7 +783,7 @@ function measurements_card_render() {
     var updated = 0;
     for (var k in ms) if (ms[k].updated > updated) updated = ms[k].updated;
     var note = '<span class="app-caption-note">' + (updated ? 'From the monitoring data, ' + esc(date(updated)) : 'From the monitoring data') + '</span>';
-    H.card(el, "measurements", "Measurements", note, body, flowmap_draw);
+    H.card(el, "measurements", "Measurements", note, body, measurements_on_open);
 }
 
 // Flow temperature map data: heat (kWh) in 1 K bins of outside and flow
@@ -837,6 +865,95 @@ function last365_load() {
         },
         error: function () { window.hp_last365_loaded = true; measurements_card_render(); }
     });
+}
+
+// Vaillant Arotherm+ generic v2 datasheet COP fit, ported from
+// scripts/feed_scan/arotherm_model.php (the machine replay's model). Pre-defrost
+var AROTHERM_FIT = {
+    // Heat output per rps as a share of nominal capacity, to infer speed
+    volcap: function (f, o) { return Math.max((1.070e-2 + 2.889e-4 * o + 6.495e-7 * o * o) * (1 - 9.330e-3 * (f - 50)), 1e-4); },
+    speed: function (q, f, o, kw) { return kw / (q * AROTHERM_FIT.volcap(f, o)); },
+    cop: function (q, f, o, kw) {
+        var p = [0.24930, 0.74153, -0.48742, 0.66656, -1.05159, 0.32990, -0.03477, -0.00303];
+        var qh = kw / q, s = Math.min(Math.max(AROTHERM_FIT.speed(q, f, o, kw), 30), 120) / 100;
+        var Tc = f + 273.15 + 4 * qh, Te = o + 273.15 - 7 * qh, L = Math.max(Tc - Te, 5), z = (L - 45) / 45, w = (f - 50) / 15;
+        var eta = (p[0] + p[1] * s + p[2] * s * s + p[3] * s * z) * (1 + p[4] * z + p[5] * z * z + p[6] * z * z * z) * (1 + p[7] * w);
+        return eta * Tc / L;
+    }
+};
+
+// Level against the datasheet from the steady running episodes: datasheet
+// electricity for the same heat / measured electricity, over episodes at
+// 30-70 rps (the replay's level band). Space heating only (flow 25-45 °C) and
+// at least 15 K of lift: below that the fit, whose data starts at 35 °C flow,
+// gives far too much credit. Checked against the replay on 13 Arotherm+
+// systems: r 0.98, a median 0.008 higher, at most 0.046 apart
+var LEVEL_MIN_HOURS = 20;
+function level_from_episodes(rows, qnom) {
+    var model_e = 0, e = 0, hours = 0, n = 0, all = 0;
+    rows.forEach(function (r) {
+        var h = +r.heat, el = +r.elec, f = +r.flowT, o = +r.outsideT, d = +r.duration;
+        if (!(h > 0 && el > 0 && d > 0) || isNaN(f) || isNaN(o)) return;
+        all++;
+        if (f < 25 || f > 45 || f - o < 15) return;
+        var kw = h / 1000, rps = AROTHERM_FIT.speed(qnom, f, o, kw);
+        if (rps < 30 || rps > 70) return;
+        model_e += h / AROTHERM_FIT.cop(qnom, f, o, kw) * d; e += el * d; hours += d / 3600; n++;
+    });
+    if (hours < LEVEL_MIN_HOURS) return { message: "Too few steady hours at 30–70 rps in the datasheet's range (" + Math.round(hours) + " h, " + LEVEL_MIN_HOURS + " needed)" };
+    return { value: model_e / e, hours: hours, samples: n, of: all };
+}
+
+// Emitter capacity from the steady running episodes (signature_episodes), with
+// the emitter explorer's method (emitter_stats.js): rated output at ΔT50 with
+// exponent 1.3, episodes with mean water at least 5 K above room, weighted by
+// heat. Loaded once, when the card first opens: a system can have 1 MB or more
+// of episodes. Sets window.hp_ms_emitter to { e } or { message }
+var EMITTER_PARAMS = { ratedDT: 50, n: 1.3, minDT: 5 };
+function emitter_load() {
+    if (window.hp_ms_emitter || window.hp_ms_emitter_loading || typeof config == "undefined" || typeof transform != "function") return;
+    window.hp_ms_emitter_loading = true;
+    function done(r, lv) {
+        window.hp_ms_emitter = r;
+        window.hp_ms_level = lv || { message: r.message };
+        measurements_card_render();
+    }
+    $.ajax({
+        url: path + "signature/list",
+        data: { id: config.id },
+        dataType: "json",
+        success: function (rows) {
+            if (!rows || rows.error || !rows.length) return done({ message: rows && rows.error ? rows.error : "No steady running episodes for this system yet" });
+            // Level against the datasheet, from the same episodes
+            var qnom = window.system_meta ? parseFloat(window.system_meta.hp_output) : NaN;
+            var lv = qnom > 0 ? level_from_episodes(rows, qnom) : { message: "Needs the heat pump's output on the form" };
+            var eps = transform(rows), pts = [], below = 0;
+            eps.forEach(function (ep) {
+                var kw = ratedKw(ep, EMITTER_PARAMS);
+                if (isNaN(kw)) { below++; return; }
+                pts.push({ kw: kw, kwh: ep.kwh });
+            });
+            if (pts.length < 20) return done({ message: eps.length ? "Too few usable episodes (" + pts.length + ")" : "The episodes need heat, return and room temperature" }, lv);
+            var kwh = pts.reduce(function (a, q) { return a + q.kwh; }, 0);
+            var x_max = weightedPercentile(pts, 0.99) * 1.1;
+            var bw = autoBandwidth(pts, 0.5);
+            var pk = findPeaks(pts, bw, x_max);
+            var curve = kdeCurve(pts, bw, x_max, 160);
+            done({ e: {
+                value: weightedMedian(pts), lower: weightedPercentile(pts, 0.1), upper: weightedPercentile(pts, 0.9),
+                samples: pts.length, unit: "kW",
+                details: { exponent: EMITTER_PARAMS.n, kwh: kwh, below_dT: below, x_max: x_max, curve: curve, bw: bw,
+                    peaks: pk.peaks.map(function (p) { return { kw: p.kw, share: p.kwh / kwh, sd: bw }; }) }
+            } }, lv);
+        },
+        error: function () { done({ message: "Could not load the steady running episodes" }); }
+    });
+}
+
+// Runs when the card opens: the episodes for the emitter tile, and the map
+function measurements_on_open() {
+    emitter_load();
+    flowmap_draw();
 }
 
 // Loads a year of daily stats for the map, once, then draws the card again

@@ -551,5 +551,6 @@ if ($private_mode || $system_data->share==0) {
 <script src="<?php echo $path; ?>Modules/dashboard/myheatpump_bargraph.js?v=<?php echo $v; ?>"></script>
 <script src="<?php echo $path; ?>Modules/dashboard/myheatpump_heatdemand.js?v=<?php echo $v; ?>"></script>
 <script src="<?php echo $path; ?>Modules/dashboard/myheatpump.js?v=<?php echo $v; ?>"></script>
+<script src="<?php echo $path; ?>Modules/emitter/views/emitter_stats.js?v=<?php echo filemtime(__DIR__."/../emitter/views/emitter_stats.js"); ?>"></script>
 <script src="<?php echo $path; ?>Modules/dashboard/myheatpump_measurements.js?v=<?php echo $v; ?>"></script>
 <script src="<?php echo $path; ?>Modules/dashboard/myheatpump_system.js?v=<?php echo $v; ?>"></script>

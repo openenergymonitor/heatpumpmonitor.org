@@ -425,3 +425,5 @@
 /* Tiles and sections showing example values: greyed until wired up to real data */
 .hp-sys-feature.is-preview, .hp-ms-section.is-preview, .hp-ms-check.is-preview { filter: grayscale(1); opacity: 0.55; transition: opacity 0.15s; }
 .hp-sys-feature.is-preview:hover, .hp-ms-section.is-preview:hover, .hp-ms-check.is-preview:hover { opacity: 0.85; }
+/* A concept row inside a real tile */
+.hp-ms-fact-concept { filter: grayscale(1); opacity: 0.55; }
