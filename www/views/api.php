@@ -158,15 +158,15 @@ global $path;
                 </table>
 
                 <h4 class="mt-4">Measurements</h4>
-                <p>Worked out nightly for each system from its own monitoring data: heat loss from daily heat against inside - outside temperature difference, peak heat output, design outside temperature from hourly outside temperature, and space heating flow temperature on the coldest days. Design values are at the design outside temperature on the system form (or the measured one if the form has none) and 20 °C inside.</p>
+                <p>Worked out nightly for each system from its own monitoring data: heat loss from daily heat against inside - outside temperature difference, design outside temperature from hourly outside temperature, and heat output and space heating flow temperature on the coldest days. Design values are at the design outside temperature on the system form (or the measured one if the form has none) and 20 °C inside.</p>
                 <table class="table table-sm">
                   <tr><th>Name</th><th>Unit</th><th>Description</th></tr>
                   <tr><td><code>heat_loss_design</code></td><td>kW</td><td>Heat demand at the design temperature</td></tr>
                   <tr><td><code>heat_loss_design_measured</code></td><td>kW</td><td>Heat demand at the measured 99.6% design outside temperature</td></tr>
                   <tr><td><code>heat_loss_htc</code></td><td>W/K</td><td>Heat transfer coefficient, the slope of the heat loss fit</td></tr>
                   <tr><td><code>heat_loss_base_dT</code></td><td>K</td><td>Balance point, the temperature difference where the fit reaches zero heat</td></tr>
-                  <tr><td><code>heat_peak_day</code></td><td>kW</td><td>Highest day of heat output divided by 24</td></tr>
-                  <tr><td><code>heat_peak_4h</code></td><td>kW</td><td>Highest 4 hour mean heat output</td></tr>
+                  <tr><td><code>heat_coldest_days</code></td><td>kW</td><td>Highest day of heat output divided by 24, all modes, of the 3 coldest days of the last year (the same days as <code>flowT_coldest_days</code>). Lower and upper are the lowest and highest of those days, listed in details</td></tr>
+                  <tr><td><code>heat_peak_4h</code></td><td>kW</td><td>Highest 4 hour mean heat output on those days</td></tr>
                   <tr><td><code>design_outsideT_996</code>, <code>design_outsideT_990</code></td><td>°C</td><td>Hourly outside temperature equalled or exceeded for 99.6% / 99.0% of hours, complete years only</td></tr>
                   <tr><td><code>flowT_coldest_days</code></td><td>°C</td><td>Highest daily space heating flow temperature, weighted by heat output, of the 3 coldest days of the last year (by outside temperature weighted the same way). Lower and upper are the lowest and highest of those days, listed in details</td></tr>
                   <tr><td><code>flowT_peak_4h</code></td><td>°C</td><td>Highest 4 hour space heating flow temperature on those days</td></tr>

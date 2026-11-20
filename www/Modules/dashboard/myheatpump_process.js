@@ -273,7 +273,8 @@ function process_stats() {
                         value = -1 * value;
                     }
 
-                    let weight = (feed_options[key].unit == "°C") ? heat_weight : 0;
+                    // Temperatures, and heat output itself: the output level a typical kWh was delivered at
+                    let weight = (feed_options[key].unit == "°C" || key == "heatpump_heat") ? heat_weight : 0;
 
                     stats_add('combined', key, value, weight);
 
@@ -295,9 +296,10 @@ function process_stats() {
     var hl = stats_highlight && view.start == stats_highlight.start && view.end == stats_highlight.end ? stats_highlight : null;
     // toFixed gives "-0.0" for small negatives
     function fixed(v, dp) { return (1 * v).toFixed(dp).replace(/^-(0\.?0*)$/, "$1"); }
-    function hl_td(x, key, col, html) {
+    function hl_td(x, key, col, html, title) {
         var c = hl ? hl.cells.find(function (c) { return c.category == x && c.key == key && c.col == col; }) : null;
-        return "<td style='text-align:center'" + (c ? " class='hp-stat-highlight' title='" + c.title + "'" : "") + ">" + html + "</td>";
+        if (c) title = c.title;
+        return "<td style='text-align:center'" + (c ? " class='hp-stat-highlight'" : "") + (title ? " title='" + title + "'" : "") + ">" + html + "</td>";
     }
 
     for (var x in stats) {
@@ -345,11 +347,12 @@ function process_stats() {
 
                 var weighted_mean_str = "";
                 if (stats[x][key].weighted_mean != null) weighted_mean_str = fixed(stats[x][key].weighted_mean, feed_options[key].dp) + " " + feed_options[key].unit;
-                out += hl_td(x, key, "weighted", weighted_mean_str);
+                out += hl_td(x, key, "weighted", weighted_mean_str, key == "heatpump_heat" && weighted_mean_str ?
+                    "Heat output weighted by itself: the output level a typical kWh of heat was delivered at. Above the mean when output varies, for example cycling or coming off setback" : "");
 
                 if (feed_options[key].unit == "W") {
                     stats[x][key].kwh = (stats[x][key].mean * stats[x][key].count * view.interval) / 3600000;
-                    out += "<td style='text-align:center'>" + (1*stats[x][key].kwh).toFixed(3) + " kWh</td>";
+                    out += hl_td(x, key, "kwh", (1*stats[x][key].kwh).toFixed(3) + " kWh");
                 } else {
                     out += "<td></td>";
                 }

@@ -23,10 +23,10 @@ class Measurement
         'heat_loss_base_dT' => array('name' => 'Balance point', 'heading' => 'Balance<br>point', 'group' => 'Measured: Heat loss', 'unit' => 'K', 'dp' => 1,
             'helper' => 'Inside - outside temperature difference where the fit reaches zero heat'),
 
-        'heat_peak_day' => array('name' => 'Peak day heat output', 'heading' => 'Peak day', 'group' => 'Measured: Peak heat', 'unit' => 'kW', 'dp' => 1,
-            'helper' => 'Highest day of heat output divided by 24, all modes'),
+        'heat_coldest_days' => array('name' => 'Heat output on coldest days', 'heading' => 'Heat<br>coldest days', 'group' => 'Measured: Peak heat', 'unit' => 'kW', 'dp' => 1,
+            'helper' => 'Highest day of heat output divided by 24, all modes, of the 3 coldest days of the latest year'),
         'heat_peak_4h' => array('name' => 'Peak 4 hour heat output', 'heading' => 'Peak 4h', 'group' => 'Measured: Peak heat', 'unit' => 'kW', 'dp' => 1,
-            'helper' => 'Highest 4 hour mean heat output, all modes'),
+            'helper' => 'Highest 4 hour mean heat output, all modes, on the 3 coldest days of the latest year'),
 
         'design_outsideT_996' => array('name' => 'Design outside temp 99.6%', 'heading' => 'DOT<br>99.6%', 'group' => 'Measured: Design temperature', 'unit' => '°C', 'dp' => 1,
             'helper' => 'Hourly outside temperature equalled or exceeded for 99.6% of hours, complete years only'),

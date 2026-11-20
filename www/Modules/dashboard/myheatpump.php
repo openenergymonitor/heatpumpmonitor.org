@@ -192,7 +192,7 @@ if ($private_mode || $system_data->share==0) {
             <th class="stats-col text-body-secondary">Max</th>
             <th class="stats-col text-body-secondary">Diff</th>
             <th class="stats-col">Mean</th>
-            <th class="stats-col" title="Temperatures averaged with each sample weighted by heat output">Heat-weighted mean</th>
+            <th class="stats-col" title="Temperatures and heat output averaged with each sample weighted by heat output. For heat output, the output level a typical kWh was delivered at">Heat-weighted mean</th>
             <th class="stats-col">kWh</th>
           </tr>
           <tbody class="stats_category" key="combined"></tbody>

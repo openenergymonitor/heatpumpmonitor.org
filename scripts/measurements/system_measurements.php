@@ -19,8 +19,11 @@
 //        Daily heat against inside - outside ΔT (heatloss_fit.php), the same
 //        method as the dashboard heat demand tool.
 //        At the form's design temperature, and at the measured one below.
-//    heat_peak_day, heat_peak_4h
-//        Highest day (kWh / 24) and highest 4 hour mean heat output, all modes.
+//    heat_coldest_days, heat_peak_4h
+//        Heat output on the coldest days (as flowT_coldest_days), all modes:
+//        the highest day's mean (kWh / 24) with the lowest and highest day, and
+//        the highest 4 hours on those days. An all-time peak day is often a
+//        boost or recovery on a mild day rather than a cold one.
 //    design_outsideT_996, design_outsideT_990
 //        Hourly outside temperature equalled or exceeded for 99.6% / 99.0% of
 //        hours, over complete 365 day blocks counted back from the latest data.
@@ -60,10 +63,12 @@ $system_stats = new SystemStats($mysqli, $system);
 require "$dir/../feed_scan/phpfina_reader.php";
 require "$dir/heatloss_fit.php";
 
-const VERSION = 7;                   // 2: flowT_typical_design details.points, 3: no hot water flag fits the colder days,
+const VERSION = 9;                   // 2: flowT_typical_design details.points, 3: no hot water flag fits the colder days,
                                      // 4: flowT_coldest_days replaces the flow temperature fits, 5: 3 coldest days rather than 5,
                                      // 6: flowT_coldest_days is the highest of the days, not the median,
-                                     // 7: no settling time after DHW, days ranked by space heating outside temperature
+                                     // 7: no settling time after DHW, days ranked by space heating outside temperature,
+                                     // 8: heat_loss_design(_measured) details.max_dT,
+                                     // 9: heat_coldest_days replaces heat_peak_day, heat_peak_4h on the coldest days
 const PHPFINA_DIR = "/var/opt/emoncms/phpfina/";
 const TIMEZONE = "Europe/London";
 const FILL_MAX_S = 900;              // forward fill gaps shorter than this, as the myheatpump app
@@ -376,35 +381,48 @@ function derive($system_stats, $systemid, $days, $meta)
             $m[$name] = measurement($e['value'], "kW", $hl['n'], $e['value'] - $e['pi'], $e['value'] + $e['pi'],
                 $hl['start'], $hl['end'], $common + array(
                     'design_outsideT' => $c[0], 'design_outsideT_source' => $c[1], 'design_dT' => $dT,
-                    'ci80' => $e['ci'], 'extrapolated' => $dT > $hl['max_dT']));
+                    'ci80' => $e['ci'], 'extrapolated' => $dT > $hl['max_dT'], 'max_dT' => r($hl['max_dT'], 1)));
         }
     }
 
-    // Peak heat output
-    $peak_day = null; $peak_4h = null;
-    foreach ($days as $ts => $d) {
-        if ($d['data_s'] >= FULL_DAY_COVERAGE * 86400 && $d['heat_kwh'] !== null
-            && ($peak_day === null || $d['heat_kwh'] > $days[$peak_day]['heat_kwh'])) $peak_day = $ts;
-        if ($d['heat_max4h'] !== null && ($peak_4h === null || $d['heat_max4h'] > $days[$peak_4h]['heat_max4h'])) $peak_4h = $ts;
-    }
-    if ($peak_day !== null) {
-        $d = $days[$peak_day];
-        $m['heat_peak_day'] = measurement($d['heat_kwh'] / 24, "kW", count($days), null, null, $peak_day, $peak_day + 86400,
-            array('method' => "Highest day, heat kWh / 24, all modes", 'heat_kwh' => r($d['heat_kwh'], 2),
-                'outsideT' => r($d['outsideT'], 1), 'roomT' => r($d['roomT'], 1)));
-    }
-    if ($peak_4h !== null) {
-        $d = $days[$peak_4h];
-        $s = $d['heat_max4h_start'];
-        $m['heat_peak_4h'] = measurement($d['heat_max4h'], "kW", count($days), null, null, $s, $s + 14400,
-            array('method' => "Highest 4 hour mean heat output, all modes", 'outsideT' => r(window_outsideT($days, $s), 1)));
+    // The coldest days of the latest year, shared by the heat and flow temperature measurements
+    $cold = coldest_flow_days($days);
+
+    // Heat output on the coldest days, all modes (the heat pump covers hot water
+    // too): the highest day's mean (kWh / 24), and the highest 4 hours on those days
+    if ($cold) {
+        $kws = array(); $list = array(); $top = null; $peak = null;
+        foreach ($cold['days'] as $ts) {
+            $d = $days[$ts];
+            if ($d['heat_kwh'] === null) continue;
+            $kws[] = $d['heat_kwh'] / 24;
+            $list[] = array('start' => $ts, 'end' => $ts + 86400, 'heat_kw' => r($d['heat_kwh'] / 24, 2),
+                'heat_kwh' => r($d['heat_kwh'], 2), 'space_kw' => r($d['space_kwh'] / 24, 2),
+                'outsideT' => r($d['space_outsideT'], 1), 'outsideT_day' => r($d['outsideT'], 1),
+                'heat_4h' => r($d['heat_max4h'], 2),
+                'start_4h' => $d['heat_max4h_start'] !== null ? (int) $d['heat_max4h_start'] : null);
+            if ($top === null || $d['heat_kwh'] > $days[$top]['heat_kwh']) $top = $ts;
+            if ($d['heat_max4h'] !== null && ($peak === null || $d['heat_max4h'] > $days[$peak]['heat_max4h'])) $peak = $ts;
+        }
+        if ($top !== null) {
+            $d = $days[$top];
+            $m['heat_coldest_days'] = measurement($d['heat_kwh'] / 24, "kW", count($kws), min($kws), max($kws), $top, $top + 86400, array(
+                'method' => "Highest day's mean heat output (kWh / 24, all modes) of the coldest days of the latest year; lower and upper are the lowest and highest of those days",
+                'heat_kwh' => r($d['heat_kwh'], 2), 'outsideT' => r($d['space_outsideT'], 1), 'outsideT_day' => r($d['outsideT'], 1),
+                'roomT' => r($d['roomT'], 1), 'days' => $list));
+        }
+        if ($peak !== null) {
+            $s = $days[$peak]['heat_max4h_start'];
+            $m['heat_peak_4h'] = measurement($days[$peak]['heat_max4h'], "kW", count($kws), null, null, $s, $s + 14400,
+                array('method' => "Highest 4 hour mean heat output, all modes, on the coldest days of the latest year",
+                    'outsideT' => r(window_outsideT($days, $s), 1)));
+        }
     }
 
     // Space heating flow temperature on the coldest days of the latest year:
     // the highest day, and the highest 4 hours on those days. With no hot water
     // flag, reheats count as space heating, but on cold days they are a small
     // share of the heat.
-    $cold = coldest_flow_days($days);
     if ($cold) {
         $flows = array(); $list = array(); $peak = null; $top = null;
         foreach ($cold['days'] as $ts) {

@@ -47,13 +47,16 @@ function system_card_render() {
     var ms = window.system_measurements || {};
     function mv(name) { return ms[name] && ms[name].value !== null ? ms[name] : null; }
 
-    // Link that opens the power view for a period, unix s
-    function period(start, end, text, title, flowT, outsideT) {
+    // Link that opens the power view for a period, unix s. data: measured values
+    // to highlight in the stats, as data- attributes ({ flowt, outsidet } or { heatkw })
+    function period(start, end, text, title, data) {
         if (!start || !end) return text;
-        return '<a href="#" class="hp-sys-period" data-start="' + (start * 1000) + '" data-end="' + (end * 1000) + '"' +
-            (flowT !== undefined ? ' data-flowt="' + flowT + '"' + (has(outsideT) ? ' data-outsidet="' + outsideT + '"' : '') : '') +
+        var attrs = "";
+        for (var k in (data || {})) if (has(data[k])) attrs += ' data-' + k + '="' + esc(data[k]) + '"';
+        return '<a href="#" class="hp-sys-period" data-start="' + (start * 1000) + '" data-end="' + (end * 1000) + '"' + attrs +
             (title ? ' title="' + esc(title) + '"' : '') + '>' + text + '</a>';
     }
+    function chip_date(t) { return esc(date(t).replace(/ \d{4}$/, "")); }
     function date(t, with_time) {
         var opts = { day: "numeric", month: "short", year: "numeric" };
         if (with_time) { opts.hour = "2-digit"; opts.minute = "2-digit"; }
@@ -71,15 +74,15 @@ function system_card_render() {
     // -- Sizing: heat pump output against design and measured heat loss -------
     function sizing() {
         var hp = num(m.hp_output), max_out = num(m.hp_max_output), design = num(m.heat_loss);
-        // Measured heat demand at the form's design temperature, worked out nightly
+        // Estimated heat demand at the form's design temperature, from the nightly heat loss fit
         var auto = mv("heat_loss_design");
         var meas = auto ? auto.value : null, meas_r = auto && auto.upper !== null ? auto.upper - auto.value : 0;
-        var peak_day = mv("heat_peak_day"), peak_4h = mv("heat_peak_4h");
+        // Observed on the coldest days of the last year (the flow temperature card's days)
+        var cold = mv("heat_coldest_days"), peak_4h = mv("heat_peak_4h");
         if (!hp || (!design && !meas)) return "";
 
         var hi = Math.max(hp, max_out || 0, design || 0, meas ? meas + meas_r : 0,
-            peak_4h ? peak_4h.value : 0, peak_day ? peak_day.value : 0) * 1.12;
-        var dot = has(m.design_temp) ? fmt(m.design_temp, 1) + "°C" : "design temperature";
+            peak_4h ? peak_4h.value : 0, cold ? cold.value : 0) * 1.12;
 
         var bar = '<div class="hp-sys-scale">';
         bar += '<div class="hp-sys-scale-fill is-heat" style="width:' + pct(hp, 0, hi) + '%"></div>';
@@ -89,28 +92,45 @@ function system_card_render() {
         if (meas) {
             bar += '<div class="hp-sys-scale-band" style="left:' + pct(meas - meas_r, 0, hi) + '%;width:' + (pct(meas + meas_r, 0, hi) - pct(meas - meas_r, 0, hi)) + '%"></div>';
             bar += '<div class="hp-sys-scale-dot" style="left:' + pct(meas, 0, hi) + '%"></div>';
-            bar += '<div class="hp-sys-scale-tag is-below" style="left:' + pct(meas, 0, hi) + '%">Measured ' + fmt(meas, 1) + ' kW</div>';
+            var a = auto.details || {};
+            var how = "Line fitted to " + (a.days || auto.samples) + " days of daily heat against inside - outside temperature difference" +
+                (has(a.design_dT) ? ", read off at ΔT " + fmt(a.design_dT, 1) + " K" : "") +
+                (a.extrapolated ? ", beyond the coldest day" + (has(a.max_dT) ? " (ΔT " + fmt(a.max_dT, 1) + " K)" : "") : "") +
+                (auto.upper !== null ? ". 80% range " + fmt(auto.lower, 1) + " to " + fmt(auto.upper, 1) + " kW" : "");
+            bar += '<div class="hp-sys-scale-tag is-below" style="left:' + pct(meas, 0, hi) + '%" title="' + esc(how) + '">Estimated ' + fmt(meas, 1) + ' kW' + (a.extrapolated ? ' (extrapolated)' : '') + '</div>';
         }
         if (design) {
             bar += '<div class="hp-sys-scale-tick" style="left:' + pct(design, 0, hi) + '%"></div>';
             bar += '<div class="hp-sys-scale-tag is-above" style="left:' + pct(design, 0, hi) + '%">Design ' + fmt(design, 1) + ' kW</div>';
         }
-        // Highest day (kWh / 24) and highest 4 hours of heat output
-        [[peak_day, "Peak day"], [peak_4h, "Peak 4 h"]].forEach(function (p) {
+        // Highest of the coldest days (kWh / 24) and highest 4 hours on them
+        [[cold, "Highest coldest day"], [peak_4h, "Peak 4 h"]].forEach(function (p) {
             if (!p[0]) return;
             bar += '<div class="hp-sys-scale-peak" style="left:' + pct(p[0].value, 0, hi) + '%" title="' + p[1] + ' ' + fmt(p[0].value, 2) + ' kW"></div>';
         });
         bar += '</div>';
 
-        var ratio = design ? hp / design : hp / meas;
-        var note = '<b>' + fmt(ratio, 2) + '×</b> the ' + (design ? 'design' : 'measured') + ' heat loss at ' + esc(dot);
-        if (design && meas) note += ' · <b>' + fmt(hp / meas, 2) + '×</b> measured';
-        var peaks = [];
-        if (peak_4h) peaks.push('peak 4 h ' + period(peak_4h.start_time, peak_4h.end_time, '<b>' + fmt(peak_4h.value, 1) + ' kW</b>',
-            date(peak_4h.start_time, true) + (peak_4h.details && peak_4h.details.outsideT !== null ? ", " + peak_4h.details.outsideT + " °C outside" : "")));
-        if (peak_day) peaks.push('peak day ' + period(peak_day.start_time, peak_day.end_time, '<b>' + fmt(peak_day.value, 1) + ' kW</b>',
-            date(peak_day.start_time) + (peak_day.details && peak_day.details.outsideT !== null ? ", " + peak_day.details.outsideT + " °C outside" : "")));
-        if (peaks.length) note += '<br>Measured ' + peaks.join(' · ') + ' (<b>' + fmt(hp / (peak_4h || peak_day).value, 2) + '×</b>)';
+        var note = '';
+        if (cold) {
+            // The highest of the coldest days, with its outside temperature, opening that day
+            var c = cold.details || {};
+            note += 'Highest: <b>' + period(cold.start_time, cold.end_time, fmt(cold.value, 1) + ' kW',
+                date(cold.start_time) + ', mean heat output over the day in all modes (' + c.heat_kwh + ' kWh / 24); open with it highlighted', { heatkw: cold.value }) + ' 24 h mean</b>' +
+                (has(c.outsideT) ? ' at ' + fmt(c.outsideT, 1) + '°C outside' : '');
+            if (c.days && c.days.length) {
+                note += '<div class="hp-sys-chips">';
+                c.days.forEach(function (d) {
+                    note += period(d.start, d.end, '<span class="hp-sys-badge">' + chip_date(d.start) + ' · ' + fmt(d.heat_kw, 1) + ' kW' +
+                        ' <span class="hp-sys-badge-sub">' + fmt(d.outsideT, 1) + '° out</span></span>',
+                        date(d.start) + ", " + d.heat_kwh + " kWh (" + d.space_kw + " kW space heating), " + d.outsideT + " °C outside (weighted by space heating output; day mean " + d.outsideT_day + " °C)" +
+                        (d.heat_4h !== null ? ", highest 4 h " + d.heat_4h + " kW" : ""), { heatkw: d.heat_kw });
+                });
+                note += '</div>';
+            }
+        }
+        if (peak_4h) note += (note && !(cold && cold.details && cold.details.days && cold.details.days.length) ? '<br>' : '') + 'Peak: <b>' + period(peak_4h.start_time, peak_4h.end_time, fmt(peak_4h.value, 1) + ' kW',
+            date(peak_4h.start_time, true) + (peak_4h.details && peak_4h.details.outsideT !== null ? ", " + peak_4h.details.outsideT + " °C outside" : "")) +
+            ' 4 h mean</b> on ' + esc(date(peak_4h.start_time, true));
 
         return '<div class="hp-sys-feature">' +
             '<div class="hp-sys-feature-head"><span class="app-live-label">Sizing</span>' +
@@ -153,7 +173,7 @@ function system_card_render() {
         var note = "Design flow temperature at " + esc(dot) + " outside";
         if (meas) {
             // The highest day, with its own outside temperature, opening that day
-            note = 'Highest: ' + period(cold.start_time, cold.end_time, fmt(meas, 1) + '°C', date(cold.start_time) + ', open with the weighted flow temperature highlighted', meas, c.outsideT) +
+            note = 'Highest: ' + period(cold.start_time, cold.end_time, fmt(meas, 1) + '°C', date(cold.start_time) + ', open with the weighted flow temperature highlighted', { flowt: meas, outsidet: c.outsideT }) +
                 (has(c.outsideT) ? ' at ' + fmt(c.outsideT, 1) + '°C outside' : '');
             if (design) {
                 var d = meas - design;
@@ -163,10 +183,10 @@ function system_card_render() {
             if (c.days && c.days.length) {
                 note += '<div class="hp-sys-chips">';
                 c.days.forEach(function (d) {
-                    note += period(d.start, d.end, '<span class="hp-sys-badge">' + esc(date(d.start).replace(/ \d{4}$/, "")) + ' · ' + fmt(d.flowT, 1) + '°' +
+                    note += period(d.start, d.end, '<span class="hp-sys-badge">' + chip_date(d.start) + ' · ' + fmt(d.flowT, 1) + '°' +
                         ' <span class="hp-sys-badge-sub">' + fmt(d.outsideT, 1) + '° out</span></span>',
                         date(d.start) + ", " + d.outsideT + " °C outside (weighted by space heating output; day mean " + d.outsideT_day + " °C), " + d.space_kwh + " kWh space heating" +
-                        (d.flowT_4h !== null ? ", highest 4 h " + d.flowT_4h + " °C" : ""), d.flowT, d.outsideT);
+                        (d.flowT_4h !== null ? ", highest 4 h " + d.flowT_4h + " °C" : ""), { flowt: d.flowT, outsidet: d.outsideT });
                 });
                 note += '</div>';
             }
@@ -380,6 +400,7 @@ system_card_render();
         // Days behind the measured flow temperature open with it highlighted in the stats
         if (a.hasAttribute("data-flowt") && typeof hp_open_measured_flowT == "function") hp_open_measured_flowT(start, end, parseFloat(a.getAttribute("data-flowt")),
             a.hasAttribute("data-outsidet") ? parseFloat(a.getAttribute("data-outsidet")) : null);
+        else if (a.hasAttribute("data-heatkw") && typeof hp_open_measured_heat == "function") hp_open_measured_heat(start, end, parseFloat(a.getAttribute("data-heatkw")));
         else hp_open_power(start, end);
         window.scrollTo(0, 0);
     });

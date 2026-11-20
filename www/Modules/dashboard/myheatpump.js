@@ -821,18 +821,10 @@ function hp_open_power(start, end) {
     hp_power_panels(true);
 }
 
-// Open a day behind the measured flow temperature (System card): the power view
-// with the stats open at space heating (when running, with no hot water flag) and
-// the heat-weighted flow and outside temperatures highlighted. flowT and outsideT
-// are the nightly measurement's values, worked out from the same samples.
-function hp_open_measured_flowT(start, end, flowT, outsideT) {
-    var category = feeds["heatpump_dhw"] != undefined ? "space_heating" : "when_running";
+// Open a window behind a System card measurement: the power view with the stats
+// open at category and the given cells highlighted
+function hp_open_measured(start, end, category, cells) {
     hp_open_power(start, end);
-    var note = ", weighted by heat output " + (category == "space_heating" ? "during space heating" : "while running") + ". Worked out nightly from the 10 s data, so it can differ by a few hundredths";
-    var cells = [{ category: category, key: "heatpump_flowT", col: "weighted", title: "Measured flow temperature on the System card: " + flowT.toFixed(1) + " °C" + note }];
-    if (outsideT !== null && !isNaN(outsideT)) {
-        cells.push({ category: category, key: "heatpump_outsideT", col: "weighted", title: "Outside temperature on the System card: " + outsideT.toFixed(1) + " °C" + note });
-    }
     stats_highlight = { start: start, end: end, cells: cells };
     $("#advanced-toggle").addClass("active").attr("aria-expanded", true);
     $("#advanced-block").show();
@@ -840,6 +832,28 @@ function hp_open_measured_flowT(start, end, flowT, outsideT) {
     $(".show_stats_category[key='" + category + "']").addClass("active");
     $(".stats_category").hide();
     $(".stats_category[key='" + category + "']").show();
+}
+
+// A day behind the measured flow temperature: stats at space heating (when running,
+// with no hot water flag), heat-weighted flow and outside temperatures highlighted.
+// flowT and outsideT are the nightly measurement's values, from the same samples.
+function hp_open_measured_flowT(start, end, flowT, outsideT) {
+    var category = feeds["heatpump_dhw"] != undefined ? "space_heating" : "when_running";
+    var note = ", weighted by heat output " + (category == "space_heating" ? "during space heating" : "while running") + ". Worked out nightly from the 10 s data, so it can differ by a few hundredths";
+    var cells = [{ category: category, key: "heatpump_flowT", col: "weighted", title: "Measured flow temperature on the System card: " + flowT.toFixed(1) + " °C" + note }];
+    if (outsideT !== null && !isNaN(outsideT)) {
+        cells.push({ category: category, key: "heatpump_outsideT", col: "weighted", title: "Outside temperature on the System card: " + outsideT.toFixed(1) + " °C" + note });
+    }
+    hp_open_measured(start, end, category, cells);
+}
+
+// A day behind the measured heat output: stats at the full window, heat output
+// mean and kWh highlighted. kw is the nightly measurement (kWh / 24, all modes).
+function hp_open_measured_heat(start, end, kw) {
+    var title = "Heat output on the System card: " + kw.toFixed(2) + " kW, the day's kWh / 24 in all modes (" + (kw * 24).toFixed(1) + " kWh). Worked out nightly from the 10 s data, so it can differ slightly";
+    hp_open_measured(start, end, "combined", [
+        { category: "combined", key: "heatpump_heat", col: "mean", title: title },
+        { category: "combined", key: "heatpump_heat", col: "kwh", title: title }]);
 }
 
 document.getElementById('placeholder').addEventListener("plotselected", function (event) {
