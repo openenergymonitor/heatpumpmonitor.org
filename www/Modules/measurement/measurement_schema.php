@@ -23,7 +23,7 @@ $schema['measurement'] = array(
     'start_time'  => array('type' => 'int(11)', 'Null' => true, 'default' => null), // unix timestamp
     'end_time'    => array('type' => 'int(11)', 'Null' => true, 'default' => null),
 
-    'details'     => array('type' => 'text', 'Null' => true, 'default' => null),   // JSON: method, inputs, selected days
+    'details'     => array('type' => 'mediumtext', 'Null' => true, 'default' => null), // JSON: method, inputs, selected days (flowT_map: a PNG, base64)
     'version'     => array('type' => 'int(11)', 'Null' => false, 'default' => 1),  // method version
     'updated'     => array('type' => 'int(11)', 'Null' => false, 'default' => 0)
 );
@@ -58,5 +58,10 @@ $schema['measurement_day'] = array(
     'space_flowT_max4h'       => array('type' => 'float', 'Null' => true, 'default' => null),
     'space_flowT_max4h_start' => array('type' => 'int(11)', 'Null' => true, 'default' => null),
 
-    'dhw_flag'            => array('type' => 'tinyint(1)', 'Null' => true, 'default' => null) // DHW feed used for the split
+    'dhw_flag'            => array('type' => 'tinyint(1)', 'Null' => true, 'default' => null), // DHW feed used for the split
+
+    // Heat (Wh) from each 10 s sample binned by outside and flow temperature, gzipped JSON:
+    // {"ob": bins per K outside, "fb": bins per K flow, "s": {"outside bin,flow bin": Wh}, "w": {...}}
+    // for space heating and hot water. Cleared after FLOWMAP_KEEP_DAYS
+    'flowmap'             => array('type' => 'blob', 'Null' => true, 'default' => null)
 );

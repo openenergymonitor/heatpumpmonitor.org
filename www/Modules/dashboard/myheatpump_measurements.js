@@ -19,17 +19,6 @@ var MEASUREMENTS_PREVIEW = {
     // year, the peer level against same-size systems in the same conditions,
     // and the share of steady running at minimum speed and its COP against the level
     replay_level: { value: 0.94, samples: 1580, unit: "", details: { peer_level: 0.97, min_share: 0.46, min_ratio: 0.82, steady_flowT: 33.2 } },
-    // SPF ladder from the same replay: datasheet SPF at the measured conditions,
-    // then each operating state put back as measured. Steps depend on order
-    replay_ladder: { value: 1, details: { steps: [
-        { key: "steady", label: "Steady space heating", spf: -0.15 },
-        { key: "ramp", label: "Flow temperature ramps", spf: -0.06 },
-        { key: "startup", label: "Start-ups", spf: -0.08 },
-        { key: "dhw", label: "Hot water", spf: -0.10 },
-        { key: "defrost", label: "Defrosts and recovery", spf: -0.11 },
-        { key: "extra", label: "Heat after hot water and beyond the compressor's range", spf: 0.03 },
-        { key: "off", label: "Standby and pump overrun", spf: -0.06 }
-    ] } },
     // Primary loop: return to flow transport delay at hot water switch-overs
     // (comparison/fast.py loop_volume, manual_loop_lag.md)
     loop_delay: { value: 88, lower: 85, upper: 91, samples: 14, unit: "s", details: { flowrate: 14.4 } },
@@ -69,13 +58,11 @@ var MEASUREMENTS_FLEET = {
     },
     level: { p: [0.89, 0.964, 1.024], n: 132 },
     min_share: { p: [0.06, 0.39, 0.71] },
-    min_ratio: { p: [0.73, 0.84, 0.90] },
-    ladder: { steady: -0.196, ramp: -0.073, startup: -0.059, dhw: -0.074, defrost: -0.132, extra: 0.033, off: -0.045 }
+    min_ratio: { p: [0.73, 0.84, 0.90] }
 };
 
 // Page state for the card: heat map mode and pipe size for the length
 var hp_ms_state = { mode: "space", pipe: 28 };
-var hp_ms_map = null;   // flow temperature map data, built on render
 
 function measurements_card_render() {
     var m = window.system_meta;
@@ -221,7 +208,8 @@ function measurements_card_render() {
         var cold = mv("flowT_coldest_days"), peak = mv("flowT_peak_4h");
         var design = num(m.flow_temp);
         var meas = cold ? cold.value : null;
-        if (!design && !meas) return "";
+        var map = flowmap();
+        if (!design && !meas) return map ? tile("Flow temperature", "", "text-hp-flow", map) : "";
         var c = cold ? cold.details || {} : {};
 
         var vals = [design, cold ? cold.lower : null, cold ? cold.upper : null, peak ? peak.value : null].filter(function (v) { return v; });
@@ -272,11 +260,19 @@ function measurements_card_render() {
                 ' on ' + esc(date(peak.start_time, true));
             if (!c.dhw_split) note += '<br>No hot water flag, so these may include cylinder reheats';
         }
+        // Inferred from the flow map: the flow temperature it runs at, moved to the design outside temperature
+        var inf = mv("flowT_design_inferred");
+        if (inf) {
+            var idt = inf.details || {}, bands = idt.bands || [];
+            note += '<br>Inferred from the map: <b>' + fmt(inf.value, 1) + '°C</b> at ' + fmt(idt.design_outsideT, 1) + '°C outside' +
+                (design ? ', ' + fmt(Math.abs(inf.value - design), 1) + ' K ' + (inf.value < design ? 'below' : 'above') + ' design' : '') +
+                (bands.length > 1 ? ' (highest of ' + bands.map(function (b) { return fmt(b.flowT, 1) + '°'; }).join(', ') + ' run in the cold)' : '');
+        }
         var head = meas || design;
         return '<div class="hp-sys-feature">' +
             '<div class="hp-sys-feature-head"><span class="app-live-label">Flow temperature</span>' +
             '<span class="hp-sys-feature-value text-hp-flow">' + fmt(head, 1) + '<span class="hp-sys-unit">°C ' + (meas ? 'measured' : 'design') + '</span></span></div>' +
-            bar + '<div class="hp-sys-feature-note">' + note + '</div></div>';
+            bar + '<div class="hp-sys-feature-note">' + note + '</div>' + map + '</div>';
     }
 
     // -- Outside design temperature: measured 99.6% and 99.0% against the form -
@@ -397,7 +393,7 @@ function measurements_card_render() {
         else if (!em) note += '<br>Loading the steady running episodes…';
         note += '<span class="hp-ms-fine">Exponent ' + n + ' assumed (radiators); underfloor heating is nearer 1.1. Episodes with mean water under 5 K above room are left out</span>';
         return tile("Emitter capacity", fmt(e.value, 1) + unit("kW at ΔT50"), "text-hp-heat",
-            '<div class="hp-ms-split">' + dist + '<div class="hp-sys-feature-note">' + note + '</div></div>', e.preview, "hp-ms-wide");
+            dist + '<div class="hp-sys-feature-note">' + note + '</div>', e.preview);
     }
 
     // -- Flow rate and flow - return ΔT: measured on the coldest days against design
@@ -542,34 +538,6 @@ function measurements_card_render() {
         return tile("Level against the datasheet", lv.value.toFixed(2), "text-hp-cop", b, concept);
     }
 
-    // Where the SPF goes: datasheet SPF at the measured conditions down to the measured SPF
-    function ladder() {
-        var lad = pv("replay_ladder"), t = last365();
-        if (!lad) return "";
-        var steps = lad.details.steps, F = MEASUREMENTS_FLEET.ladder;
-        var spf = t && num(t.combined_cop) ? t.combined_cop * 1 : 4.0;
-        var start = spf - steps.reduce(function (a, s) { return a + s.spf; }, 0);
-        var lo = Math.floor(Math.min(spf, start) * 4 - 1) / 4, hi = Math.ceil(Math.max(spf, start) * 4 + 0.5) / 4;
-        function row(label, from, to, cls, value, fleet) {
-            var a = Math.min(from, to), b = Math.max(from, to);
-            return '<div class="hp-ms-lad-row"><div class="hp-ms-lad-label">' + label + '</div>' +
-                '<div class="hp-ms-lad-track"><div class="hp-ms-lad-bar ' + cls + '" style="left:' + pct(a, lo, hi) + '%;width:' + Math.max(0.6, pct(b, lo, hi) - pct(a, lo, hi)) + '%"></div></div>' +
-                '<div class="hp-ms-lad-value">' + value + '</div><div class="hp-ms-lad-fleet">' + (fleet || '') + '</div></div>';
-        }
-        var html = '<div class="hp-ms-lad">' +
-            '<div class="hp-ms-lad-row is-head"><div></div><div class="hp-ms-lad-axis"><span>' + lo.toFixed(2) + '</span><span>' + hi.toFixed(2) + '</span></div><div class="hp-ms-lad-value">SPF</div><div class="hp-ms-lad-fleet">Median</div></div>' +
-            row("<b>Datasheet</b>, at this system's conditions", lo, start, "is-total", '<b>' + start.toFixed(2) + '</b>');
-        var at = start;
-        steps.forEach(function (s) {
-            html += row(esc(s.label), at, at + s.spf, s.spf < 0 ? "is-loss" : "is-gain", signed(s.spf, 2), F[s.key] !== undefined ? signed(F[s.key], 2) : "");
-            at += s.spf;
-        });
-        html += row("<b>Measured</b>, last 365 days", lo, spf, "is-total", '<b>' + spf.toFixed(2) + '</b>') + '</div>';
-        html += '<div class="hp-sys-feature-note">Each operating state put back as measured, in this order; a different order gives different steps. ' +
-            'Most systems lose a similar small amount to each of start-ups, ramps, hot water and defrosts; the level in steady running makes most of the difference between systems.</div>';
-        return tile("Where the SPF goes", spf.toFixed(2) + unit("SPF of " + start.toFixed(2) + " datasheet"), "text-hp-cop", html, lad.preview, "hp-ms-wide");
-    }
-
     // -- Heat loss figures behind the Sizing tile ------------------------------
     function heatloss_stats() {
         var hd = mv("heat_loss_design"), hdm = mv("heat_loss_design_measured"), htc = mv("heat_loss_htc"), base = mv("heat_loss_base_dT");
@@ -591,42 +559,29 @@ function measurements_card_render() {
     }
 
     // -- Flow temperature against outside temperature, weighted by heat --------
+    // The map, shown in the Flow temperature tile under the coldest days
     function flowmap() {
-        flowmap_load();
-        hp_ms_map = flowmap_build(m, mv);
-        if (!hp_ms_map) return "";
-        var det = hp_ms_map.detect, sub = "", res = "";
+        var map = flowmap_build(mv);
+        if (!map) return "";
+        var det = map.fit, res = "";
         if (det) {
-            var at_design = has(m.design_temp) ? det.a + det.b * m.design_temp : null;
-            if (det.b <= -0.3) {
-                res = '<span class="hp-sys-badge is-good"><i class="bi bi-thermometer-half"></i>Weather compensation</span> ' +
-                    'Flow falls <b>' + fmt(-det.b, 2) + ' K</b> for each 1 K warmer outside: <b>' + fmt(det.a + det.b * det.x_lo, 1) + '°C</b> at ' + fmt(det.x_lo, 0) + '°C, <b>' +
-                    fmt(det.a + det.b * det.x_hi, 1) + '°C</b> at ' + fmt(det.x_hi, 0) + '°C' +
-                    (at_design !== null ? ', ' + fmt(at_design, 1) + '°C at the design ' + fmt(m.design_temp, 1) + '°C' : '') + '. ' +
-                    Math.round(100 * det.within) + '% of space heating within ±2 K of the line.';
-            } else if (det.b <= -0.1) {
-                res = '<span class="hp-sys-badge"><i class="bi bi-thermometer-half"></i>Gentle slope</span> ' +
-                    'Flow falls only <b>' + fmt(-det.b, 2) + ' K</b> for each 1 K warmer outside: <b>' + fmt(det.a + det.b * det.x_lo, 1) + '°C</b> at ' + fmt(det.x_lo, 0) + '°C, <b>' +
-                    fmt(det.a + det.b * det.x_hi, 1) + '°C</b> at ' + fmt(det.x_hi, 0) + '°C' +
-                    (at_design !== null ? ', ' + fmt(at_design, 1) + '°C at the design ' + fmt(m.design_temp, 1) + '°C' : '') +
-                    ': a shallow weather compensation curve, or a fixed flow temperature with room temperature control. ' +
-                    Math.round(100 * det.within) + '% of space heating within ±2 K of the line.';
-            } else {
-                res = '<span class="hp-sys-badge"><i class="bi bi-dash-lg"></i>Fixed flow temperature</span> Flow hardly changes with outside temperature (' + signed(det.b, 2) + ' K per K): a fixed flow temperature or room thermostat control.';
-            }
+            // Kind of control from the slope, then the fitted line at each end
+            var kind = det.b <= -0.3 ? ["is-good", "bi-thermometer-half", "Weather compensation", ""] :
+                det.b <= -0.1 ? ["", "bi-thermometer-half", "Gentle slope", "A shallow weather compensation curve, or a fixed flow temperature with room temperature control"] :
+                ["", "bi-dash-lg", "Fixed flow temperature", "A fixed flow temperature or room thermostat control"];
+            res = '<span class="hp-sys-badge ' + kind[0] + '"' + (kind[3] ? ' title="' + esc(kind[3]) + '"' : '') + '><i class="bi ' + kind[1] + '"></i>' + kind[2] + '</span>';
+            if (det.b <= -0.1) res += ' <b>' + fmt(det.a + det.b * det.x_lo, 1) + '°</b> at ' + fmt(det.x_lo, 0) + '°C to <b>' +
+                fmt(det.a + det.b * det.x_hi, 1) + '°</b> at ' + fmt(det.x_hi, 0) + '°C, ' + Math.round(100 * det.within) + '% of heat within ±2 K';
         }
         var modes = [["space", "Space heating"], ["water", "Hot water"], ["all", "All"]];
         var btns = '<div class="btn-group app-segmented hp-ms-map-modes">' + modes.map(function (md) {
             return '<button class="btn' + (hp_ms_state.mode == md[0] ? ' active' : '') + '" data-mode="' + md[0] + '">' + md[1] + '</button>';
         }).join("") + '</div>';
-        var body = '<div class="hp-ms-map-top">' + btns +
-            '<div class="hp-ms-map-legend"><span>Less heat</span><span class="hp-ms-map-ramp"></span><span>More</span>' +
-            '<span class="hp-ms-key"><span class="hp-ms-key-line"></span>Fitted curve</span>' +
-            '<span class="hp-ms-key"><span class="hp-ms-key-ring"></span>Design</span></div></div>' +
+        return '<div class="hp-ms-map-block"><div class="hp-ms-map-top">' + btns +
+            '<div class="hp-ms-map-legend" title="Colour is scaled within each outside temperature; the bars above show each one\'s heat"><span>Less</span><span class="hp-ms-map-ramp"></span><span>More heat at each outside temperature</span></div></div>' +
             '<div id="hp-ms-map" class="hp-ms-map"><canvas role="img" aria-label="Heat delivered at each flow and outside temperature"></canvas><div class="hp-ms-tip" hidden></div></div>' +
-            (res ? '<div class="hp-ms-map-result">' + res + '</div>' : '');
-        return section("Flow temperature by outside temperature", hp_ms_map.preview ? "Heat delivered at each flow and outside temperature, last 12 months" :
-            "Each day's heat at its mean flow and outside temperature, last 365 days (" + hp_ms_map.n + " days with space heating)", body, hp_ms_map.preview);
+            (res ? '<div class="hp-ms-map-result">' + res + '</div>' : '') +
+            '<span class="hp-ms-fine">Heat at each 10 s reading\'s flow and outside temperature, last 365 days (' + map.n + ' heating days)</span></div>';
     }
 
     // -- Primary pipework and system volume ------------------------------------
@@ -775,8 +730,7 @@ function measurements_card_render() {
     var design = '<div class="hp-ms-grid">' + outside() + sizing() + flow() + flowrate() + emitters() + '</div>' + heatloss_stats();
     var body = section("Design: measured against the form", "Each tile compares what the monitoring data shows with the system form", design) +
         section("Efficiency", "How close the heat pump runs to the ideal and to its datasheet",
-            '<div class="hp-ms-grid">' + carnot() + level() + ladder() + '</div>') +
-        flowmap() +
+            '<div class="hp-ms-grid">' + carnot() + level() + '</div>') +
         '<div class="hp-ms-grid">' + pipework() + cylinder() + '</div>' +
         checks();
 
@@ -786,67 +740,55 @@ function measurements_card_render() {
     H.card(el, "measurements", "Measurements", note, body, measurements_on_open);
 }
 
-// Flow temperature map data: heat (kWh) in 1 K bins of outside and flow
-// temperature, for space heating and hot water, and the fitted curve.
-// Example data until the nightly scan stores the grid: a weather
-// compensation curve through the coldest days' measured flow temperature.
-function flowmap_build(m, mv) {
-    if (window.hp_ms_daily) return flowmap_from_daily(window.hp_ms_daily);
-    var X0 = -8, NX = 26, Y0 = 20, NY = 40;
-    var cold = mv("flowT_coldest_days");
-    var ax = cold && cold.details && cold.details.outsideT !== undefined ? cold.details.outsideT : (m.design_temp !== undefined && m.design_temp !== null && m.design_temp !== "" ? m.design_temp * 1 : -3);
-    var ay = cold ? cold.value : (m.flow_temp * 1 || 45);
-    var bx = 16, by = Math.min(28, ay - 4);
-    var slope = (ay - by) / (ax - bx);
-    function curve(x) { return Math.max(24, by + slope * (x - bx)); }
-    var seed = 7;
-    function rnd() { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
-    function hours(x) { return Math.exp(-0.5 * Math.pow((x - 8) / 5, 2)); }
-    var space = [], water = [];
-    for (var i = 0; i < NX; i++) {
-        space.push([]); water.push([]);
-        var x = X0 + i + 0.5, demand = Math.max(0, 15.5 - x) * hours(x) * 40, c = curve(x);
-        for (var j = 0; j < NY; j++) {
-            var y = Y0 + j + 0.5;
-            // Steady running around the curve, with a tail above it from warm-ups after setbacks
-            var s = demand * (0.85 * Math.exp(-0.5 * Math.pow((y - c) / 1.4, 2)) + 0.15 * Math.exp(-0.5 * Math.pow((y - c - 4) / 2.5, 2)));
-            var w = hours(x) * 6 * (Math.exp(-0.5 * Math.pow((y - 51) / 2.2, 2)) + 0.5 * Math.exp(-0.5 * Math.pow((y - 44) / 3, 2)));
-            space[i].push(s > 0.05 ? s * (0.6 + 0.8 * rnd()) : 0);
-            water[i].push(w > 0.05 ? w * (0.6 + 0.8 * rnd()) : 0);
-        }
-    }
-    var data = { x0: X0, nx: NX, y0: Y0, ny: NY, space: space, water: water, preview: true };
-    data.detect = flowmap_detect(data);
-    return data;
+// Flow temperature map data: heat (kWh) in bins of outside (x) and flow (y)
+// temperature, for space heating and hot water, and the fit (peaks and line), from the
+// nightly scan's flowT_map. Grids are [i][j], i from x0 in steps of xs, j from
+// y0 in steps of ys. Null until the PNG has decoded, or with no flowT_map
+function flowmap_build(mv) {
+    var fm = mv("flowT_map");
+    return fm && fm.details && fm.details.png ? flowmap_from_png(fm) : null;
 }
 
-// From the daily stats: each day's space heating (and hot water) heat in the
-// cell of its mean outside and flow temperature
-function flowmap_from_daily(rows) {
-    var Y0 = 20, NY = 40, lo = 99, hi = -99;
-    rows.forEach(function (r) { if (r.sk > 0 && r.so !== null) { lo = Math.min(lo, r.so); hi = Math.max(hi, r.so); } });
-    if (lo > hi) { lo = -5; hi = 15; }
-    var X0 = Math.max(-15, Math.floor(lo) - 1), NX = Math.min(35, Math.ceil(hi) + 2) - X0;
-    var space = [], water = [], days_s = [], days_w = [];
-    for (var i = 0; i < NX; i++) {
-        space.push([]); water.push([]); days_s.push([]); days_w.push([]);
-        for (var j = 0; j < NY; j++) { space[i].push(0); water[i].push(0); days_s[i].push(0); days_w[i].push(0); }
-    }
-    function add(grid, cnt, x, y, kwh) {
-        if (!(kwh > 0) || x === null || y === null) return;
-        var i = Math.floor(x) - X0, j = Math.floor(y) - Y0;
-        if (i < 0 || i >= NX || j < 0 || j >= NY) return;
-        grid[i][j] += kwh; cnt[i][j]++;
-    }
-    rows.forEach(function (r) {
-        add(space, days_s, r.so, r.sf, r.sk);
-        add(water, days_w, r.wo, r.wf, r.wk);
-    });
-    var n = rows.filter(function (r) { return r.sk > 0; }).length;
-    if (!n) return null;
-    var data = { x0: X0, nx: NX, y0: Y0, ny: NY, space: space, water: water, days: { space: days_s, water: days_w }, n: n, preview: false };
-    data.detect = flowmap_detect(data);
-    return data;
+// From the nightly flowT_map: an 8 bit greyscale PNG, space heating rows then
+// hot water rows, highest flow first; a pixel v > 0 is
+// exp((v - 1) / 254 × ln(max_wh)) Wh. Decoded once (asynchronously: returns
+// null until then, and draws the card again when done)
+function flowmap_from_png(fm) {
+    var c = window.hp_ms_png;
+    if (c && c.updated == fm.updated) return c.data;
+    if (c && c.loading == fm.updated) return null;
+    window.hp_ms_png = { loading: fm.updated };
+    var dt = fm.details, img = new Image();
+    img.onload = function () {
+        var cv = document.createElement("canvas");
+        cv.width = dt.nx; cv.height = 2 * dt.ny;
+        var cx = cv.getContext("2d");
+        cx.drawImage(img, 0, 0);
+        var px = cx.getImageData(0, 0, dt.nx, 2 * dt.ny).data;
+        function grid(half, max_wh) {
+            var g = [], ln = Math.log(Math.max(max_wh, 1.001));
+            for (var i = 0; i < dt.nx; i++) {
+                var col = [];
+                for (var j = 0; j < dt.ny; j++) {
+                    var v = px[4 * ((half * dt.ny + dt.ny - 1 - j) * dt.nx + i)];
+                    col.push(v > 0 ? Math.exp((v - 1) / 254 * ln) / 1000 : 0);
+                }
+                g.push(col);
+            }
+            return g;
+        }
+        // Peak flow temperature in each 1 K of outside temperature and the line through them, from the nightly fit
+        var f = dt.fit, fit = f && f.peaks && f.peaks.length ? { a: f.intercept, b: f.slope, within: f.within_2K,
+            peaks: f.peaks.map(function (p) { return { x: p[0], y: p[1] }; }),
+            x_lo: f.peaks[0][0] - 0.5, x_hi: f.peaks[f.peaks.length - 1][0] + 0.5 } : null;
+        var data = { x0: dt.x0, xs: dt.x_step, nx: dt.nx, y0: dt.y0, ys: dt.y_step, ny: dt.ny,
+            space: grid(0, dt.max_wh.space), water: grid(1, dt.max_wh.water), n: fm.samples, fit: fit };
+        window.hp_ms_png = { updated: fm.updated, data: data };
+        measurements_card_render();
+    };
+    img.onerror = function () { window.hp_ms_png = { updated: fm.updated, data: null }; };
+    img.src = "data:image/png;base64," + dt.png;
+    return null;
 }
 
 // Last 365 day stats for this card, when the totals card hasn't loaded them
@@ -956,67 +898,6 @@ function measurements_on_open() {
     flowmap_draw();
 }
 
-// Loads a year of daily stats for the map, once, then draws the card again
-function flowmap_load() {
-    if (window.hp_ms_daily || window.hp_ms_daily_loading || typeof config == "undefined") return;
-    window.hp_ms_daily_loading = true;
-    var end = Math.floor(Date.now() / 1000), start = end - 365 * 86400;
-    $.ajax({
-        url: path + "system/stats/daily",
-        data: { id: config.id, start: start, end: end, readkey: apikey,
-            fields: "timestamp,space_heat_kwh,space_flowT_mean,space_outsideT_mean,water_heat_kwh,water_flowT_mean,water_outsideT_mean" },
-        dataType: "text",
-        success: function (csv) {
-            var lines = String(csv).trim().split("\n"), head = lines[0].split(","), rows = [];
-            function col(c, name) { var v = c[head.indexOf(name)]; return v === "" || v === undefined || isNaN(v) ? null : parseFloat(v); }
-            for (var z = 1; z < lines.length; z++) {
-                var c = lines[z].split(",");
-                rows.push({ t: col(c, "timestamp"), sk: col(c, "space_heat_kwh"), sf: col(c, "space_flowT_mean"), so: col(c, "space_outsideT_mean"),
-                    wk: col(c, "water_heat_kwh"), wf: col(c, "water_flowT_mean"), wo: col(c, "water_outsideT_mean") });
-            }
-            window.hp_ms_daily = rows;
-            measurements_card_render();
-        }
-    });
-}
-
-// Fitted curve: heat-weighted median flow temperature in each outside
-// temperature column, then a line through them weighted by each column's heat
-function flowmap_detect(d) {
-    var cols = [], tot_all = 0;
-    for (var i = 0; i < d.nx; i++) {
-        var tot = 0;
-        for (var j = 0; j < d.ny; j++) tot += d.space[i][j];
-        tot_all += tot;
-        cols.push(tot);
-    }
-    var colmax = Math.max.apply(null, cols), med = [];
-    for (var i = 0; i < d.nx; i++) {
-        if (cols[i] < 0.03 * colmax) continue;
-        var acc = 0;
-        for (var j = 0; j < d.ny; j++) {
-            acc += d.space[i][j];
-            if (acc >= cols[i] / 2) { med.push({ x: d.x0 + i + 0.5, y: d.y0 + j + 0.5, w: cols[i] }); break; }
-        }
-    }
-    if (med.length < 3 || !(tot_all > 0)) return null;
-    var sw = 0, sx = 0, sy = 0, sxx = 0, sxy = 0;
-    med.forEach(function (p) { sw += p.w; sx += p.w * p.x; sy += p.w * p.y; sxx += p.w * p.x * p.x; sxy += p.w * p.x * p.y; });
-    var b = (sw * sxy - sx * sy) / (sw * sxx - sx * sx), a = (sy - b * sx) / sw;
-    var within = 0;
-    for (var i = 0; i < d.nx; i++) for (var j = 0; j < d.ny; j++) {
-        if (Math.abs(d.y0 + j + 0.5 - (a + b * (d.x0 + i + 0.5))) <= 2) within += d.space[i][j];
-    }
-    return { a: a, b: b, medians: med, within: within / tot_all, x_lo: med[0].x - 0.5, x_hi: med[med.length - 1].x + 0.5 };
-}
-
-// Number of days in a cell, for the daily map's tooltip
-function flowmap_days(d, i, j) {
-    if (!d.days) return "";
-    var n = (hp_ms_state.mode != "water" ? d.days.space[i][j] : 0) + (hp_ms_state.mode != "space" ? d.days.water[i][j] : 0);
-    return '<br>' + n + ' day' + (n == 1 ? '' : 's');
-}
-
 function flowmap_grid(d, mode) {
     if (mode == "space") return d.space;
     if (mode == "water") return d.water;
@@ -1025,10 +906,10 @@ function flowmap_grid(d, mode) {
 
 // Draws the map to fit its box; called when the card opens, on resize and on a mode change
 function flowmap_draw() {
-    var wrap = document.getElementById("hp-ms-map"), d = hp_ms_map;
+    var wrap = document.getElementById("hp-ms-map"), d = window.hp_ms_png ? window.hp_ms_png.data : null;
     if (!wrap || !d || wrap.offsetParent === null) return;
     var canvas = wrap.querySelector("canvas"), tip = wrap.querySelector(".hp-ms-tip");
-    var W = wrap.clientWidth, Ht = W < 500 ? 260 : 320;
+    var W = wrap.clientWidth, Ht = W < 500 ? 285 : 350;
     var dpr = window.devicePixelRatio || 1;
     canvas.width = Math.round(W * dpr); canvas.height = Math.round(Ht * dpr);
     canvas.style.height = Ht + "px";
@@ -1039,22 +920,67 @@ function flowmap_draw() {
     var cs = getComputedStyle(wrap);
     var ink_rgb = (cs.getPropertyValue("--bs-body-color-rgb") || "34,34,34").trim();
     var ink = "rgb(" + ink_rgb + ")", faint = "rgba(" + ink_rgb + ",0.09)", muted = "rgba(" + ink_rgb + ",0.65)";
-    var L = 38, R = 10, T = 10, B = 34, pw = W - L - R, ph = Ht - T - B;
-    var cw = pw / d.nx, ch = ph / d.ny;
-    function X(t) { return L + (t - d.x0) / d.nx * pw; }
-    function Y(t) { return T + ph - (t - d.y0) / d.ny * ph; }
+    // Strip above the map: each outside temperature column's heat
+    var SH = 22, L = 38, R = 10, T = 10 + SH + 6, B = 34, pw = W - L - R, ph = Ht - T - B;
+
+    // Heat in the current mode. Both axes are cropped to the cells that hold the
+    // heat: stray cells at either end with 0.5% of the heat between them are
+    // left out, the design point is kept in, and 1 K is added each side
+    var grid = flowmap_grid(d, hp_ms_state.mode), total = 0, colsum = [], colmax = [], rowsum = [];
+    for (var j = 0; j < d.ny; j++) rowsum.push(0);
+    for (var i = 0; i < d.nx; i++) {
+        var sum = 0, cm = 0;
+        for (var j = 0; j < d.ny; j++) { var v = grid[i][j]; sum += v; rowsum[j] += v; if (v > cm) cm = v; }
+        colsum.push(sum); colmax.push(cm); total += sum;
+    }
+    // First and last bin once more than `tail` of the heat has been passed from each end
+    function span(sums, tail) {
+        var a = 0, b = sums.length - 1, acc = 0;
+        while (a < b && acc + sums[a] <= tail) acc += sums[a++];
+        acc = 0;
+        while (b > a && acc + sums[b] <= tail) acc += sums[b--];
+        return [a, b + 1];
+    }
+    // In bins: [i0, i1) outside, [j0, j1) flow
+    var tail = 0.005 * total;
+    var sx = total > 0 ? span(colsum, tail) : [0, d.nx], sy = total > 0 ? span(rowsum, tail) : [0, d.ny];
+    var i0 = sx[0], i1 = sx[1], j0 = sy[0], j1 = sy[1];
+    var m = window.system_meta || {};
+    var has_design = m.flow_temp * 1 && m.design_temp !== null && m.design_temp !== undefined && m.design_temp !== "";
+    if (has_design) {
+        var di = Math.floor((m.design_temp - d.x0) / d.xs), dj = Math.floor((m.flow_temp - d.y0) / d.ys);
+        i0 = Math.min(i0, di); i1 = Math.max(i1, di + 1); j0 = Math.min(j0, dj); j1 = Math.max(j1, dj + 1);
+    }
+    var msr = window.system_measurements || {}, inf = msr.flowT_design_inferred && msr.flowT_design_inferred.value !== null ? msr.flowT_design_inferred : null;
+    var inf_x = inf && inf.details ? inf.details.design_outsideT : null;
+    if (inf && inf_x !== null && inf_x !== undefined) {
+        var ii = Math.floor((inf_x - d.x0) / d.xs), ij = Math.floor((inf.value - d.y0) / d.ys);
+        i0 = Math.min(i0, ii); i1 = Math.max(i1, ii + 1); j0 = Math.min(j0, ij); j1 = Math.max(j1, ij + 1);
+    }
+    var pi = Math.round(1 / d.xs), pj = Math.round(1 / d.ys), mj = Math.round(6 / d.ys);
+    i0 = Math.max(0, i0 - pi); i1 = Math.min(d.nx, i1 + pi);
+    j0 = Math.max(0, j0 - pj); j1 = Math.min(d.ny, j1 + pj);
+    if (j1 - j0 < mj) { j1 = Math.min(d.ny, j0 + mj); j0 = Math.max(0, j1 - mj); }
+    var nx = i1 - i0, ny = j1 - j0;
+    var xlo = d.x0 + i0 * d.xs, xhi = d.x0 + i1 * d.xs, lo = d.y0 + j0 * d.ys, hi = d.y0 + j1 * d.ys;
+
+    var colsum_max = Math.max.apply(null, colsum.slice(i0, i1));
+
+    var cw = pw / nx, ch = ph / ny;
+    function X(t) { return L + (t - xlo) / (xhi - xlo) * pw; }
+    function Y(t) { return T + ph - (t - lo) / (hi - lo) * ph; }
 
     // Grid and axes
     ctx.font = "11px " + cs.fontFamily;
     ctx.lineWidth = 1;
     ctx.fillStyle = muted;
     ctx.textAlign = "center"; ctx.textBaseline = "top";
-    for (var t = Math.ceil(d.x0 / 5) * 5; t <= d.x0 + d.nx; t += 5) {
+    for (var t = Math.ceil(xlo / 5) * 5; t <= xhi; t += 5) {
         ctx.strokeStyle = faint; ctx.beginPath(); ctx.moveTo(Math.round(X(t)) + 0.5, T); ctx.lineTo(Math.round(X(t)) + 0.5, T + ph); ctx.stroke();
         ctx.fillText(t + "°", X(t), T + ph + 5);
     }
     ctx.textAlign = "right"; ctx.textBaseline = "middle";
-    for (var t = Math.ceil(d.y0 / 5) * 5; t <= d.y0 + d.ny; t += 5) {
+    for (var t = Math.ceil(lo / 5) * 5; t <= hi; t += 5) {
         ctx.strokeStyle = faint; ctx.beginPath(); ctx.moveTo(L, Math.round(Y(t)) + 0.5); ctx.lineTo(L + pw, Math.round(Y(t)) + 0.5); ctx.stroke();
         ctx.fillText(t + "°", L - 6, Y(t));
     }
@@ -1062,54 +988,108 @@ function flowmap_draw() {
     ctx.fillText("Outside temperature", L + pw / 2, Ht - 1);
     ctx.save(); ctx.translate(10, T + ph / 2); ctx.rotate(-Math.PI / 2); ctx.textBaseline = "middle"; ctx.fillText("Flow temperature", 0, 0); ctx.restore();
 
-    // Cells: one hue, stronger with more heat; a 1 px gap between cells
-    var grid = flowmap_grid(d, hp_ms_state.mode), max = 0, total = 0;
-    grid.forEach(function (col) { col.forEach(function (v) { if (v > max) max = v; total += v; }); });
-    for (var i = 0; i < d.nx; i++) for (var j = 0; j < d.ny; j++) {
-        var v = grid[i][j];
-        if (!(v > 0.01 * max)) continue;
-        ctx.fillStyle = "rgba(201,54,47," + (0.06 + 0.94 * Math.pow(v / max, 0.75)).toFixed(3) + ")";
-        ctx.fillRect(L + i * cw + 0.5, T + ph - (j + 1) * ch + 0.5, Math.max(1, cw - 1), Math.max(1, ch - 1));
+    // Column heat strip
+    ctx.fillStyle = "rgba(201,54,47,0.45)";
+    for (var i = i0; i < i0 + nx; i++) {
+        if (!(colsum[i] > 0)) continue;
+        var bh = Math.max(1, SH * colsum[i] / colsum_max);
+        ctx.fillRect(L + (i - i0) * cw, 10 + SH - bh, cw + 0.3, bh);
     }
 
-    // Fitted curve and the column medians behind it
-    var det = d.detect;
-    if (det && hp_ms_state.mode != "water") {
+    // Cells as one image, a pixel per cell scaled up without smoothing. Colour is
+    // scaled within each column, so the spread at cold and mild outside
+    // temperatures shows as clearly as in the common ones; no heat is the
+    // faintest tint, so the area reads as continuous
+    var img = ctx.createImageData(nx, ny), px = img.data;
+    for (var i = i0; i < i0 + nx; i++) for (var j = j0; j < j0 + ny; j++) {
+        var v = grid[i][j], o = 4 * ((j1 - 1 - j) * nx + (i - i0));
+        var a = v > 0 && colmax[i] > 0 ? 0.06 + 0.94 * Math.pow(Math.min(1, v / colmax[i]), 0.75) : 0.06;
+        px[o] = 201; px[o + 1] = 54; px[o + 2] = 47; px[o + 3] = Math.round(255 * a);
+    }
+    var off = document.createElement("canvas");
+    off.width = nx; off.height = ny;
+    off.getContext("2d").putImageData(img, 0, 0);
+    ctx.save(); ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(off, L, T, pw, ph);
+    ctx.restore();
+
+    // Design point from the form (ring) and the inferred design flow temperature
+    // (filled), each labelled on a rounded box in the page colour so the text
+    // reads over the cells; labels close together are moved apart
+    var bg = getComputedStyle(document.body).backgroundColor || "rgb(255,255,255)";
+    var bg_box = bg.replace(/^rgba?\(([^,]+),([^,]+),([^,)]+).*$/, "rgba($1,$2,$3,0.85)");
+    var marks = [];
+    if (has_design) marks.push({ x: X(m.design_temp * 1), y: Y(m.flow_temp * 1), text: "Design", filled: false });
+    if (inf && inf_x !== null && inf_x !== undefined && hp_ms_state.mode != "water")
+        marks.push({ x: X(inf_x), y: Y(inf.value), text: "Inferred " + inf.value.toFixed(1) + "°", filled: true });
+    marks = marks.filter(function (k) { return k.x >= L && k.x <= L + pw && k.y >= T && k.y <= T + ph; });
+    marks.forEach(function (k) { k.ly = k.y; });
+    if (marks.length == 2) {
+        var up = marks[0].y <= marks[1].y ? 0 : 1, gap = 20 - Math.abs(marks[0].y - marks[1].y);
+        if (gap > 0) { marks[up].ly -= gap / 2; marks[1 - up].ly += gap / 2; }
+    }
+    marks.forEach(function (k) {
+        ctx.lineWidth = 2; ctx.strokeStyle = bg;
+        ctx.beginPath(); ctx.arc(k.x, k.y, k.filled ? 5 : 6, 0, 2 * Math.PI); ctx.stroke();
+        ctx.fillStyle = ink; ctx.strokeStyle = ink;
+        ctx.beginPath(); ctx.arc(k.x, k.y, 5, 0, 2 * Math.PI);
+        if (k.filled) ctx.fill(); else ctx.stroke();
+        var tw = ctx.measureText(k.text).width, bx = k.x + 9, by = k.ly - 8;
+        ctx.fillStyle = bg_box;
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(bx, by, tw + 10, 16, 4); else ctx.rect(bx, by, tw + 10, 16);
+        ctx.fill();
+        ctx.fillStyle = ink; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+        ctx.fillText(k.text, bx + 5, k.ly + 0.5);
+    });
+
+    // Peak flow temperature in each 1 K of outside temperature, over the labels
+    if (d.fit && hp_ms_state.mode != "water") {
+        ctx.save(); ctx.beginPath(); ctx.rect(L, T, pw, ph); ctx.clip();
         ctx.fillStyle = ink;
-        det.medians.forEach(function (p) { ctx.beginPath(); ctx.arc(X(p.x), Y(p.y), 2, 0, 2 * Math.PI); ctx.fill(); });
-        ctx.strokeStyle = ink; ctx.lineWidth = 2; ctx.setLineDash([6, 4]);
-        ctx.beginPath(); ctx.moveTo(X(det.x_lo), Y(det.a + det.b * det.x_lo)); ctx.lineTo(X(det.x_hi), Y(det.a + det.b * det.x_hi)); ctx.stroke();
-        ctx.setLineDash([]);
-    }
-    // Design point from the form
-    var m = window.system_meta || {};
-    if (m.flow_temp * 1 && m.design_temp !== null && m.design_temp !== undefined && m.design_temp !== "") {
-        var dx = X(m.design_temp * 1), dy = Y(m.flow_temp * 1);
-        if (dx >= L && dx <= L + pw && dy >= T && dy <= T + ph) {
-            ctx.lineWidth = 2; ctx.strokeStyle = getComputedStyle(document.body).backgroundColor || "#fff";
-            ctx.beginPath(); ctx.arc(dx, dy, 6, 0, 2 * Math.PI); ctx.stroke();
-            ctx.strokeStyle = ink; ctx.lineWidth = 2;
-            ctx.beginPath(); ctx.arc(dx, dy, 5, 0, 2 * Math.PI); ctx.stroke();
-            ctx.fillStyle = ink; ctx.textAlign = "left"; ctx.textBaseline = "bottom";
-            ctx.fillText("Design", dx + 8, dy - 4);
-        }
+        d.fit.peaks.forEach(function (p) { ctx.beginPath(); ctx.arc(X(p.x), Y(p.y), 2, 0, 2 * Math.PI); ctx.fill(); });
+        ctx.restore();
     }
 
-    // Hover: the cell under the pointer
+    // Hover: the peak dot under the pointer, enlarged, with its 1 K outside band's
+    // heat and how much of that is within ±0.5 K of the peak. The drawn map is
+    // kept so the highlight can be moved without drawing it all again
+    var drawn = ctx.getImageData(0, 0, canvas.width, canvas.height), lit = null;
+    function highlight(p) {
+        if (p === lit) return;
+        lit = p;
+        ctx.putImageData(drawn, 0, 0);
+        if (!p) return;
+        ctx.fillStyle = ink; ctx.strokeStyle = bg; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(X(p.x), Y(p.y), 5, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+    }
     canvas.onmousemove = function (e) {
-        var r = canvas.getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top;
-        var i = Math.floor((px - L) / cw), j = Math.floor((T + ph - py) / ch);
-        if (i < 0 || i >= d.nx || j < 0 || j >= d.ny || !(grid[i][j] > 0)) { tip.hidden = true; return; }
-        var x = d.x0 + i, y = d.y0 + j;
-        tip.innerHTML = '<b>' + x + ' to ' + (x + 1) + '°C</b> outside, <b>' + y + ' to ' + (y + 1) + '°C</b> flow<br>' +
-            grid[i][j].toFixed(1) + ' kWh, ' + (100 * grid[i][j] / total).toFixed(1) + '% of the heat shown' + flowmap_days(d, i, j);
+        var r = canvas.getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top, hit = null;
+        if (d.fit && hp_ms_state.mode != "water") d.fit.peaks.forEach(function (p) {
+            var dist = Math.hypot(X(p.x) - px, Y(p.y) - py);
+            if (dist <= 8 && (!hit || dist < hit.dist)) hit = { p: p, dist: dist };
+        });
+        canvas.style.cursor = hit ? "pointer" : "";
+        highlight(hit ? hit.p : null);
+        if (!hit) { tip.hidden = true; return; }
+        var p = hit.p, band = 0, near = 0, all = 0;
+        for (var i = 0; i < d.nx; i++) for (var j = 0; j < d.ny; j++) {
+            var v = d.space[i][j];
+            all += v;
+            if (Math.abs(d.x0 + (i + 0.5) * d.xs - p.x) >= 0.5) continue;
+            band += v;
+            if (Math.abs(d.y0 + (j + 0.5) * d.ys - p.y) <= 0.5) near += v;
+        }
+        tip.innerHTML = '<b>' + (p.x - 0.5) + ' to ' + (p.x + 0.5) + '°C</b> outside: space heating flow mostly at <b>' + p.y.toFixed(1) + '°C</b><br>' +
+            Math.round(100 * near / band) + '% of this band\'s heat within ±0.5 K of it; ' + band.toFixed(0) + ' kWh, ' +
+            (100 * band / all).toFixed(1) + '% of the year\'s space heating';
         tip.hidden = false;
         var left = px + 12, tw = tip.offsetWidth;
         if (left + tw > W) left = px - tw - 12;
         tip.style.left = Math.max(0, left) + "px";
         tip.style.top = Math.max(0, py - tip.offsetHeight - 8) + "px";
     };
-    canvas.onmouseleave = function () { tip.hidden = true; };
+    canvas.onmouseleave = function () { tip.hidden = true; canvas.style.cursor = ""; highlight(null); };
 }
 
 // Map mode and pipe size buttons. One delegated handler, since the card's content is redrawn
