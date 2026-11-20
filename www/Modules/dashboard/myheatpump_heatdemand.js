@@ -17,9 +17,6 @@ var system_form = (function () {
     return { heat_loss: num("heat_loss"), design_temp: num("design_temp"), hp_output: num("hp_output"), heatpump_model_id: num("heatpump_model_id") };
 })();
 
-// "heat": daily heat output from the daily bars. "flow": space heating flow
-// temperature from the nightly measurements (system_measurements)
-var heatdemand_mode = "heat";
 // Approved max output tests for this heat pump model, heat in kW. Null until loaded or when there are none
 var heatdemand_maxcap = null;
 
@@ -196,9 +193,7 @@ function heatdemand_fit_group(g, color, max_dT) {
 
 function heatdemand_draw() {
     if (!$("#heatdemand-block").is(":visible")) return;
-    $("#heatdemand-heat-controls").toggleClass("d-none", heatdemand_mode == "flow").toggleClass("d-flex", heatdemand_mode != "flow");
     $("#heatdemand-scope-note").toggle(false);
-    if (heatdemand_mode == "flow") return heatdemand_flow_draw();
 
     var points = heatdemand_points();
     if (points.length < 3) {
@@ -331,127 +326,7 @@ function heatdemand_draw() {
     heatdemand_plot = Flot.plot(document.getElementById("heatdemand"), series.concat(lines), options);
 }
 
-// Flow temperature against ΔT: the days behind the measured flow temperatures,
-// stored by scripts/measurements/system_measurements.php with the fit lines.
-function heatdemand_flow_draw() {
-    var typ = system_measurements.flowT_typical_design, sus = system_measurements.flowT_sustained_design;
-    var points = typ && typ.details && typ.details.points;
-    if (!points || !points.length) {
-        $("#heatdemand-design").html("");
-        $("#heatdemand-result").html("No flow temperature measurements for this system yet. They are worked out nightly from space heating days with outside temperature data.");
-        $("#heatdemand").empty();
-        return;
-    }
-    var t = typ.details;
-    var design_dT = t.design_dT;
-
-    var used = [], below = [], max4h = [];
-    var ymin = Infinity, ymax = -Infinity, xmax = design_dT;
-    points.forEach(function (p) {
-        var day = { time: p[0] * 1000, dT: p[1], flowT: p[2], flowT4h: p[3], start4h: p[4], used: p[5] };
-        (day.used ? used : below).push(day);
-        if (day.used && day.flowT4h !== null) max4h.push(day);
-        [day.flowT, day.flowT4h].forEach(function (v) { if (v !== null) { ymin = Math.min(ymin, v); ymax = Math.max(ymax, v); } });
-        xmax = Math.max(xmax, day.dT);
-    });
-    xmax = Math.ceil(xmax + 1);
-
-    var form_flowT = parseFloat(system_meta.flow_temp);
-    if (form_flowT > 0) { ymin = Math.min(ymin, form_flowT); ymax = Math.max(ymax, form_flowT); }
-    [typ, sus].forEach(function (m) { if (m && m.upper !== null) { ymin = Math.min(ymin, m.lower); ymax = Math.max(ymax, m.upper); } });
-    ymin = Math.floor(ymin - 2); ymax = Math.ceil(ymax + 2);
-
-    // Days in blue with the solid typical line, highest 4 h as red rings with the dashed sustained line
-    var red = "#c9362f", blue = "#4682b4";
-    var series = [
-        { label: "Days", color: blue, flow: used, data: used.map(function (d) { return [d.dT, d.flowT]; }), points: { show: true, radius: 3, fill: true, fillColor: blue } },
-        { label: "Highest 4 h each day", color: red, flow: max4h, data: max4h.map(function (d) { return [d.dT, d.flowT4h]; }), points: { show: true, radius: 3, lineWidth: 1.5, fill: true, fillColor: "#fff" } }
-    ];
-    // Older measurements have no fit_min_dT: the balance point was the only cut
-    var no_dhw_cut = t.fit_min_reason == "no hot water flag";
-    var below_label = no_dhw_cut ? "Milder days, not fitted (no hot water flag)" : "Below balance point, not fitted";
-    if (below.length) series.push({ label: below_label, color: "#aaa", flow: below, data: below.map(function (d) { return [d.dT, d.flowT]; }), points: { show: true, radius: 3, fill: true, fillColor: "#aaa" } });
-
-    // Fit lines, the 80% band about the typical line, and the readings at design
-    var x0 = (t.fit_min_dT !== undefined ? t.fit_min_dT : t.balance_point_dT) || 0;
-    function fit_line(m, color, dashes) {
-        var d = m.details, line = { label: "", color: color, data: [[x0, d.slope * x0 + d.intercept], [xmax, d.slope * xmax + d.intercept]], lines: { show: true, lineWidth: 2 }, points: { show: false } };
-        if (dashes) line.lines.dashes = dashes;
-        return line;
-    }
-    var lines = [fit_line(typ, "#333")];
-    if (t.pi_stats) {
-        var ps = t.pi_stats, upper = [], lower = [];
-        for (var i = 0; i <= 40; i++) {
-            var x = x0 + (xmax - x0) * i / 40, y = t.slope * x + t.intercept;
-            var hw = 1.282 * ps.s * Math.sqrt(1 + 1 / ps.n + (x - ps.xbar) * (x - ps.xbar) / ps.Sxx);
-            upper.push([x, y + hw]); lower.push([x, y - hw]);
-        }
-        lines.push(heatdemand_line(upper, "#bbb", 1), heatdemand_line(lower, "#bbb", 1));
-    }
-    if (sus) lines.push(fit_line(sus, red, [6, 4]));
-    if (form_flowT > 0) lines.push({ label: "Design flow temp (form)", data: [[0, form_flowT], [xmax, form_flowT]], color: "#7b5ea7", lines: { show: true, lineWidth: 2, dashes: [6, 4] }, points: { show: false } });
-    var at_design = [[design_dT, typ.value]];
-    if (sus) at_design.push([design_dT, sus.value]);
-    lines.push({ label: "At design", data: at_design, color: "#333", points: { show: true, radius: 5, fill: true, fillColor: "#333" } });
-
-    var outside = t.design_outsideT !== undefined ? t.design_outsideT + " °C outside, " : "";
-    var range = typ.upper !== null ? " ± " + (typ.upper - typ.value).toFixed(1) + " °C (80% PI)" : "";
-    var extrap = t.extrapolated ? ", beyond the coldest day (ΔT " + t.max_dT + " K)" : "";
-    $("#heatdemand-design").html("<b>" + typ.value.toFixed(1) + " °C</b>" + range + " typical at " + outside + "20 °C inside, ΔT " + design_dT.toFixed(1) + " K" + extrap);
-
-    var result = [];
-    if (sus) result.push("<b>Sustained 4 h at design:</b> " + sus.value.toFixed(1) + " °C" + (sus.upper !== null ? " ± " + (sus.upper - sus.value).toFixed(1) + " °C" : "") +
-        ", the dashed red line through each day's highest 4 hours");
-    var peak = system_measurements.flowT_peak_4h;
-    if (peak) result.push("<b>Peak 4 h:</b> " + peak.value.toFixed(1) + " °C, " + new Date(peak.start_time * 1000).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }));
-    if (form_flowT > 0) result.push("<b>Design flow temp:</b> " + form_flowT + " °C (system form)");
-    var first = new Date(typ.start_time * 1000), last = new Date((typ.end_time - 86400) * 1000);
-    var fmt = function (d) { return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }); };
-    result.push(used.length + " days with space heating, " + fmt(first) + " to " + fmt(last) +
-        (t.room == "feed" ? ", measured room temperature" : ", room temperature assumed 20 °C") +
-        (t.dhw_split ? "" : ", no hot water flag so all running counts as space heating" +
-            (no_dhw_cut ? "; only days with ΔT of " + t.fit_min_dT.toFixed(1) + " K or more are fitted, where hot water is a small share of the heat" : "")) +
-        ". From the nightly measurements, not the window above.");
-    $("#heatdemand-result").html(result.join("<br>"));
-
-    var font = { size: flot_font_size, color: "#666", fill: "#666" };
-    heatdemand_plot = Flot.plot(document.getElementById("heatdemand"), series.concat(lines), {
-        xaxis: { min: 0, max: xmax, autoScale: "none", font: font, axisLabel: "Inside - outside temperature (K)" },
-        yaxes: [{ min: ymin, max: ymax, autoScale: "none", font: font, axisLabel: "Space heating flow temperature (°C)" }],
-        grid: { show: true, color: "#aaa", borderWidth: 0, hoverable: true, clickable: true },
-        legend: { show: true, position: "nw" }
-    });
-}
-
-// Show the flow temperature chart, from either view (System card link)
-function heatdemand_show_flow() {
-    if (viewmode != "bargraph") $(".viewhistory").first().click();
-    heatdemand_set_mode("flow");
-    if (!$("#heatdemand-block").is(":visible")) $("#heatdemand-toggle").click();
-    else heatdemand_draw();
-    var block = document.getElementById("heatdemand-block");
-    if (block) block.scrollIntoView({ behavior: "smooth", block: "start" });
-}
-
-function heatdemand_set_mode(mode) {
-    heatdemand_mode = mode;
-    $("#heatdemand-mode .btn").each(function () { $(this).toggleClass("active", $(this).attr("data-mode") == mode); });
-}
-
-$("#heatdemand-mode").on("click", ".btn", function () {
-    heatdemand_set_mode($(this).attr("data-mode"));
-    heatdemand_draw();
-});
-
 function heatdemand_tooltip(item) {
-    if (item.series.flow) {
-        var d = item.series.flow[item.dataIndex];
-        var at = d.start4h ? new Date(d.start4h * 1000).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : "";
-        tooltip(item.pageX, item.pageY, new Date(d.time).toLocaleDateString() + "<br>ΔT: " + d.dT.toFixed(1) + " K<br>Flow temp: " + d.flowT.toFixed(1) + " °C" +
-            (d.flowT4h !== null ? "<br>Highest 4 h: " + d.flowT4h.toFixed(1) + " °C from " + at : ""), "#fff", "#000");
-        return;
-    }
     var p = item.series.days[item.dataIndex];
     var solar = p.solar != null ? "<br>Solar: " + p.solar.toFixed(1) + " kWh" : "";
     tooltip(item.pageX, item.pageY, new Date(p.time).toLocaleDateString() + "<br>ΔT: " + p.dT.toFixed(1) + " K<br>Heat: " + p.kw.toFixed(2) + " kW" + solar, "#fff", "#000");
@@ -512,21 +387,14 @@ $("#heatdemand_info_toggle").click(function () {
 
 document.getElementById("heatdemand").addEventListener("plotclick", function (event) {
     var item = event.detail[1];
-    if (!item || !(item.series.days || item.series.flow)) return;
+    if (!item || !item.series.days) return;
     $("#tooltip").remove();
-    if (item.series.flow) {
-        // Flow temperature days open at their highest 4 hours
-        var d = item.series.flow[item.dataIndex];
-        if (d.start4h) hp_open_power(d.start4h * 1000, d.start4h * 1000 + 4 * HOUR);
-        else hp_open_day(d.time);
-    } else {
-        hp_open_day(item.series.days[item.dataIndex].time);
-    }
+    hp_open_day(item.series.days[item.dataIndex].time);
     $("html, body").scrollTop(0);
 });
 
 document.getElementById("heatdemand").addEventListener("plothover", function (event) {
     var item = event.detail[1];
     $("#tooltip").remove();
-    if (item && (item.series.days || item.series.flow)) heatdemand_tooltip(item);
+    if (item && item.series.days) heatdemand_tooltip(item);
 });

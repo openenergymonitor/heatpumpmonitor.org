@@ -798,8 +798,14 @@ function hp_open_day(time) {
     hp_open_power(time, time + DAY);
 }
 
+// Measured values to highlight in the stats table while the power view shows their
+// window: { start, end (ms), cells: [{ category, key, col: "mean" | "weighted", title }] }.
+// Set by hp_open_measured_flowT, cleared by any other way into the power view.
+var stats_highlight = null;
+
 // Open the power view for a window in ms, from either view
 function hp_open_power(start, end) {
+    stats_highlight = null;
     if (viewmode == "bargraph") {
         last_bargraph_start = bargraph_start;
         last_bargraph_end = bargraph_end;
@@ -813,6 +819,27 @@ function hp_open_power(start, end) {
     $(".bargraph-navigation").hide();
     $(".powergraph-navigation").show();
     hp_power_panels(true);
+}
+
+// Open a day behind the measured flow temperature (System card): the power view
+// with the stats open at space heating (when running, with no hot water flag) and
+// the heat-weighted flow and outside temperatures highlighted. flowT and outsideT
+// are the nightly measurement's values, worked out from the same samples.
+function hp_open_measured_flowT(start, end, flowT, outsideT) {
+    var category = feeds["heatpump_dhw"] != undefined ? "space_heating" : "when_running";
+    hp_open_power(start, end);
+    var note = ", weighted by heat output " + (category == "space_heating" ? "during space heating" : "while running") + ". Worked out nightly from the 10 s data, so it can differ by a few hundredths";
+    var cells = [{ category: category, key: "heatpump_flowT", col: "weighted", title: "Measured flow temperature on the System card: " + flowT.toFixed(1) + " °C" + note }];
+    if (outsideT !== null && !isNaN(outsideT)) {
+        cells.push({ category: category, key: "heatpump_outsideT", col: "weighted", title: "Outside temperature on the System card: " + outsideT.toFixed(1) + " °C" + note });
+    }
+    stats_highlight = { start: start, end: end, cells: cells };
+    $("#advanced-toggle").addClass("active").attr("aria-expanded", true);
+    $("#advanced-block").show();
+    $(".show_stats_category").removeClass("active");
+    $(".show_stats_category[key='" + category + "']").addClass("active");
+    $(".stats_category").hide();
+    $(".stats_category[key='" + category + "']").show();
 }
 
 document.getElementById('placeholder').addEventListener("plotselected", function (event) {

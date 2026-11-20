@@ -32,7 +32,7 @@ The core of the page is this comparison. Form fields are in
 | Heat transfer coefficient | none (implied: `heat_loss` / (room − `design_temp`)) | Slope of the same fit |
 | Heat loss per floor area | `heat_loss` / `floor_area` | Measured heat loss / `floor_area` |
 | Outside design temperature | `design_temp` | Coldest days experienced, distribution of daily outside temperature |
-| Design flow temperature | `flow_temp` | Flow temperature vs ΔT fit, extrapolated to design; cross-checked from emitter capacity |
+| Design flow temperature | `flow_temp` | Space heating flow temperature on the coldest days; cross-checked from emitter capacity |
 | Emitter capacity | none (implied by `heat_loss` at `flow_temp`) | Radiator equation inverted per steady-state episode |
 | Heat pump size vs load | `hp_output` vs `heat_loss` | Measured design heat loss vs rated and tested max output |
 
@@ -61,13 +61,13 @@ Readiness:
 | Outside temperature distribution | Curve of daily means with `design_temp` marked | Day | All days of data, coldest 1% / 2.5% | none | Outside temp | Needs work |
 | Emitter capacity | kW at ΔT50 (radiators); kW at a stated MWT–room ΔT for all types | Episode | heat = rated × (ΔT / 50)^n per episode, kWh-weighted, KDE with peak detection | `emitter.js`, `signature_episodes` | Room temp feed, heat, return temp | Needs work (UFH and mixed systems, no-room-temp fallback) |
 | Implied emitter capacity from form | kW at ΔT50 | none | Form `heat_loss` at form `flow_temp`, assumed design dT and room | none | With form data | Ready (simple calculation) |
-| Flow temperature needed at design: empirical | °C | Day | Flow temp vs ΔT fit on space heating days, extrapolated to design ΔT. With no DHW flag, only days with ΔT at least half the highest, as hot water heat counts as space heating and skews mild days | `scripts/measurements` (typical and sustained 4 h) | Outside temp | Ready |
 | Flow temperature needed at design: physical | °C | Episode | Measured design heat loss + measured emitter capacity + running dT → MWT → flowT | none | Room temp feed | Needs work |
-| Flow temperature on coldest day | °C, mean and max | Day | Daily weighted mean, max during space heating | `scripts/measurements` (`coldest_day`, `flowT_peak_4h`) | All | Ready |
+| Flow temperature on the coldest days | °C, highest day, range and max 4 h | Day | Highest daily space heating flow temperature (weighted by heat output) of the 3 coldest days of the last year (by outside temperature weighted the same way; both match the dashboard's space heating heat-weighted means), lowest to highest day, and the highest 4 h on those days. Replaces a flow temp vs ΔT fit extrapolated to design: with no DHW flag, reheats skew the mild days that set the slope, while on cold days they are a small share of the heat | `scripts/measurements` (`flowT_coldest_days`, `flowT_peak_4h`) | Outside temp | Ready |
 | Heat pump size vs load | Ratio | none | Measured design heat loss / rated output, and / max output from capacity tests | Dashboard System card and heat demand tool (max tests, peak 4 h) | All | Needs work |
 
-The two flow temperature routes are an internal check. If they disagree
-by more than their uncertainty, one of the inputs is off: room
+The physical route, worked out at the coldest days' outside temperature,
+and the measured coldest days flow temperature are an internal check. If
+they disagree by more than their uncertainty, one of the inputs is off: room
 temperature, emitter exponent, or a heating regime change partway through
 the data.
 
@@ -249,15 +249,15 @@ Results computed on a dev machine won't reach live system fields.
 
 - [x] Nightly heat loss and flow temperature fit with confidence and
       prediction intervals (`scripts/measurements/system_measurements.php`,
-      `measurement` table). Flow temperature from space heating only: typical
-      (weighted by heat output) and sustained (highest 4 h each day)
+      `measurement` table). Flow temperature from space heating only, on the
+      3 coldest days (highest day, range, and highest 4 h)
 - [ ] Block bootstrap by week for those intervals
 - [x] Outside temperature distribution and coldest days vs `design_temp`:
       99.6% / 99.0% design outside temperature from hourly data over complete
       years, coldest hour and coldest day
 - [x] Peak heat output: highest day and highest 4 h, with timestamps
 - [x] Measured values on the MyHeatpump dashboard (System card, heat demand
-      tool with a flow temperature chart) and as system list columns
+      tool) and as system list columns
 - [ ] Deploy: tables, nightly cron after the daily stats, one `--full` run,
       drop the retired `measured_*` columns from `system_meta`
 - [ ] Shared distribution library from `emitter.js`
@@ -273,7 +273,7 @@ Results computed on a dev machine won't reach live system fields.
 - [ ] Cards on `system_view.php` (the dashboard System card shows them so far)
 
 Done when: the measured vs form card shows on all systems with enough
-data, the two flow temperature routes agree within their intervals on
+data, the physical and coldest days flow temperatures agree within their intervals on
 most systems with a room temperature feed, and loop volumes on the known
 systems match the manual checks to within about 10%.
 

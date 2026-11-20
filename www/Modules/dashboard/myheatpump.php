@@ -372,19 +372,13 @@ if ($private_mode || $system_data->share==0) {
     </div>
 
     <div id="heatdemand-block" class="app-card app-card-body" style="display:none">
-      <div class="d-flex mb-2">
-        <div class="btn-group app-segmented" id="heatdemand-mode" role="group" aria-label="Chart">
-          <button type="button" class="btn active" data-mode="heat" title="Daily heat output against inside - outside temperature difference">Heat</button>
-          <button type="button" class="btn" data-mode="flow" title="Daily space heating flow temperature against inside - outside temperature difference">Flow temperature</button>
-        </div>
-      </div>
       <div id="heatdemand_bound" style="width:100%; height:400px; overflow:hidden">
         <div id="heatdemand" style="height:400px"></div>
       </div>
       <p id="heatdemand-design" class="mb-1"></p>
       <p id="heatdemand-result" class="small"></p>
       <div class="d-flex flex-wrap gap-2">
-        <div id="heatdemand-heat-controls" class="d-flex flex-wrap gap-2">
+        <div class="d-flex flex-wrap gap-2">
         <div class="input-group w-auto" title="Outside temperature for the heat demand estimate">
           <span class="input-group-text">Design outside</span>
           <input type="number" class="form-control" style="width:64px" id="heatdemand_design_outsideT" value="-3" step="0.5">
@@ -430,7 +424,6 @@ if ($private_mode || $system_data->share==0) {
           <li><b>Min ΔT:</b> optional, excludes mild days before the fit.</li>
           <li><b>Min quality:</b> percentage of the day with heat meter data. Days with gaps under-count heat and are excluded.</li>
           <li><b>Split by:</b> heating season runs July to June.</li>
-          <li><b>Flow temperature:</b> each point is one day's space heating flow temperature, weighted by heat output, against mean room minus outside temperature, over the latest year of the nightly measurements (not the window above). Hollow points are each day's highest 4 hours, the sustained flow temperature, for example coming off setback. Hover for details, click to open the power view at that day's highest 4 hours. The lines are read off at the design temperature difference to give the measured flow temperatures on the System card.</li>
         </ul>
         <p class="mt-2 mb-1">Notes on the estimate:</p>
         <ul class="mb-0 ps-3">

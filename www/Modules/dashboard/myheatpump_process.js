@@ -291,6 +291,15 @@ function process_stats() {
         }
     }
 
+    // A measured value opened from the System card, while its window is shown
+    var hl = stats_highlight && view.start == stats_highlight.start && view.end == stats_highlight.end ? stats_highlight : null;
+    // toFixed gives "-0.0" for small negatives
+    function fixed(v, dp) { return (1 * v).toFixed(dp).replace(/^-(0\.?0*)$/, "$1"); }
+    function hl_td(x, key, col, html) {
+        var c = hl ? hl.cells.find(function (c) { return c.category == x && c.key == key && c.col == col; }) : null;
+        return "<td style='text-align:center'" + (c ? " class='hp-stat-highlight' title='" + c.title + "'" : "") + ">" + html + "</td>";
+    }
+
     for (var x in stats) {
         let out = "";
 
@@ -332,11 +341,11 @@ function process_stats() {
                 if (stats[x][key].diff != null) diff_str = (1*stats[x][key].diff).toFixed(feed_options[key].dp) + " " + feed_options[key].unit;
                 out += "<td style='text-align:center; color:var(--bs-secondary-color)'>" + diff_str + "</td>";
 
-                out += "<td style='text-align:center'>" + (1*stats[x][key].mean).toFixed(feed_options[key].dp) + " " + feed_options[key].unit + "</td>";
+                out += hl_td(x, key, "mean", fixed(stats[x][key].mean, feed_options[key].dp) + " " + feed_options[key].unit);
 
                 var weighted_mean_str = "";
-                if (stats[x][key].weighted_mean != null) weighted_mean_str = (1*stats[x][key].weighted_mean).toFixed(feed_options[key].dp) + " " + feed_options[key].unit;
-                out += "<td style='text-align:center'>" + weighted_mean_str + "</td>";
+                if (stats[x][key].weighted_mean != null) weighted_mean_str = fixed(stats[x][key].weighted_mean, feed_options[key].dp) + " " + feed_options[key].unit;
+                out += hl_td(x, key, "weighted", weighted_mean_str);
 
                 if (feed_options[key].unit == "W") {
                     stats[x][key].kwh = (stats[x][key].mean * stats[x][key].count * view.interval) / 3600000;

@@ -33,12 +33,10 @@ class Measurement
         'design_outsideT_990' => array('name' => 'Design outside temp 99.0%', 'heading' => 'DOT<br>99.0%', 'group' => 'Measured: Design temperature', 'unit' => '°C', 'dp' => 1,
             'helper' => 'Hourly outside temperature equalled or exceeded for 99.0% of hours, complete years only'),
 
-        'flowT_typical_design' => array('name' => 'Typical flow temp at design', 'heading' => 'Flow temp<br>at design', 'group' => 'Measured: Flow temperature', 'unit' => '°C', 'dp' => 1,
-            'helper' => 'Daily space heating flow temperature weighted by heat output, against inside - outside temperature difference over the latest year, read off at design'),
-        'flowT_sustained_design' => array('name' => 'Sustained flow temp at design', 'heading' => 'Sustained<br>flow temp', 'group' => 'Measured: Flow temperature', 'unit' => '°C', 'dp' => 1,
-            'helper' => 'As typical flow temp at design, using the highest 4 hour space heating flow temperature each day'),
+        'flowT_coldest_days' => array('name' => 'Flow temp on coldest days', 'heading' => 'Flow temp<br>coldest days', 'group' => 'Measured: Flow temperature', 'unit' => '°C', 'dp' => 1,
+            'helper' => 'Highest daily space heating flow temperature, weighted by heat output, of the 3 coldest days of the latest year'),
         'flowT_peak_4h' => array('name' => 'Peak 4 hour flow temp', 'heading' => 'Peak 4h<br>flow temp', 'group' => 'Measured: Flow temperature', 'unit' => '°C', 'dp' => 1,
-            'helper' => 'Highest 4 hour space heating flow temperature in the latest year, weighted by heat output')
+            'helper' => 'Highest 4 hour space heating flow temperature, weighted by heat output, on the 3 coldest days of the latest year')
     );
 
     public function __construct($mysqli, $system_stats)

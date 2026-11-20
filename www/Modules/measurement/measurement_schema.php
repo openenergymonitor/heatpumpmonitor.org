@@ -43,10 +43,11 @@ $schema['measurement_day'] = array(
     'roomT'               => array('type' => 'float', 'Null' => true, 'default' => null),     // daily mean, °C
     'outsideT_hourly'     => array('type' => 'text', 'Null' => true, 'default' => null),      // JSON, hourly means from midnight
 
-    // Space heating: running, not DHW, not cooling, excluding the settling time after DHW
+    // Space heating: running, not DHW, not cooling (as the dashboard's space heating stats)
     'space_s'             => array('type' => 'int(11)', 'Null' => true, 'default' => null),   // running seconds
     'space_kwh'           => array('type' => 'float', 'Null' => true, 'default' => null),
     'space_flowT'         => array('type' => 'float', 'Null' => true, 'default' => null),     // weighted by heat output
+    'space_outsideT'      => array('type' => 'float', 'Null' => true, 'default' => null),     // weighted by heat output
 
     // Highest 4 hour heat output (all modes), kW, and its start
     'heat_max4h'          => array('type' => 'float', 'Null' => true, 'default' => null),

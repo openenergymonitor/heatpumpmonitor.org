@@ -244,6 +244,9 @@
 .hp-sys-chip.is-on { opacity: 1; color: var(--bs-body-color); border: 1px solid transparent; background: rgba(var(--bs-primary-rgb), 0.12); }
 .hp-sys-chip.is-on i { color: var(--bs-primary); }
 .hp-sys-badge { font-weight: 600; color: var(--bs-body-color); background: rgba(var(--bs-body-color-rgb), 0.06); }
+.hp-sys-badge-sub { font-weight: 400; opacity: 0.7; }
+/* Stats table cell opened from a System card measurement */
+#advanced-block .table td.hp-stat-highlight { --bs-table-bg-state: rgba(var(--bs-link-color-rgb), 0.14); box-shadow: inset 0 0 0 2px rgba(var(--bs-link-color-rgb), 0.55), inset 0 0 0 9999px rgba(var(--bs-link-color-rgb), 0.14); border-radius: 6px; font-weight: 600; }
 .hp-sys-badge.is-good { color: #237a3b; background: rgba(58,166,85,0.14); }
 
 .hp-sys-flag { margin-top: 8px; padding: 6px 10px; border-radius: 6px; font-size: 12px; color: #8a5300; background: rgba(240,173,78,0.18); }
@@ -283,13 +286,10 @@
 .hp-sys-caption .bi { font-size: 11px; -webkit-text-stroke: 0.5px; }
 #system-block.is-collapsed { padding-bottom: 2px; }
 
-/* Measured peaks on the scale bars: peak day and 4 h heat, sustained 4 h flow temperature */
+/* Measured peaks on the scale bars: peak day and 4 h heat, peak 4 h flow temperature */
 .hp-sys-scale-peak { position: absolute; top: -5px; bottom: -5px; width: 3px; margin-left: -1px; border-radius: 2px; background: #b8890c; }
 .hp-sys-scale-peak.is-flow { background: #c9362f; opacity: 0.7; }
 .hp-sys-period, .hp-sys-feature-note .hp-sys-period b, .hp-sys-period .hp-sys-badge { color: var(--bs-link-color); text-decoration: none; }
 .hp-sys-period:hover, .hp-sys-period:hover b { text-decoration: underline; }
 .hp-sys-period .hp-sys-badge { cursor: pointer; background: rgba(var(--bs-link-color-rgb), 0.08); }
 /* Flow temperature measured value: links to the flow temperature chart */
-.hp-sys-flow-chart { color: inherit; text-decoration: none; }
-.hp-sys-flow-chart:hover { text-decoration: underline dotted; }
-.hp-sys-feature-note .hp-sys-flow-chart { color: var(--bs-link-color); }
