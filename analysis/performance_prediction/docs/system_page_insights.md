@@ -260,6 +260,13 @@ Results computed on a dev machine won't reach live system fields.
       peak day, often a boost or recovery on a mild day
 - [x] Measured values on the MyHeatpump dashboard (System card, heat demand
       tool) and as system list columns
+- [x] Space heating flow - return ΔT and implied flow rate on the coldest days
+      (`dT_coldest_days`, `flowrate_coldest_days`, from the daily stats)
+- [x] Dashboard Measurements card laid out with concept (example) values for
+      what isn't built yet; data checks from the last 365 day stats (coverage,
+      hot water flag set, room temperature and flow rate feeds, immersion and
+      boiler heat, air errors, standby power, starts); flow temperature by
+      outside temperature map from the daily stats
 - [ ] Deploy: tables, nightly cron after the daily stats, one `--full` run,
       drop the retired `measured_*` columns from `system_meta`
 - [ ] Shared distribution library from `emitter.js`

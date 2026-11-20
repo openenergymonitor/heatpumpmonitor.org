@@ -170,6 +170,8 @@ global $path;
                   <tr><td><code>design_outsideT_996</code>, <code>design_outsideT_990</code></td><td>°C</td><td>Hourly outside temperature equalled or exceeded for 99.6% / 99.0% of hours, complete years only</td></tr>
                   <tr><td><code>flowT_coldest_days</code></td><td>°C</td><td>Highest daily space heating flow temperature, weighted by heat output, of the 3 coldest days of the last year (by outside temperature weighted the same way). Lower and upper are the lowest and highest of those days, listed in details</td></tr>
                   <tr><td><code>flowT_peak_4h</code></td><td>°C</td><td>Highest 4 hour space heating flow temperature on those days</td></tr>
+                  <tr><td><code>dT_coldest_days</code></td><td>K</td><td>Space heating mean flow - return temperature on those days, from the daily stats, weighted by space heating heat. Lower and upper are the lowest and highest day, listed in details</td></tr>
+                  <tr><td><code>flowrate_coldest_days</code></td><td>l/min</td><td>Space heating flow rate on those days, implied as mean heat / (cp × mean flow - return) rather than read from the flow meter</td></tr>
                   <tr><td><code>coldest_day</code></td><td>°C</td><td>Coldest day of the last year, outside temperature weighted by heat output (in <code>/measurement/system.json</code> only)</td></tr>
                 </table>
 

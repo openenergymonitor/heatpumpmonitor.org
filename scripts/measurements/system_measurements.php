@@ -40,6 +40,12 @@
 //        rather than a fit extrapolated to design: with no hot water flag,
 //        reheats count as space heating and skew the mild days that set a fit's
 //        slope, while on cold days they are a small share of the heat.
+//    dT_coldest_days, flowrate_coldest_days
+//        Space heating flow - return ΔT and flow rate on the same coldest days,
+//        from the daily stats: mean flow and return temperature while space
+//        heating, and flow rate implied as mean heat / (cp × ΔT) rather than
+//        read from the flow meter, whose units differ between systems. Mean of
+//        the days weighted by space heating heat, with the lowest and highest day.
 //
 // Measurements that come from one period carry start_time and end_time;
 // selected days are listed with their timestamps in details.
@@ -63,15 +69,17 @@ $system_stats = new SystemStats($mysqli, $system);
 require "$dir/../feed_scan/phpfina_reader.php";
 require "$dir/heatloss_fit.php";
 
-const VERSION = 9;                   // 2: flowT_typical_design details.points, 3: no hot water flag fits the colder days,
+const VERSION = 10;                  // 2: flowT_typical_design details.points, 3: no hot water flag fits the colder days,
                                      // 4: flowT_coldest_days replaces the flow temperature fits, 5: 3 coldest days rather than 5,
                                      // 6: flowT_coldest_days is the highest of the days, not the median,
                                      // 7: no settling time after DHW, days ranked by space heating outside temperature,
                                      // 8: heat_loss_design(_measured) details.max_dT,
-                                     // 9: heat_coldest_days replaces heat_peak_day, heat_peak_4h on the coldest days
+                                     // 9: heat_coldest_days replaces heat_peak_day, heat_peak_4h on the coldest days,
+                                     // 10: dT_coldest_days, flowrate_coldest_days
 const PHPFINA_DIR = "/var/opt/emoncms/phpfina/";
 const TIMEZONE = "Europe/London";
 const FILL_MAX_S = 900;              // forward fill gaps shorter than this, as the myheatpump app
+const CP_WATER = 4.15;               // kJ/kg/K, water at 30-45 °C, as the heat pump database's flow rate check
 const STARTING_POWER = 100;          // running threshold (W) when the app config has none, as the daily stats
 const BIN_S = 600;                   // rolling windows step in 10 minute bins
 const WINDOW_BINS = 24;              // 4 hours
@@ -456,7 +464,53 @@ function derive($system_stats, $systemid, $days, $meta)
         }
     }
 
+    // Space heating flow - return ΔT and implied flow rate on the same days
+    if ($cold) {
+        $hyd = coldest_days_hydraulics($system_stats, $systemid, $cold['days'], $days);
+        if ($hyd) {
+            $dTs = array_column($hyd['days'], 'dT');
+            $frs = array_column($hyd['days'], 'flowrate');
+            $common = array('heat_kw' => r($hyd['heat_kw'], 2), 'cp' => CP_WATER, 'days' => $hyd['days']);
+            $m['dT_coldest_days'] = measurement(r($hyd['dT'], 2), "K", count($dTs), min($dTs), max($dTs), null, null, array(
+                'method' => "Space heating mean flow - return temperature on the coldest days of the latest year (as flowT_coldest_days), from the daily stats; mean of the days weighted by space heating heat, lower and upper the lowest and highest day") + $common);
+            $m['flowrate_coldest_days'] = measurement(r($hyd['flowrate'], 2), "l/min", count($frs), min($frs), max($frs), null, null, array(
+                'method' => "Space heating flow rate implied as mean heat / (cp × mean ΔT) while space heating, on the same days; mean of the days weighted by space heating heat") + $common);
+        }
+    }
+
     return $m;
+}
+
+// Flow - return ΔT and implied flow rate for each of the coldest days, from the
+// daily stats' space heating means (time means while space heating). With a
+// steady flow rate, mean heat = cp × flow × mean ΔT, so the flow rate follows
+// from the means. Days with under an hour of space heating or a ΔT under 0.5 K
+// are left out
+function coldest_days_hydraulics($system_stats, $systemid, $cold_days, $days)
+{
+    $csv = $system_stats->get_daily($systemid, min($cold_days), max($cold_days) + 86400,
+        "timestamp,space_flowT_mean,space_returnT_mean,space_heat_mean,space_data_length");
+    if ($csv === false || !is_string($csv)) return null;
+    $list = array(); $w = 0; $wdT = 0; $wfr = 0; $wh = 0;
+    foreach (array_slice(explode("
+", trim($csv)), 1) as $line) {
+        $p = explode(",", $line);
+        if (count($p) < 5 || !in_array((int) $p[0], $cold_days)) continue;
+        if (!is_numeric($p[1]) || !is_numeric($p[2]) || !is_numeric($p[3]) || !is_numeric($p[4])) continue;
+        $ts = (int) $p[0];
+        $dT = (float) $p[1] - (float) $p[2];
+        $heat = (float) $p[3];
+        $secs = (float) $p[4];
+        if ($secs < 3600 || $dT < 0.5 || $heat <= 0) continue;
+        $fr = $heat / (CP_WATER * 1000 * $dT) * 60;     // kg/s to l/min, about 1 kg per litre
+        $kwh = $heat * $secs / 3600000;
+        $list[] = array('start' => $ts, 'end' => $ts + 86400, 'dT' => r($dT, 2), 'flowrate' => r($fr, 2),
+            'heat_kw' => r($heat / 1000, 2), 'space_kwh' => r($kwh, 1), 'running_h' => r($secs / 3600, 1),
+            'outsideT' => isset($days[$ts]) ? r($days[$ts]['space_outsideT'], 1) : null);
+        $w += $kwh; $wdT += $kwh * $dT; $wfr += $kwh * $fr; $wh += $kwh * $heat;
+    }
+    if (!$list || $w <= 0) return null;
+    return array('dT' => $wdT / $w, 'flowrate' => $wfr / $w, 'heat_kw' => $wh / $w / 1000, 'days' => $list);
 }
 
 // Heat demand fit (heatloss_fit.php, from the old heat demand explorer) on the daily stats

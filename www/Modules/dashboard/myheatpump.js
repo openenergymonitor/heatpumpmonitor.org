@@ -314,11 +314,15 @@ function show() {
                 dataType: "json",
                 success: function (result) {
                     result = result[config.id];
-                    if (result == undefined) return;
-                    totals[period] = result;
-                    alltime_totals_draw();
-                    // The Measurements card's efficiency tiles use the last 365 days
-                    if (period == "last365" && typeof measurements_card_render == "function") measurements_card_render();
+                    if (result != undefined) {
+                        totals[period] = result;
+                        alltime_totals_draw();
+                    }
+                    // The Measurements card's efficiency tiles and data checks use the last 365 days
+                    if (period == "last365") {
+                        window.hp_last365_loaded = true;
+                        if (typeof measurements_card_render == "function") measurements_card_render();
+                    }
                 }
             });
         });

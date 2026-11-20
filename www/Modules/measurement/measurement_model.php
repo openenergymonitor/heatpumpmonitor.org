@@ -36,7 +36,12 @@ class Measurement
         'flowT_coldest_days' => array('name' => 'Flow temp on coldest days', 'heading' => 'Flow temp<br>coldest days', 'group' => 'Measured: Flow temperature', 'unit' => '°C', 'dp' => 1,
             'helper' => 'Highest daily space heating flow temperature, weighted by heat output, of the 3 coldest days of the latest year'),
         'flowT_peak_4h' => array('name' => 'Peak 4 hour flow temp', 'heading' => 'Peak 4h<br>flow temp', 'group' => 'Measured: Flow temperature', 'unit' => '°C', 'dp' => 1,
-            'helper' => 'Highest 4 hour space heating flow temperature, weighted by heat output, on the 3 coldest days of the latest year')
+            'helper' => 'Highest 4 hour space heating flow temperature, weighted by heat output, on the 3 coldest days of the latest year'),
+
+        'dT_coldest_days' => array('name' => 'Flow - return dT on coldest days', 'heading' => 'Flow-return<br>coldest days', 'group' => 'Measured: Flow temperature', 'unit' => 'K', 'dp' => 1,
+            'helper' => 'Space heating mean flow - return temperature on the 3 coldest days of the latest year, weighted by space heating heat'),
+        'flowrate_coldest_days' => array('name' => 'Flow rate on coldest days', 'heading' => 'Flow rate<br>coldest days', 'group' => 'Measured: Flow temperature', 'unit' => 'l/min', 'dp' => 1,
+            'helper' => 'Space heating flow rate implied as mean heat / (cp × mean flow - return) on the 3 coldest days of the latest year')
     );
 
     public function __construct($mysqli, $system_stats)
