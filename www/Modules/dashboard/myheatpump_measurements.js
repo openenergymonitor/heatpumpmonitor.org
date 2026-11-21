@@ -958,14 +958,16 @@ function flowmap_draw() {
     if (inf_x === null || inf_x === undefined) inf = null;
     if (inf) {
         var ii = Math.floor((inf_x - d.x0) / d.xs), ij = fj(inf.value);
-        i0 = Math.max(0, Math.min(i0, ii - pi)); i1 = Math.min(d.nx, Math.max(i1, ii + 1 + pi));
-        j0 = Math.max(0, Math.min(j0, ij - pj)); j1 = Math.min(d.ny, Math.max(j1, ij + 1 + pj));
+        // It can be colder than any of the data (the design outside temperature):
+        // the axes then go beyond the grid, with no heat there
+        i0 = Math.min(i0, ii - pi); i1 = Math.max(i1, ii + 1 + pi);
+        j0 = Math.min(j0, ij - pj); j1 = Math.max(j1, ij + 1 + pj);
     }
-    if (j1 - j0 < mj) { j1 = Math.min(d.ny, j0 + mj); j0 = Math.max(0, j1 - mj); }
+    if (j1 - j0 < mj) { j0 = Math.floor((j0 + j1 - mj) / 2); j1 = j0 + mj; }
     var nx = i1 - i0, ny = j1 - j0;
     var xlo = d.x0 + i0 * d.xs, xhi = d.x0 + i1 * d.xs, lo = d.y0 + j0 * d.ys, hi = d.y0 + j1 * d.ys;
 
-    var colsum_max = Math.max.apply(null, colsum.slice(i0, i1));
+    var colsum_max = Math.max.apply(null, colsum.slice(Math.max(0, i0), Math.max(0, i1)));
 
     var cw = pw / nx, ch = ph / ny;
     function X(t) { return L + (t - xlo) / (xhi - xlo) * pw; }
@@ -1003,7 +1005,7 @@ function flowmap_draw() {
     // faintest tint, so the area reads as continuous
     var img = ctx.createImageData(nx, ny), px = img.data;
     for (var i = i0; i < i0 + nx; i++) for (var j = j0; j < j0 + ny; j++) {
-        var v = grid[i][j], o = 4 * ((j1 - 1 - j) * nx + (i - i0));
+        var v = grid[i] && grid[i][j] || 0, o = 4 * ((j1 - 1 - j) * nx + (i - i0));
         var a = v > 0 && colmax[i] > 0 ? FLOWMAP_FLOOR + (1 - FLOWMAP_FLOOR) * Math.pow(Math.min(1, v / colmax[i]), FLOWMAP_GAMMA) : FLOWMAP_FLOOR;
         px[o] = 201; px[o + 1] = 54; px[o + 2] = 47; px[o + 3] = Math.round(255 * a);
     }
