@@ -61,8 +61,8 @@ var MEASUREMENTS_FLEET = {
     min_ratio: { p: [0.73, 0.84, 0.90] }
 };
 
-// Page state for the card: heat map mode and pipe size for the length
-var hp_ms_state = { mode: "space", pipe: 28 };
+// Page state for the card: pipe size for the length
+var hp_ms_state = { pipe: 28 };
 
 function measurements_card_render() {
     var m = window.system_meta;
@@ -573,15 +573,11 @@ function measurements_card_render() {
             if (det.b <= -0.1) res += ' <b>' + fmt(det.a + det.b * det.x_lo, 1) + '°</b> at ' + fmt(det.x_lo, 0) + '°C to <b>' +
                 fmt(det.a + det.b * det.x_hi, 1) + '°</b> at ' + fmt(det.x_hi, 0) + '°C, ' + Math.round(100 * det.within) + '% of heat within ±2 K';
         }
-        var modes = [["space", "Space heating"], ["water", "Hot water"], ["all", "All"]];
-        var btns = '<div class="btn-group app-segmented hp-ms-map-modes">' + modes.map(function (md) {
-            return '<button class="btn' + (hp_ms_state.mode == md[0] ? ' active' : '') + '" data-mode="' + md[0] + '">' + md[1] + '</button>';
-        }).join("") + '</div>';
-        return '<div class="hp-ms-map-block"><div class="hp-ms-map-top">' + btns +
+        return '<div class="hp-ms-map-block"><div class="hp-ms-map-top">' +
             '<div class="hp-ms-map-legend" title="Colour is scaled within each outside temperature; the bars above show each one\'s heat"><span>Less</span><span class="hp-ms-map-ramp"></span><span>More heat at each outside temperature</span></div></div>' +
-            '<div id="hp-ms-map" class="hp-ms-map"><canvas role="img" aria-label="Heat delivered at each flow and outside temperature"></canvas><div class="hp-ms-tip" hidden></div></div>' +
+            '<div id="hp-ms-map" class="hp-ms-map"><canvas role="img" aria-label="Space heating delivered at each flow and outside temperature"></canvas><div class="hp-ms-tip" hidden></div></div>' +
             (res ? '<div class="hp-ms-map-result">' + res + '</div>' : '') +
-            '<span class="hp-ms-fine">Heat at each 10 s reading\'s flow and outside temperature, last 365 days (' + map.n + ' heating days)</span></div>';
+            '<span class="hp-ms-fine">Space heating at each 10 s reading\'s flow and outside temperature, below ' + FLOWMAP_MAX_OUTSIDE + '°C outside, last 365 days (' + map.n + ' heating days)</span></div>';
     }
 
     // -- Primary pipework and system volume ------------------------------------
@@ -740,17 +736,19 @@ function measurements_card_render() {
     H.card(el, "measurements", "Measurements", note, body, measurements_on_open);
 }
 
-// Flow temperature map data: heat (kWh) in bins of outside (x) and flow (y)
-// temperature, for space heating and hot water, and the fit (peaks and line), from the
+// Flow temperature map data: space heating (kWh) in bins of outside (x) and flow (y)
+// temperature, below FLOWMAP_MAX_OUTSIDE outside, and the fit (peaks and line), from the
 // nightly scan's flowT_map. Grids are [i][j], i from x0 in steps of xs, j from
 // y0 in steps of ys. Null until the PNG has decoded, or with no flowT_map
+var FLOWMAP_MAX_OUTSIDE = 15;   // °C, as the measurement script's FLOWMAP_MAX_OUTSIDE
+var FLOWMAP_RIDGE_K = 5;        // K: the map shows flow this far either side of the lowest and highest peak dots
 function flowmap_build(mv) {
     var fm = mv("flowT_map");
     return fm && fm.details && fm.details.png ? flowmap_from_png(fm) : null;
 }
 
-// From the nightly flowT_map: an 8 bit greyscale PNG, space heating rows then
-// hot water rows, highest flow first; a pixel v > 0 is
+// From the nightly flowT_map: an 8 bit greyscale PNG of space heating rows,
+// highest flow first (older maps have hot water rows below: not read); a pixel v > 0 is
 // exp((v - 1) / 254 × ln(max_wh)) Wh. Decoded once (asynchronously: returns
 // null until then, and draws the card again when done)
 function flowmap_from_png(fm) {
@@ -765,9 +763,11 @@ function flowmap_from_png(fm) {
         var cx = cv.getContext("2d");
         cx.drawImage(img, 0, 0);
         var px = cx.getImageData(0, 0, dt.nx, 2 * dt.ny).data;
+        // Columns below FLOWMAP_MAX_OUTSIDE (older maps go higher)
+        var nx = Math.max(1, Math.min(dt.nx, Math.round((FLOWMAP_MAX_OUTSIDE - dt.x0) / dt.x_step)));
         function grid(half, max_wh) {
             var g = [], ln = Math.log(Math.max(max_wh, 1.001));
-            for (var i = 0; i < dt.nx; i++) {
+            for (var i = 0; i < nx; i++) {
                 var col = [];
                 for (var j = 0; j < dt.ny; j++) {
                     var v = px[4 * ((half * dt.ny + dt.ny - 1 - j) * dt.nx + i)];
@@ -781,8 +781,8 @@ function flowmap_from_png(fm) {
         var f = dt.fit, fit = f && f.peaks && f.peaks.length ? { a: f.intercept, b: f.slope, within: f.within_2K,
             peaks: f.peaks.map(function (p) { return { x: p[0], y: p[1] }; }),
             x_lo: f.peaks[0][0] - 0.5, x_hi: f.peaks[f.peaks.length - 1][0] + 0.5 } : null;
-        var data = { x0: dt.x0, xs: dt.x_step, nx: dt.nx, y0: dt.y0, ys: dt.y_step, ny: dt.ny,
-            space: grid(0, dt.max_wh.space), water: grid(1, dt.max_wh.water), n: fm.samples, fit: fit };
+        var data = { x0: dt.x0, xs: dt.x_step, nx: nx, y0: dt.y0, ys: dt.y_step, ny: dt.ny,
+            space: grid(0, dt.max_wh.space), n: fm.samples, fit: fit };
         window.hp_ms_png = { updated: fm.updated, data: data };
         measurements_card_render();
     };
@@ -898,13 +898,7 @@ function measurements_on_open() {
     flowmap_draw();
 }
 
-function flowmap_grid(d, mode) {
-    if (mode == "space") return d.space;
-    if (mode == "water") return d.water;
-    return d.space.map(function (col, i) { return col.map(function (v, j) { return v + d.water[i][j]; }); });
-}
-
-// Draws the map to fit its box; called when the card opens, on resize and on a mode change
+// Draws the map to fit its box; called when the card opens and on resize
 function flowmap_draw() {
     var wrap = document.getElementById("hp-ms-map"), d = window.hp_ms_png ? window.hp_ms_png.data : null;
     if (!wrap || !d || wrap.offsetParent === null) return;
@@ -923,10 +917,12 @@ function flowmap_draw() {
     // Strip above the map: each outside temperature column's heat
     var SH = 22, L = 38, R = 10, T = 10 + SH + 6, B = 34, pw = W - L - R, ph = Ht - T - B;
 
-    // Heat in the current mode. Both axes are cropped to the cells that hold the
+    // Space heating. Both axes are cropped to the cells that hold the
     // heat: stray cells at either end with 0.5% of the heat between them are
-    // left out, the design point is kept in, and 1 K is added each side
-    var grid = flowmap_grid(d, hp_ms_state.mode), total = 0, colsum = [], colmax = [], rowsum = [];
+    // left out and 1 K is added each side. Flow is then cropped to
+    // FLOWMAP_RIDGE_K either side of the peak dots, leaving out the long tail
+    // of warm-up heat below the curve; the inferred design point is kept in
+    var grid = d.space, total = 0, colsum = [], colmax = [], rowsum = [];
     for (var j = 0; j < d.ny; j++) rowsum.push(0);
     for (var i = 0; i < d.nx; i++) {
         var sum = 0, cm = 0;
@@ -945,21 +941,24 @@ function flowmap_draw() {
     var tail = 0.005 * total;
     var sx = total > 0 ? span(colsum, tail) : [0, d.nx], sy = total > 0 ? span(rowsum, tail) : [0, d.ny];
     var i0 = sx[0], i1 = sx[1], j0 = sy[0], j1 = sy[1];
-    var m = window.system_meta || {};
-    var has_design = m.flow_temp * 1 && m.design_temp !== null && m.design_temp !== undefined && m.design_temp !== "";
-    if (has_design) {
-        var di = Math.floor((m.design_temp - d.x0) / d.xs), dj = Math.floor((m.flow_temp - d.y0) / d.ys);
-        i0 = Math.min(i0, di); i1 = Math.max(i1, di + 1); j0 = Math.min(j0, dj); j1 = Math.max(j1, dj + 1);
-    }
-    var msr = window.system_measurements || {}, inf = msr.flowT_design_inferred && msr.flowT_design_inferred.value !== null ? msr.flowT_design_inferred : null;
-    var inf_x = inf && inf.details ? inf.details.design_outsideT : null;
-    if (inf && inf_x !== null && inf_x !== undefined) {
-        var ii = Math.floor((inf_x - d.x0) / d.xs), ij = Math.floor((inf.value - d.y0) / d.ys);
-        i0 = Math.min(i0, ii); i1 = Math.max(i1, ii + 1); j0 = Math.min(j0, ij); j1 = Math.max(j1, ij + 1);
-    }
     var pi = Math.round(1 / d.xs), pj = Math.round(1 / d.ys), mj = Math.round(6 / d.ys);
     i0 = Math.max(0, i0 - pi); i1 = Math.min(d.nx, i1 + pi);
     j0 = Math.max(0, j0 - pj); j1 = Math.min(d.ny, j1 + pj);
+    // Flow bin of a temperature
+    function fj(t) { return Math.floor((t - d.y0) / d.ys); }
+    if (d.fit && d.fit.peaks.length) {
+        var pys = d.fit.peaks.map(function (p) { return p.y; });
+        j0 = Math.max(j0, fj(Math.min.apply(null, pys) - FLOWMAP_RIDGE_K));
+        j1 = Math.min(j1, fj(Math.max.apply(null, pys) + FLOWMAP_RIDGE_K) + 1);
+    }
+    var msr = window.system_measurements || {}, inf = msr.flowT_design_inferred && msr.flowT_design_inferred.value !== null ? msr.flowT_design_inferred : null;
+    var inf_x = inf && inf.details ? inf.details.design_outsideT : null;
+    if (inf_x === null || inf_x === undefined) inf = null;
+    if (inf) {
+        var ii = Math.floor((inf_x - d.x0) / d.xs), ij = fj(inf.value);
+        i0 = Math.max(0, Math.min(i0, ii - pi)); i1 = Math.min(d.nx, Math.max(i1, ii + 1 + pi));
+        j0 = Math.max(0, Math.min(j0, ij - pj)); j1 = Math.min(d.ny, Math.max(j1, ij + 1 + pj));
+    }
     if (j1 - j0 < mj) { j1 = Math.min(d.ny, j0 + mj); j0 = Math.max(0, j1 - mj); }
     var nx = i1 - i0, ny = j1 - j0;
     var xlo = d.x0 + i0 * d.xs, xhi = d.x0 + i1 * d.xs, lo = d.y0 + j0 * d.ys, hi = d.y0 + j1 * d.ys;
@@ -1013,76 +1012,63 @@ function flowmap_draw() {
     ctx.drawImage(off, L, T, pw, ph);
     ctx.restore();
 
-    // Design point from the form (ring) and the inferred design flow temperature
-    // (filled), each labelled on a rounded box in the page colour so the text
-    // reads over the cells; labels close together are moved apart
+    // Page colour, for the ring round the inferred and highlighted dots
     var bg = getComputedStyle(document.body).backgroundColor || "rgb(255,255,255)";
-    var bg_box = bg.replace(/^rgba?\(([^,]+),([^,]+),([^,)]+).*$/, "rgba($1,$2,$3,0.85)");
-    var marks = [];
-    if (has_design) marks.push({ x: X(m.design_temp * 1), y: Y(m.flow_temp * 1), text: "Design", filled: false });
-    if (inf && inf_x !== null && inf_x !== undefined && hp_ms_state.mode != "water")
-        marks.push({ x: X(inf_x), y: Y(inf.value), text: "Inferred " + inf.value.toFixed(1) + "°", filled: true });
-    marks = marks.filter(function (k) { return k.x >= L && k.x <= L + pw && k.y >= T && k.y <= T + ph; });
-    marks.forEach(function (k) { k.ly = k.y; });
-    if (marks.length == 2) {
-        var up = marks[0].y <= marks[1].y ? 0 : 1, gap = 20 - Math.abs(marks[0].y - marks[1].y);
-        if (gap > 0) { marks[up].ly -= gap / 2; marks[1 - up].ly += gap / 2; }
-    }
-    marks.forEach(function (k) {
-        ctx.lineWidth = 2; ctx.strokeStyle = bg;
-        ctx.beginPath(); ctx.arc(k.x, k.y, k.filled ? 5 : 6, 0, 2 * Math.PI); ctx.stroke();
-        ctx.fillStyle = ink; ctx.strokeStyle = ink;
-        ctx.beginPath(); ctx.arc(k.x, k.y, 5, 0, 2 * Math.PI);
-        if (k.filled) ctx.fill(); else ctx.stroke();
-        var tw = ctx.measureText(k.text).width, bx = k.x + 9, by = k.ly - 8;
-        ctx.fillStyle = bg_box;
-        ctx.beginPath();
-        if (ctx.roundRect) ctx.roundRect(bx, by, tw + 10, 16, 4); else ctx.rect(bx, by, tw + 10, 16);
-        ctx.fill();
-        ctx.fillStyle = ink; ctx.textAlign = "left"; ctx.textBaseline = "middle";
-        ctx.fillText(k.text, bx + 5, k.ly + 0.5);
-    });
 
-    // Peak flow temperature in each 1 K of outside temperature, over the labels
-    if (d.fit && hp_ms_state.mode != "water") {
+    // Peak flow temperature in each 1 K of outside temperature
+    if (d.fit) {
         ctx.save(); ctx.beginPath(); ctx.rect(L, T, pw, ph); ctx.clip();
         ctx.fillStyle = ink;
         d.fit.peaks.forEach(function (p) { ctx.beginPath(); ctx.arc(X(p.x), Y(p.y), 2, 0, 2 * Math.PI); ctx.fill(); });
         ctx.restore();
     }
+    // Inferred design flow temperature, unlabelled: hover for it
+    if (inf) {
+        ctx.fillStyle = ink; ctx.strokeStyle = bg; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(X(inf_x), Y(inf.value), 5, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+    }
 
     // Hover: the peak dot under the pointer, enlarged, with its 1 K outside band's
-    // heat and how much of that is within ±0.5 K of the peak. The drawn map is
+    // heat and how much of that is within ±0.5 K of the peak; or the inferred
+    // design point, with its value. The drawn map is
     // kept so the highlight can be moved without drawing it all again
     var drawn = ctx.getImageData(0, 0, canvas.width, canvas.height), lit = null;
     function highlight(p) {
         if (p === lit) return;
         lit = p;
         ctx.putImageData(drawn, 0, 0);
-        if (!p) return;
+        if (!p || p.inferred) return;
         ctx.fillStyle = ink; ctx.strokeStyle = bg; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.arc(X(p.x), Y(p.y), 5, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
     }
     canvas.onmousemove = function (e) {
         var r = canvas.getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top, hit = null;
-        if (d.fit && hp_ms_state.mode != "water") d.fit.peaks.forEach(function (p) {
+        if (d.fit) d.fit.peaks.forEach(function (p) {
             var dist = Math.hypot(X(p.x) - px, Y(p.y) - py);
             if (dist <= 8 && (!hit || dist < hit.dist)) hit = { p: p, dist: dist };
         });
+        if (inf) {
+            var dist = Math.hypot(X(inf_x) - px, Y(inf.value) - py);
+            if (dist <= 8 && (!hit || dist < hit.dist)) hit = { p: { inferred: true }, dist: dist };
+        }
         canvas.style.cursor = hit ? "pointer" : "";
         highlight(hit ? hit.p : null);
         if (!hit) { tip.hidden = true; return; }
-        var p = hit.p, band = 0, near = 0, all = 0;
-        for (var i = 0; i < d.nx; i++) for (var j = 0; j < d.ny; j++) {
-            var v = d.space[i][j];
-            all += v;
-            if (Math.abs(d.x0 + (i + 0.5) * d.xs - p.x) >= 0.5) continue;
-            band += v;
-            if (Math.abs(d.y0 + (j + 0.5) * d.ys - p.y) <= 0.5) near += v;
+        if (hit.p.inferred) tip.innerHTML = '<b>Inferred design flow temperature ' + inf.value.toFixed(1) + '°C</b> at ' + inf_x + '°C outside<br>' +
+            'The coldest ' + Math.round(100 * inf.details.cold_share) + '% of space heating, moved along the fitted line to the design outside temperature';
+        else {
+            var p = hit.p, band = 0, near = 0, all = 0;
+            for (var i = 0; i < d.nx; i++) for (var j = 0; j < d.ny; j++) {
+                var v = d.space[i][j];
+                all += v;
+                if (Math.abs(d.x0 + (i + 0.5) * d.xs - p.x) >= 0.5) continue;
+                band += v;
+                if (Math.abs(d.y0 + (j + 0.5) * d.ys - p.y) <= 0.5) near += v;
+            }
+            tip.innerHTML = '<b>' + (p.x - 0.5) + ' to ' + (p.x + 0.5) + '°C</b> outside: space heating flow mostly at <b>' + p.y.toFixed(1) + '°C</b><br>' +
+                Math.round(100 * near / band) + '% of this band\'s heat within ±0.5 K of it; ' + band.toFixed(0) + ' kWh, ' +
+                (100 * band / all).toFixed(1) + '% of the year\'s space heating';
         }
-        tip.innerHTML = '<b>' + (p.x - 0.5) + ' to ' + (p.x + 0.5) + '°C</b> outside: space heating flow mostly at <b>' + p.y.toFixed(1) + '°C</b><br>' +
-            Math.round(100 * near / band) + '% of this band\'s heat within ±0.5 K of it; ' + band.toFixed(0) + ' kWh, ' +
-            (100 * band / all).toFixed(1) + '% of the year\'s space heating';
         tip.hidden = false;
         var left = px + 12, tw = tip.offsetWidth;
         if (left + tw > W) left = px - tw - 12;
@@ -1092,21 +1078,15 @@ function flowmap_draw() {
     canvas.onmouseleave = function () { tip.hidden = true; canvas.style.cursor = ""; highlight(null); };
 }
 
-// Map mode and pipe size buttons. One delegated handler, since the card's content is redrawn
+// Pipe size buttons. One delegated handler, since the card's content is redrawn
 (function () {
     var el = document.getElementById("measurements-block");
     if (!el) return;
     el.addEventListener("click", function (e) {
-        var b = e.target.closest("[data-mode], [data-pipe]");
+        var b = e.target.closest("[data-pipe]");
         if (!b) return;
-        if (b.hasAttribute("data-mode")) {
-            hp_ms_state.mode = b.getAttribute("data-mode");
-            el.querySelectorAll("[data-mode]").forEach(function (x) { x.classList.toggle("active", x === b); });
-            flowmap_draw();
-        } else {
-            hp_ms_state.pipe = parseInt(b.getAttribute("data-pipe"));
-            measurements_card_render();
-        }
+        hp_ms_state.pipe = parseInt(b.getAttribute("data-pipe"));
+        measurements_card_render();
     });
     var timer = null;
     window.addEventListener("resize", function () { clearTimeout(timer); timer = setTimeout(flowmap_draw, 100); });

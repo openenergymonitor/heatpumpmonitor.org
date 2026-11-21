@@ -41,10 +41,11 @@
 //        reheats count as space heating and skew the mild days that set a fit's
 //        slope, while on cold days they are a small share of the heat.
 //    flowT_map
-//        Space heating and hot water heat over the latest year, binned by
-//        outside and flow temperature (0.25 K), for the dashboard's flow
-//        temperature map. Each 10 s sample's heat goes in at its flow and
-//        outside temperature. The scan keeps one sparse histogram per day
+//        Space heating over the latest year, binned by outside and flow
+//        temperature (0.25 K), for the dashboard's flow temperature map: hot
+//        water, outside temperatures from FLOWMAP_MAX_OUTSIDE up, and readings
+//        outside FLOWMAP_MIN_OUTSIDE and FLOWMAP_MIN/MAX_FLOW (sensor faults)
+//        are left out. Each 10 s sample's heat goes in at its flow and outside temperature. The scan keeps one sparse histogram per day
 //        (gzipped JSON in measurement_day.flowmap); the year's sum is stored
 //        as an 8 bit greyscale PNG, log scaled, with its axes in details, and
 //        the space heating fit: the peak flow temperature in each 1 K of
@@ -88,14 +89,16 @@ $system_stats = new SystemStats($mysqli, $system);
 require "$dir/../feed_scan/phpfina_reader.php";
 require "$dir/heatloss_fit.php";
 
-const VERSION = 11;                  // 2: flowT_typical_design details.points, 3: no hot water flag fits the colder days,
+const VERSION = 14;                  // 2: flowT_typical_design details.points, 3: no hot water flag fits the colder days,
                                      // 4: flowT_coldest_days replaces the flow temperature fits, 5: 3 coldest days rather than 5,
                                      // 6: flowT_coldest_days is the highest of the days, not the median,
                                      // 7: no settling time after DHW, days ranked by space heating outside temperature,
                                      // 8: heat_loss_design(_measured) details.max_dT,
                                      // 9: heat_coldest_days replaces heat_peak_day, heat_peak_4h on the coldest days,
                                      // 10: dT_coldest_days, flowrate_coldest_days,
-                                     // 11: flowT_map
+                                     // 11: flowT_map, 12: flow temperature peaks to a fraction of a bin,
+                                     // 13: flow map space heating only, below FLOWMAP_MAX_OUTSIDE,
+                                     // 14: flow map within FLOWMAP_MIN/MAX_OUTSIDE and FLOWMAP_MIN/MAX_FLOW
 const PHPFINA_DIR = "/var/opt/emoncms/phpfina/";
 const TIMEZONE = "Europe/London";
 const FILL_MAX_S = 900;              // forward fill gaps shorter than this, as the myheatpump app
@@ -115,6 +118,10 @@ const PI_Z = 1.2816;                 // 80% two sided
 const COLDEST_DAYS = 3;              // days for the flow temperature on the coldest days
 const FLOWMAP_OUTSIDE_BINS = 4;      // flow map bins per K of outside temperature
 const FLOWMAP_FLOW_BINS = 4;         // and of flow temperature
+const FLOWMAP_MIN_OUTSIDE = -25;     // °C: the flow map's outside temperature range, below which readings are taken as sensor faults
+const FLOWMAP_MAX_OUTSIDE = 15;      // and above which it leaves out milder outside temperatures (little space heating, mostly noise)
+const FLOWMAP_MIN_FLOW = 15;         // °C: the flow map's flow temperature range; readings outside it are taken as sensor faults
+const FLOWMAP_MAX_FLOW = 80;
 const FLOWMAP_KEEP_DAYS = 400;       // daily flow map histograms older than this are cleared
 const FLOW_INFER_COLD_SHARE = 0.2;   // inferred design flow: the coldest share of space heating heat
 const FLOW_INFER_PROMINENCE = 0.15;  // a peak stands out by this share of the highest
@@ -146,6 +153,18 @@ foreach ($system->list_admin() as $row) {
     $t0 = microtime(true);
 
     $days = load_days($mysqli, $systemid);
+    // Days stored with the older, larger flow map: trimmed in place
+    $trimmed = array();
+    foreach ($days as $ts => $d) {
+        if (!flowmap_current(isset($d['flowmap']) ? $d['flowmap'] : null)) continue;
+        $fm = flowmap_trim($d['flowmap']);
+        if ($fm == $d['flowmap']) continue;
+        $days[$ts]['flowmap'] = $fm; $trimmed[$ts] = $days[$ts];
+    }
+    if ($trimmed) {
+        print "  flow map trimmed on ".count($trimmed)." days\n";
+        if ($apply) save_days($mysqli, $systemid, $trimmed);
+    }
     if ($scan) {
         $r = scan_system($mysqli, $emoncms_mysqli, $systemid, $days, $full, $tz);
         if (is_string($r)) {
@@ -235,7 +254,7 @@ function scan_system($mysqli, $emoncms_mysqli, $systemid, $days, $full, $tz)
         $from = max(array_keys($days));
         if (isset($meta["flowT"]) && isset($meta["outsideT"])) {
             foreach ($days as $ts => $d) {
-                if ($ts > $from - FLOW_DAYS * 86400 && !flowmap_current($d['flowmap'])) { $from = $ts; break; }
+                if ($ts > $from - FLOW_DAYS * 86400 && !flowmap_current(isset($d['flowmap']) ? $d['flowmap'] : null)) { $from = $ts; break; }
             }
         }
         $date->setTimestamp($from);
@@ -278,9 +297,9 @@ function scan_system($mysqli, $emoncms_mysqli, $systemid, $days, $full, $tz)
         $flow_a = isset($d["flowT"]) ? $d["flowT"] : null;
         $bin_n = BIN_S / 10;
 
-        // Flow map: sparse histograms of heat (Wh) keyed "outside bin,flow bin",
-        // for space heating (0) and hot water (1)
-        $fm = array(array(), array());
+        // Flow map: sparse histogram of space heating (Wh) keyed "outside bin,flow bin",
+        // within the FLOWMAP_MIN/MAX_OUTSIDE and FLOWMAP_MIN/MAX_FLOW ranges
+        $fm = array();
         $round = function ($v) { return round($v, 1); };
 
         for ($j = 0; $j < $n; $j++) {
@@ -329,14 +348,13 @@ function scan_system($mysqli, $emoncms_mysqli, $systemid, $days, $full, $tz)
                 }
             }
 
-            // Flow map: running space heating or hot water with heat output
-            if ($flow_a !== null && $out_a !== null && $heat > 0 && $elec >= $starting_power && !$cool) {
+            // Flow map: running space heating with heat output
+            if ($flow_a !== null && $out_a !== null && $heat > 0 && $elec >= $starting_power && !$cool && !$dhw) {
                 $f = $flow_a[$j]; $o = $out_a[$j];
                 if ($f == $f && $o == $o) {
-                    $key = (int) floor($o * FLOWMAP_OUTSIDE_BINS).",".(int) floor($f * FLOWMAP_FLOW_BINS);
-                    $h = &$fm[$dhw ? 1 : 0];
-                    $h[$key] = (isset($h[$key]) ? $h[$key] : 0) + $heat * 10 / 3600;   // W x 10 s -> Wh
-                    unset($h);
+                    $x = (int) floor($o * FLOWMAP_OUTSIDE_BINS); $y = (int) floor($f * FLOWMAP_FLOW_BINS);
+                    if (flowmap_in_range($x, $y, FLOWMAP_OUTSIDE_BINS, FLOWMAP_FLOW_BINS))
+                        $fm["$x,$y"] = (isset($fm["$x,$y"]) ? $fm["$x,$y"] : 0) + $heat * 10 / 3600;   // W x 10 s -> Wh
                 }
             }
         }
@@ -362,7 +380,7 @@ function scan_system($mysqli, $emoncms_mysqli, $systemid, $days, $full, $tz)
             'space_flowT_max4h' => null, 'space_flowT_max4h_start' => null,
             'dhw_flag' => $has_dhw ? 1 : 0,
             'flowmap' => ($flow_a !== null && $out_a !== null) ?
-                array('ob' => FLOWMAP_OUTSIDE_BINS, 'fb' => FLOWMAP_FLOW_BINS, 's' => array_map($round, $fm[0]), 'w' => array_map($round, $fm[1])) : null
+                array('ob' => FLOWMAP_OUTSIDE_BINS, 'fb' => FLOWMAP_FLOW_BINS, 's' => array_map($round, $fm)) : null
         );
 
         // 4 hour windows that have ended by the end of this day, credited to the day they start in
@@ -380,6 +398,26 @@ function scan_system($mysqli, $emoncms_mysqli, $systemid, $days, $full, $tz)
 function flowmap_current($fm)
 {
     return is_array($fm) && isset($fm['ob']) && $fm['ob'] == FLOWMAP_OUTSIDE_BINS && $fm['fb'] == FLOWMAP_FLOW_BINS;
+}
+
+// Whether the bin at ($x, $y), with $ob and $fb bins per K, is within the flow
+// map's ranges: outside from FLOWMAP_MIN_OUTSIDE up to (not including)
+// FLOWMAP_MAX_OUTSIDE, flow from FLOWMAP_MIN_FLOW up to FLOWMAP_MAX_FLOW
+function flowmap_in_range($x, $y, $ob, $fb)
+{
+    return $x >= FLOWMAP_MIN_OUTSIDE * $ob && $x < FLOWMAP_MAX_OUTSIDE * $ob && $y >= FLOWMAP_MIN_FLOW * $fb && $y < FLOWMAP_MAX_FLOW * $fb;
+}
+
+// A day's flow map as now stored: space heating only, within the ranges.
+// Days stored before also had hot water ('w') and any temperatures
+function flowmap_trim($fm)
+{
+    $s = array();
+    foreach ($fm['s'] as $key => $wh) {
+        list($x, $y) = explode(",", $key);
+        if (flowmap_in_range((int) $x, (int) $y, $fm['ob'], $fm['fb'])) $s[$key] = $wh;
+    }
+    return array('ob' => $fm['ob'], 'fb' => $fm['fb'], 's' => $s);
 }
 
 // Slide a 4 hour window over the bins, crediting each full window to the day it starts in
@@ -676,82 +714,64 @@ function coldest_flow_days($days)
         'start' => $start, 'end' => $last + 86400);
 }
 
-// Flow map over the latest year: the daily histograms summed, then stored as
-// an 8 bit greyscale PNG. Columns are outside temperature bins, rising left to
-// right; rows are flow temperature bins, highest at the top. Space heating
-// fills rows 0 to ny - 1 and hot water rows ny to 2 ny - 1. A pixel of 0 is no
-// heat, otherwise Wh = exp((v - 1) / 254 × ln(max_wh)) for its mode's max_wh:
-// log scaled, so the small cells keep about 1% resolution
+// Flow map over the latest year: the daily space heating histograms summed,
+// then stored as an 8 bit greyscale PNG. Columns are outside temperature bins,
+// rising left to right; rows are flow temperature bins, highest at the top. A
+// pixel of 0 is no heat, otherwise Wh = exp((v - 1) / 254 × ln(max_wh)): log
+// scaled, so the small cells keep about 1% resolution
 function flowmap_year($days)
 {
     if (!count($days)) return null;
     $last = max(array_keys($days));
-    $sum = array('s' => array(), 'w' => array());
+    $sum = array();
     $n = 0; $start = null;
     foreach ($days as $ts => $d) {
-        if ($ts <= $last - FLOW_DAYS * 86400 || !flowmap_current($d['flowmap'])) continue;
-        foreach ($sum as $k => $x) {
-            foreach ($d['flowmap'][$k] as $key => $wh) {
-                if (!isset($sum[$k][$key])) $sum[$k][$key] = 0;
-                $sum[$k][$key] += $wh;
-            }
-        }
-        if (count($d['flowmap']['s'])) $n++;
+        if ($ts <= $last - FLOW_DAYS * 86400 || !flowmap_current(isset($d['flowmap']) ? $d['flowmap'] : null)) continue;
+        $fm = flowmap_trim($d['flowmap']);
+        foreach ($fm['s'] as $key => $wh) $sum[$key] = (isset($sum[$key]) ? $sum[$key] : 0) + $wh;
+        if (count($fm['s'])) $n++;
         if ($start === null) $start = $ts;
     }
     if (!$n) return null;
 
-    // Bin indexes, and each mode's range once the stray bins at either end are left out
-    $cells = array('s' => array(), 'w' => array());
-    $xlo = PHP_INT_MAX; $xhi = PHP_INT_MIN; $ylo = PHP_INT_MAX; $yhi = PHP_INT_MIN;
-    $kwh = array();
-    foreach ($sum as $k => $h) {
-        $cx = array(); $cy = array(); $tot = 0;
-        foreach ($h as $key => $wh) {
-            list($x, $y) = explode(",", $key);
-            $x = (int) $x; $y = (int) $y;
-            $cells[$k][] = array($x, $y, $wh);
-            $cx[$x] = (isset($cx[$x]) ? $cx[$x] : 0) + $wh;
-            $cy[$y] = (isset($cy[$y]) ? $cy[$y] : 0) + $wh;
-            $tot += $wh;
-        }
-        $kwh[$k] = $tot / 1000;
-        if ($tot <= 0) continue;
-        $sx = flowmap_span($cx, FLOWMAP_PNG_TAIL * $tot);
-        $sy = flowmap_span($cy, FLOWMAP_PNG_TAIL * $tot);
-        $xlo = min($xlo, $sx[0]); $xhi = max($xhi, $sx[1]);
-        $ylo = min($ylo, $sy[0]); $yhi = max($yhi, $sy[1]);
+    // Bin indexes, and the range once the stray bins at either end are left out
+    $cells = array(); $cx = array(); $cy = array(); $tot = 0;
+    foreach ($sum as $key => $wh) {
+        list($x, $y) = explode(",", $key);
+        $x = (int) $x; $y = (int) $y;
+        $cells[] = array($x, $y, $wh);
+        $cx[$x] = (isset($cx[$x]) ? $cx[$x] : 0) + $wh;
+        $cy[$y] = (isset($cy[$y]) ? $cy[$y] : 0) + $wh;
+        $tot += $wh;
     }
+    if ($tot <= 0) return null;
+    list($xlo, $xhi) = flowmap_span($cx, FLOWMAP_PNG_TAIL * $tot);
+    list($ylo, $yhi) = flowmap_span($cy, FLOWMAP_PNG_TAIL * $tot);
     $nx = $xhi - $xlo + 1; $ny = $yhi - $ylo + 1;
 
-    $im = imagecreate($nx, 2 * $ny);
+    $im = imagecreate($nx, $ny);
     for ($v = 0; $v < 256; $v++) imagecolorallocate($im, $v, $v, $v);   // palette index = grey level
-    $max_wh = array();
-    foreach (array('s' => 0, 'w' => 1) as $k => $half) {
-        $mx = 0;
-        foreach ($cells[$k] as $c) if ($c[0] >= $xlo && $c[0] <= $xhi && $c[1] >= $ylo && $c[1] <= $yhi && $c[2] > $mx) $mx = $c[2];
-        $max_wh[$k] = round($mx, 1);
-        $lnmax = log(max($mx, 1.001));
-        foreach ($cells[$k] as $c) {
-            if ($c[0] < $xlo || $c[0] > $xhi || $c[1] < $ylo || $c[1] > $yhi || $c[2] < 0.5) continue;
-            $v = 1 + (int) round(254 * log(max($c[2], 1)) / $lnmax);
-            imagesetpixel($im, $c[0] - $xlo, $half * $ny + ($yhi - $c[1]), min(255, $v));
-        }
+    $mx = 0;
+    foreach ($cells as $c) if ($c[0] >= $xlo && $c[0] <= $xhi && $c[1] >= $ylo && $c[1] <= $yhi && $c[2] > $mx) $mx = $c[2];
+    $lnmax = log(max($mx, 1.001));
+    foreach ($cells as $c) {
+        if ($c[0] < $xlo || $c[0] > $xhi || $c[1] < $ylo || $c[1] > $yhi || $c[2] < 0.5) continue;
+        $v = 1 + (int) round(254 * log(max($c[2], 1)) / $lnmax);
+        imagesetpixel($im, $c[0] - $xlo, $yhi - $c[1], min(255, $v));
     }
     ob_start();
     imagepng($im, null, 9);
     $png = ob_get_clean();
 
-    $space = flowmap_parse($sum['s']);
+    $space = flowmap_parse($sum);
     $fit = $space ? flowmap_fit($space) : null;
 
     return array('days' => $n, 'start' => $start, 'end' => $last + 86400, 'space' => $space, 'fit' => $fit, 'details' => array(
-        'method' => "Heat from each 10 s sample binned by its outside and flow temperature, running only, cooling left out; the latest year's daily histograms summed",
+        'method' => "Space heating from each 10 s sample binned by its outside and flow temperature, running only, ".FLOWMAP_MIN_OUTSIDE." to ".FLOWMAP_MAX_OUTSIDE." °C outside and ".FLOWMAP_MIN_FLOW." to ".FLOWMAP_MAX_FLOW." °C flow, hot water and cooling left out; the latest year's daily histograms summed",
         'x0' => $xlo / FLOWMAP_OUTSIDE_BINS, 'x_step' => 1 / FLOWMAP_OUTSIDE_BINS, 'nx' => $nx,
         'y0' => $ylo / FLOWMAP_FLOW_BINS, 'y_step' => 1 / FLOWMAP_FLOW_BINS, 'ny' => $ny,
-        'encoding' => "png8_log", 'layout' => "space rows then water rows, highest flow first",
-        'max_wh' => array('space' => $max_wh['s'], 'water' => $max_wh['w']),
-        'kwh' => array('space' => round($kwh['s'], 1), 'water' => round($kwh['w'], 1)),
+        'encoding' => "png8_log", 'layout' => "space heating rows, highest flow first",
+        'max_wh' => array('space' => round($mx, 1)), 'kwh' => array('space' => round($tot / 1000, 1)),
         'png' => base64_encode($png),
         'fit' => $fit ? array('method' => "Peak (most common) space heating flow temperature in each 1 K of outside temperature, and a line through them weighted by heat",
             'slope' => round($fit['b'], 3), 'intercept' => round($fit['a'], 2), 'within_2K' => round($fit['within'], 3),
@@ -774,7 +794,7 @@ function flowmap_parse($hist)
     return array('cols' => $cols, 'tot' => $tot, 'ymin' => $ymin, 'ny' => $ymax - $ymin + 1);
 }
 
-// Flow temperature at the centre of row $j of a parsed histogram
+// Flow temperature at the centre of row $j (or a fraction of a row) of a parsed histogram
 function flowmap_flow($g, $j)
 {
     return ($j + $g['ymin'] + 0.5) / FLOWMAP_FLOW_BINS;
@@ -796,7 +816,7 @@ function flowmap_fit($g)
         $w = array_sum($p);
         if ($w < FLOW_INFER_MIN_COLUMN * $g['tot']) continue;
         $ps = flow_smooth($p);
-        $pts[] = array($k + 0.5, flowmap_flow($g, array_search(max($ps), $ps)), $w);
+        $pts[] = array($k + 0.5, flowmap_flow($g, flow_peak_at($ps, array_search(max($ps), $ps))), $w);
     }
     if (count($pts) < 3) return null;
     $sw = 0; $sx = 0; $sy = 0; $sxx = 0; $sxy = 0;
@@ -848,7 +868,7 @@ function flow_design_inferred($g, $fit, $design_dot)
         if ($prom < FLOW_INFER_PROMINENCE * $top) continue;
         $half = (int) round(0.5 * $fb); $near = 0;
         for ($q = max(0, $j - $half); $q <= min($ny - 1, $j + $half); $q++) $near += $prof[$q];
-        $bands[] = array('flowT' => round(flowmap_flow($g, $j), 2), 'share' => round($near / $total, 3), 'prominence' => round($prom / $top, 2));
+        $bands[] = array('flowT' => round(flowmap_flow($g, flow_peak_at($ps, $j)), 2), 'share' => round($near / $total, 3), 'prominence' => round($prom / $top, 2));
     }
     if (!count($bands)) return null;
     $value = max(array_column($bands, 'flowT'));
@@ -857,6 +877,15 @@ function flow_design_inferred($g, $fit, $design_dot)
         'slope' => round($b, 3), 'at_design' => round($fit['a'] + $b * $design_dot, 2),
         'cold_share' => FLOW_INFER_COLD_SHARE, 'cold_outsideT_max' => $cold_max,
         'bands' => $bands));
+}
+
+// Row of a peak at $j of a smoothed profile, to a fraction of a row: the top
+// of a parabola through it and its neighbours
+function flow_peak_at($ps, $j)
+{
+    if ($j <= 0 || $j >= count($ps) - 1) return $j;
+    $den = $ps[$j - 1] - 2 * $ps[$j] + $ps[$j + 1];
+    return $den < 0 ? $j + max(-0.5, min(0.5, 0.5 * ($ps[$j - 1] - $ps[$j + 1]) / $den)) : $j;
 }
 
 // Gaussian smoothing, sigma 1 bin
