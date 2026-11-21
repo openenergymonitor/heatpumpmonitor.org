@@ -53,12 +53,18 @@
 //    flowT_design_inferred
 //        Design flow temperature inferred from the flow map's space heating:
 //        the peak (most common) flow temperature in each 1 K of outside
-//        temperature, a line through them weighted by heat, then the coldest
+//        temperature (1 K bands with FLOW_INFER_MIN_COLUMN of the heat, or
+//        FLOW_INFER_MIN_COLUMN_COLD from the 99.6% design outside temperature
+//        up), a line through them weighted by heat, then the coldest
 //        FLOW_INFER_COLD_SHARE of the heat moved along that line to the design
-//        outside temperature. The highest clear peak of that is the value: on
-//        a weather compensation curve, the curve at design; with fixed flow
+//        outside temperature: the form's, or the 99.6% one where that is
+//        colder. The highest clear peak of that is the value: on a weather
+//        compensation curve, the curve at design; with fixed flow
 //        temperatures, the highest one run in the cold. Where the setting was
 //        changed during the year there can be several peaks; all are in details.
+//        It is no lower than the coldest peak moved along the line to design:
+//        a curve steeper in the cold than the line would otherwise put it
+//        below what the system already runs at.
 //    dT_coldest_days, flowrate_coldest_days
 //        Space heating flow - return ΔT and flow rate on the same coldest days,
 //        from the daily stats: mean flow and return temperature while space
@@ -89,7 +95,7 @@ $system_stats = new SystemStats($mysqli, $system);
 require "$dir/../feed_scan/phpfina_reader.php";
 require "$dir/heatloss_fit.php";
 
-const VERSION = 14;                  // 2: flowT_typical_design details.points, 3: no hot water flag fits the colder days,
+const VERSION = 15;                  // 2: flowT_typical_design details.points, 3: no hot water flag fits the colder days,
                                      // 4: flowT_coldest_days replaces the flow temperature fits, 5: 3 coldest days rather than 5,
                                      // 6: flowT_coldest_days is the highest of the days, not the median,
                                      // 7: no settling time after DHW, days ranked by space heating outside temperature,
@@ -98,7 +104,9 @@ const VERSION = 14;                  // 2: flowT_typical_design details.points, 
                                      // 10: dT_coldest_days, flowrate_coldest_days,
                                      // 11: flowT_map, 12: flow temperature peaks to a fraction of a bin,
                                      // 13: flow map space heating only, below FLOWMAP_MAX_OUTSIDE,
-                                     // 14: flow map within FLOWMAP_MIN/MAX_OUTSIDE and FLOWMAP_MIN/MAX_FLOW
+                                     // 14: flow map within FLOWMAP_MIN/MAX_OUTSIDE and FLOWMAP_MIN/MAX_FLOW,
+                                     // 15: flow map peaks down to the 99.6% design outside temperature, inferred design
+                                     //     flow at the colder of it and the form's, and no lower than the coldest peak
 const PHPFINA_DIR = "/var/opt/emoncms/phpfina/";
 const TIMEZONE = "Europe/London";
 const FILL_MAX_S = 900;              // forward fill gaps shorter than this, as the myheatpump app
@@ -126,6 +134,7 @@ const FLOWMAP_KEEP_DAYS = 400;       // daily flow map histograms older than thi
 const FLOW_INFER_COLD_SHARE = 0.2;   // inferred design flow: the coldest share of space heating heat
 const FLOW_INFER_PROMINENCE = 0.15;  // a peak stands out by this share of the highest
 const FLOW_INFER_MIN_COLUMN = 0.01;  // 1 K outside columns with less of the heat get no peak
+const FLOW_INFER_MIN_COLUMN_COLD = 0.002;  // or, from the 99.6% design outside temperature up, less than this
 const FLOWMAP_PNG_TAIL = 0.001;      // the year's PNG leaves out stray bins with this share of the heat at each end of each axis
 
 $only_id = false;
@@ -569,15 +578,20 @@ function derive($system_stats, $systemid, $days, $meta)
     }
 
     // Flow map: the latest year's daily histograms summed
-    $map = flowmap_year($days);
+    $t996 = $dot ? $dot['t996'] : null;
+    $map = flowmap_year($days, $t996);
     if ($map) $m['flowT_map'] = measurement($map['days'], "days", $map['days'], null, null, $map['start'], $map['end'], $map['details']);
 
-    // Design flow temperature inferred from the flow map's space heating
-    $inf = $map && $map['fit'] && $design_dot !== null ? flow_design_inferred($map['space'], $map['fit'], $design_dot) : null;
+    // Design flow temperature inferred from the flow map's space heating, at
+    // the design outside temperature, or the 99.6% one where that is colder
+    $inf_dot = $design_dot; $inf_dot_source = $design_dot_source;
+    if ($t996 !== null && ($inf_dot === null || $t996 < $inf_dot)) { $inf_dot = $t996; $inf_dot_source = "measured_996"; }
+    $inf = $map && $map['fit'] && $inf_dot !== null ? flow_design_inferred($map['space'], $map['fit'], $inf_dot) : null;
     if ($inf) $m['flowT_design_inferred'] = measurement($inf['value'], "°C", $map['days'], null, null, $map['start'], $map['end'], array(
         'method' => "Peak flow temperature in each 1 K of outside temperature, a line through them weighted by heat, then the coldest ".
-            (FLOW_INFER_COLD_SHARE * 100)."% of space heating heat moved along it to the design outside temperature: the highest clear peak",
-        'design_outsideT' => $design_dot, 'design_outsideT_source' => $design_dot_source) + $inf['details']);
+            (FLOW_INFER_COLD_SHARE * 100)."% of space heating heat moved along it to the design outside temperature (the form's, or the 99.6% one where colder): the highest clear peak, ".
+            "and no lower than the coldest peak moved along the line",
+        'design_outsideT' => r($inf_dot, 2), 'design_outsideT_source' => $inf_dot_source) + $inf['details']);
 
     // Space heating flow - return ΔT and implied flow rate on the same days
     if ($cold) {
@@ -719,7 +733,7 @@ function coldest_flow_days($days)
 // rising left to right; rows are flow temperature bins, highest at the top. A
 // pixel of 0 is no heat, otherwise Wh = exp((v - 1) / 254 × ln(max_wh)): log
 // scaled, so the small cells keep about 1% resolution
-function flowmap_year($days)
+function flowmap_year($days, $t996 = null)
 {
     if (!count($days)) return null;
     $last = max(array_keys($days));
@@ -764,7 +778,7 @@ function flowmap_year($days)
     $png = ob_get_clean();
 
     $space = flowmap_parse($sum);
-    $fit = $space ? flowmap_fit($space) : null;
+    $fit = $space ? flowmap_fit($space, $t996) : null;
 
     return array('days' => $n, 'start' => $start, 'end' => $last + 86400, 'space' => $space, 'fit' => $fit, 'details' => array(
         'method' => "Space heating from each 10 s sample binned by its outside and flow temperature, running only, ".FLOWMAP_MIN_OUTSIDE." to ".FLOWMAP_MAX_OUTSIDE." °C outside and ".FLOWMAP_MIN_FLOW." to ".FLOWMAP_MAX_FLOW." °C flow, hot water and cooling left out; the latest year's daily histograms summed",
@@ -802,8 +816,11 @@ function flowmap_flow($g, $j)
 
 // Peak (most common) flow temperature in each 1 K of outside temperature, and a
 // line through them weighted by heat; within is the share of the heat within
-// ±2 K of the line. Peaks are [outside, flow, share of the heat]
-function flowmap_fit($g)
+// ±2 K of the line. Peaks are [outside, flow, share of the heat]. Bands need
+// FLOW_INFER_MIN_COLUMN of the heat, or FLOW_INFER_MIN_COLUMN_COLD from the
+// band holding $t996 (the 99.6% design outside temperature) up, so the peaks
+// reach the design conditions on systems where the cold bands hold little heat
+function flowmap_fit($g, $t996 = null)
 {
     $groups = array();
     foreach ($g['cols'] as $x => $c) {
@@ -814,7 +831,8 @@ function flowmap_fit($g)
     $pts = array();
     foreach ($groups as $k => $p) {
         $w = array_sum($p);
-        if ($w < FLOW_INFER_MIN_COLUMN * $g['tot']) continue;
+        $min = $t996 !== null && $k + 1 > $t996 ? FLOW_INFER_MIN_COLUMN_COLD : FLOW_INFER_MIN_COLUMN;
+        if ($w < $min * $g['tot']) continue;
         $ps = flow_smooth($p);
         $pts[] = array($k + 0.5, flowmap_flow($g, flow_peak_at($ps, array_search(max($ps), $ps))), $w);
     }
@@ -873,10 +891,16 @@ function flow_design_inferred($g, $fit, $design_dot)
     if (!count($bands)) return null;
     $value = max(array_column($bands, 'flowT'));
 
+    // No lower than the coldest peak moved along the line to design
+    $cp = $fit['peaks'][0];
+    $floor = round($cp[1] + $b * ($design_dot - $cp[0]), 2);
+    $from = $value >= $floor ? "bands" : "coldest_peak";
+    $value = max($value, $floor);
+
     return array('value' => $value, 'details' => array(
         'slope' => round($b, 3), 'at_design' => round($fit['a'] + $b * $design_dot, 2),
         'cold_share' => FLOW_INFER_COLD_SHARE, 'cold_outsideT_max' => $cold_max,
-        'bands' => $bands));
+        'bands' => $bands, 'coldest_peak' => array('outsideT' => $cp[0], 'flowT' => $cp[1], 'at_design' => $floor), 'from' => $from));
 }
 
 // Row of a peak at $j of a smoothed profile, to a fraction of a row: the top
