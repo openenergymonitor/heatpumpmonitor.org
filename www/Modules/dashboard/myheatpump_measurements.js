@@ -742,6 +742,7 @@ function measurements_card_render() {
 // y0 in steps of ys. Null until the PNG has decoded, or with no flowT_map
 var FLOWMAP_MAX_OUTSIDE = 15;   // °C, as the measurement script's FLOWMAP_MAX_OUTSIDE
 var FLOWMAP_RIDGE_K = 5;        // K: the map shows flow this far either side of the lowest and highest peak dots
+var FLOWMAP_GAMMA = 2;          // colour = (heat / column max) ^ this: above 1 fades the weaker cells and leaves the peaks
 function flowmap_build(mv) {
     var fm = mv("flowT_map");
     return fm && fm.details && fm.details.png ? flowmap_from_png(fm) : null;
@@ -1002,7 +1003,7 @@ function flowmap_draw() {
     var img = ctx.createImageData(nx, ny), px = img.data;
     for (var i = i0; i < i0 + nx; i++) for (var j = j0; j < j0 + ny; j++) {
         var v = grid[i][j], o = 4 * ((j1 - 1 - j) * nx + (i - i0));
-        var a = v > 0 && colmax[i] > 0 ? 0.06 + 0.94 * Math.pow(Math.min(1, v / colmax[i]), 0.75) : 0.06;
+        var a = v > 0 && colmax[i] > 0 ? 0.06 + 0.94 * Math.pow(Math.min(1, v / colmax[i]), FLOWMAP_GAMMA) : 0.06;
         px[o] = 201; px[o + 1] = 54; px[o + 2] = 47; px[o + 3] = Math.round(255 * a);
     }
     var off = document.createElement("canvas");

@@ -346,7 +346,7 @@
 /* Flow temperature map */
 .hp-ms-map-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin-bottom: 8px; }
 .hp-ms-map-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; font-size: 12px; color: var(--bs-secondary-color); }
-.hp-ms-map-ramp { width: 90px; height: 10px; border-radius: 2px; background: linear-gradient(90deg, rgba(201,54,47,0.08), rgba(201,54,47,1)); }
+.hp-ms-map-ramp { width: 90px; height: 10px; border-radius: 2px; background: linear-gradient(90deg, rgba(201,54,47,0.06), rgba(201,54,47,0.12) 25%, rgba(201,54,47,0.3) 50%, rgba(201,54,47,0.59) 75%, rgba(201,54,47,1));  /* 0.06 + 0.94 x^2, as FLOWMAP_GAMMA */ }
 .hp-ms-map { position: relative; }
 .hp-ms-map canvas { display: block; width: 100%; }
 .hp-ms-tip {
