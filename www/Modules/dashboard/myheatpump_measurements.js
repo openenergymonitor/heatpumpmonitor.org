@@ -264,9 +264,9 @@ function measurements_card_render() {
         var inf = mv("flowT_design_inferred");
         if (inf) {
             var idt = inf.details || {}, bands = idt.bands || [];
-            note += '<br>Inferred from the map: <b>' + fmt(inf.value, 1) + '°C</b> at ' + fmt(idt.design_outsideT, 1) + '°C outside' +
-                (design ? ', ' + fmt(Math.abs(inf.value - design), 1) + ' K ' + (inf.value < design ? 'below' : 'above') + ' design' : '') +
-                (bands.length > 1 ? ' (highest of ' + bands.map(function (b) { return fmt(b.flowT, 1) + '°'; }).join(', ') + ' run in the cold)' : '');
+            // With more than one band run in the cold, the value is the highest: listed on hover
+            var bands_title = bands.length > 1 ? ' title="Highest of ' + bands.map(function (b) { return fmt(b.flowT, 1) + '°'; }).join(', ') + ' run in the cold"' : '';
+            note += '<br>Inferred from the map: <b' + bands_title + '>' + fmt(inf.value, 1) + '°C</b> at ' + fmt(idt.design_outsideT, 1) + '°C outside';
         }
         var head = meas || design;
         return '<div class="hp-sys-feature">' +
@@ -577,7 +577,7 @@ function measurements_card_render() {
             '<div class="hp-ms-map-legend" title="Colour is scaled within each outside temperature; the bars above show each one\'s heat"><span>Less</span><span class="hp-ms-map-ramp"></span><span>More heat at each outside temperature</span></div></div>' +
             '<div id="hp-ms-map" class="hp-ms-map"><canvas role="img" aria-label="Space heating delivered at each flow and outside temperature"></canvas><div class="hp-ms-tip" hidden></div></div>' +
             (res ? '<div class="hp-ms-map-result">' + res + '</div>' : '') +
-            '<span class="hp-ms-fine">Space heating at each 10 s reading\'s flow and outside temperature, below ' + FLOWMAP_MAX_OUTSIDE + '°C outside, last 365 days (' + map.n + ' heating days)</span></div>';
+            '<span class="hp-ms-fine">Space heating below ' + FLOWMAP_MAX_OUTSIDE + '°C outside from 10 s data, ' + map.n + ' days in the last year</span></div>';
     }
 
     // -- Primary pipework and system volume ------------------------------------
@@ -743,6 +743,7 @@ function measurements_card_render() {
 var FLOWMAP_MAX_OUTSIDE = 15;   // °C, as the measurement script's FLOWMAP_MAX_OUTSIDE
 var FLOWMAP_RIDGE_K = 5;        // K: the map shows flow this far either side of the lowest and highest peak dots
 var FLOWMAP_GAMMA = 2;          // colour = (heat / column max) ^ this: above 1 fades the weaker cells and leaves the peaks
+var FLOWMAP_FLOOR = 0.03;       // opacity of the red for no heat, so the plot area reads as continuous
 function flowmap_build(mv) {
     var fm = mv("flowT_map");
     return fm && fm.details && fm.details.png ? flowmap_from_png(fm) : null;
@@ -1003,7 +1004,7 @@ function flowmap_draw() {
     var img = ctx.createImageData(nx, ny), px = img.data;
     for (var i = i0; i < i0 + nx; i++) for (var j = j0; j < j0 + ny; j++) {
         var v = grid[i][j], o = 4 * ((j1 - 1 - j) * nx + (i - i0));
-        var a = v > 0 && colmax[i] > 0 ? 0.06 + 0.94 * Math.pow(Math.min(1, v / colmax[i]), FLOWMAP_GAMMA) : 0.06;
+        var a = v > 0 && colmax[i] > 0 ? FLOWMAP_FLOOR + (1 - FLOWMAP_FLOOR) * Math.pow(Math.min(1, v / colmax[i]), FLOWMAP_GAMMA) : FLOWMAP_FLOOR;
         px[o] = 201; px[o + 1] = 54; px[o + 2] = 47; px[o + 3] = Math.round(255 * a);
     }
     var off = document.createElement("canvas");
@@ -1055,8 +1056,7 @@ function flowmap_draw() {
         canvas.style.cursor = hit ? "pointer" : "";
         highlight(hit ? hit.p : null);
         if (!hit) { tip.hidden = true; return; }
-        if (hit.p.inferred) tip.innerHTML = '<b>Inferred design flow temperature ' + inf.value.toFixed(1) + '°C</b> at ' + inf_x + '°C outside<br>' +
-            'The coldest ' + Math.round(100 * inf.details.cold_share) + '% of space heating, moved along the fitted line to the design outside temperature';
+        if (hit.p.inferred) tip.innerHTML = 'Inferred design: <b>' + inf.value.toFixed(1) + '°C</b> at ' + inf_x + '°C outside';
         else {
             var p = hit.p, band = 0, near = 0, all = 0;
             for (var i = 0; i < d.nx; i++) for (var j = 0; j < d.ny; j++) {
@@ -1066,9 +1066,8 @@ function flowmap_draw() {
                 band += v;
                 if (Math.abs(d.y0 + (j + 0.5) * d.ys - p.y) <= 0.5) near += v;
             }
-            tip.innerHTML = '<b>' + (p.x - 0.5) + ' to ' + (p.x + 0.5) + '°C</b> outside: space heating flow mostly at <b>' + p.y.toFixed(1) + '°C</b><br>' +
-                Math.round(100 * near / band) + '% of this band\'s heat within ±0.5 K of it; ' + band.toFixed(0) + ' kWh, ' +
-                (100 * band / all).toFixed(1) + '% of the year\'s space heating';
+            tip.innerHTML = (p.x - 0.5) + '–' + (p.x + 0.5) + '°C outside: mostly <b>' + p.y.toFixed(1) + '°C</b> flow<br>' +
+                Math.round(100 * near / band) + '% within ±0.5 K, ' + band.toFixed(0) + ' kWh (' + (100 * band / all).toFixed(0) + '% of the year)';
         }
         tip.hidden = false;
         var left = px + 12, tw = tip.offsetWidth;
