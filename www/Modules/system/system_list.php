@@ -2399,7 +2399,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                         url.searchParams.delete(key);
                     }
                 }
-                var decodedUrl = decodeURIComponent(url.toString());
+                // Only unescape ':' and ',' so the address stays readable; any other escape (a literal '+' as %2B, '&', '#', '%') must stay encoded or it changes meaning when the URL is read back.
+                var decodedUrl = url.toString().replace(/%3A/gi, ':').replace(/%2C/gi, ',');
                 window.history.pushState({}, '', decodedUrl);
 
                 // Update #map-link href with filter and minDays
