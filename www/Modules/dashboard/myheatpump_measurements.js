@@ -135,7 +135,8 @@ function measurements_card_render() {
         };
     }
 
-    // -- Sizing: heat pump output against design and measured heat loss -------
+    // -- Sizing: heat pump output against design and measured heat loss, -----
+    // then the heat demand tool (myheatpump_heatdemand.js). Explore spans the card
     function sizing() {
         var hp = num(m.hp_output), max_out = num(m.hp_max_output), design = num(m.heat_loss);
         // Estimated heat demand at the form's design temperature, from the nightly heat loss fit
@@ -143,7 +144,13 @@ function measurements_card_render() {
         var meas = auto ? auto.value : null, meas_r = auto && auto.upper !== null ? auto.upper - auto.value : 0;
         // Observed on the coldest days of the last year (the flow temperature card's days)
         var cold = mv("heat_coldest_days"), peak_4h = mv("heat_peak_4h");
-        if (!hp || (!design && !meas)) return "";
+        var hd = heatdemand_data, hd_none = hd && (hd.message || (hd.rows && hd.rows.length < 3));
+        if (!hp || (!design && !meas)) {
+            if (hd_none) return "";
+            return '<div class="hp-sys-feature has-hd' + (heatdemand_state.open ? ' is-wide' : '') + '"><div class="hp-sys-feature-head"><span class="app-live-label">Sizing</span>' +
+                (hp ? '<span class="hp-sys-feature-value text-hp-heat">' + fmt(hp, 1) + '<span class="hp-sys-unit">kW heat pump</span></span>' : '') +
+                '</div>' + heatdemand_html() + '</div>';
+        }
 
         var hi = Math.max(hp, max_out || 0, design || 0, meas ? meas + meas_r : 0,
             peak_4h ? peak_4h.value : 0, cold ? cold.value : 0) * 1.12;
@@ -196,10 +203,10 @@ function measurements_card_render() {
             date(peak_4h.start_time, true) + (peak_4h.details && peak_4h.details.outsideT !== null ? ", " + peak_4h.details.outsideT + " °C outside" : "")) +
             ' 4 h mean</b> on ' + esc(date(peak_4h.start_time, true));
 
-        return '<div class="hp-sys-feature">' +
+        return '<div class="hp-sys-feature has-hd' + (heatdemand_state.open ? ' is-wide' : '') + '">' +
             '<div class="hp-sys-feature-head"><span class="app-live-label">Sizing</span>' +
             '<span class="hp-sys-feature-value text-hp-heat">' + fmt(hp, 1) + '<span class="hp-sys-unit">kW heat pump</span></span></div>' +
-            bar + '<div class="hp-sys-feature-note">' + note + '</div></div>';
+            bar + '<div class="hp-sys-feature-note">' + note + '</div>' + (hd_none ? '' : heatdemand_html()) + '</div>';
     }
 
     // -- Flow temperature: design against measured on the coldest days --------
@@ -723,7 +730,7 @@ function measurements_card_render() {
     }
 
     // -- Card ------------------------------------------------------------------
-    var design = '<div class="hp-ms-grid">' + outside() + sizing() + flow() + flowrate() + emitters() + '</div>' + heatloss_stats();
+    var design = '<div class="hp-ms-grid">' + sizing() + flow() + outside() + flowrate() + emitters() + '</div>' + heatloss_stats();
     var body = section("Design: measured against the form", "Each tile compares what the monitoring data shows with the system form", design) +
         section("Efficiency", "How close the heat pump runs to the ideal and to its datasheet",
             '<div class="hp-ms-grid">' + carnot() + level() + '</div>') +
@@ -734,6 +741,7 @@ function measurements_card_render() {
     for (var k in ms) if (ms[k].updated > updated) updated = ms[k].updated;
     var note = '<span class="app-caption-note">' + (updated ? 'From the monitoring data, ' + esc(date(updated)) : 'From the monitoring data') + '</span>';
     H.card(el, "measurements", "Measurements", note, body, measurements_on_open);
+    if (heatdemand_autoopen) heatdemand_show();
 }
 
 // Flow temperature map data: space heating (kWh) in bins of outside (x) and flow (y)
@@ -894,10 +902,13 @@ function emitter_load() {
     });
 }
 
-// Runs when the card opens: the episodes for the emitter tile, and the map
+// Runs when the card opens: the episodes for the emitter tile, the daily data
+// for the heat demand tool, the map and the heat demand chart
 function measurements_on_open() {
     emitter_load();
+    heatdemand_load();
     flowmap_draw();
+    heatdemand_draw();
 }
 
 // Draws the map to fit its box; called when the card opens and on resize
@@ -1091,5 +1102,5 @@ function flowmap_draw() {
         measurements_card_render();
     });
     var timer = null;
-    window.addEventListener("resize", function () { clearTimeout(timer); timer = setTimeout(flowmap_draw, 100); });
+    window.addEventListener("resize", function () { clearTimeout(timer); timer = setTimeout(function () { flowmap_draw(); heatdemand_draw(); }, 100); });
 })();

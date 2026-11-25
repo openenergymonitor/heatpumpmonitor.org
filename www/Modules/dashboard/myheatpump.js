@@ -290,13 +290,9 @@ function show() {
 
         hp_power_panels(false);
 
-        // ?heatdemand=1 opens the heat demand tool, which widens the default
-        // 30 days to the last year (links from the old /heatloss page)
-        if (urlParams.heatdemand != undefined) {
-            $("#heatdemand-toggle").click();
-            var hd = document.getElementById("heatdemand-block");
-            if (hd) hd.scrollIntoView();
-        }
+        // ?heatdemand=1 opens the heat demand tool in the Measurements card's
+        // Sizing tile (links from the old /heatloss page and the system form)
+        if (urlParams.heatdemand != undefined) heatdemand_show();
     }
 
     // LOOP
@@ -671,8 +667,6 @@ function hp_timebar_sync() {
     $(".bargraph-navigation").toggle(daily);
     $(".powergraph-navigation").toggle(!daily);
     hp_power_panels(!daily);
-    $("#heatdemand-toggle").toggle(daily);
-    $("#heatdemand-block").toggle(daily && $("#heatdemand-toggle").hasClass("active"));
 }
 
 // Daily view periods. Day opens the power view for the last 24 hours.

@@ -178,7 +178,6 @@ if ($private_mode || $system_data->share==0) {
         <div class="app-segmented hp-panel-toggles">
           <button id="advanced-toggle" class="btn" style="display:none" aria-expanded="false" aria-controls="advanced-block" title="Min, max and mean of each feed"><i class="bi bi-table"></i> <span>Stats</span></button>
           <button id="options-toggle" class="btn" style="display:none" aria-expanded="false" aria-controls="options-block" title="Chart options and tools"><i class="bi bi-sliders"></i> <span>Options</span></button>
-          <button id="heatdemand-toggle" class="btn" style="display:none" aria-expanded="false" aria-controls="heatdemand-block" title="Daily heat output against temperature difference"><i class="bi bi-graph-up"></i> <span>Heat demand</span></button>
         </div>
       </div>
     </div>
@@ -368,70 +367,6 @@ if ($private_mode || $system_data->share==0) {
             </div>
           </div>
         </div>
-      </div>
-    </div>
-
-    <div id="heatdemand-block" class="app-card app-card-body" style="display:none">
-      <div id="heatdemand_bound" style="width:100%; height:400px; overflow:hidden">
-        <div id="heatdemand" style="height:400px"></div>
-      </div>
-      <p id="heatdemand-design" class="mb-1"></p>
-      <p id="heatdemand-result" class="small"></p>
-      <div class="d-flex flex-wrap gap-2">
-        <div class="d-flex flex-wrap gap-2">
-        <div class="input-group w-auto" title="Outside temperature for the heat demand estimate">
-          <span class="input-group-text">Design outside</span>
-          <input type="number" class="form-control" style="width:64px" id="heatdemand_design_outsideT" value="-3" step="0.5">
-          <span class="input-group-text">&deg;C</span>
-        </div>
-        <div class="input-group w-auto" title="Target room temperature for the heat demand estimate">
-          <span class="input-group-text">Room</span>
-          <input type="number" class="form-control" style="width:64px" id="heatdemand_roomT" value="20" step="0.5">
-          <span class="input-group-text">&deg;C</span>
-          <span class="input-group-text"><input type="checkbox" id="heatdemand_fixed_roomT" class="me-1"> Use as room T</span>
-        </div>
-        <div class="input-group w-auto" title="Days with a smaller inside to outside temperature difference are excluded">
-          <span class="input-group-text">Min ΔT</span>
-          <input type="number" class="form-control" style="width:64px" id="heatdemand_min_dT" value="0">
-          <span class="input-group-text">K</span>
-        </div>
-        <div class="input-group w-auto" title="Days with less heat meter data coverage than this are excluded">
-          <span class="input-group-text">Min quality</span>
-          <input type="number" class="form-control" style="width:64px" id="heatdemand_min_quality" value="95">
-          <span class="input-group-text">%</span>
-        </div>
-        <div class="input-group w-auto" title="Plot and fit groups of days separately">
-          <span class="input-group-text">Split by</span>
-          <select class="form-select" id="heatdemand_split">
-            <option value="none">None</option>
-            <option value="year">Year</option>
-            <option value="season">Heating season</option>
-          </select>
-        </div>
-        </div>
-        <button type="button" class="btn btn-outline-secondary" id="heatdemand_info_toggle" title="How this works" aria-expanded="false" aria-controls="heatdemand-info"><i class="bi bi-info-circle"></i></button>
-      </div>
-      <div id="heatdemand-info" class="small text-body-secondary mt-3" style="display:none">
-        <p class="mb-1">Each point is one day: mean heat output against mean room minus outside temperature. Hover over a point for details, click to open the power view for that day. The slope of the fit line is the heat loss in W/K.</p>
-        <ul class="mb-0 ps-3">
-          <li><b>Fit:</b> the balance point is where the fit line reaches zero heat. Days below the balance point are mostly water heating and standby, so the fit excludes them and refits until the balance point settles. Days more than 2.5 standard errors from the line are also excluded.</li>
-          <li><b>Design outside and Room:</b> set the design ΔT for the heat demand estimate. Design outside starts at the value entered on the system form.</li>
-          <li><b>Projected:</b> the fit line at the design ΔT.</li>
-          <li><b>Design heat loss:</b> the dashed line, the heat loss entered on the system form.</li>
-          <li><b>Max output test:</b> the shaded band, the range of approved max output test results for this heat pump model in the heat pump database. A single line when there is one result.</li>
-          <li><b>Heat pump capacity:</b> the black line, the badge capacity from the system form. Shown when the heat pump database has no max output test for this model.</li>
-          <li><b>Use as room T:</b> replaces measured room temperature with the Room value. Used automatically when there is no room temperature feed. Useful when the feed is not representative of the whole house.</li>
-          <li><b>Min ΔT:</b> optional, excludes mild days before the fit.</li>
-          <li><b>Min quality:</b> percentage of the day with heat meter data. Days with gaps under-count heat and are excluded.</li>
-          <li><b>Split by:</b> heating season runs July to June.</li>
-        </ul>
-        <p class="mt-2 mb-1">Notes on the estimate:</p>
-        <ul class="mb-0 ps-3">
-          <li>Heat comes from the mode selected above the chart. All includes water heating. For a typical 100 m² house the extra heat for water heating is similar to the reduction from internal gains, so All is often a good approximation of the building heat loss. Space gives a lower figure.</li>
-          <li>Estimate is mean output over a day at the design temperature, not peak output within the day.</li>
-          <li>Range is an 80% prediction interval: 8 out of 10 days are expected to fall within it. A design temperature colder than any recorded day is an extrapolation.</li>
-          <li id="heatdemand-scope-note" style="display:none"></li>
-        </ul>
       </div>
     </div>
 
