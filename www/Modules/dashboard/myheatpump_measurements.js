@@ -373,8 +373,8 @@ function measurements_card_render() {
                 pts.push([x, y]); if (y > ymax) ymax = y;
             }
         }
-        var path = "M0,60 " + pts.map(function (p) { return "L" + fmt(300 * (p[0] - x_lo) / (x_hi - x_lo), 1) + "," + fmt(60 - 54 * p[1] / ymax, 1); }).join(" ") + " L300,60 Z";
-        var dist = '<div class="hp-ms-dist"><svg viewBox="0 0 300 60" preserveAspectRatio="none" aria-hidden="true"><path d="' + path + '"/></svg>';
+        var dist_d = "M0,60 " + pts.map(function (p) { return "L" + fmt(300 * (p[0] - x_lo) / (x_hi - x_lo), 1) + "," + fmt(60 - 54 * p[1] / ymax, 1); }).join(" ") + " L300,60 Z";
+        var dist = '<div class="hp-ms-dist"><svg viewBox="0 0 300 60" preserveAspectRatio="none" aria-hidden="true"><path d="' + dist_d + '"/></svg>';
         if (e.lower !== null && e.upper !== null) dist += '<div class="hp-ms-dist-band" style="left:' + pct(e.lower, x_lo, x_hi) + '%;width:' + (pct(e.upper, x_lo, x_hi) - pct(e.lower, x_lo, x_hi)) + '%" title="80% of heat: ' + fmt(e.lower, 1) + ' to ' + fmt(e.upper, 1) + ' kW"></div>';
         dist += '<div class="hp-ms-dist-line" style="left:' + pct(e.value, x_lo, x_hi) + '%"></div>';
         dist += '<div class="hp-sys-scale-tag is-below" style="left:' + pct(e.value, x_lo, x_hi) + '%">Measured ' + fmt(e.value, 1) + ' kW</div>';
