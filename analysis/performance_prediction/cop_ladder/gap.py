@@ -66,10 +66,19 @@ def per_system(w):
     return out
 
 
+def flagged_ids(meta):
+    """Systems marked with a data flag on the site (data_flag = 1 in the export)."""
+    if "data_flag" not in meta.columns:
+        raise SystemExit("--exclude-flagged: the export has no data_flag column (use fetch_export.py)")
+    return set(meta.index[pd.to_numeric(meta.data_flag, errors="coerce") == 1])
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--export", required=True)
     ap.add_argument("--windows", required=True)
+    ap.add_argument("--exclude-flagged", action="store_true",
+                    help="leave out systems with data_flag set on the site (outputs get an _unflagged suffix)")
     args = ap.parse_args()
 
     meta = pd.read_csv(args.export).set_index("id")
@@ -91,6 +100,10 @@ def main():
     E = num("combined_elec_kwh")
     s["standby_elec"] = (E - num("running_elec_kwh")).clip(lower=0)
     s = s[s.clean_windows >= 500].copy()
+    if args.exclude_flagged:
+        flagged = flagged_ids(meta) & set(s.index)
+        print(f"leaving out {len(flagged)} flagged systems: {sorted(flagged)}")
+        s = s.drop(index=sorted(flagged))
     E = E.loc[s.index]
 
     cs = s.clean_spf
@@ -154,7 +167,7 @@ def main():
     print("Largest gaps between clean SPF and H4 (parts in %):")
     print(show.round(2).to_string())
 
-    out = os.path.join(args.windows, "gap_systems.csv")
+    out = os.path.join(args.windows, "gap_systems_unflagged.csv" if args.exclude_flagged else "gap_systems.csv")
     s.to_csv(out)
     print(f"\nwrote {out}")
 

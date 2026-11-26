@@ -120,6 +120,10 @@ windows don't cover). It prints the size and spread of each part, its share of t
 between systems, its correlation with ΔT and with the residual from the ΔT line, and the systems with the
 largest gaps. Per-system values go to `gap_systems.csv`.
 
+Both `model.py` and `gap.py` take `--exclude-flagged`, which leaves out systems with `data_flag` set on the site
+(56 public systems in November 2026, including 429 "Electric meter faulty"). Outputs then get an `_unflagged`
+suffix. The standard fleet filter doesn't exclude flagged systems, and our earlier ΔT baseline didn't either.
+
 Partial-run windows can come out slightly *better* than clean running (a negative part). They include pump
 overrun heat after the compressor stops and only part of the standby, so read them as approximate.
 Systems without a hot-water flag have their hot water inside the space-heating parts.

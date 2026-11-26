@@ -87,17 +87,31 @@ def cv_linear(X, y, folds_of):
     return out
 
 
+def flagged_ids(meta):
+    """Systems marked with a data flag on the site (data_flag = 1 in the export)."""
+    if "data_flag" not in meta.columns:
+        raise SystemExit("--exclude-flagged: the export has no data_flag column (use fetch_export.py)")
+    return set(meta.index[pd.to_numeric(meta.data_flag, errors="coerce") == 1])
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--export", required=True)
     ap.add_argument("--windows", required=True)
+    ap.add_argument("--exclude-flagged", action="store_true",
+                    help="leave out systems with data_flag set on the site (outputs get an _unflagged suffix)")
     args = ap.parse_args()
+    suffix = "_unflagged" if args.exclude_flagged else ""
     w, space_spf = load_windows(args.windows)
     meta = pd.read_csv(args.export).set_index("id")
     systems = np.array(sorted(w.system_id.unique()))
     # need enough clean windows for a stable clean SPF
     counts = w.groupby("system_id").size()
     systems = systems[counts.loc[systems].to_numpy() >= 500]
+    if args.exclude_flagged:
+        flagged = flagged_ids(meta)
+        print(f"leaving out {len(set(systems) & flagged)} flagged systems: {sorted(set(systems) & flagged)}")
+        systems = np.array([x for x in systems if x not in flagged])
     w = w[w.system_id.isin(systems)].reset_index(drop=True)
     rng = np.random.default_rng(SEED)
     perm = rng.permutation(systems)
@@ -179,11 +193,11 @@ def main():
     pd.set_option("display.width", 250)
     pd.set_option("display.max_columns", 20)
     print(res.round(3).to_string(index=False))
-    res.to_csv(os.path.join(args.windows, "results.csv"), index=False)
+    res.to_csv(os.path.join(args.windows, f"results{suffix}.csv"), index=False)
     out = pd.DataFrame({"system_id": systems, "fold": sfold, "clean_spf": clean_meas, "space_spf": sh, "h4_spf": h4,
                         "weighted_dT": dT, "ln_annual_heat_MWh": lnheat,
                         **{f"pred_{k}": v for k, v in sys_preds.items()}})
-    out.to_csv(os.path.join(args.windows, "systems.csv"), index=False)
+    out.to_csv(os.path.join(args.windows, f"systems{suffix}.csv"), index=False)
     print("SD of targets:", {k: round(float(np.nanstd(v[base_ok])), 3) for k, v in [("clean", clean_meas), ("space", sh), ("h4", h4)]})
 
 
