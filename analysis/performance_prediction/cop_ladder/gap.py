@@ -76,6 +76,9 @@ def main():
     rows = []
     for p in sorted(glob.glob(os.path.join(args.windows, "*.pkl"))):
         w = pd.read_pickle(p)
+        if w.empty:
+            print(f"skipping {os.path.basename(p)}: no windows")
+            continue
         sid = int(w.system_id.iloc[0])
         r = per_system(w)
         r["system_id"] = sid
