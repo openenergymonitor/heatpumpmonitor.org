@@ -146,7 +146,7 @@ var PhotoUtils = {
             const maxSizeMB = Math.round(config.maxSize / (1024 * 1024));
             return {
                 valid: false,
-                error: `"${file.name}" is too large. Maximum size is ${maxSizeMB}MB.`
+                error: `"${file.name}" is too large (${(file.size / (1024 * 1024)).toFixed(1)}MB). Maximum size is ${maxSizeMB}MB.`
             };
         }
 

@@ -774,7 +774,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
                 // Validate file
                 const maxSize = 5 * 1024 * 1024; // 5MB
                 if (file.size > maxSize) {
-                    this.uploadError = 'File size exceeds 5MB limit';
+                    this.uploadError = `File size (${(file.size / (1024 * 1024)).toFixed(1)}MB) exceeds 5MB limit`;
                     this.clearErrorAfterDelay();
                     return;
                 }
