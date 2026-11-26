@@ -20,18 +20,23 @@ php cop_ladder/feed_map.php > cop_ladder/feed_map.json
 # 1. check the direct feed read matches the public API (a couple of systems)
 .venv/bin/python cop_ladder/build_windows.py --map cop_ladder/feed_map.json --check 2 3
 
-# 2. build 15-minute windows for the filtered fleet (30 s data; resumes if interrupted)
-.venv/bin/python cop_ladder/build_windows.py --map cop_ladder/feed_map.json \
-    --export heatpumpmonitor_all_fields_last365_2026-11-16.csv --end 2026-11-15
+# 2. fetch the all-fields last365 export (prints the matching --end)
+.venv/bin/python cop_ladder/fetch_export.py
 
-# 3. fit and score the ladder
-.venv/bin/python cop_ladder/model.py --export heatpumpmonitor_all_fields_last365_2026-11-16.csv \
+# 3. build 15-minute windows for the filtered fleet (30 s data; resumes if interrupted)
+.venv/bin/python cop_ladder/build_windows.py --map cop_ladder/feed_map.json \
+    --export heatpumpmonitor_all_fields_last365_<date>.csv --end <date>
+
+# 4. fit and score the ladder
+.venv/bin/python cop_ladder/model.py --export heatpumpmonitor_all_fields_last365_<date>.csv \
     --windows cop_ladder/windows_30s
 ```
 
-- The all-fields export needs to be in `analysis/performance_prediction/` on the server.
+- `fetch_export.py` rebuilds the system list page's all-fields CSV from `system/list/public.json` and
+  `system/stats/last365`. It holds all public systems, not just those shown on the page, so more pass the filter.
+  A CSV saved from the page works too.
 - `--end` should match the export's last-365-days period, so the window data and the export's H4 SPF cover the
-  same year.
+  same year. The last365 stats run to midnight (London) on the day they were rebuilt, normally today.
 - `--step 120` builds 2-minute windows into `windows_120s/`, to match EoH resolution. Their HPM data was 30 s.
 - Systems whose feeds aren't all PHPFina are fetched through the public API at 30 s (set `HPMON_URL` to change
   the server). `windows_*/build_log.csv` lists what was read and what was skipped.
