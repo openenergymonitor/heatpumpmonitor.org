@@ -101,3 +101,25 @@ training folds. The ΔT baselines are fitted the same way.
 
 Early systems only, so too few to draw conclusions from. On these, H4 RMSE fell from 0.27 (ΔT) to about 0.22
 from Stage 3 on. Removing the heat-derived features gave 0.24.
+
+## Gap accounting (`gap.py`)
+
+Phase 1 suggested that a perfect clean-window model would still leave about 0.27 RMSE on H4 SPF, so much of the
+difference between systems may sit outside clean running. `gap.py` splits each system's gap between clean SPF and
+H4 SPF into parts, using the existing windows and the export, with no model:
+
+```
+.venv/bin/python cop_ladder/gap.py --export heatpumpmonitor_all_fields_last365_<date>.csv \
+    --windows cop_ladder/windows_30s
+```
+
+Each part is the share of total electricity used beyond running the same heat at the clean COP, so
+`H4 SPF = clean SPF × (1 − sum of parts)` exactly. The parts are partial-run windows (a start or stop),
+defrost windows, hot water, standby (from the published running vs combined electricity), and "other" (what the
+windows don't cover). It prints the size and spread of each part, its share of the variance in ln(H4 SPF)
+between systems, its correlation with ΔT and with the residual from the ΔT line, and the systems with the
+largest gaps. Per-system values go to `gap_systems.csv`.
+
+Partial-run windows can come out slightly *better* than clean running (a negative part). They include pump
+overrun heat after the compressor stops and only part of the standby, so read them as approximate.
+Systems without a hot-water flag have their hot water inside the space-heating parts.
