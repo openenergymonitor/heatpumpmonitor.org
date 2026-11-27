@@ -127,3 +127,31 @@ suffix. The standard fleet filter doesn't exclude flagged systems, and our earli
 Partial-run windows can come out slightly *better* than clean running (a negative part). They include pump
 overrun heat after the compressor stops and only part of the standby, so read them as approximate.
 Systems without a hot-water flag have their hot water inside the space-heating parts.
+
+## Testing the low-load finding (`lowload.py`)
+
+`gap.py` found that the share of clean heat delivered below 35% of rated output correlates with the residual of H4
+SPF from the ΔT line (Spearman about −0.36). `lowload.py` tests that more carefully:
+
+```
+.venv/bin/python cop_ladder/lowload.py --export heatpumpmonitor_all_fields_last365_<date>.csv \
+    --windows cop_ladder/windows_30s --exclude-flagged
+```
+
+- **Heat coupling.** Load ratio is metered heat ÷ rated output, and COP also has metered heat in it, so a window
+  that makes less heat for its electricity is low-COP and low-load at once. The script adds a load estimate that
+  doesn't use the window's heat: electricity × a fleet efficiency against offset Carnot × offset Carnot COP ÷ rated
+  output (`low_est_share_*`). It also reports how far a ±5% heat-meter error moves the heat-based share.
+- **Controls.** Each metric (rank-transformed) is added to ΔT + ln(annual heat), then also ln(rated output) and
+  mean outside temperature, with bootstrap 95% intervals and 50 × 5-fold CV.
+- **Mechanism.** Within each system, windows in the same 2 K outside × 2 K flow temperature cell are compared, giving
+  a COP-against-load profile at matched temperatures, binned by metered heat and by the heat-free estimate. The two
+  are biased in opposite directions. It also asks whether the link acts through clean SPF or the losses on top.
+- **Stability.** Metrics from alternating weeks and from the two halves of the year predict the other half's
+  residual (window space SPF against window ΔT), so predictor and target share no windows.
+
+Per-system values go to `lowload_systems.csv` (`_unflagged` with `--exclude-flagged`).
+
+Smoke test, 54 systems of 2-minute data (not a result): the heat-based share tracked the residual (ρ −0.38), the
+heat-free share hardly did (−0.15), although the two correlate at 0.83. At matched temperatures, binning by metered
+heat showed low-load windows 12–17% worse; binning by the heat-free estimate showed them slightly better.
