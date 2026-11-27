@@ -152,6 +152,27 @@ SPF from the ΔT line (Spearman about −0.36). `lowload.py` tests that more car
 
 Per-system values go to `lowload_systems.csv` (`_unflagged` with `--exclude-flagged`).
 
-Smoke test, 54 systems of 2-minute data (not a result): the heat-based share tracked the residual (ρ −0.38), the
-heat-free share hardly did (−0.15), although the two correlate at 0.83. At matched temperatures, binning by metered
-heat showed low-load windows 12–17% worse; binning by the heat-free estimate showed them slightly better.
+### Results, 27 Nov 2026 (273 systems, flagged excluded; provisional)
+
+- **The heat-based share is a robust, stable predictor.** Added to ΔT + ln(annual heat) it gives −0.09 SPF per SD
+  (95% interval −0.13 to −0.05), survives the size and outside-temperature controls, and improves CV RMSE in every
+  repeat (0.336 → 0.326; 0.319 at a 25% threshold). Out of sample it holds: ρ −0.31 to −0.35 across alternating
+  weeks, −0.28 to −0.33 across the halves of the year. A ±5% heat-meter error moves the share by about 0.007
+  against a fleet SD of 0.17, so meter bias doesn't explain it.
+- **The heat-free share hardly predicts anything** (ρ −0.13 with the ΔT + heat residual, interval spans zero, no CV
+  gain), although the two correlate at 0.81. The part of the heat-based share not shared with the heat-free one
+  correlates with the residual at −0.45. With both in the model, the coefficients are −0.245 (heat-based) and
+  +0.187 (heat-free).
+- **Where it acts:** the heat-based share through clean SPF (−1.6% per SD), not the losses on top. The heat-free
+  share through losses on top (+1.0 points per SD), not clean SPF.
+- **At matched temperatures** the two binnings disagree in sign at low load (0.25–0.35 of rated: −8.1% by metered
+  heat, +1.8% by the estimate) but agree above rated output (−4.1% and −7.4%).
+- Per-system matched penalties don't predict the residual.
+
+Reading: the low-load link looks mostly like a COP-shortfall signal. Windows that make less heat than their
+electricity and temperatures predict get classed as low load, because load is measured with heat. Low-load running
+itself doesn't seem to cost efficiency, and may go with slightly more cycling and standby losses. The colleague's
+low-load penalty and our machine replay's shortfall below minimum speed may both be partly this effect. The
+remaining residual link may still be useful as a diagnostic: worth checking whether short-heat windows cluster
+before defrosts or at particular flow rates (e.g. 341, 772, 849). Logged compressor speed would settle the
+low-load question without either bias.

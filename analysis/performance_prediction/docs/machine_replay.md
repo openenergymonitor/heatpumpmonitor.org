@@ -33,7 +33,10 @@ operation is off: for system 75 it starts 33 times a day against a real
 
 **The level is most of the difference.** Median 0.96 (p10–p90 0.89–1.02).
 It goes with quality at rho 0.77 and explains about 56% of the variance.
-The next strongest factor is time at minimum speed (rho −0.43).
+The next strongest factor is time at minimum speed (rho −0.43). Treat that
+one with caution: speed is inferred from metered heat, and a test on the
+wider fleet suggests this kind of low-load link is mostly a measurement
+effect (see Open questions).
 
 **Fast flowT rises need to be kept out.** An early version made some
 systems look poor just above minimum speed. Most of that turned out to be
@@ -109,6 +112,19 @@ declared size.
   datasheet at every speed? Part of it may come from inferring speed from
   metered heat, which would push an under-reading system's running into
   the lowest band.
+  - Nov 2026, from `cop_ladder/lowload.py` (273 HPM systems, provisional):
+    this looks like the main part. Load measured from metered heat puts
+    any window that makes less heat than expected into the low-load band,
+    so low-load share tracks poor COP. A heat-free load estimate
+    (electricity × Carnot efficiency ÷ rated output) correlates with the
+    heat-based one at 0.81, but hardly predicts SPF (rho −0.13 against
+    −0.32). With both in, the heat-free share's coefficient turns positive.
+    At matched flow and outside temperature, the two ways of binning give
+    opposite signs at low load (−8% and +2%). So the shortfall below
+    minimum speed here may be partly the same effect. A penalty above
+    rated output shows up both ways (−4% and −7%). Inferring speed from
+    electricity, or using logged compressor speed where available, would
+    test this on the replay.
 - The 5 kW vs 7 kW level gap (0.93 vs 0.97) isn't a clean comparison yet,
   since the 7 kW fit is scaled from the 5 kW one.
 
